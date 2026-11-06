@@ -175,3 +175,19 @@ export const Bar: Story = {
     </div>
   ),
 };
+
+/**
+ * COMPACT, a small control's height, for a bar that takes the place of a row of
+ * chips: the tall bar would move the list under it as the first pick is made.
+ */
+export const Compact: Story = {
+  render: () => (
+    <div style={{ maxWidth: 820 }}>
+      <SelectionBar size="compact" count={3} onClear={() => {}}>
+        <Button size="small" variant="secondary" leadingIcon={<FolderInputGlyph size="sm" />}>
+          Move to…
+        </Button>
+      </SelectionBar>
+    </div>
+  ),
+};

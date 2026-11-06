@@ -70,6 +70,26 @@ describe('opening', () => {
     vi.useRealTimers();
   });
 
+  /* The mark takes no pointer while the pill is open or closing, so an enter heard
+     on the mark alone could not bring back a pill closing under the pointer, and
+     the pointer holding still there looped it open and shut. */
+  test('the box the pointer leaves is the box it enters: entering a closing pill opens it again', () => {
+    vi.useFakeTimers();
+    const { container } = mount();
+    const group = container.querySelector('.crewlet-add-pill')!;
+    fireEvent.mouseEnter(group);
+    expect(group.getAttribute('data-phase')).toBe('preview');
+    fireEvent.mouseLeave(group);
+    expect(group.getAttribute('data-phase')).toBe('closing');
+    fireEvent.mouseEnter(group);
+    expect(group.getAttribute('data-phase')).toBe('preview');
+    // The close that was under way has nothing left to finish.
+    act(() => vi.advanceTimersByTime(ADD_PILL_MS));
+    expect(group.getAttribute('data-phase')).toBe('preview');
+    expect(choices()).toHaveLength(3);
+    vi.useRealTimers();
+  });
+
   test('a press locks it open, so leaving it does not take the choices away', () => {
     const { container } = mount();
     fireEvent.click(mark());

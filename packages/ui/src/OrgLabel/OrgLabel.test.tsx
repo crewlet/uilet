@@ -647,3 +647,29 @@ test('a label without a name action keeps its name as the first line', () => {
   expect(container.querySelector('.crewlet-org-label__name-line')).toBeNull();
   expect(container.querySelector('.crewlet-org-label__text > .crewlet-org-label__name')).not.toBeNull();
 });
+
+/* The one place a push costs a chart node no room: measured, the state's word in
+   the caption changed the card's width and relaid the chart on every change. */
+describe('a live state on the mark', () => {
+  test('stands out of the flow in the fixed zone, and is drawn only where one is given', () => {
+    const uninstall = installSheets('OrgLabel/OrgLabel.css');
+    try {
+      const { container, rerender } = render(<OrgLabel icon={<svg />} name="Dev" caption="agent" />);
+      expect(container.querySelector('.crewlet-org-label__status')).toBeNull();
+      rerender(<OrgLabel icon={<svg />} name="Dev" caption="agent" markStatus={<span data-testid="dot" />} />);
+      const status = container.querySelector('.crewlet-org-label__status')!;
+      expect(status.parentElement?.className).toContain('crewlet-org-label__icon');
+      expect(status.querySelector('[data-testid="dot"]')).not.toBeNull();
+      expect(getComputedStyle(status).position).toBe('absolute');
+      expect(getComputedStyle(status.parentElement!).position).toBe('relative');
+      expect(px(status.parentElement!, 'width')).toBeGreaterThan(0);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('a badge carries it too', () => {
+    render(<OrgLabel avatar={{ name: 'Dev', kind: 'agent' }} name="Dev" markStatus={<span data-testid="dot" />} />);
+    expect(screen.getByTestId('dot').parentElement?.className).toBe('crewlet-org-label__status');
+  });
+});

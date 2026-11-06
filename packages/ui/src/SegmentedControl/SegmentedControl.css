@@ -144,10 +144,13 @@
    says nothing more. On the chosen chip the inset pill's tertiary figure lay
    on the accent fill at 1.4:1; inheriting, it is the label's on-accent ink. */
 .crewlet-segmented--chips .crewlet-count {
-  min-width: 0;
+  /* ROOM FOR TWO DIGITS, in step, so a live count passing 9 moves no chip. */
+  min-width: 2ch;
   padding: 0;
   background: none;
   color: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: start;
 }
 
 /* What completes the last choice sits in the row, at the chips' own height

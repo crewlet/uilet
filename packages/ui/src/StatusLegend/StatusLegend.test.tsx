@@ -120,3 +120,8 @@ test('it has no violation, filter or key', async () => {
   const result = await axe.run(container, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] } });
   expect(result.violations.map((one) => one.id)).toEqual([]);
 });
+
+/* A count passing 9 moved every key after it, and a key beside it wrapped in a narrow canvas. */
+test('a count keeps the room of two digits, in step', () => {
+  expect(SHEET).toMatch(/\.crewlet-status-legend__count \{\s*min-width: 2ch;\s*font-variant-numeric: tabular-nums;/);
+});

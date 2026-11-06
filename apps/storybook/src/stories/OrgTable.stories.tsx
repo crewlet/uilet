@@ -307,7 +307,7 @@ const LIVE_COLUMNS: TreeGridColumn[] = [
   { key: 'name', header: 'Name', width: 'minmax(14rem, 3fr)' },
   { key: 'lead', header: 'Reports to', width: 'minmax(9rem, 1.2fr)', hideBelow: 760 },
   { key: 'problems', header: 'Problems', width: 'minmax(6.5rem, 1fr)', hideBelow: 640 },
-  { key: 'actions', header: 'Edit', width: 'calc(var(--crewlet-org-table-strip) + var(--spacing-2) * 2)' },
+  { key: 'actions', header: 'Edit', width: 'calc(var(--crewlet-org-table-strip) + var(--spacing-3) * 2)' },
 ];
 
 /** A container-width table with a box before every name that can pick an agent. */
@@ -406,12 +406,14 @@ const FACES: Record<string, { character: 'hexlet' | 'prismlet' | 'peaklet' | 'to
   'seat:vp': { character: 'prismlet', hue: 'purple' },
 };
 
+/* The kit's table rules: the name takes the free room above its floor, a column of
+   values that hold still fits them, and a column a live push changes is a length. */
 const STRUCTURE_COLUMNS: TreeGridColumn[] = [
-  { key: 'name', header: 'Name', width: 'minmax(14rem, 3.4fr)' },
-  { key: 'status', header: 'Status', width: 'minmax(9.5rem, 1.8fr)', hideBelow: 600, size: 'sm' },
-  { key: 'lead', header: 'Reports to', width: 'minmax(9rem, 1.2fr)', hideBelow: 980, size: 'sm' },
-  { key: 'problems', header: 'Problems', width: 'minmax(6.5rem, 1fr)', hideBelow: 900, size: 'sm' },
-  { key: 'edit', header: 'Edit', width: 'calc(var(--crewlet-org-table-strip) + var(--spacing-2) * 2)' },
+  { key: 'name', header: 'Name', floor: '14rem' },
+  { key: 'status', header: 'Status', width: '12.5rem', hideBelow: 600, size: 'sm' },
+  { key: 'lead', header: 'Reports to', shrink: true, hideBelow: 980, size: 'sm' },
+  { key: 'problems', header: 'Problems', width: '8.5rem', hideBelow: 900, size: 'sm' },
+  { key: 'edit', header: 'Edit', width: 'calc(var(--crewlet-org-table-strip) + var(--spacing-3) * 2)' },
 ];
 
 const leadSeat = (name: string | undefined) => Object.keys(ENTITIES).find((id) => ENTITIES[id]!.name === name);

@@ -144,6 +144,29 @@
   content: none;
 }
 
+/*
+ * A LIVE STATE'S DOT, on the zone's lower corner: out of the flow in a box of fixed
+ * size, so a change of state changes nothing a chart measures. It stands on the
+ * card's own ground, written as the card paints it, to read clear of the mark.
+ */
+.crewlet-org-label__icon {
+  position: relative;
+}
+
+.crewlet-org-label__status {
+  position: absolute;
+  top: calc(50% + var(--spacing-1));
+  left: calc(50% + var(--spacing-1));
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-circle);
+  background-color: var(--color-surface-background);
+  background-image: linear-gradient(
+    var(--crewlet-tree-canvas-card-fill, var(--color-surface-subtle)),
+    var(--crewlet-tree-canvas-card-fill, var(--color-surface-subtle))
+  );
+}
+
 /* ---- The name and its caption -------------------------------------------- */
 
 /*

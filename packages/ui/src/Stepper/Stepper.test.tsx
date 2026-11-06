@@ -10,6 +10,10 @@
  * fails here instead of reading as right.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { GLYPH_SIZES } from '@crewlethq/icons/glyphs';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import userEvent from '@testing-library/user-event';
@@ -282,6 +286,31 @@ describe('what each step is drawn in', () => {
     expect(px(list, 'column-gap')).toBe(6 + 10 + 6);
     expect(getComputedStyle(list).listStyle).toBe('none');
     expect(px(list, 'padding-left')).toBe(0);
+  });
+
+  /* Measured in a browser: the marks moved the pills after them as a turn advanced,
+     and a row that only just fit wrapped or unwrapped between two steps. */
+  test('a pill keeps its width as the sequence advances: every pill holds the check\'s room', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const sheet = readFileSync(join(here, 'Stepper.css'), 'utf8');
+    const pad = (selector: string) =>
+      new RegExp(`${selector}[^{}]*\\{\\s*padding-inline: ([^;]+);`).exec(sheet)?.[1];
+    // Nothing drawn: the whole of the check and its gap, half at each end.
+    expect(pad('\\.crewlet-stepper__step--optional > \\.crewlet-stepper__chip')).toBe(
+      'calc(var(--spacing-2) + (var(--crewlet-stepper-check) + var(--crewlet-stepper-mark-gap)) / 2)',
+    );
+    expect(sheet).toContain(
+      '.crewlet-stepper__step--upcoming > .crewlet-stepper__chip,\n.crewlet-stepper__step--optional > .crewlet-stepper__chip',
+    );
+    // The dot drawn: what it falls short of the check, half at each end.
+    expect(pad('\\.crewlet-stepper__step--current:not\\(\\.crewlet-stepper__step--attention\\) > \\.crewlet-stepper__chip')).toBe(
+      'calc(var(--spacing-2) + (var(--crewlet-stepper-check) - var(--crewlet-stepper-dot)) / 2)',
+    );
+    // The two widths those are written against are the marks' own.
+    expect(sheet).toMatch(/--crewlet-stepper-check: 12px;/);
+    expect(GLYPH_SIZES.xs).toBe(12);
+    expect(sheet).toMatch(/--crewlet-stepper-dot: 7px;/);
+    expect(readFileSync(join(here, '../StatusDot/StatusDot.css'), 'utf8')).toMatch(/--crewlet-status-dot-size: 7px;/);
   });
 
   test('a 10px rule in the strong hairline joins two steps, drawn by the second, so none leads or trails', () => {

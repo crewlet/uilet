@@ -41,6 +41,11 @@ export interface SelectionBarProps {
    * would fall to the page body with the button that held it.
    */
   returnFocusRef?: RefObject<HTMLElement | null> | undefined;
+  /**
+   * `compact` draws the bar a small control's height, for a row of chips it
+   * takes the place of, where the tall bar would move the list under it.
+   */
+  size?: 'md' | 'compact' | undefined;
   className?: string | undefined;
   labels?: Partial<SelectionBarLabels> | undefined;
 }
@@ -63,7 +68,7 @@ export interface SelectionBarProps {
  * ONE STOP IN THE TAB ORDER: the actions and Clear are a `Toolbar`, walked
  * with the arrows.
  */
-export function SelectionBar({ count, onClear, children, returnFocusRef, className, labels }: SelectionBarProps) {
+export function SelectionBar({ count, onClear, children, returnFocusRef, size = 'md', className, labels }: SelectionBarProps) {
   const text = { ...LABELS, ...labels };
   const said = useRef(0);
   const countWords = text.count(count);
@@ -79,7 +84,10 @@ export function SelectionBar({ count, onClear, children, returnFocusRef, classNa
 
   if (count <= 0) return null;
   return (
-    <Toolbar label={text.label} className={cx('crewlet-selection-bar', className)}>
+    <Toolbar
+      label={text.label}
+      className={cx('crewlet-selection-bar', size === 'compact' && 'crewlet-selection-bar--compact', className)}
+    >
       <span className="crewlet-selection-bar__count">{countWords}</span>
       {children ? <span className="crewlet-selection-bar__actions">{children}</span> : null}
       <span className="crewlet-selection-bar__spacer" aria-hidden="true" />

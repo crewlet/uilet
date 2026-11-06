@@ -818,7 +818,92 @@ describe('a grid that fits its container', () => {
     expect(rule('.crewlet-tree-grid--container .crewlet-tree-grid__grid')).toMatch(/min-width:\s*0/);
     const head = rule('.crewlet-tree-grid--container .crewlet-tree-grid__head');
     expect(head).toMatch(/position:\s*sticky/);
-    expect(head).toMatch(/background:\s*var\(--color-surface-subtle\)/);
+  });
+});
+
+/*
+ * THE KIT'S ONE SET OF TABLE RULES, which `DataGrid` draws. A tree of rows that kept
+ * its own padding, frame and head drifted from its headings and every table beside it.
+ */
+describe('the table rules it shares with the data grid', () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const SHEETS = {
+    data: readFileSync(resolve(here, '../DataGrid/DataGrid.css'), 'utf8'),
+    tree: readFileSync(resolve(here, 'TreeGrid.css'), 'utf8'),
+  };
+  const body = (sheet: string, selector: string) => {
+    const at = sheet.indexOf(`${selector} {`);
+    return at < 0 ? '' : sheet.slice(at, sheet.indexOf('}', at));
+  };
+
+  test('one track list on the grid, which the head, the body and the rows pass through', () => {
+    expect(body(SHEETS.tree, '.crewlet-tree-grid__grid')).toMatch(/grid-template-columns: var\(--crewlet-tree-grid-columns,/);
+    const through = body(SHEETS.tree, '.crewlet-tree-grid__row');
+    expect(through).toMatch(/grid-template-columns: subgrid;/);
+    expect(through).toMatch(/grid-column: 1 \/ -1;/);
+    expect(SHEETS.tree).toContain('.crewlet-tree-grid__head,\n.crewlet-tree-grid__body,\n.crewlet-tree-grid__row {');
+    const { container } = render(
+      <TreeGrid label="Org" columns={[{ key: 'name', header: 'Name' }]} rows={[{ id: 'a', label: 'A' }]} renderCell={() => 'x'} />,
+    );
+    expect(container.querySelector('.crewlet-tree-grid__body')?.getAttribute('role')).toBe('rowgroup');
+  });
+
+  test('a column asks for its track in the same words as a data grid column', () => {
+    const { container } = render(
+      <TreeGrid
+        label="Org"
+        columns={[
+          { key: 'name', header: 'Name', floor: '14rem' },
+          { key: 'lead', header: 'Reports to', shrink: true },
+          { key: 'state', header: 'Status', width: '12rem' },
+          { key: 'note', header: 'Note' },
+        ]}
+        rows={[{ id: 'a', label: 'A' }]}
+        renderCell={() => 'x'}
+      />,
+    );
+    expect(
+      container.querySelector<HTMLElement>('[role="treegrid"]')!.style.getPropertyValue('--crewlet-tree-grid-columns'),
+    ).toBe('minmax(14rem, 1fr) fit-content(20%) 12rem minmax(0, 1fr)');
+  });
+
+  test('its cells and heads take the same inset, at the same outer edge, as a data grid', () => {
+    const inset = /--crewlet-data-grid-cell-start: var\(--spacing-3\);\s*--crewlet-data-grid-cell-end: var\(--spacing-3\);/;
+    expect(SHEETS.data).toMatch(inset);
+    expect(SHEETS.tree).toMatch(/--crewlet-tree-grid-cell-start: var\(--crewlet-tree-grid-inset\);\s*--crewlet-tree-grid-cell-end: var\(--crewlet-tree-grid-inset\);/);
+    expect(body(SHEETS.tree, '.crewlet-tree-grid')).toMatch(/--crewlet-tree-grid-inset: var\(--spacing-3\);/);
+    expect(body(SHEETS.data, '.crewlet-data-grid')).toMatch(/--crewlet-data-grid-edge: var\(--spacing-3\);/);
+    expect(body(SHEETS.tree, '.crewlet-tree-grid')).toMatch(/--crewlet-tree-grid-edge: var\(--spacing-3\);/);
+    expect(body(SHEETS.tree, '.crewlet-card--flush .crewlet-tree-grid')).toMatch(/--crewlet-tree-grid-edge: var\(--spacing-4\);/);
+  });
+
+  test('its head and frame are the data grid\'s: raised ground, stronger hairline, the same corner', () => {
+    const head = body(SHEETS.tree, '.crewlet-tree-grid__head .crewlet-tree-grid__row');
+    expect(body(SHEETS.data, '.crewlet-data-grid__head')).toMatch(/background: var\(--color-surface-elevated\);/);
+    expect(head).toMatch(/background: var\(--color-surface-elevated\);/);
+    expect(body(SHEETS.data, '.crewlet-data-grid__head')).toMatch(/border-bottom: 1px solid var\(--color-border-hover\);/);
+    expect(head).toMatch(/border-bottom: 1px solid var\(--color-border-hover\);/);
+    const frame = body(SHEETS.tree, '.crewlet-tree-grid__scroller');
+    expect(body(SHEETS.data, '.crewlet-data-grid')).toMatch(/border: 1px solid var\(--color-border-hover\);/);
+    expect(frame).toMatch(/border: 1px solid var\(--color-border-hover\);/);
+    expect(body(SHEETS.data, '.crewlet-data-grid')).toMatch(/border-radius: var\(--radius-md\);/);
+    expect(frame).toMatch(/border-radius: var\(--radius-md\);/);
+  });
+
+  /* Centred in the row, a cell's box followed what it held, so a value that
+     changed moved its cell; the row's full height holds it still. */
+  test('a cell is the row\'s full height and centres what it holds', () => {
+    const uninstall = installSheets('TreeGrid/TreeGrid.css');
+    try {
+      const { container } = render(
+        <TreeGrid label="Org" columns={[{ key: 'name', header: 'Name' }]} rows={[{ id: 'a', label: 'A' }]} renderCell={() => 'x'} />,
+      );
+      const cell = container.querySelector('[role="gridcell"]')!;
+      expect(getComputedStyle(cell).alignSelf).toBe('stretch');
+      expect(getComputedStyle(cell).alignItems).toBe('center');
+    } finally {
+      uninstall();
+    }
   });
 });
 

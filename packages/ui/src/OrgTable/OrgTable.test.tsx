@@ -227,9 +227,8 @@ describe('what it takes from the grid', () => {
      first cell, the rule here is a rule cancelling nothing and the wire is
      drawing an indent that is already there. */
   test("the grid's own first-cell indent, which this one takes back, is still there", () => {
-    expect(rule(GRID_SHEET, '.crewlet-tree-grid__cell:first-child')).toMatch(
-      /padding-inline-start:\s*calc\(/,
-    );
+    const own = [...GRID_SHEET.matchAll(/\.crewlet-tree-grid__cell:first-child \{([^}]*)\}/g)].map((one) => one[1]).join('');
+    expect(own).toMatch(/padding-inline-start:\s*calc\(/);
   });
 });
 
@@ -403,9 +402,11 @@ describe("a row's controls", () => {
     const frame = rule(SHEET, '.crewlet-org-table');
     expect(frame).toMatch(/--crewlet-org-table-actions: calc\(/);
     expect(frame).not.toMatch(/--crewlet-org-table-actions: auto/);
-    expect(rule(SHEET, ".crewlet-org-table [role='gridcell']:last-child")).toMatch(
+    // Its heading takes the same edge, so the word stands over the controls it names.
+    expect(rule(SHEET, ".crewlet-org-table [role='columnheader']:last-child")).toMatch(
       /justify-content: flex-end/,
     );
+    expect(SHEET).toContain(".crewlet-org-table [role='gridcell']:last-child,\n.crewlet-org-table [role='columnheader']:last-child");
   });
 
   /* A pointer that cannot hover never reaches a row, so on a touch screen the
@@ -663,14 +664,19 @@ describe('an add beside a name', () => {
     expect(end!.getAttribute('data-placement')).toBe('end');
   });
 
-  test('closed it keeps only its mark, open it keeps the room it opens into, from its mark', () => {
+  /* A slot that grew as the pill opened squeezed the name and pulled the mark out
+     from under the pointer, which closed the pill, which brought the mark back:
+     measured in a browser, a loop of 47 changes of phase in four seconds. */
+  test('open or closed it keeps only its mark, so opening moves nothing, and it opens from its mark', () => {
     expect(rule(SHEET, ".crewlet-org-table__add[data-placement='name']")).toMatch(/width: auto;/);
-    expect(
-      rule(SHEET, ".crewlet-org-table__add[data-placement='name']:has(.crewlet-add-pill:not([data-phase='closed']))"),
-    ).toMatch(/width: var\(--crewlet-org-table-add\);/);
+    expect(SHEET).not.toMatch(/\.crewlet-org-table__add[^{}]*:has\(/);
+    expect(SHEET).not.toMatch(/\.crewlet-org-table__add[^{}]*\[data-phase/);
     expect(
       rule(SHEET, ".crewlet-org-table__add[data-placement='name'] .crewlet-add-pill[data-layout='split']"),
     ).toMatch(/--crewlet-add-pill-origin: translate\(calc\(var\(--size-target-min\) \/ -2\), -50%\);/);
+    expect(rule(SHEET, ".crewlet-org-table__add[data-placement='name'] .crewlet-add-pill__sections")).toMatch(
+      /z-index: var\(--z-index-raised\);/,
+    );
   });
 });
 
@@ -821,7 +827,7 @@ describe('a container-width table', () => {
       /@container crewlet-org-table \(width < 60rem\) \{\s*\.crewlet-org-table__grid \{\s*--crewlet-org-table-indent: var\(--spacing-5\);/,
     );
     expect(SHEET).toMatch(
-      /@container crewlet-org-table \(width < 40rem\) \{\s*\.crewlet-org-table__grid \{\s*--crewlet-org-table-indent: var\(--spacing-3\);/,
+      /@container crewlet-org-table \(width < 40rem\) \{\s*\.crewlet-org-table \.crewlet-org-table__grid \{\s*--crewlet-org-table-indent: var\(--spacing-3\);\s*--crewlet-tree-grid-inset: var\(--spacing-1\);\s*--crewlet-tree-grid-edge: var\(--spacing-1\);/,
     );
     expect(rule(SHEET, '.crewlet-org-table--container[data-deep] .crewlet-org-table__grid')).toMatch(
       /--crewlet-org-table-indent: var\(--spacing-5\);/,

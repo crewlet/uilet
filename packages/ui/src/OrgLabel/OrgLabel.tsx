@@ -153,6 +153,12 @@ interface OrgLabelWords {
    */
   trailing?: ReactNode | undefined;
   /**
+   * A live state's dot on the corner of the mark's zone, the same spot on every node.
+   * Drawn over a zone of fixed size, so a change of state, or a first state arriving,
+   * never changes what a chart measures.
+   */
+  markStatus?: ReactNode | undefined;
+  /**
    * Added to the outermost element this layout HAS: the row's own wrapper, and
    * in a node the text column, which is the outermost element a layout that
    * renders no wrapper can offer.
@@ -199,6 +205,7 @@ export function OrgLabel(props: OrgLabelProps) {
         ) : (
           props.icon
         )}
+        <MarkStatus markStatus={props.markStatus} />
       </span>
     ) : (
       <span className="crewlet-org-label__icon" aria-hidden="true">
@@ -219,6 +226,7 @@ export function OrgLabel(props: OrgLabelProps) {
           size={layout === 'row' ? 'xs' : 'sm'}
           decorative
         />
+        <MarkStatus markStatus={props.markStatus} />
       </span>
     );
   if (layout === 'row') {
@@ -280,6 +288,12 @@ function Words({
       )}
     </span>
   );
+}
+
+/** A live state's dot on the mark's corner, on the card's own ground: see [OrgLabelWords.markStatus]. */
+function MarkStatus({ markStatus }: Pick<OrgLabelWords, 'markStatus'>) {
+  if (markStatus === undefined || markStatus === null || markStatus === false) return null;
+  return <span className="crewlet-org-label__status">{markStatus}</span>;
 }
 
 /**

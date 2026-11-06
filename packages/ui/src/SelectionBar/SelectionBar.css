@@ -22,6 +22,15 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* A small control's height and the hairline round it, where the bar takes the
+   place of a row of chips. A phone docks the bar instead, at its full height. */
+@media (width >= 640px) {
+  .crewlet-toolbar.crewlet-selection-bar--compact {
+    min-height: calc(var(--size-control-sm) + 2px);
+    padding-block: 0;
+  }
+}
+
 .crewlet-selection-bar__count {
   flex: none;
   color: var(--color-text-primary);
