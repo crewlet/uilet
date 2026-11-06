@@ -97,6 +97,11 @@ export type OrgLabelMark =
        * the glyph alone, as the console table does.
        */
       iconRing?: boolean | undefined;
+      /**
+       * An organization's own logo in place of the glyph: contained in its own
+       * colours, never stretched or cropped, and as tall as the words beside it.
+       */
+      logo?: { src: string; alt: string } | undefined;
       avatar?: undefined;
     }
   | {
@@ -117,6 +122,7 @@ export type OrgLabelMark =
       icon?: undefined;
       iconSize?: undefined;
       iconRing?: undefined;
+      logo?: undefined;
     };
 
 /** What both layouts say besides the mark, in the order they say it. */
@@ -183,7 +189,11 @@ export function OrgLabel(props: OrgLabelProps) {
         )}
         aria-hidden="true"
       >
-        {props.icon}
+        {props.logo ? (
+          <img className="crewlet-org-label__logo" src={props.logo.src} alt={props.logo.alt} draggable={false} />
+        ) : (
+          props.icon
+        )}
       </span>
     ) : (
       <span className="crewlet-org-label__icon" aria-hidden="true">
