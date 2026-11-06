@@ -5,6 +5,7 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import { useFocusModality } from '../utils/focusModality.js';
 import { SECRET_INPUT_PROPS } from '../utils/secretInput.js';
+import { useFieldError } from './fieldContext.js';
 
 export type InputSize = 'sm' | 'md';
 
@@ -88,7 +89,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     inputSize = 'md',
     appearance = 'default',
     width = 'full',
-    error = false,
+    error: errorProp,
     className = '',
     containerClassName = '',
     leading,
@@ -101,6 +102,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   ref,
 ) {
   useFocusModality();
+  const error = useFieldError(errorProp);
   const field = useRef<HTMLInputElement | null>(null);
   /*
    * Whether an UNCONTROLLED field holds anything. A controlled one is read

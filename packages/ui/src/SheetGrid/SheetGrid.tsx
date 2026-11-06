@@ -33,6 +33,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -42,6 +43,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
+  type Ref,
 } from 'react';
 import { ArrowDownGlyph, ArrowUpGlyph, CircleAlertGlyph, EllipsisGlyph, PlusGlyph, RotateCcwClockGlyph, TrashGlyph } from '@crewlethq/icons/glyphs';
 import { Avatar } from '../Avatar/index.js';
@@ -114,6 +116,16 @@ export type SheetGridMode = 'edit' | 'read';
 export interface SheetCellRef {
   rowId: string;
   field: string;
+}
+
+/** What a host can do to the grid from outside it. */
+export interface SheetGridHandle {
+  /**
+   * Makes a cell the active cell, scrolls it into view and gives it focus:
+   * the row a host just added, or a cell a link names. A row the host adds in
+   * the same update is found once it is drawn.
+   */
+  focusCell: (cell: SheetCellRef) => void;
 }
 
 export interface SheetGridProps {
@@ -194,6 +206,8 @@ export interface SheetGridProps {
   /** A BCP 47 tag for numbers and dates; the reader's own locale when absent. */
   locale?: string | undefined;
   className?: string | undefined;
+  /** The grid's handle: see [SheetGridHandle]. */
+  ref?: Ref<SheetGridHandle> | undefined;
   labels?: Partial<SheetLabels> | undefined;
   presenceLabels?: Partial<PresenceLabels> | undefined;
 }
@@ -251,6 +265,7 @@ export function SheetGrid({
   className,
   labels: labelOverrides,
   presenceLabels: presenceOverrides,
+  ref,
 }: SheetGridProps) {
   const id = useId();
   const labels = useMemo(() => sheetLabels(labelOverrides), [labelOverrides]);
@@ -542,6 +557,10 @@ export function SheetGrid({
     },
     [focusCell],
   );
+
+  // A host had no way to move the cursor, so a row it added left focus on
+  // its Add row button and typing reached the page's shortcuts.
+  useImperativeHandle(ref, () => ({ focusCell: (cell) => moveTo({ rowId: cell.rowId, field: cell.field }) }), [moveTo]);
 
   // Focus is the truth about where the reader is: a cell focused by a press,
   // a screen reader or a script becomes the active cell. A move of the grid's

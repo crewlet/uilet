@@ -292,6 +292,9 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
     else if (ref) ref.current = el;
   };
 
+  // The field's width step bounds the wrapper too, so the list matches it.
+  const stepClass = rest.width && rest.width !== 'full' ? `crewlet-combobox--w-${rest.width}` : undefined;
+
   const row = (option: ComboboxOption, index: number, picked: boolean) => (
     <div
       key={option.value}
@@ -320,7 +323,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
   if (inline) {
     const listed = offered.length > 0 || renderList !== undefined;
     return (
-      <div className={cx('crewlet-combobox', 'crewlet-combobox--inline', containerClassName)}>
+      <div className={cx('crewlet-combobox', 'crewlet-combobox--inline', stepClass, containerClassName)}>
         <Input
           {...rest}
           ref={fieldRef}
@@ -368,7 +371,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
   const announcesRole = rest.type !== 'password' || lists;
 
   return (
-    <div className={cx('crewlet-combobox', containerClassName)} ref={listbox.anchorRef}>
+    <div className={cx('crewlet-combobox', stepClass, containerClassName)} ref={listbox.anchorRef}>
       <Input
         {...rest}
         ref={fieldRef}

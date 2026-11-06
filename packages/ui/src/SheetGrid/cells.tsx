@@ -27,7 +27,7 @@ import { CheckGlyph, CircleAlertGlyph, StarGlyph } from '@crewlethq/icons/glyphs
 import { isCrewletCharacter } from '@crewlethq/icons/characters';
 import { Avatar } from '../Avatar/index.js';
 import { Button } from '../Button/index.js';
-import { isComposing } from '../Layer/index.js';
+import { isComposing, LAYER_GAP, viewportBounds } from '../Layer/index.js';
 import {
   checkValue,
   displayText,
@@ -518,6 +518,31 @@ function ChoiceFace({ column, choice, context }: { column: SheetColumn; choice: 
 /** The Clear entry's id in a list: no option or person has an empty id. */
 const CLEAR = '';
 
+/**
+ * Where a list editor's panel stands, in window coordinates: over its cell
+ * (its top on the cell's top) where the window has room below, else ending on
+ * the cell's foot, else on whichever side has more, clamped inside the window.
+ * `measure` is handed the room (the larger side) as the panel's ceiling and
+ * answers the panel's size at it.
+ */
+export function placeListPanel(
+  cell: { top: number; bottom: number; left: number },
+  view: { x: number; y: number; width: number; height: number },
+  measure: (room: number) => { width: number; height: number },
+): { top: number; left: number } {
+  const top = view.y + LAYER_GAP;
+  const bottom = view.y + view.height - LAYER_GAP;
+  const below = bottom - cell.top;
+  const above = cell.bottom - top;
+  const own = measure(Math.max(below, above, 0));
+  const down = below >= own.height || below >= above;
+  const wanted = down ? cell.top : cell.bottom - own.height;
+  return {
+    top: Math.max(top, Math.min(wanted, bottom - own.height)),
+    left: Math.max(view.x + LAYER_GAP, Math.min(cell.left, view.x + view.width - LAYER_GAP - own.width)),
+  };
+}
+
 function ListEditor({ column, value, context, seed, label, onCommit, onCancel, side = 'below', conflict }: CellEditorProps) {
   const { labels } = context;
   const multiple = column.type === 'multiselect';
@@ -525,6 +550,8 @@ function ListEditor({ column, value, context, seed, label, onCommit, onCancel, s
   const errorId = useId();
   const filterRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const all = useMemo(() => choicesOf(column, context), [column, context]);
   // A FILTER ONLY WHERE THERE IS SOMETHING TO FILTER: four statuses are read
   // at a glance, and a box above them put typing between the reader and a pick.
@@ -558,6 +585,31 @@ function ListEditor({ column, value, context, seed, label, onCommit, onCancel, s
   useLayoutEffect(() => {
     focusInPlace(filterable ? filterRef.current : listRef.current, false);
   }, [filterable]);
+
+  // THE LIST LEAVES THE GRID'S SCROLLER: drawn fixed over its cell and placed
+  // by the window's room, so a short grid cannot clip it (Sheet grid CSS).
+  useLayoutEffect(() => {
+    const place = () => {
+      const cell = editorRef.current?.getBoundingClientRect();
+      const box = panelRef.current;
+      if (!cell || !box) return;
+      const spot = placeListPanel(cell, viewportBounds(), (room) => {
+        box.style.setProperty('--crewlet-sheet-editor-cell', `${cell.width}px`);
+        box.style.setProperty('--crewlet-sheet-editor-room', `${room}px`);
+        const own = box.getBoundingClientRect();
+        return { width: own.width, height: own.height };
+      });
+      box.style.setProperty('--crewlet-sheet-editor-top', `${spot.top}px`);
+      box.style.setProperty('--crewlet-sheet-editor-left', `${spot.left}px`);
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [shown.length]);
 
   const finish = (next: SheetValue, move: CellMove): boolean => {
     const problem = checkValue(column, next, context);
@@ -653,8 +705,8 @@ function ListEditor({ column, value, context, seed, label, onCommit, onCancel, s
   };
 
   return (
-    <div className={cx('crewlet-sheet-editor', 'crewlet-sheet-editor--list', `crewlet-sheet-editor--${side}`)} onBlur={leave.onBlur}>
-      <div className="crewlet-sheet-editor__panel crewlet-sheet-editor__panel--list">
+    <div ref={editorRef} className={cx('crewlet-sheet-editor', 'crewlet-sheet-editor--list', `crewlet-sheet-editor--${side}`)} onBlur={leave.onBlur}>
+      <div ref={panelRef} className="crewlet-sheet-editor__panel crewlet-sheet-editor__panel--list">
         {filterable ? (
           <input
             ref={filterRef}

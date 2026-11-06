@@ -86,6 +86,22 @@ describe('Skeleton', () => {
     expect([...periods]).toEqual(['calc(var(--motion-duration-slow) * 5)']);
   });
 
+  test('no animation moves a layout property', () => {
+    // A keyframe on left laid the box out on every frame and recorded a layout
+    // shift each time, for as long as anything was loading.
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Skeleton.css'), 'utf8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    const frames = [...css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)];
+    expect(frames.length).toBeGreaterThan(0);
+    for (const [, name, body] of frames) {
+      const properties = [...body!.matchAll(/([\w-]+)\s*:/g)].map((match) => match[1]);
+      for (const property of properties)
+        expect(property, name).not.toMatch(/^(left|right|top|bottom|inset.*|width|height|margin.*|padding.*)$/);
+    }
+  });
+
   test('carries no axe violation', async () => {
     const { container } = render(
       <main>
@@ -101,5 +117,33 @@ describe('Skeleton', () => {
       resultTypes: ['violations'],
     });
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
+});
+
+describe('a skeleton sized for its value', () => {
+  // Size was honoured by the box alone, so a card placeholder sized for one
+  // line stood a card's height and the layout jumped when the value landed;
+  // and a box stood 32px under whatever was above it unless told otherwise.
+  test('every shape is cut to the size it is given', () => {
+    const { container } = render(<Skeleton variant="card" width={120} height={16} />);
+    const root = container.querySelector<HTMLElement>('.crewlet-skeleton')!;
+    expect(root.style.width).toBe('120px');
+    expect(root.style.height).toBe('16px');
+    expect(root.style.overflow).toBe('hidden');
+    // Its own padding inside the size asked, not added to it.
+    expect(root.style.boxSizing).toBe('border-box');
+  });
+
+  test('an unsized shape keeps its own size, and a box stands flush', () => {
+    const { container } = render(
+      <>
+        <Skeleton variant="text" rows={2} />
+        <Skeleton variant="box" height={24} />
+      </>,
+    );
+    const [text, box] = [...container.querySelectorAll<HTMLElement>('.crewlet-skeleton')];
+    expect(text!.style.height).toBe('');
+    expect(box!.style.marginTop).toBe('0px');
+    expect(box!.querySelector<HTMLElement>('.crewlet-skeleton__glow-box')!.style.height).toBe('24px');
   });
 });

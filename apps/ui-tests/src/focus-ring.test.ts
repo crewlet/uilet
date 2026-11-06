@@ -172,6 +172,14 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'CommandPalette/CommandPalette.css | .crewlet-palette__step:focus-visible',
       // A link preview unfurled under a message: a bar and words, no box.
       'LinkCard/LinkCard.css | .crewlet-link-card:focus-visible',
+      // A receipt's "and 4 more", a plain text button in the line's words.
+      'DeliveryReceipt/DeliveryReceipt.css | .crewlet-delivery-receipt__more:focus-visible',
+      // A header fact's value and an org label's name clip their words, which
+      // cut a link's ring inside them, so the box draws the link's ring: text
+      // with no edge of its own, ringed as the link would be.
+      'ObjectHeader/ObjectHeader.css | .crewlet-fact-line__value--clamp:has(:focus-visible)',
+      'ObjectHeader/ObjectHeader.css | .crewlet-fact-line__value--token:has(:focus-visible)',
+      'OrgLabel/OrgLabel.css | .crewlet-org-label__name:has(:focus-visible)',
     ].sort(),
   );
 });
@@ -222,6 +230,11 @@ test('a control that draws an edge rings over it, never off it', () => {
     ['Tabs/Tabs.css | .crewlet-tabs--pill .crewlet-tabs__tab:focus-visible', '0'],
     ['Checkbox/Checkbox.css | .crewlet-checkbox__control:focus-visible', '0'],
     ['Switch/Switch.css | .crewlet-switch__track:has(.crewlet-switch__control:focus-visible)', '0'],
+    // A chosen card's edge is the accent, so its ring stands a step further in.
+    [
+      'ChoiceCards/ChoiceCards.css | .crewlet-choice-cards__card.is-checked:has(.crewlet-choice-cards__radio:focus-visible)',
+      'calc(var(--size-focus-ring-inset-offset) * 2)',
+    ],
   ];
   expect(expected.map(([key]) => `${key} = ${all.get(key)}`)).toEqual(
     expected.map(([key, offset]) => `${key} = ${offset}`),

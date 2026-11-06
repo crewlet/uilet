@@ -1,7 +1,7 @@
 import './SheetGrid.css';
 
 export { SheetGrid } from './SheetGrid.js';
-export type { SheetCellRef, SheetGridMode, SheetGridProps } from './SheetGrid.js';
+export type { SheetCellRef, SheetGridHandle, SheetGridMode, SheetGridProps } from './SheetGrid.js';
 export {
   CellDisplay,
   CellEditor,

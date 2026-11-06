@@ -43,7 +43,9 @@
   width: max-content;
   min-width: var(--crewlet-menu-floor, 0px);
   max-width: max(320px, var(--crewlet-menu-floor, 0px));
-  max-height: min(360px, 60vh);
+  /* The room beside the anchor, which the component measures; the old fixed
+     ceiling holds only until it is placed. */
+  max-height: var(--crewlet-menu-room, min(360px, 60vh));
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--color-surface-subtle);

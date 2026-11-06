@@ -12,6 +12,13 @@
   width: 100%;
 }
 
+/* A field with a width step is that wide, wrapper and list included: a 100%
+   wrapper took a whole toolbar row for a 200px field, and its list with it. */
+.crewlet-combobox--w-xs { max-width: var(--crewlet-input-width-xs); }
+.crewlet-combobox--w-sm { max-width: var(--crewlet-input-width-sm); }
+.crewlet-combobox--w-md { max-width: var(--crewlet-input-width-md); }
+.crewlet-combobox--w-lg { max-width: var(--crewlet-input-width-lg); }
+
 .crewlet-combobox__panel {
   /* Six rows and a scroll, as every list this package offers from a field. */
   --crewlet-combobox-panel-max-height: 12rem;

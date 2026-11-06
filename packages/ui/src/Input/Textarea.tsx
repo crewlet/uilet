@@ -12,6 +12,7 @@ import { announce } from '../Announcer/index.js';
 import { isComposing } from '../Layer/stack.js';
 import { cx } from '../utils/cx.js';
 import { useFocusModality } from '../utils/focusModality.js';
+import { useFieldError } from './fieldContext.js';
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   /** Marks the value as refused. Sets `aria-invalid`. */
@@ -60,7 +61,7 @@ export function foldLineBreaks(text: string): string {
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
   {
-    error = false,
+    error: errorProp,
     autoResize = false,
     trailing,
     singleLine = false,
@@ -75,6 +76,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   ref,
 ) {
   useFocusModality();
+  const error = useFieldError(errorProp);
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   useImperativeHandle(ref, () => localRef.current as HTMLTextAreaElement);
 

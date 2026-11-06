@@ -15,8 +15,9 @@
  * its ancestry beside the controls makes the bar break a line instead.
  *
  * Past the whole bar the trail SCROLLS rather than clipping as a box: the
- * ancestors never shrink, so once they alone are wider than the bar there is
- * nothing left to ellipsise, and a clip lands wherever the pixels ran out.
+ * ancestors shrink only to their stubs, so once those alone are wider than the
+ * bar there is nothing left to ellipsise, and a clip lands wherever the pixels
+ * ran out.
  *
  * ROOM FOR A LINK'S RING (`--crewlet-breadcrumb-ring-room`). A scrollport
  * clips whatever is drawn outside it, so a crumb draws its ring inside its
@@ -65,8 +66,17 @@
  * cannot reconstruct is the links out of it. So the ancestors keep their width
  * and the last part is the one that ellipsises.
  */
+/* EVERY CRUMB GIVES WAY, in proportion to its length: the page down to a
+   floor of 24ch and each ancestor to a 2ch stub, each cut with an ellipsis and
+   titled on hover. Kept whole, one long parent cut the page itself to "Pri..."
+   at 1440 and pushed it off a phone. */
 .crewlet-breadcrumb__part:not(:last-child) {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 2ch;
+}
+
+.crewlet-breadcrumb__part:last-child {
+  flex: 0 1 auto;
 }
 
 svg.crewlet-breadcrumb__separator {
@@ -165,7 +175,7 @@ a.crewlet-breadcrumb__crumb:focus-visible {
  * all. The floor is the last part's alone; an ancestor never shrinks.
  */
 .crewlet-breadcrumb__part:last-child > .crewlet-breadcrumb__here {
-  min-width: 5ch;
+  min-width: 24ch;
 }
 
 /*

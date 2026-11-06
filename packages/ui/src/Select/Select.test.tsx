@@ -578,6 +578,40 @@ test('a picker panel floors at its trigger, a field panel matches it', () => {
 });
 
 /*
+ * NEVER WIDER THAN THE WINDOW. A panel sized to its longest option (a long
+ * seat title) was 586px on a 390px phone and ran 200px past the right edge,
+ * because nothing capped it and a slide cannot fit what is wider than the room.
+ */
+test('a panel wider than the window is capped at the room and slid inside it', () => {
+  const restore = stubGeometry({ trigger: rect(5, 140), panel: rect(0, 586) });
+  const panelBox = (el: Element) => {
+    const max = Number.parseFloat((el as HTMLElement).style.maxWidth) || Infinity;
+    return rect(0, Math.min(586, max));
+  };
+  const real = Element.prototype.getBoundingClientRect;
+  const wrapped = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('crewlet-select__menu')) return panelBox(this);
+    return wrapped.call(this);
+  };
+  const width = window.innerWidth;
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+  try {
+    render(<Picker width="auto" />);
+    fireEvent.click(trigger());
+    const style = document.querySelector<HTMLElement>('.crewlet-select__menu')!.style;
+    expect(style.maxWidth).toBe('382px');
+    const left = Number.parseFloat(style.left);
+    expect(left).toBeGreaterThanOrEqual(4);
+    expect(left + 382).toBeLessThanOrEqual(390 - 4);
+  } finally {
+    Element.prototype.getBoundingClientRect = real;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+    restore();
+  }
+});
+
+/*
  * AN ELLIPSIS IS THREE DECLARATIONS OR IT IS NONE. `overflow: hidden` clips
  * what leaves the box and `text-overflow` replaces what a LINE cannot hold —
  * and neither does anything to text that is allowed to wrap. The option label
@@ -900,4 +934,20 @@ test("a taller panel is a taller list, and the panel keeps the window's cap", ()
   expect(menu).toMatch(/max-height:\s*min\(var\(--crewlet-select-menu-max-height\),\s*60vh\)/);
   const list = /\.crewlet-select__menu\s+\.crewlet-select__list\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(list).toMatch(/max-height:\s*none/);
+});
+
+test('a held select says why, to a screen reader and on hover, and opens nothing', () => {
+  // Disabled alone, a picker on an agent that is off looked available and
+  // could not say why it was not.
+  render(<Picker disabledReason="Turn the agent on to choose its repositories." />);
+  const button = trigger();
+  expect(button.hasAttribute('disabled')).toBe(false);
+  expect(button.getAttribute('aria-disabled')).toBe('true');
+  expect(button.getAttribute('title')).toBe('Turn the agent on to choose its repositories.');
+  const described = (button.getAttribute('aria-describedby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent);
+  expect(described).toContain('Turn the agent on to choose its repositories.');
+  fireEvent.click(button);
+  expect(screen.queryByRole('listbox')).toBeNull();
+  fireEvent.keyDown(button, { key: 'ArrowDown' });
+  expect(screen.queryByRole('listbox')).toBeNull();
 });

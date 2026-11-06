@@ -26,6 +26,8 @@ import {
 import { useHighlightRest, useListbox, useOptionKeys } from '../Listbox/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { useFieldError } from '../Input/fieldContext.js';
 import { returnFocus, useFocusModality } from '../utils/focusModality.js';
 
 export type SelectValue = string | number;
@@ -150,6 +152,12 @@ export interface SelectProps extends NativePassthrough {
   options: SelectOption[];
   placeholder?: string;
   disabled?: boolean;
+  /**
+   * Why it cannot be changed, for a picker that is there but held: it is
+   * disabled, says the reason to a screen reader (described by it) and on
+   * hover, rather than only looking unavailable.
+   */
+  disabledReason?: string | undefined;
   className?: string;
   menuClassName?: string;
   size?: SelectSize;
@@ -228,14 +236,15 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
     onChange,
     options,
     placeholder = 'Select an option',
-    disabled = false,
+    disabled: disabledProp = false,
+    disabledReason,
     className = '',
     menuClassName = '',
     size = 'md',
     width = 'full',
     align = 'left',
     active = false,
-    error = false,
+    error: errorProp,
     appearance = 'field',
     ariaLabel,
     searchable = false,
@@ -278,8 +287,16 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
     return [value];
   }, [value, multiple, options]);
 
+  const error = useFieldError(errorProp);
+  const held = disabledReason !== undefined && disabledReason !== '';
+  const disabled = disabledProp || held;
+  const reasonId = `${rootId}-reason`;
+  const reason = held ? <VisuallyHidden id={reasonId}>{disabledReason}</VisuallyHidden> : null;
+  const describedByAll = cx(native['aria-describedby'], held && reasonId) || undefined;
+
   if (mode === 'native') {
     return (
+      <>
       <NativeSelect
         ref={ref as React.Ref<HTMLSelectElement>}
         id={rootId}
@@ -294,11 +311,16 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
         error={error}
         ariaLabel={ariaLabel}
         {...native}
+        aria-describedby={describedByAll}
+        title={held ? disabledReason : undefined}
       />
+      {reason}
+      </>
     );
   }
 
   return (
+    <>
     <ListboxSelect
       ref={ref as React.Ref<HTMLButtonElement>}
       id={rootId}
@@ -323,7 +345,8 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
       renderMultiLabel={renderMultiLabel}
       emptyMessage={emptyMessage}
       onHighlight={onHighlight}
-      describedBy={native['aria-describedby']}
+      describedBy={describedByAll}
+      reason={held ? disabledReason : undefined}
       required={native.required}
       ariaRequired={native['aria-required']}
       focusOnMount={native.autoFocus}
@@ -336,12 +359,16 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
       onBlur={native.onBlur}
       onFocus={native.onFocus}
     />
+    {reason}
+    </>
   );
 });
 
 /* ── Native ──────────────────────────────────────────────────────────── */
 
 interface NativeSelectProps extends NativePassthrough {
+  /** Why it is held, on hover. */
+  title?: string | undefined;
   id: string;
   value: SelectValue | undefined;
   onChange: ((value: SelectValue, option: SelectOption) => void) | undefined;
@@ -453,6 +480,8 @@ interface ListboxSelectProps {
   emptyMessage: string;
   onHighlight: SelectProps['onHighlight'];
   describedBy: string | undefined;
+  /** Why it is held: drawn soft-disabled and titled with it. */
+  reason: string | undefined;
   required: boolean | undefined;
   ariaRequired: NativePassthrough['aria-required'];
   focusOnMount: boolean | undefined;
@@ -486,6 +515,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     emptyMessage,
     onHighlight,
     describedBy,
+    reason,
     required,
     ariaRequired,
     focusOnMount,
@@ -502,6 +532,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     top: number;
     width?: number | undefined;
     minWidth?: number | undefined;
+    maxWidth?: number | undefined;
   } | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   // The frame round the trigger: the bordered field a reader sees, and the
@@ -761,8 +792,13 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     // takes the trigger as a FLOOR instead, so it is never narrower than the
     // control it hangs from and never capped by it.
     const matches = width === 'full';
-    box.style.width = matches ? `${rect.width}px` : '';
-    box.style.minWidth = matches ? '' : `${rect.width}px`;
+    // NEVER WIDER THAN THE ROOM IT IS PLACED IN: sized to its longest option,
+    // a panel wider than a phone hung past the edge however it was slid.
+    const room = Math.max(0, host.width - 2 * LAYER_GAP);
+    const floor = matches ? undefined : Math.min(rect.width, room);
+    box.style.maxWidth = `${room}px`;
+    box.style.width = matches ? `${Math.min(rect.width, room)}px` : '';
+    box.style.minWidth = floor === undefined ? '' : `${floor}px`;
     const own = box.getBoundingClientRect();
     const local: PlacementRect = {
       x: (align === 'right' ? rect.right - own.width : rect.left) - (inHost ? host.x : 0),
@@ -789,12 +825,16 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       { width: own.width, height: own.height },
       { x: LAYER_GAP, y: LAYER_GAP, width: host.width - 2 * LAYER_GAP, height: host.height - 2 * LAYER_GAP },
     );
-    const applied = matches ? rect.width : undefined;
-    const floor = matches ? undefined : rect.width;
+    const applied = matches ? Math.min(rect.width, room) : undefined;
     setPlace((was) =>
-      was && was.left === spot.left && was.top === spot.top && was.width === applied && was.minWidth === floor
+      was &&
+      was.left === spot.left &&
+      was.top === spot.top &&
+      was.width === applied &&
+      was.minWidth === floor &&
+      was.maxWidth === room
         ? was
-        : { left: spot.left, top: spot.top, width: applied, minWidth: floor },
+        : { left: spot.left, top: spot.top, width: applied, minWidth: floor, maxWidth: room },
     );
   }, [align, close, container, width]);
 
@@ -1043,7 +1083,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       )}
       style={
         place
-          ? { left: place.left, top: place.top, width: place.width, minWidth: place.minWidth }
+          ? { left: place.left, top: place.top, width: place.width, minWidth: place.minWidth, maxWidth: place.maxWidth }
           : // Laid out but not painted, so its own height can be measured
             // before it is placed and no reader sees it in a corner first.
             { visibility: 'hidden' }
@@ -1135,10 +1175,18 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
         aria-describedby={describedBy}
         aria-invalid={error || undefined}
         aria-required={comboOnTrigger ? requiredForAria : undefined}
-        disabled={disabled}
+        // SOFT, NEVER NATIVE, where there is a reason: a disabled button takes
+        // no pointer, so its title would never show; it opens nothing either way.
+        disabled={disabled && reason === undefined}
+        aria-disabled={reason !== undefined || undefined}
+        title={reason}
         onBlur={onBlur}
         onFocus={onFocus}
-        onClick={() => (open ? close(false) : setOpen(true))}
+        onClick={() => {
+          if (disabled) return;
+          if (open) close(false);
+          else setOpen(true);
+        }}
         onKeyDown={onKeyDown}
       >
         {renderTrigger ? (

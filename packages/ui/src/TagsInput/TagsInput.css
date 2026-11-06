@@ -57,6 +57,8 @@
      height is what makes the row, so a field, a button and a select in one
      line are one height. */
   padding: 0 var(--spacing-3);
+  /* A placeholder wider than the box ends in an ellipsis rather than mid-glyph. */
+  text-overflow: ellipsis;
   font-family: inherit;
   font-size: var(--font-size-compact);
   line-height: var(--font-line-height-normal);

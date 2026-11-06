@@ -344,6 +344,12 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
   qualifier?: ReactNode;
   /** `danger` sets the qualifier in the danger ink, for a seat that has stopped. */
   qualifierTone?: InboxRowTone | undefined;
+  /**
+   * Where it happened ("in #release-coordination"), on a line of its own under
+   * the name and never clamped: inside the qualifier, a long name pushed the
+   * place past the head's two lines.
+   */
+  where?: ReactNode;
   /** At the end of the first line: when it arrived. */
   meta?: ReactNode;
   /**
@@ -440,6 +446,7 @@ export function InboxRow({
   title,
   qualifier,
   qualifierTone = 'default',
+  where,
   meta,
   leading,
   excerpt,
@@ -506,6 +513,7 @@ export function InboxRow({
     leading === undefined ? null : part('leading'),
     part('title'),
     hasQualifier ? part('qualifier') : null,
+    where === undefined ? null : part('where'),
     hasStatus || hasMeta ? part('end') : null,
     part('text'),
     hasOutcome ? part('outcome') : null,
@@ -549,6 +557,13 @@ export function InboxRow({
             ) : null}
           </span>
         </span>{' '}
+        {where === undefined ? null : (
+          <>
+            <span id={part('where')} className="crewlet-inbox-row__where">
+              {where}
+            </span>{' '}
+          </>
+        )}
         <span id={part('text')} className="crewlet-inbox-row__text">
           {children}
           {excerpt === undefined ? null : (

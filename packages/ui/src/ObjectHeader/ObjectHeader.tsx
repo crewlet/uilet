@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ArrowUpRightGlyph } from '@crewlethq/icons/glyphs';
 import { Link } from '../Link/index.js';
+import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
 
 /** Who last changed a value, and where. */
@@ -127,6 +128,18 @@ export interface FactLineProps {
  * NEVER "SET BY" UNDER NOTHING. A fact with no value is dropped, its
  * attribution with it.
  */
+/** A phrase is clamped at two lines; a token, a set and a whole reading are not. */
+const clamps = (fact: ObjectFact): boolean => !fact.token && !fact.whole && !fact.set;
+
+const valueOf = (fact: ObjectFact): ReactNode =>
+  fact.href ? (
+    <Link href={fact.href} size="inherit">
+      {fact.value}
+    </Link>
+  ) : (
+    fact.value
+  );
+
 export function FactLine({ facts, className }: FactLineProps) {
   const shown = facts.filter((fact) => fact.value !== null && fact.value !== undefined && fact.value !== '');
   if (shown.length === 0) return null;
@@ -148,15 +161,16 @@ export function FactLine({ facts, className }: FactLineProps) {
                 'crewlet-fact-line__value',
                 fact.token
                   ? 'crewlet-fact-line__value--token'
-                  : !fact.whole && !fact.set && 'crewlet-fact-line__value--clamp',
+                  : clamps(fact) && 'crewlet-fact-line__value--clamp',
               )}
             >
-              {fact.href ? (
-                <Link href={fact.href} size="inherit">
-                  {fact.value}
-                </Link>
+              {clamps(fact) ? (
+                // A kit Text clamps, so a cut value carries its words on hover.
+                <Text variant="inherit" clamp={2}>
+                  {valueOf(fact)}
+                </Text>
               ) : (
-                fact.value
+                valueOf(fact)
               )}
             </span>
             {fact.note ? <span className="crewlet-fact-line__note">{fact.note}</span> : null}
@@ -256,7 +270,11 @@ export function ObjectHeader({
         {within ? <span className="crewlet-object-header__id">{within}</span> : null}
       </div>
       <div className="crewlet-object-header__head">
-        <h2 className="crewlet-object-header__title">{title}</h2>
+        <h2 className="crewlet-object-header__title">
+          <Text variant="inherit" clamp={2} className="crewlet-object-header__title-text">
+            {title}
+          </Text>
+        </h2>
         {status ? <div className="crewlet-object-header__status">{status}</div> : null}
         {actions ? <div className="crewlet-object-header__actions">{actions}</div> : null}
       </div>

@@ -619,16 +619,20 @@ test('a hidden legend still names the group, and takes no line of its own', () =
   }
 });
 
-test('under 28rem of its own width a row gives its words the row, its buttons a line under them', () => {
+test('under 28rem of its own width a row of several buttons gives its words the row, its buttons a line under them', () => {
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ListInput.css'), 'utf8').replace(
     /\/\*[\s\S]*?\*\//g,
     '',
   );
   expect(css).toMatch(/\.crewlet-list-input__items \{[^}]*container:\s*crewlet-list-input \/ inline-size;/);
   const narrow = /@container crewlet-list-input \(width < 28rem\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
-  expect(narrow).toMatch(/\.crewlet-list-input__item \{\s*flex-wrap:\s*wrap;/);
-  expect(narrow).toMatch(/\.crewlet-list-input__item > \.crewlet-list-input__field \{\s*flex-basis:\s*calc\(100% - /);
-  expect(narrow).toMatch(/\.crewlet-list-input__item > \.crewlet-list-input__actions \{\s*margin-inline-start:\s*auto;/);
+  // Only a row whose actions hold two or more buttons wraps: a lone remove
+  // button wrapped under its words and gave every row an empty line.
+  const several = '\\.crewlet-list-input__item:has\\(> \\.crewlet-list-input__actions > :nth-child\\(2\\)\\)';
+  expect(narrow).toMatch(new RegExp(`${several} \\{\\s*flex-wrap:\\s*wrap;`));
+  expect(narrow).toMatch(new RegExp(`${several} > \\.crewlet-list-input__field \\{\\s*flex-basis:\\s*calc\\(100% - `));
+  expect(narrow).toMatch(new RegExp(`${several} > \\.crewlet-list-input__actions \\{\\s*margin-inline-start:\\s*auto;`));
+  expect(narrow).not.toMatch(/\.crewlet-list-input__item \{\s*flex-wrap/);
 });
 
 test('the handle focuses an item at the end of its words, and the new-item box', () => {

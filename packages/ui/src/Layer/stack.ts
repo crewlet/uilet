@@ -462,7 +462,9 @@ export function useModalLayer({ onClose, dismissable = true, initialFocus }: Mod
       // there left focus on the body.
       for (const el of back) {
         if (!(el instanceof HTMLElement) || !el.isConnected || el === document.body) continue;
-        if (returnFocus(el)) return;
+        // AN OPENER ON SCREEN IS NOT SCROLLED TO: focus() scrolled a page that
+        // needed no scroll (93px measured). One that has left the screen is.
+        if (returnFocus(el, { preventScroll: onScreen(el) })) return;
       }
     };
   }, [back]);
@@ -559,4 +561,10 @@ export function useBodyScrollLock(active: boolean): void {
 /** How many surfaces are on the stack. Exported for the package's own suites. */
 export function layerCount(): number {
   return shared.entries.length;
+}
+
+/** Whether any of `el` is inside the window. */
+function onScreen(el: HTMLElement): boolean {
+  const box = el.getBoundingClientRect();
+  return box.width > 0 && box.bottom > 0 && box.right > 0 && box.top < window.innerHeight && box.left < window.innerWidth;
 }

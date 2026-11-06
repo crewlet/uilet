@@ -172,9 +172,32 @@ describe('what a stack draws', () => {
     };
     const design = shown(22, 9, 0.02);
     expect(shown(AVATAR_SIZES.sm, rem('2xs'), 0.04)).toBeGreaterThanOrEqual(design);
-    // And the step under it does not, even at its own smaller face (0.45 of
-    // its box, Avatar.css), which is what makes sm the default.
+    // The step under it would not at the same 6px, even at its own smaller
+    // face (0.45 of its box, Avatar.css), which is what makes sm the default.
     expect(shown(AVATAR_SIZES.xs, AVATAR_SIZES.xs * 0.45, 0.04)).toBeLessThan(design);
+  });
+
+  test('every step, xs included, overlaps by no more than leaves two initials as clear as the design does', () => {
+    // A badge shows its box less the next badge's overlap (read through the
+    // real cascade) and its 2px cut-out. At xs a 6px overlap left 67% of the
+    // initials, and stacked initials read as broken words.
+    const tokens = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../../tokens/dist/css/tokens.css'), 'utf8');
+    const rem = (name: string) => Number(new RegExp(`--font-size-${name}:\\s*([\\d.]+)rem`).exec(tokens)?.[1] ?? 'NaN') * 16;
+    const type = { xs: AVATAR_SIZES.xs * 0.45, sm: rem('2xs'), md: rem('xs'), lg: rem('sm') };
+    const shown = (box: number, overlap: number, size: number, tracking: number) => {
+      const text = 2 * (0.6 + tracking) * size;
+      return Math.min(1, (box - overlap - 2 - (box - text) / 2) / text);
+    };
+    const design = shown(22, 6, 9, 0.02);
+    uninstall = installThemed('light', 'Avatar/Avatar.css', 'Avatar/AvatarStack.css');
+    for (const step of ['xs', 'sm', 'md', 'lg'] as const) {
+      cleanup();
+      const { container } = render(<AvatarStack members={AGENTS} size={step} />);
+      const second = container.querySelectorAll('.crewlet-avatar-stack__member')[1]!;
+      const overlap = -px(second, 'margin-inline-start');
+      expect(overlap, step).toBeGreaterThan(0);
+      expect(shown(AVATAR_SIZES[step], overlap, type[step], 0.04), step).toBeGreaterThanOrEqual(design);
+    }
   });
 
   test('each badge overlaps the one before it by 6px, cut out by a 2px ring of the ground', () => {

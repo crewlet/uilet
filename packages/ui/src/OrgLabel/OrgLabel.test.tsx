@@ -552,7 +552,8 @@ describe('the marks and the words', () => {
       const name = getComputedStyle(part(container, 'name'));
       expect(name.whiteSpace, layout).toBe('nowrap');
       expect(name.textOverflow, layout).toBe('ellipsis');
-      expect(name.overflow, layout).toBe('hidden');
+      // Clip, not hidden: it cuts without being a scroller a focus can scroll.
+      expect(name.overflow, layout).toBe('clip');
       cleanup();
     }
   });
@@ -672,4 +673,25 @@ describe('a live state on the mark', () => {
     render(<OrgLabel avatar={{ name: 'Dev', kind: 'agent' }} name="Dev" markStatus={<span data-testid="dot" />} />);
     expect(screen.getByTestId('dot').parentElement?.className).toBe('crewlet-org-label__status');
   });
+});
+
+test('a link in a cut name keeps a whole focus ring: the clipped name draws it', () => {
+  // The name clips (overflow) for its ellipsis, which cut a link's outset ring
+  // to an underline. jsdom matches no :focus-visible or :has(), so an
+  // attribute stands in for the first and the second is read from the sheet.
+  const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'OrgLabel.css'), 'utf8');
+  const uninstall = installCss(source.replace(/:focus-visible/g, '[data-focus-visible]').replace(/var\([^)]*\)/g, 'red'));
+  try {
+    render(<OrgLabel layout="row" name={<a href="#/org/seats/pm">Principal Product Manager for Learner Journeys</a>} />);
+    const link = screen.getByRole('link');
+    const name = link.closest('.crewlet-org-label__name')!;
+    // Clip, not hidden: a scroller a scripted focus could scroll sideways.
+    expect(getComputedStyle(name).overflow).toBe('clip');
+    link.setAttribute('data-focus-visible', '');
+    expect(getComputedStyle(link).outline).toBe('2px solid transparent');
+  } finally {
+    uninstall();
+  }
+  const sheet = source.replace(/\/\*[\s\S]*?\*\//g, '');
+  expect(sheet).toMatch(/\.crewlet-org-label__name:has\(:focus-visible\)\s*\{[^}]*outline:\s*2px solid var\(--color-focus\)/);
 });

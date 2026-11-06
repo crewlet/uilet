@@ -167,3 +167,25 @@ test("a mark stands 0.15em from its words, centred 0.275em above the baseline", 
   const em = (prop: string) => Number(new RegExp(`${prop}:\\s*(-?[\\d.]+)em`).exec(box)?.[1]);
   expect(em("vertical-align") + em("height") / 2).toBeCloseTo(0.275, 5);
 });
+
+test("what only a screen reader hears is pinned to its containing block, as VisuallyHidden is", () => {
+  // At its static position it stretched a scrolled page's document.
+  const said = rule(css("InlineRef.css"), ".crewlet-inline-ref__said");
+  expect(said).toMatch(/top:\s*0;/);
+  expect(said).toMatch(/left:\s*0;/);
+});
+
+test("an address wraps after its host: the mark keeps the host, and the path breaks anywhere", () => {
+  // The head was the first word, and an address is one word, so a long URL
+  // could never break and ran past its message.
+  const { container } = render(
+    <InlineRef href="https://example.com/a/very/long/path/to/a/report-2026-11-06" mark={<svg />} wrap>
+      https://example.com/a/very/long/path/to/a/report-2026-11-06
+    </InlineRef>,
+  );
+  expect(container.querySelector(".crewlet-inline-ref__head .crewlet-inline-ref__text")?.textContent).toBe(
+    "https://example.com",
+  );
+  expect(container.querySelector(".crewlet-inline-ref__rest")?.textContent).toBe("/a/very/long/path/to/a/report-2026-11-06");
+  expect(rule(css("InlineRef.css"), ".crewlet-inline-ref__rest")).toContain("overflow-wrap: anywhere");
+});

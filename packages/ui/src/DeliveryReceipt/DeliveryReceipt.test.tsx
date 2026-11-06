@@ -3,7 +3,7 @@
  * same line in the future tense over a composer: one paragraph a screen
  * reader hears at once, quiet except for a message that reached no agent.
  */
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, expect, test } from "vitest";
 import { installSheets } from "../../../../apps/ui-tests/src/cascade.js";
@@ -46,6 +46,7 @@ test("groups the seats by reason, in the order the routing reached them", () => 
         { id: "qa", name: "qa", reason: "every message" },
         { id: "sre", name: "sre", reason: "every message" },
       ]}
+      max={3}
     />,
   );
   expect(screen.getByText("Reached pm; qa, sre (every message)")).toBeTruthy();
@@ -156,4 +157,68 @@ test("carries no axe violation", async () => {
     resultTypes: ["violations"],
   });
   expect(result.violations).toEqual([]);
+});
+
+const FOLLOWERS = [
+  "Senior Web and Mobile App Engineer",
+  "Senior Backend Engineer",
+  "Senior Product Designer",
+  "Quality Lead",
+  "Release Manager",
+  "Support Lead",
+].map((name, i) => ({
+  id: `seat-${i}`,
+  name,
+  reason: "every message",
+  answered: i < 3,
+}));
+
+test("prints one name and counts the rest in a button that shows them all", () => {
+  const { container } = render(<DeliveryReceipt recipients={FOLLOWERS} />);
+  const line = container.querySelector(".crewlet-delivery-receipt")!;
+  expect(text(line)).toBe(
+    "Reached Senior Web and Mobile App Engineer (every message) and 5 more. " +
+      "Senior Web and Mobile App Engineer and 2 more answered",
+  );
+  const more = screen.getByRole("button", { name: "and 5 more" });
+  expect(more.getAttribute("aria-expanded")).toBe("false");
+
+  fireEvent.click(more);
+  expect(more.getAttribute("aria-expanded")).toBe("true");
+  expect(more.textContent).toBe("Show fewer");
+  expect(text(line)).toContain(
+    `Reached ${FOLLOWERS.map((r) => r.name).join(", ")} (every message)`,
+  );
+  expect(text(line)).toContain(
+    `${FOLLOWERS.slice(0, 3).map((r) => r.name).join(", ")} answered`,
+  );
+
+  fireEvent.click(more);
+  expect(more.getAttribute("aria-expanded")).toBe("false");
+});
+
+test("prints a single name past the cap rather than counting it", () => {
+  render(<DeliveryReceipt recipients={FOLLOWERS.slice(0, 2)} />);
+  expect(screen.queryByRole("button")).toBeNull();
+  expect(
+    screen.getByText(/Reached Senior Web and Mobile App Engineer, Senior Backend Engineer/),
+  ).toBeTruthy();
+});
+
+test("draws no button when every name fits under the cap", () => {
+  render(<DeliveryReceipt recipients={FOLLOWERS.slice(0, 1)} />);
+  expect(screen.queryByRole("button")).toBeNull();
+  render(<DeliveryReceipt recipients={FOLLOWERS} max={Infinity} />);
+  expect(screen.queryByRole("button")).toBeNull();
+});
+
+test("refuses a cap that is not a whole number of at least 1", () => {
+  expect(() => render(<DeliveryReceipt recipients={FOLLOWERS} max={0} />)).toThrow(RangeError);
+  expect(() => render(<DeliveryReceipt recipients={FOLLOWERS} max={1.5} />)).toThrow(RangeError);
+});
+
+test("a capped receipt carries no axe violation", async () => {
+  const { container } = render(<DeliveryReceipt recipients={FOLLOWERS} />);
+  const results = await axe.run(container);
+  expect(results.violations).toEqual([]);
 });

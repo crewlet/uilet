@@ -151,7 +151,12 @@ export function Toolbar({ label, mode = 'toolbar', sticky = false, className, ch
     if (stops.length === 0) return;
     const active = Math.min(at, stops.length - 1);
     stops.forEach((stop, index) => {
-      for (const owned of stop.owned) owned.tabIndex = index === active && owned === stop.focus ? 0 : -1;
+      for (const owned of stop.owned) {
+        // Written only when it differs: an idle re-render must not rewrite
+        // every button's tabindex, which is a mutation and a style recalc each.
+        const next = index === active && owned === stop.focus ? 0 : -1;
+        if (owned.getAttribute('tabindex') !== String(next)) owned.tabIndex = next;
+      }
     });
   });
 

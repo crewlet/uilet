@@ -8,6 +8,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { BrandSample, type BrandSampleColors } from './index.js';
 
 afterEach(cleanup);
@@ -155,4 +156,18 @@ test('carries no axe violation, as a doc and a slide', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test("the doc's logo takes the brand line's height, so a logo with no size of its own still draws", () => {
+  // A viewBox-only SVG has a ratio but no size; with only max sizes in the
+  // brand line's shrink-to-fit box it drew at 0 x 0.
+  const uninstall = installSheets('BrandSample/BrandSample.css');
+  try {
+    const { container } = render(<BrandSample kind="doc" mode="light" name="Acme" colors={BRAND} logo="blob:light" />);
+    const logo = getComputedStyle(container.querySelector('img')!);
+    expect(logo.height).toBe('100%');
+    expect(logo.width).toBe('auto');
+  } finally {
+    uninstall();
+  }
 });

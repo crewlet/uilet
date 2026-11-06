@@ -2,6 +2,7 @@ import { useId, type HTMLAttributes, type ReactNode } from 'react';
 import { Label } from './Label.js';
 import { CharacterCount, characterCountState, type CharacterCountLabels } from '../CharacterCount/index.js';
 import { cx } from '../utils/cx.js';
+import { FormFieldInvalidContext } from './fieldContext.js';
 
 /** A field's length limit, and how much of it the value uses. */
 export interface FormFieldLimit {
@@ -148,7 +149,9 @@ export const FormField = ({
 
   const body = (
     <>
-      {typeof children === 'function' ? children(field) : children}
+      <FormFieldInvalidContext.Provider value={invalid}>
+        {typeof children === 'function' ? children(field) : children}
+      </FormFieldInvalidContext.Provider>
       {/*
         * THE COUNT SHARES THE HELP LINE, at its end, rather than taking a line
         * of its own under it: the two are both about what the value may be,

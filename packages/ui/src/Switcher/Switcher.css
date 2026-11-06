@@ -283,9 +283,13 @@ b.crewlet-switcher__match {
   color: var(--color-text-primary);
 }
 
+/* The figure gives way after the label and never takes more than 40% of the
+   row, so a long figure (a unit's name) cannot squeeze the label to nothing. */
 .crewlet-switcher__meta {
   display: inline-flex;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 40%;
   align-items: center;
   gap: calc(var(--spacing-1) * 1.5);
   margin-left: var(--spacing-3);
@@ -294,6 +298,10 @@ b.crewlet-switcher__match {
   font-weight: var(--font-weight-regular);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.crewlet-switcher__figure {
+  flex: 0 1 auto;
 }
 
 /* A group's heading carries its count at its end. */

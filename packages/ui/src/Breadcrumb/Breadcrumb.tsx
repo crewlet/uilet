@@ -35,6 +35,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode, type RefObject } from 'react';
 import { ChevronRightGlyph } from '@crewlethq/icons/glyphs';
 import { KeyChip } from '../KeyChip/index.js';
+import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
 
 export interface BreadcrumbCrumb {
@@ -116,7 +117,9 @@ export function Breadcrumb({ crumbs, current, label = 'Breadcrumb', className, s
             {/* THE LABEL IS ITS OWN BOX. Text straight inside a flex container is
                 an anonymous flex item that `text-overflow` never reaches, so the
                 heading was cut mid-word at the bar's edge with no ellipsis. */}
-            <span className="crewlet-breadcrumb__text">{crumb.label}</span>
+            <Text variant="inherit" truncate className="crewlet-breadcrumb__text">
+              {crumb.label}
+            </Text>
           </>
         );
         const face = crumb.mono ? 'is-mono' : undefined;

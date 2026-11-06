@@ -343,23 +343,27 @@
   overflow: hidden;
 }
 
+/* The wave moves by transform, on the compositor: animating `left` laid the
+   box out on every frame and recorded a layout shift each time. */
 .crewlet-skeleton__glow-wave {
   position: absolute;
   top: 0;
-  left: -100%;
+  left: 0;
   width: 100%;
   height: 100%;
   background: linear-gradient(90deg, transparent, var(--color-surface-hover), transparent);
+  transform: translateX(-100%);
+  will-change: transform;
   animation: crewlet-skeleton-wave calc(var(--motion-duration-slow) * 5) var(--motion-easing-in-out) infinite;
 }
 
 @keyframes crewlet-skeleton-wave {
   0% {
-    left: -100%;
+    transform: translateX(-100%);
   }
 
   100% {
-    left: 100%;
+    transform: translateX(100%);
   }
 }
 

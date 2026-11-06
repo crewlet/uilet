@@ -335,23 +335,25 @@
  * stand at the end of a second, under the words. By the list's own width,
  * not the window's, so a narrow column on a wide screen is narrow too.
  */
+/* A row with ONE button keeps it on the words' first line: wrapped, a lone
+   remove button stood under the words and gave every row an empty line. */
 @container crewlet-list-input (width < 28rem) {
-  .crewlet-list-input__item {
+  .crewlet-list-input__item:has(> .crewlet-list-input__actions > :nth-child(2)) {
     flex-wrap: wrap;
     row-gap: 0;
   }
 
-  .crewlet-list-input__item > .crewlet-list-input__field {
+  .crewlet-list-input__item:has(> .crewlet-list-input__actions > :nth-child(2)) > .crewlet-list-input__field {
     flex-basis: calc(100% - var(--spacing-4) - var(--spacing-3));
   }
 
-  .crewlet-list-input__item--draggable > .crewlet-list-input__field {
+  .crewlet-list-input__item--draggable:has(> .crewlet-list-input__actions > :nth-child(2)) > .crewlet-list-input__field {
     flex-basis: calc(100% - var(--spacing-4) * 2 - var(--spacing-3) * 2);
   }
 
   /* On a line of their own the buttons have no first line to sit on, so they
      stand at their own height. */
-  .crewlet-list-input__item > .crewlet-list-input__actions {
+  .crewlet-list-input__item:has(> .crewlet-list-input__actions > :nth-child(2)) > .crewlet-list-input__actions {
     margin-inline-start: auto;
     min-block-size: auto;
   }

@@ -21,6 +21,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { contrast, flatten, OPAQUE_SURFACES, parseHex, TEXT_STEPS } from '@crewlethq/tokens/test/palette';
 import {
   channels,
+  installCss,
   installForcedColors,
   installSheets,
   installThemed,
@@ -629,3 +630,31 @@ function normalised(value: string): string {
   probe.remove();
   return out;
 }
+
+test('keyboard focus shows on the current step of a vertical stepper, over its hairline', () => {
+  // The current row's 1px hairline outline came later in the sheet at the
+  // focus rule's weight, so focus on the current step drew nothing new. jsdom
+  // matches no :focus-visible, so an attribute stands in for it.
+  const palette = themeColours('light');
+  const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Stepper.css'), 'utf8')
+    .replace(/:focus-visible/g, '[data-focus-visible]')
+    .replace(/var\((--[\w-]+)\)/g, (whole, name: string) => palette.get(name) ?? whole);
+  uninstall = installCss(sheet);
+  render(
+    <Stepper
+      label="Setup steps"
+      steps={[
+        { id: 'name', label: 'Name and harness' },
+        { id: 'method', label: 'Method' },
+      ]}
+      current="name"
+      orientation="vertical"
+      onSelect={() => {}}
+    />,
+  );
+  const step = screen.getByRole('button', { name: /Name and harness/ });
+  // jsdom keeps the outline shorthand as written, so it is read whole.
+  expect(getComputedStyle(step).outline).toMatch(/^1px solid/);
+  step.setAttribute('data-focus-visible', '');
+  expect(getComputedStyle(step).outline).toBe(`2px solid ${palette.get(token('color-focus'))}`);
+});

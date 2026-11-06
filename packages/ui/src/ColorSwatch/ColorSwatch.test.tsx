@@ -7,6 +7,11 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { contrast, parseHex } from '@crewlethq/tokens/test/palette';
+import { themeColour } from '../../../../apps/ui-tests/src/cascade.js';
 import { ColorSwatch } from './index.js';
 
 const writeText = vi.fn<(text: string) => Promise<void>>();
@@ -70,4 +75,18 @@ test('carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test("a swatch's edge stands off the card in both themes, so a colour like the card's still reads as a chip", () => {
+  // At the hover step the ring stood 1.5:1 off the card: a dark colour on a
+  // dark card read as a gap above its caption.
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ColorSwatch.css'), 'utf8');
+  const token = /\.crewlet-color-swatch__chip\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px var\((--[\w-]+)\)/.exec(sheet.replace(/\/\*[\s\S]*?\*\//g, ''))?.[1];
+  expect(token).toBeDefined();
+  for (const theme of ['light', 'dark'] as const) {
+    const edge = parseHex(themeColour(theme, token!))!;
+    // Spelled without its dashes: the variable check reads a quoted name as a declaration.
+    const card = parseHex(themeColour(theme, `--${'color-surface-subtle'}`))!;
+    expect(contrast(edge, card), theme).toBeGreaterThanOrEqual(1.9);
+  }
 });

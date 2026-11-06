@@ -9,10 +9,12 @@ import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import axe from 'axe-core';
-import { useState } from 'react';
+import { createRef, useState } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import type { SheetCellPresence, SheetColumn, SheetEdit, SheetRow, SheetSort } from '../SheetModel/index.js';
-import { SheetGrid, type SheetGridProps } from './index.js';
+import { installAtWidth } from '../../../../apps/ui-tests/src/cascade.js';
+import { placeListPanel } from './cells.js';
+import { SheetGrid, type SheetGridHandle, type SheetGridProps } from './index.js';
 
 afterEach(cleanup);
 
@@ -907,4 +909,83 @@ describe('column settings', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add column' })).toBeNull();
   });
+});
+
+describe('a list editor leaves the grid', () => {
+  /*
+   * Absolute inside its cell, a choice list was clipped by the grid's own
+   * scroller: a three-row sheet showed one person of fifteen. The panel is
+   * fixed over its cell and placed by the window's room instead.
+   */
+  test('is fixed, not absolute, on a wide screen, and the phone keeps its bottom sheet', () => {
+    // Wide: placed by its measured top; a phone: the sheet's foot, top auto.
+    for (const [width, top] of [
+      [1440, '0px'],
+      [390, 'auto'],
+    ] as const) {
+      const uninstall = installAtWidth(width, 'light', 'SheetGrid/SheetGrid.css');
+      try {
+        cleanup();
+        render(<Host />);
+        act(() => cell(1, 3).focus());
+        key(focused(), 'g');
+        const panel = screen.getByRole('listbox').closest('.crewlet-sheet-editor__panel')!;
+        expect(getComputedStyle(panel).position, String(width)).toBe('fixed');
+        expect(getComputedStyle(panel).top, String(width)).toBe(top);
+      } finally {
+        uninstall();
+      }
+    }
+  });
+
+  test('stands over its cell where the window has room below, else ends on its foot, inside the window', () => {
+    const view = { x: 0, y: 0, width: 1440, height: 900 };
+    const size = (height: number) => () => ({ width: 224, height });
+    // Room below: its top on the cell's top, whatever the grid's own height.
+    expect(placeListPanel({ top: 160, bottom: 192, left: 300 }, view, size(256))).toEqual({ top: 160, left: 300 });
+    // Near the window's foot: it ends on the cell's foot.
+    expect(placeListPanel({ top: 800, bottom: 832, left: 300 }, view, size(256))).toEqual({ top: 576, left: 300 });
+    // Near the right edge: slid back inside the window.
+    expect(placeListPanel({ top: 160, bottom: 192, left: 1400 }, view, size(256)).left).toBe(1440 - 4 - 224);
+    // Taller than either side: clamped inside the window, start in view.
+    expect(placeListPanel({ top: 400, bottom: 432, left: 0 }, view, size(2000)).top).toBe(4);
+  });
+
+  test('is measured under the room beside its cell as its ceiling', () => {
+    let room = 0;
+    placeListPanel({ top: 160, bottom: 192, left: 0 }, { x: 0, y: 0, width: 1440, height: 900 }, (r) => {
+      room = r;
+      return { width: 224, height: 256 };
+    });
+    expect(room).toBe(900 - 4 - 160);
+  });
+});
+
+test('a host moves the cursor through the handle, to a row it has just added', () => {
+  // With no way to place the cursor, a row added from Add row left focus on
+  // the button, and typing reached the page's shortcuts.
+  const handle = createRef<SheetGridHandle>();
+  function Adding() {
+    const [rows, setRows] = useState(initial);
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => {
+            setRows((before) => [...before, { id: 'hooli', values: { vendor: 'Hooli' } }]);
+            handle.current?.focusCell({ rowId: 'hooli', field: 'vendor' });
+          }}
+        >
+          Add a vendor
+        </button>
+        <SheetGrid ref={handle} label="Vendor scorecard" columns={columns} rows={rows} people={people} onEdit={() => {}} />
+      </>
+    );
+  }
+  render(<Adding />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add a vendor' }));
+  expect(focused().getAttribute('role')).toBe('gridcell');
+  expect(focused().textContent).toContain('Hooli');
+  act(() => handle.current?.focusCell({ rowId: 'acme', field: 'vendor' }));
+  expect(focused().textContent).toContain('Acme Corp');
 });

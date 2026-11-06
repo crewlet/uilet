@@ -91,11 +91,24 @@
 
 .crewlet-person-row__name {
   display: inline-flex;
+  flex: 0 1 auto;
   align-items: center;
   gap: var(--spacing-2);
   min-width: 0;
   font-weight: var(--font-weight-regular);
   white-space: nowrap;
+}
+
+/* The name is its own box that shrinks and cuts with an ellipsis (its words
+   on hover), so a long name never runs over its detail or past the row. */
+.crewlet-person-row__label {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* On one line the detail gives way first, so the name keeps the room. */
+.crewlet-person-row--compact .crewlet-person-row__detail {
+  flex: 0 4 auto;
 }
 
 .crewlet-person-row__detail {

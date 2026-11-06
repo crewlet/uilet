@@ -933,6 +933,29 @@
   gap: var(--spacing-2);
 }
 
+/*
+ * A LIST LEAVES THE GRID'S SCROLLER. Absolute inside a cell, the panel was
+ * clipped by the grid's own scroller and grew its scroll height, so a short
+ * sheet showed one of fifteen people. It is fixed over its cell instead, at
+ * the place and under the ceiling the editor measures against the window.
+ */
+@media (width >= 640px) {
+  .crewlet-sheet-editor.crewlet-sheet-editor--list .crewlet-sheet-editor__panel {
+    position: fixed;
+    top: var(--crewlet-sheet-editor-top, 0);
+    bottom: auto;
+    left: var(--crewlet-sheet-editor-left, 0);
+    z-index: var(--z-index-popover);
+    min-width: max(var(--crewlet-sheet-editor-cell, 0px), 14rem);
+    max-height: var(--crewlet-sheet-editor-room, none);
+  }
+
+  .crewlet-sheet-editor.crewlet-sheet-editor--list .crewlet-sheet-editor__list {
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+}
+
 /* A PHONE: the list and long text editors open as a sheet from the bottom of
    the screen rather than from a cell a thumb has to keep in view. */
 @media (width < 640px) {

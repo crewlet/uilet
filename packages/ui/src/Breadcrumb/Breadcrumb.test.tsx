@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
 import { Breadcrumb, type BreadcrumbCrumb } from './index.js';
@@ -162,13 +162,15 @@ describe('measured from what it holds', () => {
   });
 });
 
-test('the stylesheet floors the trail, keeps the ancestors whole and gives the cut to the page', () => {
+test('the stylesheet floors the trail and gives the cut to the ancestors before the page', () => {
   const trailRule = /\.crewlet-breadcrumb\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(trailRule).toMatch(/flex:\s*1 100 0/);
   expect(trailRule).toMatch(/min-width:\s*min\(100%,\s*max\(20ch,\s*var\(--crewlet-breadcrumb-floor,\s*0px\)\)\)/);
   expect(trailRule).toMatch(/overflow-x:\s*auto/);
-  expect(css).toMatch(/\.crewlet-breadcrumb__part:not\(:last-child\)\s*\{[^}]*flex:\s*0 0 auto/);
-  expect(css).toMatch(/\.crewlet-breadcrumb__part:last-child > \.crewlet-breadcrumb__here\s*\{[^}]*min-width:\s*5ch/);
+  expect(css).toMatch(/\.crewlet-breadcrumb__part:not\(:last-child\)\s*\{[^}]*flex:\s*0 1 auto;\s*min-width:\s*2ch/);
+  expect(css).toMatch(/\.crewlet-breadcrumb__part:last-child\s*\{[^}]*flex:\s*0 1 auto/);
+  // The page keeps 24ch of its words before it gives way past them.
+  expect(css).toMatch(/\.crewlet-breadcrumb__part:last-child > \.crewlet-breadcrumb__here\s*\{[^}]*min-width:\s*24ch/);
 });
 
 // ON A PHONE THE WORKSPACE'S CRUMB IS ITS GLYPH, and its word stays for a
@@ -212,4 +214,23 @@ test('a heading whose subject changes keeps its element, so the control in it ke
   rerender(trail('Product and Engineering'));
   expect(screen.getByRole('button', { name: 'Product and Engineering' })).toBe(button);
   expect(document.activeElement).toBe(button);
+});
+
+test('a cut crumb carries its words on hover', () => {
+  // Kept whole, a long parent cut the page itself to "Pri..." and pushed it
+  // off a phone; ancestors now give way too, cut with an ellipsis.
+  render(
+    <Breadcrumb
+      crumbs={[
+        { label: 'Company', href: '#/company' },
+        { label: 'Learner Community, Content Rights and Trust and Safety Operations', href: '#/company/unit' },
+        { label: 'Principal Product Manager for Learner Journeys' },
+      ]}
+    />,
+  );
+  const words = screen.getByText('Learner Community, Content Rights and Trust and Safety Operations');
+  Object.defineProperty(words, 'clientWidth', { configurable: true, value: 40 });
+  Object.defineProperty(words, 'scrollWidth', { configurable: true, value: 420 });
+  fireEvent.mouseEnter(words);
+  expect(words.getAttribute('title')).toBe('Learner Community, Content Rights and Trust and Safety Operations');
 });

@@ -7,6 +7,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { Switch } from '../Switch/index.js';
 import { PersonRow } from './index.js';
 
@@ -115,4 +116,53 @@ test('a list of rows carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+const LONG = 'Accessibility Auditor for Screen Readers, Keyboard Navigation and Colour Contrast';
+
+/** Lays the element out as cut: jsdom measures nothing, so the box is given. */
+function cutTo(element: Element, client: number, scroll: number) {
+  Object.defineProperty(element, 'clientWidth', { configurable: true, value: client });
+  Object.defineProperty(element, 'scrollWidth', { configurable: true, value: scroll });
+}
+
+test.each(['default', 'compact'] as const)('a long %s name shrinks and cuts in its own box, with its words on hover', (density) => {
+  const uninstall = installSheets('Text/Text.css', 'PersonRow/PersonRow.css');
+  try {
+    render(
+      <ul role="listbox" aria-label="Mention">
+        <PersonRow as="option" density={density} avatar={<span />} name={LONG} detail="@a11y" />
+      </ul>,
+    );
+    const label = screen.getByText(LONG);
+    expect(label.classList.contains('crewlet-person-row__label')).toBe(true);
+    const style = getComputedStyle(label);
+    expect(style.overflow).toBe('hidden');
+    expect(style.textOverflow).toBe('ellipsis');
+    expect(style.minWidth).toBe('0px');
+    expect(style.flexShrink).toBe('1');
+    expect(getComputedStyle(label.parentElement!).minWidth).toBe('0px');
+
+    cutTo(label, 200, 540);
+    fireEvent.mouseEnter(label);
+    expect(label.getAttribute('title')).toBe(LONG);
+  } finally {
+    uninstall();
+  }
+});
+
+test('on one line the detail gives way before the name', () => {
+  const uninstall = installSheets('Text/Text.css', 'PersonRow/PersonRow.css');
+  try {
+    const { container } = render(
+      <ul role="listbox" aria-label="Mention">
+        <PersonRow as="option" density="compact" avatar={<span />} name={LONG} detail="release-coordination-autumn" />
+      </ul>,
+    );
+    const name = container.querySelector('.crewlet-person-row__name')!;
+    const detail = container.querySelector('.crewlet-person-row__detail')!;
+    expect(Number(getComputedStyle(detail).flexShrink)).toBeGreaterThan(Number(getComputedStyle(name).flexShrink));
+  } finally {
+    uninstall();
+  }
 });

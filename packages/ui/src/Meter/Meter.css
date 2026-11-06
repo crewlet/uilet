@@ -109,6 +109,12 @@
   font-size: var(--font-size-2xs);
 }
 
+/* A bar has no content to size it, so in a column sized to its content the
+   compact meter collapsed to its 4px fill and every reading looked alike. */
+.crewlet-meter.crewlet-meter--compact {
+  min-width: 4rem;
+}
+
 /*
  * The bar arrives at its width rather than growing into it. A value that is
  * pushed every second would otherwise be permanently in motion, which is the

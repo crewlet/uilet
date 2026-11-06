@@ -15,6 +15,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { Announcer } from '../Announcer/index.js';
 import { FormField } from '../Input/index.js';
 import { Modal } from '../Modal/index.js';
@@ -394,4 +395,16 @@ test('the chips and the open list carry no violation', async () => {
   fireEvent.keyDown(box(), { key: 'ArrowDown' });
   expect(screen.getByRole('listbox', { name: 'Manages' })).toBeTruthy();
   expect(await auditPage()).toEqual([]);
+});
+
+test("a placeholder wider than the box ends in an ellipsis, not mid-glyph", () => {
+  const uninstall = installSheets('TagsInput/TagsInput.css');
+  try {
+    const { container } = render(
+      <TagsInput label="Repositories" aria-label="Repositories" value={[]} onChange={() => {}} placeholder="All installed repositories in the organisation" />,
+    );
+    expect(getComputedStyle(container.querySelector('.crewlet-tags-input__box')!).textOverflow).toBe('ellipsis');
+  } finally {
+    uninstall();
+  }
 });

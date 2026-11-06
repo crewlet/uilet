@@ -26,8 +26,10 @@
  * below, and Input.test.tsx holds all of them to it.
  */
 
-.crewlet-input {
-  /* The width steps, named for what they hold. See InputWidth. */
+/* The width steps, named for what they hold. See InputWidth. A Combobox is
+   an Input in a wrapper, and the wrapper takes the same step (Combobox.css). */
+.crewlet-input,
+.crewlet-combobox {
   --crewlet-input-width-xs: 140px;
   --crewlet-input-width-sm: 200px;
   --crewlet-input-width-md: 320px;
@@ -35,7 +37,9 @@
      the knowledge search asks for plain text and its own placeholder runs to
      sixty characters, which is what this step is measured against. */
   --crewlet-input-width-lg: 520px;
+}
 
+.crewlet-input {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -478,10 +482,11 @@
  * fieldset legend and the read-only field's label, because those three ARE
  * the same label in three markup positions.
  */
+/* INLINE CONTENT, not a flex row: as flex items the words and their note
+   stood apart, so a label that wrapped left "(OPTIONAL)" beside it as a column
+   of its own. The note carries its own space and follows the last word. */
 .crewlet-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
+  display: inline-block;
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   letter-spacing: var(--font-letter-spacing-wide);
@@ -519,9 +524,8 @@
 }
 
 .crewlet-label__text {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
+  display: block;
+  min-width: 0;
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   letter-spacing: var(--font-letter-spacing-wide);
@@ -535,6 +539,7 @@
  * a rule about whether the form can be saved.
  */
 .crewlet-label__required {
+  margin-inline-start: var(--spacing-1);
   color: var(--color-feedback-danger-ink);
   font-weight: var(--font-weight-bold);
 }

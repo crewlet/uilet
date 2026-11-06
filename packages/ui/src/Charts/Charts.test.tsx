@@ -1113,6 +1113,34 @@ test('a round scale is round, and a figure of nothing still has one', () => {
   expect(niceScale(0)).toEqual({ top: 4, step: 1 });
 });
 
+test('a count steps in whole units, so no two scale lines can read the same', () => {
+  // A peak of one turn stepped by 0.25, and rounded words read 0, 0, 1, 1, 1.
+  expect(niceScale(1, 4, true)).toEqual({ top: 1, step: 1 });
+  expect(niceScale(3, 4, true)).toEqual({ top: 3, step: 1 });
+  expect(niceScale(9, 4, true)).toEqual({ top: 9, step: 3 });
+  expect(niceScale(1100, 4, true)).toEqual({ top: 1500, step: 500 });
+  const whole = (value: number) => String(Math.round(value));
+  const { container } = render(
+    <StackedColumns
+      label="Turns per day"
+      series={[{ id: 'turns', name: 'Turns' }]}
+      buckets={[
+        { t: 0, values: { turns: 1 } },
+        { t: 86_400_000, values: { turns: 0 } },
+      ]}
+      formatScale={whole}
+    />,
+  );
+  const ticks = [...container.querySelectorAll('.crewlet-stacked-columns__tick')].map((tick) => tick.textContent);
+  expect(ticks).toEqual(['1', '0']);
+  // Fractional data keeps its fine steps.
+  cleanup();
+  const { container: money } = render(
+    <StackedColumns label="Spend" series={[{ id: 'usd', name: 'USD' }]} buckets={[{ t: 0, values: { usd: 0.3 } }]} />,
+  );
+  expect(money.querySelectorAll('.crewlet-stacked-columns__tick').length).toBeGreaterThan(2);
+});
+
 test('hiding a series never repaints the ones that are left', () => {
   /*
    * COLOUR FOLLOWS THE SERIES ID. The hue a reader learnt for "workers" is
@@ -1437,4 +1465,32 @@ test('a long series name in the tooltip ends before its value, which is never cu
   expect(name).toMatch(/overflow:\s*hidden/);
   const value = /\.crewlet-chart-tooltip__value\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(value).toMatch(/flex:\s*none/);
+});
+
+describe('a cut name', () => {
+  const TEAM = 'Product, Design and Engineering for Web, iOS and Android Study Apps';
+  const cut = (element: Element) => {
+    Object.defineProperty(element, 'clientWidth', { configurable: true, value: 120 });
+    Object.defineProperty(element, 'scrollWidth', { configurable: true, value: 397 });
+  };
+
+  test.each(['beside', 'stacked'] as const)('a %s bar list label carries its whole words on hover when cut', (layout) => {
+    render(<BarList layout={layout} data={[{ id: 'a', label: TEAM, value: 120 }]} />);
+    const words = screen.getByText(TEAM);
+    expect(words.closest('.crewlet-bar-list__label')).not.toBeNull();
+    fireEvent.mouseEnter(words);
+    expect(words.hasAttribute('title')).toBe(false);
+    cut(words);
+    fireEvent.mouseEnter(words);
+    expect(words.getAttribute('title')).toBe(TEAM);
+  });
+
+  test('a legend label carries its whole words on hover when cut', () => {
+    render(<Legend items={[{ id: 'a', label: TEAM, value: '412k' }]} />);
+    const words = screen.getByText(TEAM);
+    expect(words.closest('.crewlet-legend__label')).not.toBeNull();
+    cut(words);
+    fireEvent.mouseEnter(words);
+    expect(words.getAttribute('title')).toBe(TEAM);
+  });
 });

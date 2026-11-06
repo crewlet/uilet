@@ -562,3 +562,15 @@ describe('Meter', () => {
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
 });
+
+test('a compact meter keeps a readable width in a column sized to its content', () => {
+  // A bar has no content of its own, so a shrink column gave it 0px and it
+  // drew only its 4px fill: five of six read the same as none.
+  const uninstall = installSheets('Meter/Meter.css');
+  try {
+    const { container } = render(<Meter label="Readiness" value={5} max={6} size="compact" hideLabel />);
+    expect(getComputedStyle(container.querySelector('.crewlet-meter')!).minWidth).toBe('64px');
+  } finally {
+    uninstall();
+  }
+});
