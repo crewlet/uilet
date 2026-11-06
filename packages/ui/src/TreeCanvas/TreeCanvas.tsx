@@ -488,6 +488,8 @@ export interface TreeCanvasProps {
   controlsExtra?: ReactNode | undefined;
   /** Bars stacked under the canvas's control bar: see [CanvasProps.controlsBelow]. */
   controlsBelow?: ReactNode | undefined;
+  /** A bar in the corner opposite the control bar: see [CanvasProps.controlsStart]. */
+  controlsStart?: ReactNode | undefined;
   /** A note under the canvas's controls, about a key or a state: see [CanvasProps.hint]. */
   hint?: ReactNode | undefined;
   /**
@@ -505,6 +507,11 @@ export interface TreeCanvasProps {
   composing?: TreeComposing | null | undefined;
   /** The canvas control labels, for another language. */
   labels?: Partial<CanvasLabels> | undefined;
+  /**
+   * The smallest zoom a fit may take: see [CanvasProps.minZoom]. A chart that
+   * must always open whole, however wide, names a floor under the canvas's own.
+   */
+  minZoom?: number | undefined;
   ref?: Ref<TreeCanvasHandle> | undefined;
   className?: string | undefined;
 }
@@ -531,11 +538,13 @@ export function TreeCanvas({
   controlsPlacement,
   controlsExtra,
   controlsBelow,
+  controlsStart,
   hint,
   dimmed = false,
   ground,
   composing = null,
   labels,
+  minZoom,
   ref,
   className,
 }: TreeCanvasProps) {
@@ -1057,6 +1066,7 @@ export function TreeCanvas({
         controlsPlacement={controlsPlacement ?? (appearance === 'node' ? 'top-right' : undefined)}
         controlsExtra={controlsExtra}
         controlsBelow={controlsBelow}
+        controlsStart={controlsStart}
         hint={hint}
         dimmed={dimmed}
         ground={ground}
@@ -1067,6 +1077,7 @@ export function TreeCanvas({
          */
         largestItemWidth={widestCard}
         labels={labels}
+        minZoom={minZoom}
       >
         <div className="crewlet-tree-canvas__gap" ref={measure(GAP_PROBE)} aria-hidden="true" />
         <div className="crewlet-tree-canvas__margin" ref={measure(MARGIN_PROBE)} aria-hidden="true" />

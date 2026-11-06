@@ -437,7 +437,11 @@ function Harness({
   connector,
   groups,
   composing = null,
+  minZoom,
+  controlsStart,
 }: {
+  minZoom?: number | undefined;
+  controlsStart?: ReactNode | undefined;
   extra?: readonly string[] | undefined;
   state?: Record<string, string> | undefined;
   handle?: React.Ref<TreeCanvasHandle> | undefined;
@@ -472,6 +476,8 @@ function Harness({
       connector={connector}
       groups={groups}
       composing={composing}
+      minZoom={minZoom}
+      controlsStart={controlsStart}
       ref={handle}
     />
   );
@@ -2152,6 +2158,26 @@ describe('a node being composed', () => {
     expect(world()).not.toBe(before);
     view.rerender({ extra: wide, anchorNode: COMPANY, composing: null });
     expect(world()).toBe(before);
+  });
+
+  /* A CHART THAT MUST OPEN WHOLE names a floor under the canvas's own 25%. */
+  test('a chart wider than its pane opens whole when it names a lower floor', () => {
+    const wide = Array.from({ length: 40 }, (_, at) => `seat:extra${at}`);
+    const zoom = (container: HTMLElement) =>
+      Number(/scale\(([\d.e-]+)\)/.exec(container.querySelector<HTMLElement>('.crewlet-canvas__world')!.style.transform)![1]);
+    const floored = mount({ extra: wide });
+    expect(zoom(floored.container)).toBeCloseTo(0.25);
+    floored.unmount();
+    const whole = mount({ extra: wide, minZoom: 0.02 });
+    expect(zoom(whole.container)).toBeLessThan(0.25);
+    expect(zoom(whole.container)).toBeGreaterThan(0.02);
+  });
+
+  test('a start bar reaches the canvas, in the corner opposite its controls', () => {
+    const { container } = mount({ appearance: 'node', controlsStart: <span>Reporting view</span> });
+    const start = container.querySelector('.crewlet-canvas__controls--start')!;
+    expect(start.textContent).toBe('Reporting view');
+    expect(start.getAttribute('data-placement')).toBe('top-right');
   });
 
   /*

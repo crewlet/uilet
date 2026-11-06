@@ -743,6 +743,34 @@ test('the controls take the corner they are given, with the caller in the same g
   uninstall();
 });
 
+/* THE START BAR mirrors the control group across the canvas, in the same row. */
+test('a start bar stands in the opposite corner, on the surface and height of the control bar', () => {
+  const uninstall = installSheets('Canvas/Canvas.css');
+  const { container } = render(
+    <Canvas label="Organization chart" content={SMALL} controlsPlacement="top-right" controlsStart={<span>Reporting view</span>}>
+      <div />
+    </Canvas>,
+  );
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
+  const start = container.querySelector('.crewlet-canvas__controls--start')!;
+  expect(start.getAttribute('data-placement')).toBe('top-right');
+  expect(getComputedStyle(start).right).toBe('auto');
+  expect(px(start, 'left')).toBe(12);
+  expect(px(start, 'top')).toBe(12);
+  const bar = start.querySelector('.crewlet-canvas__bar')!;
+  expect(bar.textContent).toBe('Reporting view');
+  // The zoom bar is a small control, its well's padding and its hairlines.
+  expect(px(bar, 'height')).toBe(26 + 4 * 2 + 2);
+  // The zoom bar keeps its own corner.
+  expect(container.querySelectorAll('.crewlet-canvas__controls:not(.crewlet-canvas__controls--start)')).toHaveLength(1);
+  uninstall();
+});
+
+test('no start bar is drawn unless one is given', () => {
+  const { container } = mount();
+  expect(container.querySelector('.crewlet-canvas__controls--start')).toBeNull();
+});
+
 /*
  * THE BAR DOES NOT MOVE WHEN THE READOUT IS PRESSED. The field replaced the
  * button with an `<input>`, whose own intrinsic width is its `size` attribute:

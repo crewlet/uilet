@@ -313,6 +313,11 @@ export interface CanvasProps {
    */
   controlsBelow?: ReactNode | undefined;
   /**
+   * A bar of the caller's own in the opposite corner, on the control bar's
+   * surface, height and inset: a switch that changes what the canvas draws.
+   */
+  controlsStart?: ReactNode | undefined;
+  /**
    * A note under the controls, about a key or a state: "Press Esc to leave
    * fullscreen".
    *
@@ -413,6 +418,7 @@ export function Canvas({
   controlsExtra,
   controlsActualSize = false,
   controlsBelow,
+  controlsStart,
   hint,
   largestItemWidth,
   dimmed = false,
@@ -933,6 +939,11 @@ export function Canvas({
         {overlay ? <div className="crewlet-canvas__overlay">{overlay}</div> : null}
         <LayerNodeBridge onNode={setLayer} />
       </LayerHost>
+      {controlsStart ? (
+        <div className="crewlet-canvas__controls crewlet-canvas__controls--start" data-placement={controlsPlacement}>
+          <div className="crewlet-canvas__bar">{controlsStart}</div>
+        </div>
+      ) : null}
       {(controls || touchActive || controlsBelow || hint) && (
         /*
          * ONE GROUP IN ONE CORNER, as a column of bars: the zoom bar, then

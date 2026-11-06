@@ -10,6 +10,7 @@ import {
   OrgNodeLabel,
   OrgNodeLead,
   StatusDot,
+  Switch,
   Tag,
   TreeCanvas,
   type AvatarStatus,
@@ -21,6 +22,7 @@ import {
   type TreeModel,
 } from '@crewlethq/ui';
 import { CrewletFigure } from '@crewlethq/icons';
+import { BothThemes } from '../BothThemes';
 import {
   BuildingComplexGlyph,
   ChevronDownGlyph,
@@ -756,6 +758,36 @@ export const UnitGroups: Story = {
           onSelect={setSelected}
         />
       </div>
+    );
+  },
+};
+
+/**
+ * A chart that always opens whole, however narrow its pane: `minZoom` lowers
+ * the floor its fit stops at, so the first fit and Fit to view show every
+ * card, and Zoom in is how a reader reads one. `controlsStart` holds a small
+ * switch in the corner opposite the zoom bar, on the same surface and height.
+ */
+export const AlwaysWhole: Story = {
+  render: function AlwaysWholeStory() {
+    const [reporting, setReporting] = useState(false);
+    return (
+      <BothThemes>
+        <div style={{ height: '40vh', width: '360px' }}>
+          <TreeCanvas
+            label="Org chart"
+            nodes={SEAT_NODES}
+            cards={seatCards}
+            cardOf={(id) => id}
+            ranks="shared"
+            renderCard={(id, card) => <SeatCard id={id} card={card} />}
+            hasNodeMenu={() => false}
+            onNodeKey={() => true}
+            minZoom={0.02}
+            controlsStart={<Switch size="sm" label="Reporting view" checked={reporting} onCheckedChange={setReporting} />}
+          />
+        </div>
+      </BothThemes>
     );
   },
 };
