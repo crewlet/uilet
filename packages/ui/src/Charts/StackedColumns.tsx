@@ -108,12 +108,15 @@ export interface StackedColumnsProps {
  * that stops at the peak itself labels its lines 0, 0.33M and 0.66M, which
  * nobody reads at a glance.
  */
-export function niceScale(peak: number, steps = 4): { top: number; step: number } {
+export function niceScale(peak: number, steps = 4, whole = false): { top: number; step: number } {
   // Nothing recorded still draws a scale, in whole units, rather than a NaN.
   if (!(peak > 0)) return { top: steps, step: 1 };
   const raw = peak / steps;
   const magnitude = 10 ** Math.floor(Math.log10(raw));
-  const step = ([1, 2, 2.5, 5, 10].find((candidate) => candidate * magnitude >= raw) ?? 10) * magnitude;
+  const nice = ([1, 2, 2.5, 5, 10].find((candidate) => candidate * magnitude >= raw) ?? 10) * magnitude;
+  // A count never steps by a fraction: 0.25 turns of a peak of 1 printed the
+  // scale 0, 0, 1, 1, 1 once its words were rounded. Whole data, whole steps.
+  const step = whole ? Math.max(1, Math.ceil(nice)) : nice;
   /*
    * The arithmetic is binary floating point, so 3 × 0.1 is 0.30000000000000004;
    * twelve significant digits is far past anything a scale label shows and
@@ -208,7 +211,8 @@ export function StackedColumns({
    * The scale steps the whole range, and its ends are whole steps past the
    * tallest and the deepest column, so zero is always one of its lines.
    */
-  const { top, step } = niceScale(peak - trough);
+  const whole = buckets.every((bucket) => shown.every((one) => Number.isInteger(valueOf(bucket, one.id))));
+  const { top, step } = niceScale(peak - trough, 4, whole);
   const roof = trough < 0 ? Number((Math.ceil(peak / step - 1e-9) * step).toPrecision(12)) : top;
   const floor = trough < 0 ? Number((Math.floor(trough / step + 1e-9) * step).toPrecision(12)) : 0;
   const range = roof - floor;
