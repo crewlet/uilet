@@ -579,17 +579,19 @@ describe('what it draws', () => {
     const sections = [...strip.querySelectorAll('.crewlet-add-pill__section')];
     expect(sections).toHaveLength(3);
     /* THE NUMBERS, not the expressions. A section is one pointer target, the
-       slot is one per kind plus the pill's own boundary, and the slot is what
-       the row reserved: a section moved onto another step, or a kind added
-       without the count, takes this red. */
+       slot is one per kind, the 1px divider between each two and the pill's own
+       boundary, and the slot is what the row reserved: a section moved onto
+       another step, or a kind added without the count, takes this red. */
     const section = px(sections[0]!, 'width');
     const kinds = Number(
       getComputedStyle(table()).getPropertyValue('--crewlet-org-table-add-kinds').trim(),
     );
+    const dividers = [...strip.querySelectorAll('.crewlet-add-pill__divider')];
     expect(section).toBe(24);
     expect(kinds).toBe(sections.length);
+    expect(dividers).toHaveLength(kinds - 1);
     expect(px(document.querySelector('.crewlet-org-table__add')!, 'width')).toBe(
-      section * kinds + 2,
+      section * kinds + px(dividers[0]!, 'width') * dividers.length + 2,
     );
   });
 

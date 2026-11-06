@@ -44,14 +44,15 @@
   --crewlet-org-table-add-kinds: 3;
   /*
    * THE SLOT THE ADD SITS IN: the OPEN pill's own width, which is one pointer
-   * target per kind and the pill's own boundary. Reserved rather than
+   * target per kind, the 1px divider between each two, and the pill's own
+   * boundary. Reserved rather than
    * overflowed, because the pill used to open back over the row and cover the
    * Problems cell beside it, which is the check's own answer for that row; and
    * a pill that opened the other way would have run off the end of the row and
    * out of the grid's scroller.
    */
   --crewlet-org-table-add: calc(
-    var(--size-target-min) * var(--crewlet-org-table-add-kinds) + 2px
+    var(--size-target-min) * var(--crewlet-org-table-add-kinds) + (var(--crewlet-org-table-add-kinds) - 1) * 1px + 2px
   );
   /*
    * THE TRACK A ROW'S CONTROL STRIP TAKES, and why it is a number at all:
