@@ -16,7 +16,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { EllipsisVerticalGlyph } from '@crewlethq/icons/glyphs';
 import { themes } from '@crewlethq/tokens';
 import { contrast, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
-import { channels, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installCss, installSheets, installThemed, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { Button, ButtonLink } from './index.js';
 import { IconButton } from '../IconButton/index.js';
 import { SearchTrigger } from '../SearchTrigger/index.js';
@@ -508,6 +508,52 @@ describe('a held control says why in the kit Tooltip, when asked to', () => {
       expect(screen.getByRole('button', { name: 'More actions' }).getAttribute('title')).toBe('More actions');
     } finally {
       vi.useRealTimers();
+    }
+  });
+});
+
+describe("a button drawn as a link keeps its own ink", () => {
+  const sheet = () => readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Button.css'), 'utf8');
+
+  test('every variant is restated for an anchor in every link state', () => {
+    const css = sheet().replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const variant of ['primary', 'accent', 'secondary', 'outline', 'ghost', 'danger']) {
+      expect(css, variant).toContain(`a.crewlet-btn--${variant}.crewlet-btn--${variant}:is(:link, :visited, :hover, :active, :focus)`);
+    }
+  });
+
+  test("an application's link colours cannot recolour a link's label on hover", () => {
+    // `a:hover` (one class and an element) outweighed the variant's one class,
+    // so a primary link's white label turned dark on its violet: 3.2:1.
+    for (const theme of ['dark', 'light'] as const) {
+      const removeKit = installThemed(theme, 'Button/Button.css');
+      const removeApp = installCss('a:hover { color: rgb(255, 0, 0); } .crewlet-document a:hover { color: rgb(0, 0, 255); }');
+      try {
+        render(
+          <div className="crewlet-document">
+            <ButtonLink href="#/install" variant="primary">
+              Install
+            </ButtonLink>
+            <ButtonLink href="#/docs" variant="secondary">
+              Read the guide
+            </ButtonLink>
+          </div>,
+        );
+        const palette = themes[theme].color;
+        for (const [name, ink] of [
+          ['Install', palette.text.onAccent],
+          ['Read the guide', palette.text.primary],
+        ] as const) {
+          const link = screen.getByRole('link', { name });
+          const release = userAction(link, 'hover');
+          expect(channels(getComputedStyle(link).color), `${theme}: ${name}`).toEqual(parseHex(ink));
+          release();
+        }
+      } finally {
+        cleanup();
+        removeApp();
+        removeKit();
+      }
     }
   });
 });

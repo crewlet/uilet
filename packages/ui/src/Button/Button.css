@@ -50,6 +50,12 @@
 }
 
 /*
+ * A BUTTON'S INK IS NOT A LINK'S EITHER. Each variant is restated for an
+ * anchor in every link state at the weight of two classes and an element, so
+ * an application's `a:hover` (one class and an element) cannot turn a primary
+ * link's white label dark on its violet (3.2:1). A state rule of the variant's
+ * own (hover, pressed) is heavier still and wins as before.
+ *
  * A BUTTON IS NOT A LINK, WHATEVER ELEMENT IT IS. Several of these controls
  * are anchors, because a step that leaves for somebody else's site has to be a
  * real href, and a document baseline underlines a hovered link. That is right
@@ -200,7 +206,9 @@
  * repaints backgrounds and keeps borders.
  */
 .crewlet-btn--primary,
-.crewlet-btn--accent {
+.crewlet-btn--accent,
+a.crewlet-btn--primary.crewlet-btn--primary:is(:link, :visited, :hover, :active, :focus),
+a.crewlet-btn--accent.crewlet-btn--accent:is(:link, :visited, :hover, :active, :focus) {
   background: var(--color-brand-accent);
   color: var(--color-text-on-accent);
   border-color: transparent;
@@ -233,7 +241,8 @@
  * palette suite holds a visible step above the card, with the boundary a
  * step stronger again; pressed, the pressed overlay.
  */
-.crewlet-btn--secondary {
+.crewlet-btn--secondary,
+a.crewlet-btn--secondary.crewlet-btn--secondary:is(:link, :visited, :hover, :active, :focus) {
   background: var(--color-surface-subtle);
   --crewlet-indicator-ring: var(--color-surface-subtle);
   color: var(--color-text-primary);
@@ -253,7 +262,8 @@
 
 /* Outline: the branded secondary. Its ink is the accent's text step, never
    the fill, which is not a text colour on any surface. */
-.crewlet-btn--outline {
+.crewlet-btn--outline,
+a.crewlet-btn--outline.crewlet-btn--outline:is(:link, :visited, :hover, :active, :focus) {
   background: transparent;
   color: var(--color-brand-accent-ink);
   border-color: var(--color-brand-accent);
@@ -270,7 +280,8 @@
  * in one vocabulary. Under the pointer it takes the hover overlay, the one
  * every row takes, and its ink steps up to the primary text.
  */
-.crewlet-btn--ghost {
+.crewlet-btn--ghost,
+a.crewlet-btn--ghost.crewlet-btn--ghost:is(:link, :visited, :hover, :active, :focus) {
   background: transparent;
   color: var(--color-text-secondary);
   border-color: transparent;
@@ -296,7 +307,8 @@
  * answer first on every dialog that had one. The hue arrives on hover, as the
  * tint plus the full fill on the boundary.
  */
-.crewlet-btn--danger {
+.crewlet-btn--danger,
+a.crewlet-btn--danger.crewlet-btn--danger:is(:link, :visited, :hover, :active, :focus) {
   background: var(--color-surface-subtle);
   color: var(--color-feedback-danger-ink);
   border-color: var(--color-border-strong);
