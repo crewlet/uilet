@@ -64,8 +64,31 @@ test('a long name wraps rather than running under the action', () => {
     );
     const name = container.querySelector<HTMLElement>('.crewlet-room-row__name')!;
     expect(getComputedStyle(name).getPropertyValue('overflow-wrap')).toBe('anywhere');
-    expect(getComputedStyle(name).getPropertyValue('flex-wrap')).toBe('wrap');
+    // It wraps inside its shrinking title, not by moving the title to a new line.
+    const title = container.querySelector<HTMLElement>('.crewlet-room-row__title')!;
+    expect(getComputedStyle(title).getPropertyValue('min-width')).toBe('0px');
   } finally {
     remove();
+  }
+});
+
+test('a long name wraps inside its title, so the mark stays on its first line', () => {
+  // A wrapping name line moved the whole title to a line of its own on a
+  // phone, leaving the mark alone above it and the tag on a third line.
+  const uninstall = installSheets('RoomRow/RoomRow.css');
+  try {
+    const { container } = render(
+      <List aria-label="Rooms">
+        <RoomRow href="#/r/1" mark={<span>#</span>} name="rights-holder-requests-and-takedowns" tags={<span>Joined</span>} />
+      </List>,
+    );
+    const line = container.querySelector('.crewlet-room-row__name')!;
+    const title = container.querySelector('.crewlet-room-row__title')!;
+    expect(getComputedStyle(line).flexWrap).not.toBe('wrap');
+    expect(getComputedStyle(title).flexShrink).toBe('1');
+    expect(getComputedStyle(title).minWidth).toBe('0px');
+    expect(getComputedStyle(line).overflowWrap).toBe('anywhere');
+  } finally {
+    uninstall();
   }
 });

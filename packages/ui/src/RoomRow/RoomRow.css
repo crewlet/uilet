@@ -14,10 +14,11 @@
 }
 
 /* A room's name wraps rather than pushing past the row: one unbroken name (a
-   slug with no hyphen) otherwise runs over its own tag and into the action. */
+   slug with no hyphen) otherwise runs over its own tag and into the action.
+   It wraps INSIDE the title, which shrinks: a wrapping row moved the whole
+   title to a line of its own and left the mark alone on the first. */
 .crewlet-room-row__name {
   display: inline-flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-2);
   min-height: var(--spacing-5);
@@ -34,6 +35,7 @@
 }
 
 .crewlet-room-row__title {
+  flex: 0 1 auto;
   min-width: 0;
 }
 
