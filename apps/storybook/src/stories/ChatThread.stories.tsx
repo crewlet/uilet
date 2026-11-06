@@ -16,9 +16,12 @@ import {
 
 /**
  * A conversation as it grows: a focusable log with its live region off, which
- * follows the end while the reader is within 48px of it and stays put once
- * they scroll up, with a Jump to latest pill counting what arrived. The
- * browser's scroll anchoring is off and the anchoring is done in code.
+ * follows the end while the reader is at it, lets them leave with the first
+ * move up (scrolling back down to within 48px of the end follows again), and
+ * holds their place while what is above them changes, with a Jump to latest
+ * pill counting what arrived. The browser's scroll anchoring is off and the
+ * anchoring is done in code. `onFollowChange` tells a host when the reader
+ * leaves the end and comes back.
  */
 const meta: Meta<typeof ChatThread> = {
   title: 'UI/ChatThread',
@@ -170,3 +173,28 @@ export const WithoutTheJumpRow: Story = {
     </ChatThread>
   ),
 };
+
+function OlderLanding() {
+  const [older, setOlder] = useState(0);
+  const [following, setFollowing] = useState(true);
+  return (
+    <>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 8 }}>
+        <Button size="small" variant="secondary" onClick={() => setOlder((n) => n + 4)}>
+          Load older messages
+        </Button>
+        <span>{following ? 'At the latest' : 'Reading back'}</span>
+      </div>
+      <ChatThread label="Conversation" onFollowChange={setFollowing}>
+        {Array.from({ length: older + 8 }, (_, index) => exchange(100 + index - older)).flat()}
+      </ChatThread>
+    </>
+  );
+}
+
+/**
+ * Scroll up a little, then press Load older messages: the older messages land
+ * above and the message at the top of the view stays where it stood. The
+ * line above the log is the host reading `onFollowChange`.
+ */
+export const OlderMessagesLandAbove: Story = { render: () => <OlderLanding /> };
