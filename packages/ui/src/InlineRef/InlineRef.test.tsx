@@ -174,3 +174,18 @@ test("what only a screen reader hears is pinned to its containing block, as Visu
   expect(said).toMatch(/top:\s*0;/);
   expect(said).toMatch(/left:\s*0;/);
 });
+
+test("an address wraps after its host: the mark keeps the host, and the path breaks anywhere", () => {
+  // The head was the first word, and an address is one word, so a long URL
+  // could never break and ran past its message.
+  const { container } = render(
+    <InlineRef href="https://example.com/a/very/long/path/to/a/report-2026-11-06" mark={<svg />} wrap>
+      https://example.com/a/very/long/path/to/a/report-2026-11-06
+    </InlineRef>,
+  );
+  expect(container.querySelector(".crewlet-inline-ref__head .crewlet-inline-ref__text")?.textContent).toBe(
+    "https://example.com",
+  );
+  expect(container.querySelector(".crewlet-inline-ref__rest")?.textContent).toBe("/a/very/long/path/to/a/report-2026-11-06");
+  expect(rule(css("InlineRef.css"), ".crewlet-inline-ref__rest")).toContain("overflow-wrap: anywhere");
+});

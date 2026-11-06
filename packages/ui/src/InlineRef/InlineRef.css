@@ -19,6 +19,12 @@
   white-space: normal;
 }
 
+/* What follows the head breaks wherever it must, so an address's path (one
+   unbroken word) wraps inside any box rather than running past it. */
+.crewlet-inline-ref__rest {
+  overflow-wrap: anywhere;
+}
+
 /* The mark and the first word are one run, so no mark ever ends a line alone. */
 .crewlet-inline-ref__head {
   white-space: nowrap;

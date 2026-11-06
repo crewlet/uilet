@@ -53,6 +53,10 @@ function splitHead(children: ReactNode): { head: ReactNode; rest: ReactNode[] } 
   const parts = Children.toArray(children);
   const first = parts[0];
   if (typeof first === 'string') {
+    // An address is one word: its head is the scheme and host, and the path
+    // flows on and breaks, or the whole address could never wrap.
+    const address = /^[a-z][a-z0-9+.-]*:\/\/[^/\s]+(?=\/\S)/i.exec(first);
+    if (address) return { head: address[0], rest: [first.slice(address[0].length), ...parts.slice(1)] };
     const at = first.search(/\s/);
     if (at > 0) return { head: first.slice(0, at), rest: [first.slice(at), ...parts.slice(1)] };
   }
@@ -130,7 +134,7 @@ export function InlineRef({
         {kind === undefined ? null : <span className="crewlet-inline-ref__said">{`${kind}: `}</span>}
         <span className="crewlet-inline-ref__text">{head}</span>
       </span>
-      {rest.length === 0 ? null : <span className="crewlet-inline-ref__text">{rest}</span>}
+      {rest.length === 0 ? null : <span className="crewlet-inline-ref__text crewlet-inline-ref__rest">{rest}</span>}
       {/*
        * IN BRACKETS, because a browser reads hidden text out of flow as a
        * word of its own: a comma after the words was read with a space before
