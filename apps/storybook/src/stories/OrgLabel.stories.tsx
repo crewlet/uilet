@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { OrgLabel } from '@crewlethq/ui';
+import { OrgLabel, StatusDot } from '@crewlethq/ui';
 import { BotGlyph, BuildingComplexGlyph, TriangleAlertGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
 import mark from '@crewlethq/icons/favicon/crewlet.svg';
 import { BothThemes } from '../BothThemes';
@@ -199,6 +199,30 @@ export const BothLayouts: Story = {
         </Row>
       </div>
     </div>
+  ),
+};
+
+/**
+ * A live state as a dot on the mark's corner, in the same spot on every node. It
+ * stands in the mark's fixed zone, so a change of state changes nothing the chart
+ * measures: the node is the same size with a dot, without one, and in any tone.
+ */
+export const StatusOnTheMark: Story = {
+  name: 'A live state on the mark',
+  render: () => (
+    <BothThemes>
+      <div style={stack}>
+        <Node>
+          <OrgLabel icon={<BotGlyph />} iconSize="lg" name="Dev Agent" caption="agent · @dev" markStatus={<StatusDot tone="info" pulse />} />
+        </Node>
+        <Node>
+          <OrgLabel icon={<BotGlyph />} iconSize="lg" name="Dev Agent" caption="agent · @dev" markStatus={<StatusDot tone="warning" />} />
+        </Node>
+        <Node>
+          <OrgLabel icon={<BotGlyph />} iconSize="lg" name="Dev Agent" caption="agent · @dev" />
+        </Node>
+      </div>
+    </BothThemes>
   ),
 };
 

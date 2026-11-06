@@ -144,6 +144,30 @@
   content: none;
 }
 
+/*
+ * A LIVE STATE'S DOT, on the zone's lower corner. Out of the flow and inside the
+ * zone's fixed box, so it adds nothing to what a chart measures, and a state that
+ * changes twice a tool-loop round relays nothing. It stands on the card's own
+ * ground, written as the card paints it, so it reads clear of the mark under it.
+ */
+.crewlet-org-label__icon {
+  position: relative;
+}
+
+.crewlet-org-label__status {
+  position: absolute;
+  top: calc(50% + var(--spacing-1));
+  left: calc(50% + var(--spacing-1));
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-circle);
+  background-color: var(--color-surface-background);
+  background-image: linear-gradient(
+    var(--crewlet-tree-canvas-card-fill, var(--color-surface-subtle)),
+    var(--crewlet-tree-canvas-card-fill, var(--color-surface-subtle))
+  );
+}
+
 /* ---- The name and its caption -------------------------------------------- */
 
 /*
