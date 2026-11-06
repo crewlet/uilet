@@ -813,3 +813,38 @@ test("in a layer taller than the window, a menu near the window's foot opens upw
     Element.prototype.getBoundingClientRect = realRect;
   }
 });
+
+/*
+ * AS TALL AS THE ROOM BESIDE ITS ANCHOR. A fixed 360px cut a fourteen-item
+ * menu in half on a phone, with 480px of screen free under it.
+ */
+test('a menu may grow to the room beside its anchor, not a fixed 360px', () => {
+  const height = window.innerHeight;
+  Object.defineProperty(window, 'innerHeight', { configurable: true, value: 844 });
+  const anchor = { left: 340, top: 40, width: 40, height: 40, right: 380, bottom: 80, x: 340, y: 40 } as DOMRect;
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('crewlet-menu')) {
+      // Its rows are 605px tall; the panel shows what its ceiling allows.
+      const room = Number.parseFloat((this as HTMLElement).style.getPropertyValue('--crewlet-menu-room'));
+      const shown = Math.min(605, Number.isFinite(room) ? room : 360);
+      return { left: 0, top: 0, width: 260, height: shown, right: 260, bottom: shown, x: 0, y: 0 } as DOMRect;
+    }
+    if (this.tagName === 'BUTTON' && !this.classList.contains('crewlet-menu__item')) return anchor;
+    return realRect.call(this);
+  };
+  try {
+    render(<Menu label="Actions for Software Engineer" items={entries()} />);
+    fireEvent.click(trigger());
+    const panel = screen.getByRole('menu');
+    // The window less the gap at its foot, less the anchor and the gap under it.
+    expect(panel.style.getPropertyValue('--crewlet-menu-room')).toBe(`${844 - 4 - (80 + 4)}px`);
+    expect(Number.parseFloat(panel.style.top)).toBe(84);
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: height });
+  }
+  // And the stylesheet reads it as the ceiling.
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Menu.css'), 'utf8');
+  expect(sheet).toMatch(/max-height:\s*var\(--crewlet-menu-room,/);
+});

@@ -251,7 +251,7 @@ export function Menu({
   const menu = useRef<HTMLDivElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const startAt = useRef<'first' | 'last'>('first');
-  const [place, setPlace] = useState<{ left: number; top: number; floor: number | undefined } | null>(null);
+  const [place, setPlace] = useState<{ left: number; top: number; floor: number | undefined; room: number } | null>(null);
   const container = useLayerContainer();
 
   // Read through refs so every callback below is stable: the layer's listeners
@@ -308,6 +308,16 @@ export function Menu({
     const inHost = container !== document.body;
     const host = inHost ? container.getBoundingClientRect() : viewportBounds();
     const rect = at.getBoundingClientRect();
+    const bounds: PlacementRect = visibleBounds(host, inHost);
+    // AS TALL AS THE ROOM BESIDE ITS ANCHOR, set before it is measured: a fixed
+    // 360px cut a long menu in half on a phone with half the screen free.
+    const anchorY = rect.top - (inHost ? host.y : 0);
+    const room = Math.max(
+      bounds.y + bounds.height - (anchorY + rect.height + LAYER_GAP),
+      anchorY - LAYER_GAP - bounds.y,
+      0,
+    );
+    box.style.setProperty('--crewlet-menu-room', `${room}px`);
     const measured = box.getBoundingClientRect();
     // NO NARROWER THAN THE TRIGGER: placed by the width it is about to be
     // drawn at, not the one it was measured at before that floor was set.
@@ -324,7 +334,6 @@ export function Menu({
      * inset by the gap, so near the window's foot it opens upward; whether the
      * anchor is still on screen is asked of the anchor itself ([anchorGone]).
      */
-    const bounds: PlacementRect = visibleBounds(host, inHost);
     // Panned out of view: a menu for a card nobody can see is a menu for
     // nothing, so it closes rather than floating detached at the edge.
     if (anchorGone(rect, host, inHost)) {
@@ -333,9 +342,9 @@ export function Menu({
     }
     const spot = placePopup(local, { width: own.width, height: own.height }, bounds, LAYER_GAP);
     setPlace((was) =>
-      was && was.left === spot.left && was.top === spot.top && was.floor === floor
+      was && was.left === spot.left && was.top === spot.top && was.floor === floor && was.room === room
         ? was
-        : { left: spot.left, top: spot.top, floor },
+        : { left: spot.left, top: spot.top, floor, room },
     );
   }, [align, close, container, width]);
 
@@ -510,6 +519,7 @@ export function Menu({
               left: place.left,
               top: place.top,
               zIndex: popup.zIndex,
+              '--crewlet-menu-room': `${place.room}px`,
               ...(place.floor === undefined ? null : { '--crewlet-menu-floor': `${place.floor}px` }),
             } as CSSProperties)
           : { visibility: 'hidden' }
