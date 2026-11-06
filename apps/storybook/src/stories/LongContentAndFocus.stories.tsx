@@ -5,6 +5,22 @@ import {
   Avatar,
   AvatarStack,
   BarList,
+  Breadcrumb,
+  ButtonLink,
+  Card,
+  ColorSwatch,
+  FormField,
+  InboxList,
+  InboxRow,
+  InlineRef,
+  Input,
+  ListInput,
+  LogoSlot,
+  ReactionBar,
+  SheetGrid,
+  StackedColumns,
+  TagsInput,
+  Toaster,
   ChoiceCards,
   Combobox,
   DeliveryReceipt,
@@ -253,6 +269,187 @@ export const SkeletonWave: Story = {
   render: () => (
     <BothThemes>
       <Skeleton variant="box" height={64} />
+    </BothThemes>
+  ),
+};
+
+/* ---- pass two ----------------------------------------------------------- */
+
+const VIEWBOX_ONLY_LOGO = `data:image/svg+xml;utf8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 75"><rect width="300" height="75" rx="12" fill="#735af2"/><text x="150" y="48" font-family="sans-serif" font-size="32" fill="white" text-anchor="middle">Marrow</text></svg>',
+)}`;
+
+/** A logo with a viewBox and no width or height is drawn at the slot's band, not 0 x 0. */
+export const LogoWithNoSizeOfItsOwn: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <LogoSlot label="Primary" ground="light" src={VIEWBOX_ONLY_LOGO} alt="Marrow logo" />
+        <LogoSlot label="For dark grounds" ground="dark" src={VIEWBOX_ONLY_LOGO} alt="Marrow logo on dark" />
+      </div>
+    </BothThemes>
+  ),
+};
+
+const SHEET_COLUMNS = [
+  { field: 'vendor', label: 'Vendor', type: 'text' as const, frozen: true },
+  { field: 'owner', label: 'Owner', type: 'person' as const },
+  {
+    field: 'status',
+    label: 'Status',
+    type: 'status' as const,
+    options: [
+      { id: 'todo', label: 'To do', category: 'todo' as const },
+      { id: 'review', label: 'Review', category: 'in_progress' as const },
+      { id: 'done', label: 'Done', category: 'done' as const },
+    ],
+  },
+];
+const SHEET_PEOPLE = Array.from({ length: 15 }, (_, i) => ({ id: `p${i}`, name: `Person ${i + 1}`, kind: 'human' as const }));
+
+/** A three-row sheet: a cell's choice list opens over the window, not clipped by the grid. */
+export const ShortSheetChoiceList: Story = {
+  render: () => (
+    <BothThemes>
+      <SheetGrid
+        label="Tracker"
+        columns={SHEET_COLUMNS}
+        rows={[
+          { id: 'r1', values: { vendor: 'Acme', owner: 'p1', status: 'todo' } },
+          { id: 'r2', values: { vendor: 'Globex', owner: null, status: 'review' } },
+          { id: 'r3', values: { vendor: 'Initech', owner: 'p3', status: null } },
+        ]}
+        people={SHEET_PEOPLE}
+        onEdit={() => {}}
+      />
+    </BothThemes>
+  ),
+};
+
+/** A long parent gives way before the page: the page crumb keeps its words. */
+export const BreadcrumbLongParent: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'flex', maxWidth: 360, contain: 'inline-size' }}>
+        <Breadcrumb
+          crumbs={[
+            { label: 'Company', href: '#company' },
+            { label: LONG_UNIT, href: '#unit' },
+            { label: 'Principal Product Manager' },
+          ]}
+        />
+      </div>
+    </BothThemes>
+  ),
+};
+
+/** Held fields say why; a field's refused value draws its control's error edge. */
+export const HeldAndRefusedFields: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'grid', gap: 16, maxWidth: 360 }}>
+        <Select ariaLabel="Repositories" options={[{ value: 'all', label: 'All repositories' }]} value="all" disabledReason="Turn the agent on to choose its repositories." />
+        <FormField label="Daily token ceiling" optional error="Use a whole number.">
+          {(field) => <Input id={field.id} aria-describedby={field.describedBy} value="4OO" onChange={() => {}} />}
+        </FormField>
+        <TagsInput label="Repositories" aria-label="Repositories" value={[]} onChange={() => {}} placeholder="All installed repositories in the organisation" />
+      </div>
+    </BothThemes>
+  ),
+};
+
+/** Sized placeholders keep the layout still. */
+export const SkeletonSized: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'grid', gap: 8, maxWidth: 360 }}>
+        <Skeleton width={180} height={16} />
+        <Skeleton variant="box" width="60%" height={16} />
+      </div>
+    </BothThemes>
+  ),
+};
+
+/** An address wraps after its host; a row says where it happened on its own line. */
+export const AddressesAndPlaces: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ maxWidth: 340, display: 'grid', gap: 16 }}>
+        <p style={{ margin: 0 }}>
+          See{' '}
+          <InlineRef href="https://example.com/release-notes/autumn/study-streaks/web-ios-android/2026-11-06" mark={<HashGlyph size="sm" />} wrap>
+            https://example.com/release-notes/autumn/study-streaks/web-ios-android/2026-11-06
+          </InlineRef>
+        </p>
+        <InboxList label="Activity">
+          <InboxRow title="Bartholomew Achterberg-Oyelaran" qualifier="replied to a thread" where="in #release-coordination-autumn-study-streaks" meta="4m" onClick={() => {}}>
+            The build is green again.
+          </InboxRow>
+        </InboxList>
+      </div>
+    </BothThemes>
+  ),
+};
+
+/** Long toasts stop at two lines; a button link keeps its ink on hover. */
+export const ToastsAndButtonLinks: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'grid', gap: 16 }}>
+        <div className="crewlet-document">
+          <ButtonLink href="#install" variant="primary">
+            Install on the code host
+          </ButtonLink>
+        </div>
+        <Toaster
+          toasts={[{ id: 1, variant: 'success', message: `Saved "${LONG_SEAT}" to the board and told the seats that follow it` }]}
+          onDismiss={() => {}}
+        />
+      </div>
+    </BothThemes>
+  ),
+};
+
+/** A count's scale steps in whole units; stored shortcodes draw as glyphs. */
+export const CountsAndReactions: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'grid', gap: 16, maxWidth: 420 }}>
+        <StackedColumns
+          label="Turns per day"
+          series={[{ id: 'turns', name: 'Turns' }]}
+          buckets={[0, 1, 0, 1, 1].map((turns, i) => ({ t: Date.UTC(2026, 10, i + 1), values: { turns } }))}
+          formatScale={(value) => String(Math.round(value))}
+        />
+        <ReactionBar
+          reactions={[
+            { emoji: ':eyes:', count: 2, mine: true },
+            { emoji: ':+1:', count: 1, mine: false },
+            { emoji: ':sparkles:', count: 1, mine: false },
+          ]}
+          onToggle={() => {}}
+        />
+      </div>
+    </BothThemes>
+  ),
+};
+
+/** Narrow cards and lists: a cut title on hover, a lone remove button on its line, swatch edges. */
+export const NarrowCardsListsSwatches: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'grid', gap: 16, maxWidth: 340, contain: 'inline-size' }}>
+        <Card>
+          <Card.Header>
+            <Card.Title truncate>Scratch repositories and commit identity</Card.Title>
+          </Card.Header>
+        </Card>
+        <ListInput label="Goals" itemName="goal" value={['Ship the autumn study streaks on every platform', 'Answer every rights holder within a day']} onChange={() => {}} />
+        <div style={{ display: 'flex', gap: 12 }}>
+          <ColorSwatch name="Text" value="#111827" />
+          <ColorSwatch name="Light ground" value="#ffffff" />
+        </div>
+      </div>
     </BothThemes>
   ),
 };
