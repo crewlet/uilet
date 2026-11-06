@@ -443,7 +443,15 @@ function Harness({
   expanded,
   onExpandedChange,
   onViewChange,
+  fitKey,
+  initialView,
+  cardDimmed,
+  overlayEnd,
 }: {
+  fitKey?: string | undefined;
+  initialView?: { x: number; y: number; k: number } | undefined;
+  cardDimmed?: ((id: string) => boolean) | undefined;
+  overlayEnd?: ReactNode | undefined;
   onViewChange?: ((view: { k: number }) => void) | undefined;
   expanded?: ReadonlySet<string> | undefined;
   onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
@@ -488,6 +496,10 @@ function Harness({
       expanded={expanded}
       onExpandedChange={onExpandedChange}
       onViewChange={onViewChange}
+      fitKey={fitKey}
+      initialView={initialView}
+      cardDimmed={cardDimmed}
+      overlayEnd={overlayEnd}
       ref={handle}
     />
   );
@@ -2223,6 +2235,59 @@ describe('a node being composed', () => {
     expect(SHEET).toMatch(
       /\.crewlet-tree-canvas\[data-zoomed-out\] \.crewlet-tree-canvas__under > \.crewlet-add-pill \{\s*visibility: hidden;/,
     );
+  });
+
+  describe('the view a page holds', () => {
+    const world = (container: HTMLElement) => container.querySelector<HTMLElement>('.crewlet-canvas__world')!.style.transform;
+    const zoomIn = () => fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+
+    test('a new fit key fits the whole chart again, and the same key keeps the zoom of the reader', () => {
+      const view = mount({ fitKey: 'open' });
+      const fitted = world(view.container);
+      zoomIn();
+      const zoomed = world(view.container);
+      expect(zoomed).not.toBe(fitted);
+      view.rerender({ fitKey: 'open', state: { 'seat:sre': 'working' } });
+      expect(world(view.container)).toBe(zoomed);
+      view.rerender({ fitKey: 'filtered' });
+      expect(world(view.container)).toBe(fitted);
+    });
+
+    test('a key that changes with the cards fits once the new layout is placed', () => {
+      const wide = Array.from({ length: 40 }, (_, at) => `seat:extra${at}`);
+      const view = mount({ fitKey: 'few' });
+      zoomIn();
+      view.rerender({ fitKey: 'many', extra: wide });
+      // Forty more seats: the fit is the wide chart's, not the one it had.
+      expect(Number(/scale\(([\d.e-]+)\)/.exec(world(view.container))![1])).toBeCloseTo(0.25);
+    });
+
+    test('a saved view opens instead of the fit, and the next new key fits again', () => {
+      const fresh = mount({ fitKey: 'a' });
+      const fitted = world(fresh.container);
+      fresh.unmount();
+      const saved = { x: -120, y: -40, k: 1.2 };
+      const view = mount({ fitKey: 'a', initialView: saved });
+      expect(world(view.container)).toBe('translate(-120px, -40px) scale(1.2)');
+      view.rerender({ fitKey: 'b', initialView: saved });
+      expect(world(view.container)).toBe(fitted);
+    });
+  });
+
+  test('a card pushed back says so, and is drawn grey until the keyboard reaches it', () => {
+    mount({ cardDimmed: (id) => id === 'unit:sales' });
+    const card = (id: string) => document.querySelector(`[data-tree-id="${id}"]`)!.closest('.crewlet-tree-canvas__card')!;
+    expect(card('unit:sales').hasAttribute('data-dimmed')).toBe(true);
+    expect(card('unit:eng').hasAttribute('data-dimmed')).toBe(false);
+    expect(SHEET).toMatch(/\.crewlet-tree-canvas__card\[data-dimmed\] \{\s*filter: grayscale\(1\);/);
+    expect(SHEET).toMatch(/\.crewlet-tree-canvas__card\[data-dimmed\]:has\(:focus-visible\) \{\s*filter: none;/);
+  });
+
+  test('an end bar reaches the canvas, across from its controls', () => {
+    const { container } = mount({ appearance: 'node', overlayEnd: <span>Legend</span> });
+    const end = container.querySelector('.crewlet-canvas__controls--end')!;
+    expect(end.textContent).toBe('Legend');
+    expect(end.getAttribute('data-placement')).toBe('top-right');
   });
 
   /*
