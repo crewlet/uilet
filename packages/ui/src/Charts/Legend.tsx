@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
 import { dataColor } from './dataColor.js';
 
@@ -58,7 +59,12 @@ export function Legend({ items, className }: LegendProps) {
             aria-hidden
             style={{ '--crewlet-legend-swatch-color': item.color ?? dataColor(index) } as CSSProperties}
           />
-          <span className="crewlet-legend__label">{item.label}</span>
+          {/* A cut label carries its whole words on hover (kit Text). */}
+          <span className="crewlet-legend__label">
+            <Text variant="inherit" truncate>
+              {item.label}
+            </Text>
+          </span>
           {item.value != null && <span className="crewlet-legend__value">{item.value}</span>}
         </li>
       ))}

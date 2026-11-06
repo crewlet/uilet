@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
 import { ChartEmpty } from './ChartEmpty.js';
 import { DATA_COLORS, dataColor } from './dataColor.js';
@@ -189,7 +190,11 @@ export function BarList({
           layout === 'beside' ? (
             <>
               <span className="crewlet-bar-list__names">
-                <span className="crewlet-bar-list__label">{datum.label}</span>
+                <span className="crewlet-bar-list__label">
+                  <Text variant="inherit" truncate>
+                    {datum.label}
+                  </Text>
+                </span>
                 {datum.sub && (
                   <>
                     {' '}
@@ -207,7 +212,13 @@ export function BarList({
           ) : (
             <>
               <span className="crewlet-bar-list__head">
-                <span className="crewlet-bar-list__label">{datum.label}</span> {value}
+                {/* A cut label carries its whole words on hover (kit Text). */}
+                <span className="crewlet-bar-list__label">
+                  <Text variant="inherit" truncate>
+                    {datum.label}
+                  </Text>
+                </span>{' '}
+                {value}
               </span>
               {/*
                * The track is hidden from the accessibility tree: it is the

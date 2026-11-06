@@ -1438,3 +1438,31 @@ test('a long series name in the tooltip ends before its value, which is never cu
   const value = /\.crewlet-chart-tooltip__value\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(value).toMatch(/flex:\s*none/);
 });
+
+describe('a cut name', () => {
+  const TEAM = 'Product, Design and Engineering for Web, iOS and Android Study Apps';
+  const cut = (element: Element) => {
+    Object.defineProperty(element, 'clientWidth', { configurable: true, value: 120 });
+    Object.defineProperty(element, 'scrollWidth', { configurable: true, value: 397 });
+  };
+
+  test.each(['beside', 'stacked'] as const)('a %s bar list label carries its whole words on hover when cut', (layout) => {
+    render(<BarList layout={layout} data={[{ id: 'a', label: TEAM, value: 120 }]} />);
+    const words = screen.getByText(TEAM);
+    expect(words.closest('.crewlet-bar-list__label')).not.toBeNull();
+    fireEvent.mouseEnter(words);
+    expect(words.hasAttribute('title')).toBe(false);
+    cut(words);
+    fireEvent.mouseEnter(words);
+    expect(words.getAttribute('title')).toBe(TEAM);
+  });
+
+  test('a legend label carries its whole words on hover when cut', () => {
+    render(<Legend items={[{ id: 'a', label: TEAM, value: '412k' }]} />);
+    const words = screen.getByText(TEAM);
+    expect(words.closest('.crewlet-legend__label')).not.toBeNull();
+    cut(words);
+    fireEvent.mouseEnter(words);
+    expect(words.getAttribute('title')).toBe(TEAM);
+  });
+});
