@@ -1,5 +1,6 @@
 import type { ElementType, HTMLAttributes, MouseEvent } from 'react';
 import { cx } from '../utils/cx.js';
+import { titleIfCut } from '../utils/titleIfCut.js';
 
 /**
  * The register a piece of text is set in, named for WHAT IT IS rather than
@@ -151,19 +152,4 @@ export function Text({
       {children}
     </Tag>
   );
-}
-
-/**
- * Puts the element's whole words on its title while they are cut, and takes
- * the title off while they fit. One line is cut across (`inline`), a clamp
- * down (`block`). The words are read from the element itself, so a run of
- * marked-up text (a mono id inside the line) reads as it is shown, with its
- * white space collapsed as the line collapses it.
- */
-function titleIfCut(element: HTMLElement, axis: 'inline' | 'block'): void {
-  const cut =
-    axis === 'inline' ? element.scrollWidth > element.clientWidth : element.scrollHeight > element.clientHeight;
-  const words = (element.textContent ?? '').replace(/\s+/g, ' ').trim();
-  if (cut && words !== '') element.setAttribute('title', words);
-  else element.removeAttribute('title');
 }
