@@ -1,6 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes, type LiHTMLAttributes, type MouseEvent, type ReactNode } from 'react';
 import { CheckGlyph, PlusGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
+import { Text } from '../Text/index.js';
 
 /**
  * How tall a row stands. `default` is a list's row: a 32px face beside the
@@ -75,7 +76,9 @@ function PersonRowBody({ avatar, name, tag, detail, meta, mark = 'none', density
     density === 'compact' ? (
       <>
         <span className="crewlet-person-row__name">
-          {name}
+          <Text variant="inherit" truncate className="crewlet-person-row__label">
+            {name}
+          </Text>
           {tag}
         </span>
         {detail ? <span className="crewlet-person-row__detail">{detail}</span> : null}
@@ -83,7 +86,9 @@ function PersonRowBody({ avatar, name, tag, detail, meta, mark = 'none', density
     ) : (
       <span className="crewlet-person-row__text">
         <span className="crewlet-person-row__name">
-          {name}
+          <Text variant="inherit" truncate className="crewlet-person-row__label">
+            {name}
+          </Text>
           {tag}
         </span>
         {detail ? <span className="crewlet-person-row__detail">{detail}</span> : null}
