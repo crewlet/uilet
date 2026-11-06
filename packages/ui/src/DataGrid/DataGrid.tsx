@@ -327,6 +327,13 @@ export interface DataGridReorder<T> {
  */
 export interface DataGridSummaryRow {
   key: string;
+  /**
+   * The row's element id, so an application can reveal and focus it (it takes
+   * focus by script, not by Tab, once it has one): a section a remedy opens.
+   */
+  id?: string | undefined;
+  /** The current row's mark and `aria-current`, as a selected row draws it. */
+  selected?: boolean | undefined;
   /** The row's name, drawn in the first column unless `cells` fills that one. */
   label?: ReactNode;
   /** A value per column key; a column with none is empty on this row. */
@@ -637,6 +644,24 @@ export function squeezed<T>(
  * lets its head stick against the page's scroller; an application whose
  * scroller carries a sticky bar sets `--crewlet-data-grid-sticky-top`.
  */
+
+/**
+ * `rows` in a new array, ordered as the grid orders them for `sort`: by the
+ * sort column's `sortValue`, an absent value last either way. For a host that
+ * pages a list it holds whole and must sort before it slices, so it never
+ * keeps a second comparator. Unsorted (no sort, or a column with no
+ * `sortValue`), a copy in the given order.
+ */
+export function sortGridRows<T>(
+  rows: readonly T[],
+  columns: readonly Pick<DataGridColumn<T>, 'key' | 'sortValue'>[],
+  sort: { key: string; desc: boolean } | null | undefined,
+): T[] {
+  const get = sort ? columns.find((column) => column.key === sort.key)?.sortValue : undefined;
+  // A COPY, always: sorting the caller's array would mutate its state.
+  return get && sort ? sortByValue(rows, get, sort.desc) : [...rows];
+}
+
 export function DataGrid<T>({
   rows,
   bands,
@@ -714,12 +739,7 @@ export function DataGrid<T>({
     [shownColumns, dropped],
   );
   const sortRows = useCallback(
-    (input: T[]): T[] => {
-      if (!sort || serverSorted) return input;
-      const get = columns.find((c) => c.key === sort.key)?.sortValue;
-      // A COPY, always: sorting the caller's array would mutate its state.
-      return get ? sortByValue(input, get, sort.desc) : input;
-    },
+    (input: T[]): T[] => (!sort || serverSorted ? input : sortGridRows(input, columns, sort)),
     [columns, sort, serverSorted],
   );
 
@@ -1155,8 +1175,15 @@ export function DataGrid<T>({
     return (
       <div
         key={`summary-${summary.key}`}
+        id={summary.id}
         role="row"
-        className="crewlet-data-grid__row crewlet-data-grid__row--summary"
+        tabIndex={summary.id === undefined ? undefined : -1}
+        aria-current={summary.selected ? 'true' : undefined}
+        className={cx(
+          'crewlet-data-grid__row',
+          'crewlet-data-grid__row--summary',
+          summary.selected && 'crewlet-data-grid__row--selected',
+        )}
         data-position={summary.position ?? 'bottom'}
       >
         {drawnColumns.map((column, i) => {

@@ -547,6 +547,9 @@ button.crewlet-data-grid__row-link {
 .crewlet-data-grid__cell--shrink {
   white-space: nowrap;
   overflow: clip;
+  /* A control's focus ring stands up to 4px off it (2px at a 2px offset):
+     clipped at the cell's edge, a More button's ring was cut to specks. */
+  overflow-clip-margin: 4px;
 }
 
 /* A RIGHT-ALIGNED COLUMN holds figures, times and dates: tabular digits, so
@@ -918,7 +921,9 @@ button.crewlet-data-grid__row-link {
 .crewlet-data-grid[data-phone-rows='compact']:where([data-stacked]) .crewlet-data-grid__row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  /* Words stand on one baseline, a key's and a title's and a figure's; a
+     control (a box, a handle) is centred on its line. */
+  align-items: first baseline;
   gap: var(--spacing-1) var(--spacing-2);
 }
 
@@ -940,9 +945,24 @@ button.crewlet-data-grid__row-link {
   order: 0;
 }
 
-/* The title takes the rest of the first line, beside the key. */
+/* The title takes the rest of the first line, beside the key. A control the
+   grid draws (selection, handle, expander), a shrink cell and a figure keep
+   their own width: taking an equal share, a 16px box stood alone in a third
+   of the line and the title wrapped to six narrow lines. */
+.crewlet-data-grid[data-phone-rows='compact']:where([data-stacked]) .crewlet-data-grid__cell--action {
+  align-self: center;
+}
+
+.crewlet-data-grid[data-phone-rows='compact']:where([data-stacked])
+  .crewlet-data-grid__cell[data-lead]:has(.crewlet-table-cell__key) {
+  /* Keys of different lengths, so every title starts at one x. */
+  min-width: 7ch;
+}
+
 .crewlet-data-grid[data-phone-rows='compact']
-  .crewlet-data-grid__cell[data-lead]:not(.crewlet-data-grid__cell--shrink) {
+  .crewlet-data-grid__cell[data-lead]:not(.crewlet-data-grid__cell--shrink):not(
+    .crewlet-data-grid__cell--action
+  ):not(.crewlet-data-grid__cell--right):not(.crewlet-data-grid__cell--center) {
   flex: 1 1 0;
   min-width: 0;
   font-weight: var(--font-weight-medium);

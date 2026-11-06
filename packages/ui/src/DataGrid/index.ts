@@ -9,6 +9,7 @@ export {
   fitGridColumns,
   nextGridSort,
   parseGridSort,
+  sortGridRows,
 } from './DataGrid.js';
 export { countDataGridRows, useAnyDataGridDriving, useDataGridDriving } from './driving.js';
 export type { DataGridDriving } from './driving.js';
