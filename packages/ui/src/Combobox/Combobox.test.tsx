@@ -13,6 +13,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { Modal } from '../Modal/index.js';
 import { Combobox } from './Combobox.js';
 
@@ -328,4 +329,31 @@ describe('inline', () => {
     fireEvent.change(field(), { target: { value: 'zzz' } });
     expect((await run()).violations.map((violation) => violation.id)).toEqual([]);
   });
+});
+
+test('a field with a width step bounds its wrapper and list to that step, not the whole row', () => {
+  // A 100% wrapper took a whole toolbar row for a 200px field, and its list
+  // was the toolbar's width too.
+  const uninstall = installSheets('Input/Input.css', 'Combobox/Combobox.css');
+  try {
+    for (const [width, px] of [
+      ['xs', '140px'],
+      ['sm', '200px'],
+      ['md', '320px'],
+      ['lg', '520px'],
+    ] as const) {
+      cleanup();
+      const { container } = render(
+        <Combobox label="Repositories" aria-label="Repository" width={width} value="" onValueChange={() => {}} options={[]} />,
+      );
+      const wrapper = container.querySelector('.crewlet-combobox')!;
+      expect(getComputedStyle(wrapper).maxWidth, width).toBe(px);
+      expect(getComputedStyle(container.querySelector('.crewlet-input')!).maxWidth, width).toBe(px);
+    }
+    cleanup();
+    const { container } = render(<Combobox label="Repositories" aria-label="Repository" value="" onValueChange={() => {}} options={[]} />);
+    expect(getComputedStyle(container.querySelector('.crewlet-combobox')!).maxWidth).toBe('none');
+  } finally {
+    uninstall();
+  }
 });

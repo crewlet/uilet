@@ -26,8 +26,10 @@
  * below, and Input.test.tsx holds all of them to it.
  */
 
-.crewlet-input {
-  /* The width steps, named for what they hold. See InputWidth. */
+/* The width steps, named for what they hold. See InputWidth. A Combobox is
+   an Input in a wrapper, and the wrapper takes the same step (Combobox.css). */
+.crewlet-input,
+.crewlet-combobox {
   --crewlet-input-width-xs: 140px;
   --crewlet-input-width-sm: 200px;
   --crewlet-input-width-md: 320px;
@@ -35,7 +37,9 @@
      the knowledge search asks for plain text and its own placeholder runs to
      sixty characters, which is what this step is measured against. */
   --crewlet-input-width-lg: 520px;
+}
 
+.crewlet-input {
   position: relative;
   display: inline-flex;
   align-items: center;
