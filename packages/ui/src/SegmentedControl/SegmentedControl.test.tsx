@@ -686,7 +686,7 @@ test("every theme carries the chosen chip's word well over the text floor", () =
 
 /* A live count passing 9 moved every chip after it, and could wrap the row, which moved the list under it. */
 test('a count in a chip keeps the room of two digits, in step', () => {
-  const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SegmentedControl.css'), 'utf8');
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SegmentedControl.css'), 'utf8');
   const rule = /\.crewlet-segmented--chips \.crewlet-count \{([^}]*)\}/.exec(sheet)?.[1] ?? '';
   expect(rule).toMatch(/min-width: 2ch;/);
   expect(rule).toMatch(/font-variant-numeric: tabular-nums;/);

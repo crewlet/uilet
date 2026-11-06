@@ -123,6 +123,5 @@ test('it has no violation, filter or key', async () => {
 
 /* A count passing 9 moved every key after it, and a key beside it wrapped in a narrow canvas. */
 test('a count keeps the room of two digits, in step', () => {
-  const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'StatusLegend.css'), 'utf8');
-  expect(sheet).toMatch(/\.crewlet-status-legend__count \{\s*min-width: 2ch;\s*font-variant-numeric: tabular-nums;/);
+  expect(SHEET).toMatch(/\.crewlet-status-legend__count \{\s*min-width: 2ch;\s*font-variant-numeric: tabular-nums;/);
 });
