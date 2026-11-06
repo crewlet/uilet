@@ -552,7 +552,8 @@ describe('the marks and the words', () => {
       const name = getComputedStyle(part(container, 'name'));
       expect(name.whiteSpace, layout).toBe('nowrap');
       expect(name.textOverflow, layout).toBe('ellipsis');
-      expect(name.overflow, layout).toBe('hidden');
+      // Clip, not hidden: it cuts without being a scroller a focus can scroll.
+      expect(name.overflow, layout).toBe('clip');
       cleanup();
     }
   });

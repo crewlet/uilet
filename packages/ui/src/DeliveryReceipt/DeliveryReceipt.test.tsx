@@ -173,14 +173,14 @@ const FOLLOWERS = [
   answered: i < 3,
 }));
 
-test("prints two names and counts the rest in a button that shows them all", () => {
+test("prints one name and counts the rest in a button that shows them all", () => {
   const { container } = render(<DeliveryReceipt recipients={FOLLOWERS} />);
   const line = container.querySelector(".crewlet-delivery-receipt")!;
   expect(text(line)).toBe(
-    "Reached Senior Web and Mobile App Engineer, Senior Backend Engineer (every message)and 4 more. " +
-      "Senior Web and Mobile App Engineer, Senior Backend Engineer and 1 more answered",
+    "Reached Senior Web and Mobile App Engineer (every message) and 5 more. " +
+      "Senior Web and Mobile App Engineer and 2 more answered",
   );
-  const more = screen.getByRole("button", { name: "and 4 more" });
+  const more = screen.getByRole("button", { name: "and 5 more" });
   expect(more.getAttribute("aria-expanded")).toBe("false");
 
   fireEvent.click(more);
@@ -197,8 +197,16 @@ test("prints two names and counts the rest in a button that shows them all", () 
   expect(more.getAttribute("aria-expanded")).toBe("false");
 });
 
-test("draws no button when every name fits under the cap", () => {
+test("prints a single name past the cap rather than counting it", () => {
   render(<DeliveryReceipt recipients={FOLLOWERS.slice(0, 2)} />);
+  expect(screen.queryByRole("button")).toBeNull();
+  expect(
+    screen.getByText(/Reached Senior Web and Mobile App Engineer, Senior Backend Engineer/),
+  ).toBeTruthy();
+});
+
+test("draws no button when every name fits under the cap", () => {
+  render(<DeliveryReceipt recipients={FOLLOWERS.slice(0, 1)} />);
   expect(screen.queryByRole("button")).toBeNull();
   render(<DeliveryReceipt recipients={FOLLOWERS} max={Infinity} />);
   expect(screen.queryByRole("button")).toBeNull();

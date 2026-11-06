@@ -48,7 +48,6 @@
 /* The names past the cap: a quiet text button in the line's own type, so the
    receipt keeps its register; it underlines under the pointer as a link does. */
 .crewlet-delivery-receipt__more {
-  flex: none;
   padding: 0;
   border: 0;
   border-radius: var(--radius-xs);

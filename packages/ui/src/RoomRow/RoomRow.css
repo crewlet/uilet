@@ -19,7 +19,8 @@
    title to a line of its own and left the mark alone on the first. */
 .crewlet-room-row__name {
   display: inline-flex;
-  align-items: center;
+  /* The mark and the tags stand on the title's first line when it wraps. */
+  align-items: flex-start;
   gap: var(--spacing-2);
   min-height: var(--spacing-5);
   min-width: 0;
@@ -31,6 +32,8 @@
 .crewlet-room-row__mark {
   display: inline-flex;
   flex: none;
+  align-items: center;
+  height: 1lh;
   color: var(--color-text-secondary);
 }
 

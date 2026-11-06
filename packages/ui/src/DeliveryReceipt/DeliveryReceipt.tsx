@@ -92,8 +92,9 @@ export interface DeliveryReceiptProps extends Omit<
   announce?: boolean | undefined;
   /**
    * How many names the reach and the answered list each print before the rest
-   * are counted in a button that shows them all. 2 by default; a whole number
-   * of at least 1, or Infinity for every name.
+   * are counted in a button that shows them all. 1 by default; a whole number
+   * of at least 1, or Infinity for every name. A single name past the cap is
+   * printed rather than counted, as it costs no more room than "and 1 more".
    */
   max?: number | undefined;
   labels?: Partial<DeliveryReceiptLabels> | undefined;
@@ -147,7 +148,7 @@ export function DeliveryReceipt({
   truncated = false,
   hint,
   announce = false,
-  max = 2,
+  max = 1,
   labels: overrides,
   className,
   ...rest
@@ -162,13 +163,14 @@ export function DeliveryReceipt({
     ? { ...DELIVERY_RECEIPT_LABELS, ...overrides }
     : DELIVERY_RECEIPT_LABELS;
   const cap = expanded ? Infinity : max;
+  const capped = <T,>(all: readonly T[]): readonly T[] => (all.length > cap + 1 ? all.slice(0, cap) : all);
   const none = recipients.length === 0;
   const answeredAll =
     tense === "sent"
       ? recipients.filter((r) => r.answered).map((r) => r.name)
       : [];
-  const answered = answeredAll.slice(0, cap);
-  const reached = recipients.slice(0, cap);
+  const answered = capped(answeredAll);
+  const reached = capped(recipients);
   const hiddenReach = recipients.length - reached.length;
   const hiddenAnswered = answeredAll.length - answered.length;
   // The names past the cap are a button rather than a tooltip, so a keyboard
@@ -251,8 +253,11 @@ export function DeliveryReceipt({
               {part.mark}
             </span>
           ) : null}
-          <span>{part.words}</span>
-          {part.after}
+          <span>
+            {part.words}
+            {/* Inline in the words, so it flows on with a long line of names. */}
+            {part.after ? <> {part.after}</> : null}
+          </span>
           {i < parts.length - 1 ? <VisuallyHidden>. </VisuallyHidden> : null}
         </span>
       ))}
