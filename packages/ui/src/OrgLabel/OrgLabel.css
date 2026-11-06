@@ -190,15 +190,29 @@
  * which is a new layout for the whole chart, and would make one row of the
  * table two ranks and push its rhythm off. The name truncates instead.
  */
+/* CLIP, NOT HIDDEN: a hidden box is a scroller, and a scripted focus on the
+   link inside scrolled the name sideways and left it there. */
 .crewlet-org-label__name {
   max-width: 100%;
-  overflow: hidden;
+  overflow: clip;
   font-size: var(--font-size-compact);
   font-weight: var(--font-weight-medium);
   line-height: var(--font-line-height-tight);
   color: var(--crewlet-tree-canvas-card-ink, var(--color-text-primary));
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The clip cut a link's focus ring to an underline, so the name draws the
+   ring, which its own clip cannot cut, and the link's own is clear. */
+.crewlet-org-label__name:has(:focus-visible) {
+  border-radius: var(--radius-xs);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-org-label__name.crewlet-org-label__name :focus-visible {
+  outline: 2px solid transparent;
 }
 
 /* A CONTROL ON THE NAME'S LINE follows the name, and the name gives way first. */
