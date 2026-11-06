@@ -225,7 +225,7 @@
 
 .crewlet-fact-line__value.crewlet-fact-line__value--clamp :focus-visible,
 .crewlet-fact-line__value.crewlet-fact-line__value--token :focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
 }
 
 /* One token, one line, cut with an ellipsis where two tracks are too narrow;

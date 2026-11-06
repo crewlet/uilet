@@ -269,8 +269,8 @@ describe('the sweep fixes', () => {
       for (const name of ['Odile Varga-Nakamura', 'main 891b602']) {
         const link = screen.getByRole('link', { name });
         link.setAttribute('data-focus-visible', '');
-        // The link's own ring would be clipped to a bracket, so it draws none.
-        expect(getComputedStyle(link).outlineStyle, name).toBe('none');
+        // The link's own ring would be clipped to a bracket, so it is clear.
+        expect(getComputedStyle(link).outlineColor, name).toBe('rgba(0, 0, 0, 0)');
         link.removeAttribute('data-focus-visible');
       }
     } finally {
