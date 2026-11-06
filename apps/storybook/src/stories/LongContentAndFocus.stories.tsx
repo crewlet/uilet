@@ -113,7 +113,7 @@ export const ObjectHeaderLongFacts: Story = {
         facts={[
           { label: 'Seat', value: LONG_SEAT, href: '#seat' },
           { label: 'Runs in', value: 'Sandbox' },
-          { label: 'Harness', value: 'claude-sonnet-5-5' },
+          { label: 'Harness', value: 'model-large-2' },
           { label: 'Launched on', value: 'Nov 06, 2026, 04:21:55' },
           { label: 'Box', value: 'box-7f3a91', token: true, href: '#box' },
         ]}
@@ -175,7 +175,7 @@ export const MeterInAShrinkColumn: Story = {
 };
 
 function WizardStart() {
-  const [harness, setHarness] = useState('claude-code');
+  const [harness, setHarness] = useState('harness-a');
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24 }}>
       <Stepper
@@ -194,8 +194,8 @@ function WizardStart() {
         value={harness}
         onChange={setHarness}
         options={[
-          { value: 'claude-code', label: 'Claude Code', description: 'A coding harness.' },
-          { value: 'codex', label: 'Codex', description: 'A coding harness.' },
+          { value: 'harness-a', label: 'Harness A', description: 'A coding harness.' },
+          { value: 'harness-b', label: 'Harness B', description: 'A coding harness.' },
         ]}
       />
     </div>
