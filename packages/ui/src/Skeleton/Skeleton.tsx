@@ -40,9 +40,15 @@ export interface SkeletonProps {
   className?: string;
   /** Applied to the root element of every variant. */
   style?: CSSProperties;
-  /* box-only props */
+  /**
+   * The placeholder's size, on every variant: a box is drawn at it, and any
+   * other shape is cut to it, so a placeholder sized for the value it stands
+   * for does not move the layout when the value lands. Unset, a box is the
+   * column's width and 400px tall, and any other shape its own size.
+   */
   width?: number | string;
   height?: number | string;
+  /* box-only props */
   /** A number of px, or any CSS length, such as a radius token: `var(--radius-md)`. */
   borderRadius?: number | string;
   marginTop?: number;
@@ -71,14 +77,20 @@ const Placeholder = ({
   count = 4,
   className = '',
   style,
-  width = '100%',
-  height = 400,
+  width,
+  height,
   borderRadius = 12,
-  marginTop = 32,
+  marginTop = 0,
   marginBottom = 0,
 }: SkeletonProps) => {
   const rootClass = (...modifiers: Array<string | false | undefined>) =>
     cx('crewlet-skeleton', `crewlet-skeleton--${variant}`, ...modifiers, className);
+  const length = (value: number | string | undefined) => (typeof value === 'number' ? `${value}px` : value);
+  // A size asked of a shape other than a box cuts the shape to it.
+  const sized =
+    width !== undefined || height !== undefined
+      ? ({ width: length(width), height: length(height), overflow: 'hidden', ...style } as CSSProperties)
+      : style;
 
   switch (variant) {
     case 'box':
@@ -87,8 +99,8 @@ const Placeholder = ({
           <div
             className="crewlet-skeleton__glow-box"
             style={{
-              height: typeof height === 'number' ? `${height}px` : height,
-              width: typeof width === 'number' ? `${width}px` : width,
+              height: length(height ?? 400),
+              width: length(width ?? '100%'),
               borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
             }}
           >
@@ -99,7 +111,7 @@ const Placeholder = ({
 
     case 'text':
       return (
-        <div className={rootClass()} style={style} aria-hidden>
+        <div className={rootClass()} style={sized} aria-hidden>
           {range(rows).map((i) => (
             <div
               key={i}
@@ -112,7 +124,7 @@ const Placeholder = ({
 
     case 'card':
       return (
-        <div className={rootClass()} style={style} aria-hidden>
+        <div className={rootClass()} style={sized} aria-hidden>
           <div className={line('title')} />
           <div className={line('text')} />
           <div className={line('text', 'short')} />
@@ -122,7 +134,7 @@ const Placeholder = ({
     case 'grid': {
       const cols = clampColumns(columns);
       return (
-        <div className={rootClass(`crewlet-skeleton--cols-${cols}`)} style={style} aria-hidden>
+        <div className={rootClass(`crewlet-skeleton--cols-${cols}`)} style={sized} aria-hidden>
           {range(rows * cols).map((i) => (
             <div key={i} className="crewlet-skeleton__card">
               <div className={line('title')} />
@@ -136,7 +148,7 @@ const Placeholder = ({
 
     case 'list':
       return (
-        <div className={rootClass()} style={style} aria-hidden>
+        <div className={rootClass()} style={sized} aria-hidden>
           {range(rows).map((i) => (
             <div key={i} className="crewlet-skeleton__list-item">
               <div className="crewlet-skeleton__avatar" />
@@ -151,7 +163,7 @@ const Placeholder = ({
 
     case 'table':
       return (
-        <div className={rootClass()} style={style} aria-hidden>
+        <div className={rootClass()} style={sized} aria-hidden>
           <table className="crewlet-skeleton__table">
             <thead>
               <tr>
@@ -180,7 +192,7 @@ const Placeholder = ({
     case 'info-grid': {
       const cols = clampColumns(columns);
       return (
-        <div className={rootClass(`crewlet-skeleton--cols-${cols}`)} style={style} aria-hidden>
+        <div className={rootClass(`crewlet-skeleton--cols-${cols}`)} style={sized} aria-hidden>
           {range(rows * cols).map((i) => (
             <div key={i} className="crewlet-skeleton__info-item">
               <div className={line('label')} />
@@ -193,7 +205,7 @@ const Placeholder = ({
 
     case 'pricing-card':
       return (
-        <div className={rootClass()} style={style} aria-hidden>
+        <div className={rootClass()} style={sized} aria-hidden>
           {range(count).map((i) => (
             <div key={i} className="crewlet-skeleton__pricing-card">
               <div className="crewlet-skeleton__pricing-card-header">
@@ -221,7 +233,7 @@ const Placeholder = ({
 
     default:
       return (
-        <div className={cx('crewlet-skeleton', className)} style={style} aria-hidden>
+        <div className={cx('crewlet-skeleton', className)} style={sized} aria-hidden>
           <div className="crewlet-skeleton__line" />
         </div>
       );

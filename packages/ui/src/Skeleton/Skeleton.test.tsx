@@ -119,3 +119,29 @@ describe('Skeleton', () => {
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
 });
+
+describe('a skeleton sized for its value', () => {
+  // Size was honoured by the box alone, so a card placeholder sized for one
+  // line stood a card's height and the layout jumped when the value landed;
+  // and a box stood 32px under whatever was above it unless told otherwise.
+  test('every shape is cut to the size it is given', () => {
+    const { container } = render(<Skeleton variant="card" width={120} height={16} />);
+    const root = container.querySelector<HTMLElement>('.crewlet-skeleton')!;
+    expect(root.style.width).toBe('120px');
+    expect(root.style.height).toBe('16px');
+    expect(root.style.overflow).toBe('hidden');
+  });
+
+  test('an unsized shape keeps its own size, and a box stands flush', () => {
+    const { container } = render(
+      <>
+        <Skeleton variant="text" rows={2} />
+        <Skeleton variant="box" height={24} />
+      </>,
+    );
+    const [text, box] = [...container.querySelectorAll<HTMLElement>('.crewlet-skeleton')];
+    expect(text!.style.height).toBe('');
+    expect(box!.style.marginTop).toBe('0px');
+    expect(box!.querySelector<HTMLElement>('.crewlet-skeleton__glow-box')!.style.height).toBe('24px');
+  });
+});
