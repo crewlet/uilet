@@ -121,7 +121,7 @@
   --crewlet-org-table-indent: var(--spacing-5);
 }
 
-@container crewlet-org-table (width < 60rem) {
+@container crewlet-org-table (width < 75rem) {
   .crewlet-org-table__grid {
     --crewlet-org-table-indent: var(--spacing-5);
   }
