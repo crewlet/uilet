@@ -27,6 +27,7 @@ import { useHighlightRest, useListbox, useOptionKeys } from '../Listbox/index.js
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { useFieldError } from '../Input/fieldContext.js';
 import { returnFocus, useFocusModality } from '../utils/focusModality.js';
 
 export type SelectValue = string | number;
@@ -243,7 +244,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
     width = 'full',
     align = 'left',
     active = false,
-    error = false,
+    error: errorProp,
     appearance = 'field',
     ariaLabel,
     searchable = false,
@@ -286,6 +287,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
     return [value];
   }, [value, multiple, options]);
 
+  const error = useFieldError(errorProp);
   const held = disabledReason !== undefined && disabledReason !== '';
   const disabled = disabledProp || held;
   const reasonId = `${rootId}-reason`;

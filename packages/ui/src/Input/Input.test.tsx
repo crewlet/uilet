@@ -948,3 +948,57 @@ test('a label’s action keeps its own case and spacing, not the label’s capit
     uninstall();
   }
 });
+
+test("a wrapped label keeps its optional note after its last word, not in a column of its own", () => {
+  // As a flex row, the words and the note were two items: a label that
+  // wrapped ("DAILY TOKEN / CEILING") stood "(OPTIONAL)" apart beside it.
+  const uninstall = installSheets('Input/Input.css');
+  try {
+    render(
+      <>
+        <Label optional htmlFor="daily">
+          Daily token ceiling
+        </Label>
+        <Label optional htmlFor="weekly" action={<button type="button">Clear</button>}>
+          Weekly token ceiling
+        </Label>
+      </>,
+    );
+    const [plain, withAction] = [...document.querySelectorAll('.crewlet-label')];
+    expect(getComputedStyle(plain!).display).not.toMatch(/flex/);
+    expect(getComputedStyle(withAction!.querySelector('.crewlet-label__text')!).display).not.toMatch(/flex/);
+    // The note is inline text with its own leading space.
+    expect(plain!.querySelector('.crewlet-label__note')!.textContent).toBe(' (optional)');
+  } finally {
+    uninstall();
+  }
+});
+
+test("a field's refused value draws its control's error edge without the caller wiring it", () => {
+  // FormField knew the field was invalid, but its control drew the error edge
+  // only when the caller also passed error={field.invalid}; about forty
+  // callers spelled aria-invalid by hand and got no edge.
+  render(
+    <>
+      <FormField label="Login" error="Use lowercase letters, digits and hyphens.">
+        {(field) => <Input id={field.id} aria-describedby={field.describedBy} value="Bad Name" onChange={() => {}} />}
+      </FormField>
+      <FormField label="Notes" error="Too long.">
+        <Textarea aria-label="Notes" value="x" onChange={() => {}} />
+      </FormField>
+      <FormField label="Owner" error="Choose one.">
+        <Select ariaLabel="Owner" options={[{ value: 'a', label: 'Ada' }]} value={undefined} />
+      </FormField>
+      <FormField label="Kept" error="Shown elsewhere.">
+        {(field) => <Input id={field.id} error={false} value="" onChange={() => {}} />}
+      </FormField>
+    </>,
+  );
+  const login = screen.getByRole('textbox', { name: 'Login' });
+  expect(login.closest('.crewlet-input')!.classList.contains('is-error')).toBe(true);
+  expect(login.getAttribute('aria-invalid')).toBe('true');
+  expect(screen.getByRole('textbox', { name: 'Notes' }).className).toContain('is-error');
+  expect(document.querySelector('.crewlet-select')!.classList.contains('is-error')).toBe(true);
+  // A caller's own error still decides.
+  expect(screen.getByRole('textbox', { name: 'Kept' }).closest('.crewlet-input')!.classList.contains('is-error')).toBe(false);
+});
