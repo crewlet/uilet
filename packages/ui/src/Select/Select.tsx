@@ -26,6 +26,7 @@ import {
 import { useHighlightRest, useListbox, useOptionKeys } from '../Listbox/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { returnFocus, useFocusModality } from '../utils/focusModality.js';
 
 export type SelectValue = string | number;
@@ -150,6 +151,12 @@ export interface SelectProps extends NativePassthrough {
   options: SelectOption[];
   placeholder?: string;
   disabled?: boolean;
+  /**
+   * Why it cannot be changed, for a picker that is there but held: it is
+   * disabled, says the reason to a screen reader (described by it) and on
+   * hover, rather than only looking unavailable.
+   */
+  disabledReason?: string | undefined;
   className?: string;
   menuClassName?: string;
   size?: SelectSize;
@@ -228,7 +235,8 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
     onChange,
     options,
     placeholder = 'Select an option',
-    disabled = false,
+    disabled: disabledProp = false,
+    disabledReason,
     className = '',
     menuClassName = '',
     size = 'md',
@@ -278,8 +286,15 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
     return [value];
   }, [value, multiple, options]);
 
+  const held = disabledReason !== undefined && disabledReason !== '';
+  const disabled = disabledProp || held;
+  const reasonId = `${rootId}-reason`;
+  const reason = held ? <VisuallyHidden id={reasonId}>{disabledReason}</VisuallyHidden> : null;
+  const describedByAll = cx(native['aria-describedby'], held && reasonId) || undefined;
+
   if (mode === 'native') {
     return (
+      <>
       <NativeSelect
         ref={ref as React.Ref<HTMLSelectElement>}
         id={rootId}
@@ -294,11 +309,16 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
         error={error}
         ariaLabel={ariaLabel}
         {...native}
+        aria-describedby={describedByAll}
+        title={held ? disabledReason : undefined}
       />
+      {reason}
+      </>
     );
   }
 
   return (
+    <>
     <ListboxSelect
       ref={ref as React.Ref<HTMLButtonElement>}
       id={rootId}
@@ -323,7 +343,8 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
       renderMultiLabel={renderMultiLabel}
       emptyMessage={emptyMessage}
       onHighlight={onHighlight}
-      describedBy={native['aria-describedby']}
+      describedBy={describedByAll}
+      reason={held ? disabledReason : undefined}
       required={native.required}
       ariaRequired={native['aria-required']}
       focusOnMount={native.autoFocus}
@@ -336,12 +357,16 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
       onBlur={native.onBlur}
       onFocus={native.onFocus}
     />
+    {reason}
+    </>
   );
 });
 
 /* ── Native ──────────────────────────────────────────────────────────── */
 
 interface NativeSelectProps extends NativePassthrough {
+  /** Why it is held, on hover. */
+  title?: string | undefined;
   id: string;
   value: SelectValue | undefined;
   onChange: ((value: SelectValue, option: SelectOption) => void) | undefined;
@@ -453,6 +478,8 @@ interface ListboxSelectProps {
   emptyMessage: string;
   onHighlight: SelectProps['onHighlight'];
   describedBy: string | undefined;
+  /** Why it is held: drawn soft-disabled and titled with it. */
+  reason: string | undefined;
   required: boolean | undefined;
   ariaRequired: NativePassthrough['aria-required'];
   focusOnMount: boolean | undefined;
@@ -486,6 +513,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     emptyMessage,
     onHighlight,
     describedBy,
+    reason,
     required,
     ariaRequired,
     focusOnMount,
@@ -1145,10 +1173,18 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
         aria-describedby={describedBy}
         aria-invalid={error || undefined}
         aria-required={comboOnTrigger ? requiredForAria : undefined}
-        disabled={disabled}
+        // SOFT, NEVER NATIVE, where there is a reason: a disabled button takes
+        // no pointer, so its title would never show; it opens nothing either way.
+        disabled={disabled && reason === undefined}
+        aria-disabled={reason !== undefined || undefined}
+        title={reason}
         onBlur={onBlur}
         onFocus={onFocus}
-        onClick={() => (open ? close(false) : setOpen(true))}
+        onClick={() => {
+          if (disabled) return;
+          if (open) close(false);
+          else setOpen(true);
+        }}
         onKeyDown={onKeyDown}
       >
         {renderTrigger ? (

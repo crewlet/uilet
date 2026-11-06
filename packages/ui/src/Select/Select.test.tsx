@@ -935,3 +935,19 @@ test("a taller panel is a taller list, and the panel keeps the window's cap", ()
   const list = /\.crewlet-select__menu\s+\.crewlet-select__list\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(list).toMatch(/max-height:\s*none/);
 });
+
+test('a held select says why, to a screen reader and on hover, and opens nothing', () => {
+  // Disabled alone, a picker on an agent that is off looked available and
+  // could not say why it was not.
+  render(<Picker disabledReason="Turn the agent on to choose its repositories." />);
+  const button = trigger();
+  expect(button.hasAttribute('disabled')).toBe(false);
+  expect(button.getAttribute('aria-disabled')).toBe('true');
+  expect(button.getAttribute('title')).toBe('Turn the agent on to choose its repositories.');
+  const described = (button.getAttribute('aria-describedby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent);
+  expect(described).toContain('Turn the agent on to choose its repositories.');
+  fireEvent.click(button);
+  expect(screen.queryByRole('listbox')).toBeNull();
+  fireEvent.keyDown(button, { key: 'ArrowDown' });
+  expect(screen.queryByRole('listbox')).toBeNull();
+});
