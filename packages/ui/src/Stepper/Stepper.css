@@ -26,6 +26,11 @@
      sizes around a pill: SetupWizard's row of steps clears the target band
      above and under it by this height. Read it; do not set it. */
   --crewlet-stepper-pill-height: calc(20px * var(--density, 1));
+  /* The design's 5px between a mark and the word, and the two marks a pill
+     draws: the 12px check and the 7px dot. See A PILL KEEPS ITS WIDTH. */
+  --crewlet-stepper-mark-gap: calc(var(--spacing-1) * 1.25);
+  --crewlet-stepper-check: 12px;
+  --crewlet-stepper-dot: 7px;
 
   display: flex;
   flex-wrap: wrap;
@@ -74,8 +79,7 @@
 .crewlet-stepper__chip {
   display: inline-flex;
   align-items: center;
-  /* The design's 5px between the check or the dot and the word. */
-  gap: calc(var(--spacing-1) * 1.25);
+  gap: var(--crewlet-stepper-mark-gap);
   box-sizing: border-box;
   /* The design's 20px pill, which follows the density with every other step
      height in the kit. A pill that only labels takes no press; one a reader
@@ -91,6 +95,23 @@
   font-weight: var(--font-weight-medium);
   line-height: 1;
   white-space: nowrap;
+}
+
+/*
+ * A PILL KEEPS ITS WIDTH AS THE SEQUENCE ADVANCES. A step behind the current one
+ * draws the check, the current one the narrower dot and one still to come no mark
+ * at all, so each pill changed width as the sequence moved: the pills after it
+ * shifted, and a row that only just fit wrapped or unwrapped between two steps.
+ * Every pill holds the check's room, split evenly about what it draws, so a row of
+ * steps is one width at every step and either always wraps or never does.
+ */
+.crewlet-stepper__step--upcoming > .crewlet-stepper__chip,
+.crewlet-stepper__step--optional > .crewlet-stepper__chip {
+  padding-inline: calc(var(--spacing-2) + (var(--crewlet-stepper-check) + var(--crewlet-stepper-mark-gap)) / 2);
+}
+
+.crewlet-stepper__step--current:not(.crewlet-stepper__step--attention) > .crewlet-stepper__chip {
+  padding-inline: calc(var(--spacing-2) + (var(--crewlet-stepper-check) - var(--crewlet-stepper-dot)) / 2);
 }
 
 .crewlet-stepper__label {
