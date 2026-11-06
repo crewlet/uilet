@@ -186,3 +186,26 @@ test('the toolbar has no accessibility violations', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+test('a re-render that changes nothing writes no tabindex', async () => {
+  // The order is applied after every render; an idle page that re-rendered
+  // the row rewrote every button's tabindex each time.
+  const row = (tick: number) => (
+    <Toolbar label="Format" data-tick={tick}>
+      <button type="button">Bold</button>
+      <button type="button">Italic</button>
+      <button type="button">Link</button>
+    </Toolbar>
+  );
+  const { rerender, container } = render(row(0));
+  const writes: MutationRecord[] = [];
+  const observer = new MutationObserver((records) => writes.push(...records));
+  observer.observe(container, { attributes: true, attributeFilter: ['tabindex'], subtree: true });
+  for (let tick = 1; tick <= 5; tick += 1) rerender(row(tick));
+  await Promise.resolve();
+  writes.push(...observer.takeRecords());
+  observer.disconnect();
+  expect(writes).toEqual([]);
+  // And the order itself still holds: one stop at zero.
+  expect(screen.getAllByRole('button').map((button) => button.tabIndex)).toEqual([0, -1, -1]);
+});
