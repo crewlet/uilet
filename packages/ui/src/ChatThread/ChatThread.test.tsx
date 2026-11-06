@@ -135,6 +135,47 @@ test("holds the reader's place while what is above them changes", () => {
   expect(log.scrollTop).toBe(550);
 });
 
+// A PART THE HOST MARKS `overflow-anchor: none` IS NEVER THE ANCHOR, as the
+// browser's own anchoring skips it: a head that older items land under stays
+// put while the item the reader was at moves down by what landed. Mutation:
+// let the head be the anchor, and the view stays on the head as the items land.
+test('steps over a part the host marks overflow-anchor: none', () => {
+  const tops = new Map<string, number>([
+    ['Head', 0],
+    ['Message 1', 100],
+    ['Message 2', 400],
+  ]);
+  const rect = (top: number, height: number) =>
+    ({ x: 0, y: top, top, bottom: top + height, left: 0, right: 400, width: 400, height, toJSON: () => ({}) }) as DOMRect;
+  const placed = (log: HTMLElement) => {
+    log.getBoundingClientRect = () => rect(0, 400);
+    for (const p of Array.from(log.querySelectorAll('p'))) {
+      p.getBoundingClientRect = () => rect((tops.get(p.textContent ?? '') ?? 0) - log.scrollTop, 300);
+    }
+  };
+  const head = (
+    <p key="head" style={{ overflowAnchor: 'none' }}>
+      Head
+    </p>
+  );
+  const { rerender } = render(<ChatThread label="Conversation">{[head, ...items(2)]}</ChatThread>);
+  const log = screen.getByRole('log');
+  layout(log, 700);
+  placed(log);
+  rerender(<ChatThread label="Conversation">{[head, ...items(2)]}</ChatThread>);
+  expect(log.scrollTop).toBe(300);
+  log.scrollTop = 50;
+  fireEvent.scroll(log);
+  // Two older items, 300px between them, land under the head.
+  tops.set('Message 1', 400);
+  tops.set('Message 2', 700);
+  layout(log, 1000);
+  rerender(
+    <ChatThread label="Conversation">{[head, <p key="o1">Older 1</p>, <p key="o2">Older 2</p>, ...items(2)]}</ChatThread>,
+  );
+  expect(log.scrollTop).toBe(350);
+});
+
 // A VIEW THAT SHRINKS UNDER A READER AT THE END keeps the latest in sight: a
 // composer growing a line took the last line of the conversation with it.
 test('keeps the latest in sight when the view shrinks under a reader at the end', () => {
