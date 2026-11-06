@@ -219,6 +219,17 @@
   justify-content: flex-end;
 }
 
+/* AND A LAST HEAD THAT SORTS ENDS WITH ITS VALUES: its button fills the head,
+   so the button takes the end, and its arrow goes before the word, as a
+   right-aligned head's does, so the word stays on the column's edge. */
+.crewlet-org-table [role='columnheader']:last-child > .crewlet-data-grid__sort {
+  justify-content: flex-end;
+}
+
+.crewlet-org-table [role='columnheader']:last-child .crewlet-data-grid__sort-mark {
+  order: -1;
+}
+
 .crewlet-org-table__wire {
   position: relative;
   flex: none;

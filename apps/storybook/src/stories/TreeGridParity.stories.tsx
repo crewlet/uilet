@@ -213,7 +213,7 @@ export const SortedNewestFirst: Story = {
 };
 
 /**
- * COLUMNS THAT GIVE WAY, AND THE FOOT. In a 560px column the grid drops
+ * COLUMNS THAT GIVE WAY, AND THE FOOT. In a column of at most 560px the grid drops
  * Words, then Last saved by, in their `drop` order, and the foot names them
  * ("Hidden to fit"), beside the caller's own words. Drag the corner to widen
  * it and they come back.
@@ -221,7 +221,15 @@ export const SortedNewestFirst: Story = {
 export const GivesWayAndSaysSo: Story = {
   render: () => (
     <BothThemes>
-      <div style={{ width: 560, resize: 'horizontal', overflow: 'auto', paddingBottom: 'var(--spacing-2)' }}>
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 560,
+          resize: 'horizontal',
+          overflow: 'auto',
+          paddingBottom: 'var(--spacing-2)',
+        }}
+      >
         <Pages loadedNote="8 of 8 loaded" onLoadMore={() => {}} />
       </div>
     </BothThemes>
@@ -229,15 +237,21 @@ export const GivesWayAndSaysSo: Story = {
 };
 
 /**
- * WHERE NOTHING FITS, A ROW IS A CARD (`phoneRows`). In a 360px column (a
- * phone) each value is a named line under the row's name, at the name's
+ * WHERE NOTHING FITS, A ROW IS A CARD (`phoneRows`). In a column of at most
+ * 360px (a phone's room) each value is a named line under the row's name, at the name's
  * indent, so the hierarchy still reads down the left. `compact` puts the
  * values on one line under the name instead.
  */
 export const CardsWhereNothingFits: Story = {
   render: () => (
     <BothThemes>
-      <div style={{ display: 'grid', gap: 'var(--spacing-4)', gridTemplateColumns: 'repeat(2, 360px)' }}>
+      <div
+        style={{
+          display: 'grid',
+          gap: 'var(--spacing-4)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 360px))',
+        }}
+      >
         <Pages phoneRows="labelled" columns={COLUMNS.map((c) => ({ ...c, drop: undefined }))} />
         <Pages phoneRows="compact" columns={COLUMNS.map((c) => ({ ...c, drop: undefined }))} />
       </div>

@@ -322,3 +322,40 @@ describe('where columns do not fit, a row is a card (phoneRows)', () => {
     expect(frame.getAttribute('data-phone-rows')).toBe('compact');
   });
 });
+
+test('a tree that keeps its columns gives way on a phone as anywhere', () => {
+  vi.spyOn(window, 'matchMedia').mockImplementation(
+    (query: string) =>
+      ({
+        matches: query.includes('width <'),
+        media: query,
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList,
+  );
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (this: HTMLElement) {
+    return this.getAttribute('role') === 'treegrid' ? 360 : 0;
+  });
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    const grid = this.closest('[role="treegrid"]');
+    const heads = grid ? grid.querySelectorAll('[role="columnheader"]').length : 0;
+    const right =
+      this.getAttribute('role') === 'columnheader' && !this.nextElementSibling ? (heads > 3 ? 480 : 340) : 0;
+    return {
+      left: 0,
+      top: 0,
+      right,
+      bottom: 0,
+      width: this.classList.contains('crewlet-tree-grid') ? 360 : 0,
+      height: 0,
+    } as DOMRect;
+  });
+  render(<Grid />);
+  expect(document.querySelector('.crewlet-tree-grid')!.hasAttribute('data-stacked')).toBe(false);
+  expect(screen.getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Title', 'Size', 'Edit']);
+  expect(document.querySelector('.crewlet-data-grid__foot')!.textContent).toBe('Hidden to fit: Last saved');
+});

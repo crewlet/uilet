@@ -382,3 +382,52 @@ describe("the foot is the table's own rows", () => {
     expect(reset.closest('[role="row"]')!.closest('[role="rowgroup"]')).toBe(foot.parentElement);
   });
 });
+
+describe('a row that links still shows what its cells say on hover', () => {
+  const under = (...els: Element[]) => {
+    const all = (document as unknown as { elementsFromPoint?: unknown }).elementsFromPoint;
+    Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: () => els });
+    return () => Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: all });
+  };
+
+  test("the row link takes the whole words of a cut value under the pointer, and a cell's own title", () => {
+    render(
+      <DataGrid
+        rows={[{ id: 'a', name: 'A name far too long for its column', tokens: 5 }]}
+        columns={[
+          { key: 'name', header: 'Name', overflow: 'truncate', cell: (r: Row) => r.name },
+          {
+            key: 'tokens',
+            header: 'Tokens',
+            title: () => '5 tokens in the last hour',
+            cell: (r: Row) => r.tokens ?? null,
+          },
+        ]}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `#/x/${r.id}`}
+      />,
+    );
+    const row = records()[0]!;
+    const link = row.querySelector<HTMLElement>('.crewlet-data-grid__row-link')!;
+    const cut = row.querySelector<HTMLElement>('.crewlet-data-grid__truncate')!;
+    Object.defineProperty(cut, 'clientWidth', { configurable: true, value: 80 });
+    Object.defineProperty(cut, 'scrollWidth', { configurable: true, value: 240 });
+    let restore = under(link, cut, cut.parentElement!, row);
+    fireEvent.mouseMove(link, { clientX: 20, clientY: 10 });
+    expect(link.getAttribute('title')).toBe('A name far too long for its column');
+    restore();
+    const tokens = row.children[1]!;
+    restore = under(link, tokens, row);
+    fireEvent.mouseMove(link, { clientX: 300, clientY: 10 });
+    expect(link.getAttribute('title')).toBe('5 tokens in the last hour');
+    restore();
+    fireEvent.mouseLeave(link);
+    expect(link.hasAttribute('title')).toBe(false);
+  });
+
+  test("a card line's value may shrink, so a one-line value is cut inside the card", () => {
+    expect(sheet()).toMatch(
+      /:where\(\.crewlet-data-grid\[data-stacked\]\) \.crewlet-data-grid__cell > \* \{ min-width: 0; \}/,
+    );
+  });
+});

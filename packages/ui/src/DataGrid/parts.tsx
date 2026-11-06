@@ -15,7 +15,7 @@ import { Button } from '../Button/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import { SHRINK_SHARE } from '../utils/tableTrack.js';
-import { titleWhenCut } from '../utils/titleIfCut.js';
+import { titleIfCut, titleWhenCut } from '../utils/titleIfCut.js';
 
 /** The edge a column's head and values share. */
 export type GridAlign = 'left' | 'right' | 'center';
@@ -306,6 +306,47 @@ export function GridFoot({ footer, dropped, loadedNote, onLoadMore, onReset, lab
     </div>
   );
 }
+
+/** The elements the kit cuts on one line with an ellipsis, whose words are measured on hover. */
+const CUT = '.crewlet-data-grid__truncate, .crewlet-table-cell__truncate, .crewlet-text--truncate';
+
+/**
+ * The hover text of what lies under the pointer BENEATH a row's link: the
+ * title a cell's value carries, or a cut value's whole words. Null where
+ * there is none.
+ *
+ * WHY THE LINK ASKS. The row's link is stretched over the row and above its
+ * text, so the pointer is over the link wherever it is on a value: a cut
+ * value's words, and every title a cell carries, never reached the pointer
+ * in a row that links. The link takes the title of what it covers, read at
+ * the point the pointer is, so a linked row reads on hover as a plain one.
+ * A title the caller gave wins over a measured one.
+ */
+export function titleBeneath(link: HTMLElement, x: number, y: number): string | null {
+  const row = link.closest('[role="row"]');
+  if (!row || typeof document.elementsFromPoint !== 'function') return null;
+  const under = document.elementsFromPoint(x, y).find((el) => el !== link && row.contains(el) && el !== row);
+  if (!under) return null;
+  const titled = under.closest<HTMLElement>('[title]');
+  const own = titled && row.contains(titled) && titled !== row ? titled : null;
+  if (own && !own.matches(CUT)) return own.getAttribute('title');
+  const cut = under.closest<HTMLElement>(CUT);
+  if (cut && row.contains(cut)) {
+    titleIfCut(cut);
+    return cut.getAttribute('title');
+  }
+  return own?.getAttribute('title') ?? null;
+}
+
+/** `onMouseMove` and `onMouseLeave` for a row's link: see [titleBeneath]. */
+export const rowLinkTitle = {
+  onMouseMove: (event: { currentTarget: HTMLElement; clientX: number; clientY: number }) => {
+    const title = titleBeneath(event.currentTarget, event.clientX, event.clientY);
+    if (title) event.currentTarget.setAttribute('title', title);
+    else event.currentTarget.removeAttribute('title');
+  },
+  onMouseLeave: (event: { currentTarget: HTMLElement }) => event.currentTarget.removeAttribute('title'),
+};
 
 /** How many rows the squeeze check reads: a page's first screen. */
 const SQUEEZE_SAMPLE_ROWS = 12;

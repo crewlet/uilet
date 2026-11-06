@@ -870,3 +870,11 @@ test('a sorted level ends its trunk at the row it draws last, and the head sorts
   expect(wire('unit:sales').hasAttribute('data-last')).toBe(true);
   expect(wire('unit:eng').hasAttribute('data-last')).toBe(false);
 });
+
+test('a last head that sorts ends with its values, its arrow before its word', () => {
+  const css = SHEET.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ');
+  expect(css).toMatch(
+    /\.crewlet-org-table \[role='columnheader'\]:last-child > \.crewlet-data-grid__sort \{ justify-content: flex-end; \}/,
+  );
+  expect(css).toMatch(/\.crewlet-org-table \[role='columnheader'\]:last-child \.crewlet-data-grid__sort-mark \{ order: -1; \}/);
+});

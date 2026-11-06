@@ -35,6 +35,7 @@ import {
   nextGridSort,
   overrunning,
   parseGridSort,
+  rowLinkTitle,
   sortByValue,
   squeezedCells,
   type GridAlign,
@@ -1102,6 +1103,7 @@ export function DataGrid<T>({
           aria-describedby={described}
           aria-current={marked ? 'true' : undefined}
           onClick={(e) => onRowActivate?.(row, e)}
+          {...rowLinkTitle}
         />
       ) : onRowActivate ? (
         <button
@@ -1111,6 +1113,7 @@ export function DataGrid<T>({
           aria-describedby={described}
           aria-current={marked ? 'true' : undefined}
           onClick={(e) => onRowActivate(row, e)}
+          {...rowLinkTitle}
         />
       ) : null;
     const inner = drawnColumns.map((column, i) =>

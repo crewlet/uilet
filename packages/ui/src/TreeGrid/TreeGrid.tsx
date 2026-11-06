@@ -57,6 +57,7 @@ import {
   nextGridSort,
   overrunning,
   parseGridSort,
+  rowLinkTitle,
   sortByValue,
   squeezedCells,
   type GridAlign,
@@ -579,7 +580,9 @@ export function TreeGrid({
   // first, and a grid that still cannot draw its values stacks where it may.
   useLayoutEffect(() => {
     const el = gridEl.current;
-    if (!el || phone || width <= 0) return;
+    // A PHONE ONLY STOPS THE FIT WHERE ITS ROWS ARE CARDS: a tree that keeps
+    // its columns gives way on a phone as anywhere.
+    if (!el || width <= 0 || (phone && phoneRows !== undefined)) return;
     if (!drawn.some((one) => one.drop !== undefined) && phoneRows === undefined && fit.set === shownKeys) return;
     const current = fit.set === shownKeys ? fit : { ...NO_FIT, set: shownKeys };
     const head = el.querySelector(':scope > .crewlet-tree-grid__head > [role="row"]');
@@ -968,7 +971,13 @@ export function TreeGrid({
                                row is the keyboard's and the reader's way in (Enter
                                follows this), so the link is hidden from both. */
                             // eslint-disable-next-line jsx-a11y/anchor-has-content
-                            <a className="crewlet-tree-grid__row-link" href={href} tabIndex={-1} aria-hidden="true" />
+                            <a
+                              className="crewlet-tree-grid__row-link"
+                              href={href}
+                              tabIndex={-1}
+                              aria-hidden="true"
+                              {...rowLinkTitle}
+                            />
                           )}
                           {col === 1 && (
                             /* THE PRESS LANDS ON THE ROW. The chevron is a
