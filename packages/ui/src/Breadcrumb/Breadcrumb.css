@@ -66,17 +66,17 @@
  * cannot reconstruct is the links out of it. So the ancestors keep their width
  * and the last part is the one that ellipsises.
  */
-/* ANCESTORS GIVE WAY BEFORE THE PAGE, the oldest first (its flex-shrink is
-   set per depth), each to a stub cut with an ellipsis and titled on hover:
-   kept whole, one long parent cut the page itself to "Pri..." at 1440 and
-   pushed it off a phone. The page shrinks only once they are stubs. */
+/* EVERY CRUMB GIVES WAY, the page down to a floor of 24ch and each ancestor
+   to a 2ch stub, the oldest first (its flex-shrink is set per depth), each cut
+   with an ellipsis and titled on hover. Kept whole, one long parent cut the
+   page itself to "Pri..." at 1440 and pushed it off a phone. */
 .crewlet-breadcrumb__part:not(:last-child) {
   flex: 0 1 auto;
   min-width: 2ch;
 }
 
 .crewlet-breadcrumb__part:last-child {
-  flex: 0 0.01 auto;
+  flex: 0 1 auto;
 }
 
 svg.crewlet-breadcrumb__separator {
@@ -175,7 +175,7 @@ a.crewlet-breadcrumb__crumb:focus-visible {
  * all. The floor is the last part's alone; an ancestor never shrinks.
  */
 .crewlet-breadcrumb__part:last-child > .crewlet-breadcrumb__here {
-  min-width: 5ch;
+  min-width: 24ch;
 }
 
 /*

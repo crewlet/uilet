@@ -168,8 +168,9 @@ test('the stylesheet floors the trail and gives the cut to the ancestors before 
   expect(trailRule).toMatch(/min-width:\s*min\(100%,\s*max\(20ch,\s*var\(--crewlet-breadcrumb-floor,\s*0px\)\)\)/);
   expect(trailRule).toMatch(/overflow-x:\s*auto/);
   expect(css).toMatch(/\.crewlet-breadcrumb__part:not\(:last-child\)\s*\{[^}]*flex:\s*0 1 auto;\s*min-width:\s*2ch/);
-  expect(css).toMatch(/\.crewlet-breadcrumb__part:last-child\s*\{[^}]*flex:\s*0 0\.01 auto/);
-  expect(css).toMatch(/\.crewlet-breadcrumb__part:last-child > \.crewlet-breadcrumb__here\s*\{[^}]*min-width:\s*5ch/);
+  expect(css).toMatch(/\.crewlet-breadcrumb__part:last-child\s*\{[^}]*flex:\s*0 1 auto/);
+  // The page keeps 24ch of its words before it gives way past them.
+  expect(css).toMatch(/\.crewlet-breadcrumb__part:last-child > \.crewlet-breadcrumb__here\s*\{[^}]*min-width:\s*24ch/);
 });
 
 // ON A PHONE THE WORKSPACE'S CRUMB IS ITS GLYPH, and its word stays for a
