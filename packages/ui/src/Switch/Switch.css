@@ -143,6 +143,12 @@
   outline-offset: 0;
 }
 
+/* ON, THE RING STANDS OFF THE TRACK: the filled track and the focus ring are
+   neighbouring violets, so a flush ring merged into a checked track. */
+.crewlet-switch__track:has(.crewlet-switch__control:checked:focus-visible) {
+  outline-offset: 2px;
+}
+
 .crewlet-switch__text {
   display: flex;
   flex-direction: column;
@@ -199,6 +205,21 @@
  */
 .crewlet-switch.is-disabled {
   opacity: 0.6;
+}
+
+/* THE SMALL SWITCH, for a compact bar: a smaller track, the thumb still
+   concentric with its ends, and the bar's small type. */
+.crewlet-switch--sm {
+  --crewlet-switch-width: 28px;
+  --crewlet-switch-height: 16px;
+  --crewlet-switch-thumb: 10px;
+
+  gap: calc(var(--spacing-1) * 1.5);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-switch--sm .crewlet-switch__label {
+  font-size: var(--font-size-xs);
 }
 
 /*
