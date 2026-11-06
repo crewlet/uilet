@@ -824,7 +824,7 @@ describe('a container-width table', () => {
   test('its indent steps in as it narrows, one width sooner in a deep tree', () => {
     expect(rule(SHEET, '.crewlet-org-table--container')).toMatch(/container: crewlet-org-table \/ inline-size;/);
     expect(SHEET).toMatch(
-      /@container crewlet-org-table \(width < 60rem\) \{\s*\.crewlet-org-table__grid \{\s*--crewlet-org-table-indent: var\(--spacing-5\);/,
+      /@container crewlet-org-table \(width < 75rem\) \{\s*\.crewlet-org-table__grid \{\s*--crewlet-org-table-indent: var\(--spacing-5\);/,
     );
     expect(SHEET).toMatch(
       /@container crewlet-org-table \(width < 40rem\) \{\s*\.crewlet-org-table \.crewlet-org-table__grid \{\s*--crewlet-org-table-indent: var\(--spacing-3\);\s*--crewlet-tree-grid-inset: var\(--spacing-1\);\s*--crewlet-tree-grid-edge: var\(--spacing-1\);/,
