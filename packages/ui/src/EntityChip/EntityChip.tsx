@@ -1,5 +1,7 @@
 import { Children, cloneElement, isValidElement, type HTMLAttributes, type ReactElement, type ReactNode } from 'react';
+import type { CrewletCharacterId } from '@crewlethq/icons/characters';
 import { Avatar, type AvatarKind, type AvatarSizeStep } from '../Avatar/index.js';
+import type { NodeHue } from '../utils/nodeHue.js';
 import { cx } from '../utils/cx.js';
 
 export interface EntityChipProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
@@ -21,6 +23,12 @@ export interface EntityChipProps extends Omit<HTMLAttributes<HTMLElement>, 'chil
   kind?: AvatarKind | undefined;
   /** The badge's step. The name takes the surrounding text size either way. */
   size?: AvatarSizeStep | undefined;
+  /** The Crewlet character an agent is drawn as, in place of its initials. A person keeps theirs. */
+  character?: CrewletCharacterId | undefined;
+  /** The hue an agent's character is drawn in. Read only with `character`. */
+  hue?: NodeHue | undefined;
+  /** A person's picture, in place of the initials. */
+  src?: string | undefined;
   children?: ReactNode;
 }
 
@@ -43,6 +51,9 @@ export function EntityChip({
   asChild = false,
   kind = 'agent',
   size = 'sm',
+  character,
+  hue,
+  src,
   className,
   children,
   ...rest
@@ -51,7 +62,7 @@ export function EntityChip({
 
   const inner = (
     <>
-      <Avatar name={name} size={size} kind={kind} decorative />
+      <Avatar name={name} size={size} kind={kind} character={character} hue={hue} src={src} decorative />
       <span className="crewlet-entity-chip__name">{name}</span>
     </>
   );

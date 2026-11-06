@@ -107,4 +107,25 @@ describe('EntityChip', () => {
     });
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
+
+  test("draws an agent as its character in its hue, and a person by their picture or initials", () => {
+    const { container } = render(
+      <>
+        <EntityChip name="Product Lead" href="#/seats/pm" character="gemlet" hue="cyan" size="xs" />
+        <EntityChip name="Avery Stone" kind="human" character="gemlet" />
+        <EntityChip name="Rowan Hale" kind="human" src="data:image/png;base64,iVBORw0KGgo=" />
+      </>,
+    );
+    const [agent, person, pictured] = [...container.querySelectorAll('.crewlet-entity-chip')];
+    const face = agent!.querySelector('.crewlet-avatar')!;
+    expect(face.className).toContain('crewlet-avatar--character');
+    expect(face.className).toContain('crewlet-avatar--hue-cyan');
+    expect(face.getAttribute('aria-hidden')).toBe('true');
+    // A person is never drawn as a character: the initials stay.
+    expect(person!.querySelector('.crewlet-avatar--character')).toBeNull();
+    expect(person!.querySelector('.crewlet-avatar')!.textContent).toBe('AS');
+    expect(pictured!.querySelector('img')?.getAttribute('src')).toContain('data:image/png');
+    // The name is still the chip's own text, read once.
+    expect(screen.getByRole('link', { name: 'Product Lead' })).not.toBeNull();
+  });
 });
