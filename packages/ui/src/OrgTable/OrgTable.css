@@ -340,6 +340,7 @@
  * a control that fails the focus-visibility rule, so the strip comes back the
  * moment focus enters the row.
  */
+.crewlet-org-table__actions[data-shown],
 .crewlet-org-table [role='row']:hover .crewlet-org-table__actions,
 .crewlet-org-table [role='row']:focus-within .crewlet-org-table__actions,
 .crewlet-org-table [role='row'][aria-selected='true'] .crewlet-org-table__actions {

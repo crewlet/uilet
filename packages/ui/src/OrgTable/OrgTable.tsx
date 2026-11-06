@@ -267,12 +267,19 @@ export function OrgTableName({ tone, ...content }: OrgTableNameProps) {
  */
 export function OrgTableActions({
   children,
+  shown = false,
   className,
 }: {
   children: ReactNode;
+  /** Drawn at rest too, for a table whose rows are edited as often as they are read. */
+  shown?: boolean | undefined;
   className?: string | undefined;
 }) {
-  return <span className={cx('crewlet-org-table__actions', className)}>{children}</span>;
+  return (
+    <span className={cx('crewlet-org-table__actions', className)} data-shown={shown ? '' : undefined}>
+      {children}
+    </span>
+  );
 }
 
 export interface OrgTableAddProps extends AddPillProps {

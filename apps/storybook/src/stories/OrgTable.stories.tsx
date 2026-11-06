@@ -23,6 +23,7 @@ import {
   TrashGlyph,
   UserPlusGlyph,
 } from '@crewlethq/icons/glyphs';
+import { BothThemes } from '../BothThemes';
 
 /**
  * UI / OrgTable.
@@ -160,7 +161,7 @@ const ICONS: Record<'company' | 'unit', typeof NetworkGlyph> = {
   unit: NetworkGlyph,
 };
 
-function Demo() {
+function Demo({ shown = false }: { shown?: boolean }) {
   const rows = useMemo(forest, []);
   const [selected, setSelected] = useState<string>('unit:eng');
   const [added, setAdded] = useState<string | null>(null);
@@ -217,7 +218,7 @@ function Demo() {
             ]}
           />
         )}
-        <OrgTableActions>
+        <OrgTableActions shown={shown}>
           <IconButton size="sm" label={`Edit ${entity.name}`} icon={<PencilGlyph />} />
           {entity.kind !== 'company' && (
             <IconButton
@@ -270,3 +271,15 @@ function Demo() {
 }
 
 export const Playground: Story = { render: () => <Demo /> };
+
+/**
+ * Row actions drawn at rest (`OrgTableActions shown`), for a table whose rows
+ * are edited as often as they are read: no hover or focus is needed to see them.
+ */
+export const ActionsAtRest: Story = {
+  render: () => (
+    <BothThemes>
+      <Demo shown />
+    </BothThemes>
+  ),
+};

@@ -673,3 +673,19 @@ describe('an add beside a name', () => {
     ).toMatch(/--crewlet-add-pill-origin: translate\(calc\(var\(--size-target-min\) \/ -2\), -50%\);/);
   });
 });
+
+test('a strip drawn at rest says so, and the sheet shows it without a hover', () => {
+  render(
+    <>
+      <OrgTableActions shown>
+        <button type="button">Edit</button>
+      </OrgTableActions>
+      <OrgTableActions>
+        <button type="button">Delete</button>
+      </OrgTableActions>
+    </>,
+  );
+  expect(screen.getByRole('button', { name: 'Edit' }).parentElement?.hasAttribute('data-shown')).toBe(true);
+  expect(screen.getByRole('button', { name: 'Delete' }).parentElement?.hasAttribute('data-shown')).toBe(false);
+  expect(SHEET).toMatch(/\.crewlet-org-table__actions\[data-shown\],[^{]*\{\s*opacity: 1;/);
+});
