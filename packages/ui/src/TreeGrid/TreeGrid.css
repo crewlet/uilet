@@ -116,6 +116,11 @@
   padding: 0 var(--spacing-2);
 }
 
+/* A COLUMN OF VALUES READ AFTER THE NAME takes the caption's size, a step under the name's. */
+.crewlet-tree-grid__cell[data-size='sm'] {
+  font-size: var(--font-size-2xs);
+}
+
 /*
  * The indent is the row's own level, set on the row, ON TOP OF the inset every
  * cell has. Replacing that inset left a top-level row's chevron flush against

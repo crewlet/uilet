@@ -205,8 +205,8 @@ export const ScrollsSideways: Story = {
 const FITTED: TreeGridColumn[] = [
   { key: 'name', header: 'Name', width: 'minmax(10rem, 3fr)' },
   { key: 'kind', header: 'Kind or type', width: 'minmax(0, 1.5fr)', hideBelow: 520 },
-  { key: 'handle', header: 'Handle', width: 'minmax(0, 1.5fr)', hideBelow: 640 },
-  { key: 'lead', header: 'Lead or reports to', width: 'minmax(0, 2fr)', hideBelow: 760 },
+  { key: 'handle', header: 'Handle', width: 'minmax(0, 1.5fr)', hideBelow: 640, size: 'sm' },
+  { key: 'lead', header: 'Lead or reports to', width: 'minmax(0, 2fr)', hideBelow: 760, size: 'sm' },
 ];
 
 /** A grid that fits its container: a cell of the name column, and the columns its width still holds. */
@@ -244,7 +244,8 @@ function Fitted() {
  * A grid that fits its container (`layout="container"`) and never scrolls
  * sideways: each column says the grid width it needs (`hideBelow`), and a
  * column the width cannot hold is left out with its header. Drag the corner
- * of a box to narrow it; the header holds at the top as the rows scroll.
+ * of a box to narrow it; the header holds at the top as the rows scroll. The
+ * handle and lead are values read after the name, a step smaller (`size: 'sm'`).
  */
 export const FitsItsContainer: Story = {
   render: () => (

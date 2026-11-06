@@ -89,6 +89,11 @@ export interface TreeGridColumn {
    * with its header. A cell's words can then move into another column's.
    */
   hideBelow?: number | undefined;
+  /**
+   * `sm` draws the column's values a step smaller, in the 11px of the caption
+   * under a name, for values read after the row's name. `md` is the grid's own.
+   */
+  size?: 'md' | 'sm' | undefined;
 }
 
 /** A row that holds only controls, such as an inline Add row. */
@@ -594,6 +599,7 @@ export function TreeGrid({
                           role="gridcell"
                           aria-colindex={col}
                           tabIndex={stop(id, col) && !cellHasControl?.(id, col, drawn[col - 1]?.key ?? '') ? 0 : -1}
+                          data-size={!add && drawn[col - 1]?.size === 'sm' ? 'sm' : undefined}
                           className="crewlet-tree-grid__cell"
                         >
                           {col === 1 && (

@@ -844,3 +844,22 @@ test('a press on a box or its label in a row is the control\'s, and does not cho
   fireEvent.click(rowOf(COMPANY));
   expect(onSelect).toHaveBeenCalledWith(COMPANY);
 });
+
+test("a column of values read after the name is a step smaller, and its heading is not", () => {
+  render(
+    <TreeGrid
+      label="Organization outline"
+      columns={[
+        { key: 'name', header: 'Name' },
+        { key: 'lead', header: 'Reports to', size: 'sm' },
+      ]}
+      rows={forest(false)}
+      renderCell={(id, column) => (column === 1 ? nameOf(id) : 'Chief Executive')}
+    />,
+  );
+  const cells = within(rowOf(COMPANY)).getAllByRole('gridcell');
+  expect(cells.map((cell) => cell.getAttribute('data-size'))).toEqual([null, 'sm']);
+  expect(screen.getAllByRole('columnheader')[1]!.hasAttribute('data-size')).toBe(false);
+  const rule = declarations().find(([selector]) => selector === ".crewlet-tree-grid__cell[data-size='sm']")?.[1] ?? '';
+  expect(rule).toMatch(/font-size:\s*var\(--font-size-2xs\)/);
+});
