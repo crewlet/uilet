@@ -38,6 +38,7 @@ import type { TreeInput, TreeModel } from '../Tree/index.js';
 import { installMotion, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { NODE_HUES } from '../utils/nodeHue.js';
 import {
+  TREE_ADD_MARK_MIN_ZOOM,
   TreeCanvas,
   type TreeCanvasGroup,
   type TreeCanvasHandle,
@@ -441,7 +442,9 @@ function Harness({
   controlsStart,
   expanded,
   onExpandedChange,
+  onViewChange,
 }: {
+  onViewChange?: ((view: { k: number }) => void) | undefined;
   expanded?: ReadonlySet<string> | undefined;
   onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
   minZoom?: number | undefined;
@@ -484,6 +487,7 @@ function Harness({
       controlsStart={controlsStart}
       expanded={expanded}
       onExpandedChange={onExpandedChange}
+      onViewChange={onViewChange}
       ref={handle}
     />
   );
@@ -2197,6 +2201,28 @@ describe('a node being composed', () => {
     const start = container.querySelector('.crewlet-canvas__controls--start')!;
     expect(start.textContent).toBe('Reporting view');
     expect(start.getAttribute('data-placement')).toBe('top-right');
+  });
+
+  /* AN ADD MARK IS A FULL TARGET AT ANY ZOOM: the zoom is on the root for the
+     sheet to undo, and a chart too far out for one says so. */
+  test('the zoom is written on the root, and a chart too far out hides its add marks', () => {
+    const heard: number[] = [];
+    const near = mount({ onViewChange: (view) => heard.push(view.k) });
+    const root = () => document.querySelector<HTMLElement>('.crewlet-tree-canvas')!;
+    const k = Number(root().style.getPropertyValue('--crewlet-tree-canvas-zoom'));
+    expect(k).toBe(heard.at(-1));
+    expect(k).toBeGreaterThanOrEqual(TREE_ADD_MARK_MIN_ZOOM);
+    expect(root().hasAttribute('data-zoomed-out')).toBe(false);
+    near.unmount();
+    mount({ extra: Array.from({ length: 40 }, (_, at) => `seat:extra${at}`) });
+    expect(Number(root().style.getPropertyValue('--crewlet-tree-canvas-zoom'))).toBeCloseTo(0.25);
+    expect(root().hasAttribute('data-zoomed-out')).toBe(true);
+    expect(SHEET).toMatch(
+      /\.crewlet-tree-canvas__under > \.crewlet-add-pill \{\s*scale: max\(1, calc\(1 \/ var\(--crewlet-tree-canvas-zoom\)\)\);\s*transform-origin: 50% 0;/,
+    );
+    expect(SHEET).toMatch(
+      /\.crewlet-tree-canvas\[data-zoomed-out\] \.crewlet-tree-canvas__under > \.crewlet-add-pill \{\s*visibility: hidden;/,
+    );
   });
 
   /*

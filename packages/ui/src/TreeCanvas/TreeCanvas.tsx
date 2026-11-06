@@ -98,6 +98,8 @@ import {
   type CanvasHandle,
   type CanvasLabels,
   type CanvasRect,
+  type CanvasSize,
+  type CanvasView,
 } from '../Canvas/index.js';
 import { focusables } from '../Layer/index.js';
 import {
@@ -315,6 +317,12 @@ export interface TreeCanvasGroup {
 }
 
 /** The id of the probe the gaps between cards are measured from. */
+/**
+ * The zoom below which a branch's add mark waits for a zoom in: under it a
+ * full pointer target no longer fits between two ranks. The card's own menu still adds.
+ */
+export const TREE_ADD_MARK_MIN_ZOOM = 0.4;
+
 const GAP_PROBE = 'crewlet:tree-canvas-gap';
 
 /**
@@ -516,6 +524,8 @@ export interface TreeCanvasProps {
   expanded?: ReadonlySet<string> | undefined;
   /** The open nodes a toggle, or an expand or collapse of everything, has just produced. */
   onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
+  /** Where the view is going, after a fit, a zoom or a pan: see [CanvasProps.onViewChange]. */
+  onViewChange?: ((view: CanvasView, viewport: CanvasSize) => void) | undefined;
   ref?: Ref<TreeCanvasHandle> | undefined;
   className?: string | undefined;
 }
@@ -551,6 +561,7 @@ export function TreeCanvas({
   minZoom,
   expanded: held,
   onExpandedChange,
+  onViewChange,
   ref,
   className,
 }: TreeCanvasProps) {
@@ -661,6 +672,21 @@ export function TreeCanvas({
   );
 
   const canvas = useRef<CanvasHandle>(null);
+
+  /* THE ZOOM IS WRITTEN ON THE ROOT, not rendered, so a pan or a zoom costs no
+     render of the chart: it keeps a branch's add mark a full target at any zoom. */
+  const root = useRef<HTMLDivElement>(null);
+  const viewChanged = useCallback(
+    (view: CanvasView, viewport: CanvasSize) => {
+      const el = root.current;
+      if (el) {
+        el.style.setProperty('--crewlet-tree-canvas-zoom', String(view.k));
+        el.toggleAttribute('data-zoomed-out', view.k < TREE_ADD_MARK_MIN_ZOOM);
+      }
+      onViewChange?.(view, viewport);
+    },
+    [onViewChange],
+  );
   const shownPositions = useRef<ReadonlyMap<string, CanvasPoint> | null>(null);
   // THE NODE THE OPERATOR ACTED ON stays where it was: the node named by
   // `anchorNode`, else the node with focus. A node that did not exist before
@@ -1052,6 +1078,7 @@ export function TreeCanvas({
 
   return (
     <div
+      ref={root}
       className={cx(
         'crewlet-tree-canvas',
         appearance === 'node' && 'crewlet-tree-canvas--node',
@@ -1084,6 +1111,7 @@ export function TreeCanvas({
         largestItemWidth={widestCard}
         labels={labels}
         minZoom={minZoom}
+        onViewChange={viewChanged}
       >
         <div className="crewlet-tree-canvas__gap" ref={measure(GAP_PROBE)} aria-hidden="true" />
         <div className="crewlet-tree-canvas__margin" ref={measure(MARGIN_PROBE)} aria-hidden="true" />

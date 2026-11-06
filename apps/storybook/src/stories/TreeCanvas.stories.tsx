@@ -429,6 +429,21 @@ function nodeCards(model: TreeModel, expanded: ReadonlySet<string>): TreeCardInp
   return model.roots.map(card);
 }
 
+/** The add pill under a unit's branch: a quiet disc that splits into the three kinds it adds. */
+function orgAdd(id: string) {
+  return ENTITIES[id]!.kind === 'seat' ? null : (
+    <AddPill
+      label={`Add to ${ENTITIES[id]!.name}`}
+      tabIndex={-1}
+      sections={[
+        { key: 'unit', label: 'Add a unit', icon: <FolderPlusGlyph />, onSelect: () => {} },
+        { key: 'agent', label: 'Add an agent seat', icon: <CrewletFigure />, onSelect: () => {} },
+        { key: 'human', label: 'Add a human seat', icon: <UserPlusGlyph />, onSelect: () => {} },
+      ]}
+    />
+  );
+}
+
 /**
  * The console's own org chart, as this package draws it.
  *
@@ -479,34 +494,7 @@ export const OrgChart: Story = {
           cardOf={(id) => id}
           cardTone={toneOf}
           renderCard={(id, card) => <NodeCard id={id} card={card} />}
-          renderUnder={(id) =>
-            ENTITIES[id]!.kind === 'seat' ? null : (
-              <AddPill
-                label={`Add to ${ENTITIES[id]!.name}`}
-                tabIndex={-1}
-                sections={[
-                  {
-                    key: 'unit',
-                    label: 'Add a unit',
-                    icon: <FolderPlusGlyph />,
-                    onSelect: () => {},
-                  },
-                  {
-                    key: 'agent',
-                    label: 'Add an agent seat',
-                    icon: <CrewletFigure />,
-                    onSelect: () => {},
-                  },
-                  {
-                    key: 'human',
-                    label: 'Add a human seat',
-                    icon: <UserPlusGlyph />,
-                    onSelect: () => {},
-                  },
-                ]}
-              />
-            )
-          }
+          renderUnder={orgAdd}
           hasNodeMenu={() => true}
           onNodeKey={() => true}
           selectedId={selected}
@@ -826,6 +814,37 @@ export const HeldExpansion: Story = {
           </div>
         </BothThemes>
       </div>
+    );
+  },
+};
+
+/**
+ * An add mark stays a full 24px pointer target at any zoom. In a pane this
+ * narrow the chart opens at under half size, and each branch's add is drawn
+ * at its own size rather than the chart's; under 40% it waits for a zoom in.
+ */
+export const AddMarksAtAnyZoom: Story = {
+  render: function AddMarksAtAnyZoomStory() {
+    return (
+      <BothThemes>
+        <div style={{ height: '36vh', width: '480px' }}>
+          <TreeCanvas
+            label="Structure chart"
+            appearance="node"
+            ground="dotted"
+            connector="curve"
+            nodes={NODES}
+            cards={nodeCards}
+            cardOf={(id) => id}
+            cardTone={toneOf}
+            renderCard={(id, card) => <NodeCard id={id} card={card} />}
+            renderUnder={orgAdd}
+            hasNodeMenu={() => true}
+            onNodeKey={() => true}
+            minZoom={0.02}
+          />
+        </div>
+      </BothThemes>
     );
   },
 };

@@ -1,6 +1,6 @@
 import './TreeCanvas.css';
 
-export { TreeCanvas } from './TreeCanvas.js';
+export { TREE_ADD_MARK_MIN_ZOOM, TreeCanvas } from './TreeCanvas.js';
 export type {
   TreeActionsProps,
   TreeCanvasGroup,
