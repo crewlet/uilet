@@ -388,7 +388,9 @@ function depthIn(view: HTMLElement, element: Element): number {
  * the first that reaches into the view, and inside one that starts above it,
  * the first of its children that does, a few levels down. A pinned or
  * positioned part (a day's sticky pill) never moves with the content, so it is
- * stepped over.
+ * stepped over, and so is a part the host marks `overflow-anchor: none`, the
+ * platform's own way out: a head that older items land under, or a windowed
+ * list's spacer, whose top stays put while the rows inside it are drawn.
  */
 function anchorIn(view: HTMLElement, content: HTMLElement | null): Anchor | null {
   const top = view.getBoundingClientRect().top;
@@ -399,8 +401,9 @@ function anchorIn(view: HTMLElement, content: HTMLElement | null): Anchor | null
     for (const child of Array.from(parent.children)) {
       const box = child.getBoundingClientRect();
       if (box.height === 0 || box.bottom <= top) continue;
-      const position = getComputedStyle(child).position;
-      if (position === 'sticky' || position === 'fixed' || position === 'absolute') continue;
+      const style = getComputedStyle(child);
+      if (style.position === 'sticky' || style.position === 'fixed' || style.position === 'absolute') continue;
+      if (style.overflowAnchor === 'none') continue;
       next = child;
       break;
     }
