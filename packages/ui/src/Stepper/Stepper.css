@@ -262,7 +262,9 @@
   background: var(--color-surface-hover);
 }
 
-.crewlet-stepper__target:focus-visible {
+/* Two classes deep, so the current row's hairline outline (same weight,
+   later in the sheet) never replaces the focus ring on the current step. */
+.crewlet-stepper__target.crewlet-stepper__target:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: var(--size-focus-ring-inset-offset);
 }
