@@ -14,8 +14,13 @@
  * in what a screen reader said and in what a copy carried.
  */
 
+/* PINNED TO ITS CONTAINING BLOCK'S ORIGIN: left at its static position, a
+   span far down a scrolled page with no positioned ancestor stretched the
+   document, which an outline's scrollIntoView then scrolled out of place. */
 .crewlet-visually-hidden {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   margin: -1px;

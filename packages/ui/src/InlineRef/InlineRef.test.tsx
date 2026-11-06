@@ -167,3 +167,10 @@ test("a mark stands 0.15em from its words, centred 0.275em above the baseline", 
   const em = (prop: string) => Number(new RegExp(`${prop}:\\s*(-?[\\d.]+)em`).exec(box)?.[1]);
   expect(em("vertical-align") + em("height") / 2).toBeCloseTo(0.275, 5);
 });
+
+test("what only a screen reader hears is pinned to its containing block, as VisuallyHidden is", () => {
+  // At its static position it stretched a scrolled page's document.
+  const said = rule(css("InlineRef.css"), ".crewlet-inline-ref__said");
+  expect(said).toMatch(/top:\s*0;/);
+  expect(said).toMatch(/left:\s*0;/);
+});

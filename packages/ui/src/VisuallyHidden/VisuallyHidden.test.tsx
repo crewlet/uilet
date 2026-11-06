@@ -26,3 +26,14 @@ test('keeps the spaces at its edges and never wraps', () => {
   expect(container.textContent).toBe('removed: relationship');
   uninstall();
 });
+
+test('is pinned to its containing block, so it never stretches a scroller', () => {
+  // At its static position, a hidden span far down a scrolled page with no
+  // positioned ancestor stretched the document, and scrollIntoView scrolled it.
+  const uninstall = installThemed('light', 'VisuallyHidden/VisuallyHidden.css');
+  const { container } = render(<VisuallyHidden>Section 12</VisuallyHidden>);
+  const style = getComputedStyle(container.querySelector('.crewlet-visually-hidden')!);
+  expect(style.top).toBe('0px');
+  expect(style.left).toBe('0px');
+  uninstall();
+});
