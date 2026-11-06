@@ -635,3 +635,41 @@ describe('axe', () => {
     expect(await violations(container)).toEqual([]);
   });
 });
+
+describe('an add beside a name', () => {
+  const pill = (
+    <OrgTableAdd
+      placement="name"
+      size="xs"
+      label="Add to Engineering"
+      sections={[
+        { key: 'unit', label: 'Add a unit', icon: <svg />, onSelect: () => {} },
+        { key: 'seat', label: 'Add a seat', icon: <svg />, onSelect: () => {} },
+        { key: 'person', label: 'Add a person', icon: <svg />, onSelect: () => {} },
+      ]}
+    />
+  );
+
+  test('it says where it stands, and the end is the default', () => {
+    const { container } = render(
+      <>
+        <OrgTableName icon={<svg />} name="Engineering" caption="Unit" nameAction={pill} />
+        <OrgTableAdd label="Add to Platform" sections={[]} />
+      </>,
+    );
+    const [beside, end] = [...container.querySelectorAll('.crewlet-org-table__add')];
+    expect(beside!.getAttribute('data-placement')).toBe('name');
+    expect(beside!.closest('.crewlet-org-label__name-line')).not.toBeNull();
+    expect(end!.getAttribute('data-placement')).toBe('end');
+  });
+
+  test('closed it keeps only its mark, open it keeps the room it opens into, from its mark', () => {
+    expect(rule(SHEET, ".crewlet-org-table__add[data-placement='name']")).toMatch(/width: auto;/);
+    expect(
+      rule(SHEET, ".crewlet-org-table__add[data-placement='name']:has(.crewlet-add-pill:not([data-phase='closed']))"),
+    ).toMatch(/width: var\(--crewlet-org-table-add\);/);
+    expect(
+      rule(SHEET, ".crewlet-org-table__add[data-placement='name'] .crewlet-add-pill[data-layout='split']"),
+    ).toMatch(/--crewlet-add-pill-origin: translate\(calc\(var\(--size-target-min\) \/ -2\), -50%\);/);
+  });
+});

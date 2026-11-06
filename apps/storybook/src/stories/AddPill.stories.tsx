@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { AddPill } from '@crewlethq/ui';
+import { AddPill, OrgTableAdd, OrgTableName } from '@crewlethq/ui';
+import { BothThemes } from '../BothThemes';
 import { CrewletFigure } from '@crewlethq/icons';
 import { FolderPlusGlyph, UserPlusGlyph } from '@crewlethq/icons/glyphs';
 
@@ -108,6 +109,30 @@ export const OnABranch: Story = {
  */
 export const InARow: Story = {
   args: { label: 'Add to Engineering', sections: SECTIONS, size: 'md', layout: 'inline' },
+};
+
+/**
+ * The QUIET row step, beside a name rather than among a row's controls: a
+ * 14px plus on a lighter line and no disc, in the same 24px target. Through
+ * `OrgTableAdd placement="name"` and `OrgLabel`'s `nameAction`, a long name
+ * gives way to it, and it opens from its mark toward the row's end.
+ */
+export const QuietBesideAName: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'grid', gap: 'var(--spacing-3)', width: 320 }}>
+        {['Engineering', 'Customer Success and Partnerships Europe'].map((name) => (
+          <OrgTableName
+            key={name}
+            icon={<FolderPlusGlyph />}
+            name={name}
+            caption="Department"
+            nameAction={<OrgTableAdd placement="name" size="xs" label={`Add to ${name}`} sections={SECTIONS} />}
+          />
+        ))}
+      </div>
+    </BothThemes>
+  ),
 };
 
 /**

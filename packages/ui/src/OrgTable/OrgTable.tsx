@@ -278,6 +278,12 @@ export function OrgTableActions({
 export interface OrgTableAddProps extends AddPillProps {
   /** Says a press opened it, so the grid's one tab stop follows focus here. */
   onOpen?: (() => void) | undefined;
+  /**
+   * `end` (the default) holds the open pill's room at the row's end. `name`
+   * stands beside a name (`OrgLabel` `nameAction`): closed it takes its mark's
+   * room alone, and open it takes the room it opens into, toward the row's end.
+   */
+  placement?: 'end' | 'name' | undefined;
 }
 
 /**
@@ -298,9 +304,13 @@ export interface OrgTableAddProps extends AddPillProps {
  * would have to carry: the press is on its way down to a control that stops
  * it, and the grid only has to know that it happened.
  */
-export function OrgTableAdd({ onOpen, className, ...pill }: OrgTableAddProps) {
+export function OrgTableAdd({ onOpen, placement = 'end', className, ...pill }: OrgTableAddProps) {
   return (
-    <span className={cx('crewlet-org-table__add', className)} onClickCapture={() => onOpen?.()}>
+    <span
+      className={cx('crewlet-org-table__add', className)}
+      data-placement={placement}
+      onClickCapture={() => onOpen?.()}
+    >
       <AddPill {...pill} />
     </span>
   );

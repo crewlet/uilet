@@ -568,3 +568,13 @@ describe('the drawing', () => {
     expect(guarded).toContain('transition: none');
   });
 });
+
+test('the quiet row pill draws a smaller, lighter plus with no disc, in the same pointer target', () => {
+  const { container } = render(<AddPill label="Add to Engineering" size="xs" sections={sections(() => {})} />);
+  expect(container.querySelector('.crewlet-add-pill')?.getAttribute('data-size')).toBe('xs');
+  const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'AddPill.css'), 'utf8');
+  expect(sheet).toMatch(/\[data-size='xs'\] \.crewlet-add-pill__mark svg \{[^}]*stroke-width: 1\.25;/);
+  expect(sheet).toMatch(/\[data-size='xs'\] \.crewlet-add-pill__disc \{[^}]*background-color: transparent;/);
+  // The target is the pill's own, untouched by the quiet size.
+  expect(sheet).not.toMatch(/\[data-size='xs'\] \.crewlet-add-pill__mark \{/);
+});

@@ -178,6 +178,25 @@
   white-space: nowrap;
 }
 
+/* A CONTROL ON THE NAME'S LINE follows the name, and the name gives way first. */
+.crewlet-org-label__name-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.crewlet-org-label__name-line > .crewlet-org-label__name {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.crewlet-org-label__name-line > :not(.crewlet-org-label__name) {
+  flex: none;
+}
+
 /*
  * THE CAPTION RECEDES BEHIND THE NAME, and on a toned node or a toned row it
  * recedes in the neutral ink rather than in the hue.
@@ -325,6 +344,10 @@
  */
 .crewlet-org-label--row .crewlet-org-label__name {
   max-width: none;
+}
+
+.crewlet-org-label--row .crewlet-org-label__name-line {
+  justify-content: flex-start;
 }
 
 /*

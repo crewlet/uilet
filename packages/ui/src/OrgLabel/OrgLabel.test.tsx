@@ -631,3 +631,19 @@ test('without a logo the glyph is drawn as before', () => {
   expect(container.querySelector('.crewlet-org-label__logo')).toBeNull();
   expect(container.querySelector('.crewlet-org-label__icon [data-glyph]')).not.toBeNull();
 });
+
+test("a control on the name's line follows the name, which gives way to it", () => {
+  const { container } = render(
+    <OrgLabel layout="row" icon={<svg />} name="Engineering" caption="Department" nameAction={<button type="button">Add</button>} />,
+  );
+  const line = container.querySelector('.crewlet-org-label__name-line')!;
+  expect([...line.children].map((child) => child.className || child.tagName)).toEqual(['crewlet-org-label__name', 'BUTTON']);
+  expect(SHEET).toMatch(/\.crewlet-org-label__name-line > \.crewlet-org-label__name \{[^}]*flex: 0 1 auto;[^}]*min-width: 0;/);
+  expect(SHEET).toMatch(/\.crewlet-org-label__name-line > :not\(\.crewlet-org-label__name\) \{[^}]*flex: none;/);
+});
+
+test('a label without a name action keeps its name as the first line', () => {
+  const { container } = render(<OrgLabel layout="row" icon={<svg />} name="Engineering" caption="Department" />);
+  expect(container.querySelector('.crewlet-org-label__name-line')).toBeNull();
+  expect(container.querySelector('.crewlet-org-label__text > .crewlet-org-label__name')).not.toBeNull();
+});

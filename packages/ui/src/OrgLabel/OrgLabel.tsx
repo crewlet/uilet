@@ -129,6 +129,11 @@ export type OrgLabelMark =
 interface OrgLabelWords {
   /** The name, which takes the width the two fixed zones leave and truncates. */
   name: ReactNode;
+  /**
+   * A control on the name's own line, just after the name, such as a quiet
+   * add (`OrgTableAdd placement="name"`). A long name gives way to it first.
+   */
+  nameAction?: ReactNode | undefined;
   /** What kind of thing this is: "Department", "Human seat", "Crewlet agent". */
   caption?: ReactNode | undefined;
   /**
@@ -251,13 +256,22 @@ export function OrgLabel(props: OrgLabelProps) {
  */
 function Words({
   name,
+  nameAction,
   caption,
   captionMarks,
   className,
-}: Pick<OrgLabelWords, 'name' | 'caption' | 'captionMarks' | 'className'>) {
+}: Pick<OrgLabelWords, 'name' | 'nameAction' | 'caption' | 'captionMarks' | 'className'>) {
+  const named = <span className="crewlet-org-label__name">{name}</span>;
   return (
     <span className={cx('crewlet-org-label__text', className)}>
-      <span className="crewlet-org-label__name">{name}</span>
+      {nameAction === undefined || nameAction === null ? (
+        named
+      ) : (
+        <span className="crewlet-org-label__name-line">
+          {named}
+          {nameAction}
+        </span>
+      )}
       {(caption !== undefined || captionMarks !== undefined) && (
         <span className="crewlet-org-label__caption">
           {caption !== undefined && <span className="crewlet-org-label__kind">{caption}</span>}
