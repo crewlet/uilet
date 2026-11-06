@@ -176,6 +176,41 @@ test('steps over a part the host marks overflow-anchor: none', () => {
   expect(log.scrollTop).toBe(350);
 });
 
+// A DAY THAT RUNS PAST THE VIEW IS LOOKED INTO for the row at the top, as the
+// browser's anchoring looks into what it holds only part of: older rows land
+// at the start of the same day, and the day's own top does not move. Mutation:
+// take the first item in view whole, and the view stays on the day's top.
+test('looks into an item the view holds only part of for the row at its top', () => {
+  const tops = new Map<string, number>([
+    ['Message 1', 0],
+    ['Message 2', 300],
+    ['Message 3', 600],
+  ]);
+  const rect = (top: number, height: number) =>
+    ({ x: 0, y: top, top, bottom: top + height, left: 0, right: 400, width: 400, height, toJSON: () => ({}) }) as DOMRect;
+  const day = (rows: JSX.Element[]) => <section key="day">{rows}</section>;
+  const placed = (log: HTMLElement, height: number) => {
+    log.getBoundingClientRect = () => rect(0, 400);
+    log.querySelector('section')!.getBoundingClientRect = () => rect(-log.scrollTop, height);
+    for (const p of Array.from(log.querySelectorAll('p'))) {
+      p.getBoundingClientRect = () => rect((tops.get(p.textContent ?? '') ?? 0) - log.scrollTop, 300);
+    }
+  };
+  const { rerender } = render(<ChatThread label="Conversation">{day(items(3))}</ChatThread>);
+  const log = screen.getByRole('log');
+  layout(log, 900);
+  placed(log, 900);
+  rerender(<ChatThread label="Conversation">{day(items(3))}</ChatThread>);
+  expect(log.scrollTop).toBe(500);
+  log.scrollTop = 250;
+  fireEvent.scroll(log);
+  for (const [text, top] of tops) tops.set(text, top + 300);
+  layout(log, 1200);
+  rerender(<ChatThread label="Conversation">{day([<p key="older">Older</p>, ...items(3)])}</ChatThread>);
+  placed(log, 1200);
+  expect(log.scrollTop).toBe(550);
+});
+
 // A VIEW THAT SHRINKS UNDER A READER AT THE END keeps the latest in sight: a
 // composer growing a line took the last line of the conversation with it.
 test('keeps the latest in sight when the view shrinks under a reader at the end', () => {
