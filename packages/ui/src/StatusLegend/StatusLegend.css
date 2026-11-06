@@ -55,8 +55,10 @@ button.crewlet-status-legend__item[aria-pressed='true'] {
   color: var(--color-brand-accent-ink);
 }
 
-/* The count is a quiet figure after the word, in step down the column. */
+/* The count is a quiet figure after the word, in step down the column, and
+   room for two digits, so a count passing 9 moves no key beside it. */
 .crewlet-status-legend__count {
+  min-width: 2ch;
   font-variant-numeric: tabular-nums;
   color: var(--color-text-tertiary);
 }
