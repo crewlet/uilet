@@ -6,9 +6,10 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
+import { installAtWidth, installCss, installSheets, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
 import { FactLine, ObjectHeader, SetByLine, type SetBy } from './index.js';
 
 afterEach(cleanup);
@@ -213,4 +214,96 @@ test('a fact line holds two sizes: a note and a by-line are set as the label is'
   const note = /\.crewlet-fact-line__note,\s*\.crewlet-fact-line__set-by\s*\{([^}]*)\}/.exec(sheet)?.[1]?.match(/font-size:\s*([^;]+);/)?.[1];
   expect(label).toBe('var(--font-size-xs)');
   expect(note).toBe(label);
+});
+
+/** Lays a clamp out as cut: jsdom measures nothing, so the box is given. */
+function cutDown(element: Element) {
+  Object.defineProperty(element, 'clientHeight', { configurable: true, value: 39 });
+  Object.defineProperty(element, 'scrollHeight', { configurable: true, value: 98 });
+}
+
+const SEAT = 'Principal Product Manager for Learner Journeys, Spaced Repetition and Phrase Discovery';
+
+describe('the sweep fixes', () => {
+  test('tracks no fact uses collapse, so the facts share the whole row', () => {
+    const uninstall = installSheets('ObjectHeader/ObjectHeader.css');
+    try {
+      const { container } = render(<FactLine facts={[{ label: 'Seat', value: SEAT }]} />);
+      const line = container.querySelector('.crewlet-fact-line')!;
+      expect(getComputedStyle(line).gridTemplateColumns).toMatch(/^repeat\(auto-fit,/);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('a clamped value carries its whole words on hover when it is cut, and none when it fits', () => {
+    const { container } = render(<FactLine facts={[{ label: 'Seat', value: SEAT, href: '#/seats/pm' }]} />);
+    const clamp = container.querySelector('.crewlet-fact-line__value--clamp > .crewlet-text--clamp-2')!;
+    fireEvent.mouseEnter(clamp);
+    expect(clamp.hasAttribute('title')).toBe(false);
+    cutDown(clamp);
+    fireEvent.mouseEnter(clamp);
+    expect(clamp.getAttribute('title')).toBe(SEAT);
+  });
+
+  test('a link in a clipped value has its focus ring drawn by the value, which its clip cannot cut', () => {
+    // jsdom matches no :focus-visible, so the sheets go in with an attribute
+    // standing in for it (same specificity), set where keyboard focus is.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const palette = themeColours('light');
+    const sheet = ['../Link/Link.css', 'ObjectHeader.css']
+      .map((path) => readFileSync(join(here, path), 'utf8'))
+      .join('\n')
+      .replace(/:focus-visible/g, '[data-focus-visible]')
+      .replace(/var\((--[\w-]+)\)/g, (whole, name: string) => palette.get(name) ?? whole);
+    const uninstall = installCss(sheet);
+    try {
+      render(
+        <FactLine
+          facts={[
+            { label: 'Owner', value: 'Odile Varga-Nakamura', href: '#/people/odile' },
+            { label: 'Branch', value: 'main 891b602', token: true, href: '#/code/branches/main' },
+          ]}
+        />,
+      );
+      for (const name of ['Odile Varga-Nakamura', 'main 891b602']) {
+        const link = screen.getByRole('link', { name });
+        link.setAttribute('data-focus-visible', '');
+        // The link's own ring would be clipped to a bracket, so it draws none.
+        expect(getComputedStyle(link).outlineStyle, name).toBe('none');
+        link.removeAttribute('data-focus-visible');
+      }
+    } finally {
+      uninstall();
+    }
+    // And the clipped value draws it instead (jsdom evaluates no :has()).
+    for (const variant of ['clamp', 'token']) {
+      const rule = new RegExp(
+        `\\.crewlet-fact-line__value--${variant}:has\\(:focus-visible\\)[^{]*\\{[^}]*outline:\\s*2px solid var\\(--color-focus\\)`,
+      );
+      expect(css(), variant).toMatch(rule);
+    }
+  });
+
+  test('a title clamps at two lines with its words on hover, and wraps in full on a phone', () => {
+    for (const [width, clamped] of [
+      [1440, true],
+      [390, false],
+    ] as const) {
+      const uninstall = installAtWidth(width, 'light', 'Text/Text.css', 'ObjectHeader/ObjectHeader.css');
+      try {
+        cleanup();
+        render(<ObjectHeader kind="Change" title={SEAT} />);
+        const words = screen.getByRole('heading', { level: 2, name: SEAT }).firstElementChild!;
+        expect(getComputedStyle(words).overflow, String(width)).toBe(clamped ? 'hidden' : 'visible');
+        if (clamped) {
+          cutDown(words);
+          fireEvent.mouseEnter(words);
+          expect(words.getAttribute('title')).toBe(SEAT);
+        }
+      } finally {
+        uninstall();
+      }
+    }
+  });
 });

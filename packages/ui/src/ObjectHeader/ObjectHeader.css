@@ -105,13 +105,9 @@
 }
 
 /* TWO LINES, AND THAT IS THE CEILING, which catches a title written as a
-   paragraph and holds every real one. */
+   paragraph and holds every real one. The clamp is the title's kit Text
+   (clamp 2), so a cut title carries its words on hover. */
 .crewlet-object-header__title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
   flex: 0 1 auto;
   min-width: 0;
   margin: 0;
@@ -119,6 +115,17 @@
   font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-snug);
   color: var(--color-text-primary);
+}
+
+/* On a phone the same title needs twice the lines and no pointer can read a
+   cut one, so it wraps in full there. */
+@media (width < 640px) {
+  .crewlet-object-header__title > .crewlet-object-header__title-text {
+    display: block;
+    -webkit-line-clamp: none;
+    line-clamp: none;
+    overflow: visible;
+  }
 }
 
 /* The author's own sentence about the object: under the title, quieter than
@@ -164,10 +171,11 @@
 /* ── the fact line ─────────────────────────────────────────────────────── */
 
 /* THE TRACK FLOOR IS 7.5rem, which fits seven facts on one line at 1280px and
-   still holds every label and a two-line value. */
+   still holds every label and a two-line value. AUTO-FIT, so tracks no fact
+   uses collapse and the facts share the whole row rather than leaving it empty. */
 .crewlet-fact-line {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(7.5rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(7.5rem, 100%), 1fr));
   column-gap: var(--spacing-4);
   row-gap: var(--spacing-3);
   padding-top: var(--spacing-1);
@@ -206,12 +214,18 @@
   overflow-wrap: anywhere;
 }
 
-.crewlet-fact-line__value--clamp {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
+/* A clipped value (a clamp, a token) would cut a link's focus ring to a
+   bracket, so the value draws the ring, which its own clip cannot cut. */
+.crewlet-fact-line__value--clamp:has(:focus-visible),
+.crewlet-fact-line__value--token:has(:focus-visible) {
+  border-radius: var(--radius-xs);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-fact-line__value.crewlet-fact-line__value--clamp :focus-visible,
+.crewlet-fact-line__value.crewlet-fact-line__value--token :focus-visible {
+  outline: none;
 }
 
 /* One token, one line, cut with an ellipsis where two tracks are too narrow;
