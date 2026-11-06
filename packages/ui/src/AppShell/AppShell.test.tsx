@@ -1724,3 +1724,13 @@ describe('the rail head, its field and the scroller', () => {
     expect(rule('.crewlet-app-shell__gauge-ruler')).toContain('overflow-y: scroll;');
   });
 });
+
+test("the fill screen's gauge reserves its gutter as the screen's scroller does", () => {
+  // An empty overflow: scroll box draws no bar where scrollbars hide or
+  // overlay, so the gauge read 0 while the scroller's scrollbar-gutter kept
+  // 6px, and a fill screen's bar ended 6px off a scrolling screen's.
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = (selector: string) => new RegExp(`${selector.replace(/[.]/g, '\\.')}\\s*\\{([^}]*)\\}`).exec(sheet)?.[1] ?? '';
+  expect(rule('.crewlet-app-shell__main')).toMatch(/scrollbar-gutter:\s*stable/);
+  expect(rule('.crewlet-app-shell__gauge-ruler')).toMatch(/scrollbar-gutter:\s*stable/);
+});

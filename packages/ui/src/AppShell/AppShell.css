@@ -792,6 +792,10 @@
 .crewlet-app-shell__gauge-ruler {
   height: var(--size-target-min);
   overflow-y: scroll;
+  /* Reserved as the screen's scroller reserves it: where an empty scroller
+     draws no bar (hidden or overlay scrollbars) the gauge read 0 while the
+     scroller kept 6px, and a fill screen's bar stood 6px off a scrolling one. */
+  scrollbar-gutter: stable;
 }
 
 /*
