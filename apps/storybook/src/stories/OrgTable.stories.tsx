@@ -1,13 +1,18 @@
 import { useMemo, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
+  EmptyValue,
+  EntityChip,
   IconButton,
   Menu,
   OrgTable,
   OrgTableActions,
   OrgTableAdd,
   OrgTableName,
+  StatusLine,
   Tag,
+  Text,
+  type StatusLineProps,
   type OrgTableSelection,
   type OrgTableTone,
   type TreeGridColumn,
@@ -24,6 +29,7 @@ import {
   TrashGlyph,
   UserPlusGlyph,
 } from '@crewlethq/icons/glyphs';
+import mark from '@crewlethq/icons/favicon/crewlet.svg';
 import { BothThemes } from '../BothThemes';
 
 /**
@@ -379,6 +385,167 @@ export const SelectionAndContainerWidth: Story = {
     <BothThemes>
       <div style={{ resize: 'horizontal', overflow: 'auto', width: 880, minWidth: 320, maxWidth: '100%' }}>
         <Picking />
+      </div>
+    </BothThemes>
+  ),
+};
+
+/** What each seat is doing, as a live table says it. */
+const LIVE: Record<string, Pick<StatusLineProps, 'tone' | 'pulse' | 'label' | 'notes' | 'detail'>> = {
+  'seat:ceo': { tone: 'neutral', label: 'Idle', detail: 'Last turn 2 hours ago' },
+  'seat:vp': { tone: 'info', pulse: true, label: 'Working', notes: ['3 waiting'], detail: 'Reviewing the release plan · 2 people waiting · 1 agent waiting' },
+  'seat:dev': { tone: 'warning', label: 'Needs you', notes: ['1 waiting'], detail: 'Asks to call deploy on production' },
+  'seat:sre': { tone: 'info', pulse: true, label: 'Working', notes: ['pausing'], detail: 'Pauses when this turn finishes' },
+  'seat:design': { label: 'Away' },
+  'seat:ae': { tone: 'danger', label: 'Provider limit', notes: ['paused'], detail: 'The rate limit resets at 14:00' },
+};
+
+/** The characters and hues the agents are drawn as. */
+const FACES: Record<string, { character: 'hexlet' | 'prismlet' | 'peaklet' | 'towerlet'; hue: 'purple' | 'cyan' | 'amber' | 'green' }> = {
+  'seat:ceo': { character: 'hexlet', hue: 'cyan' },
+  'seat:vp': { character: 'prismlet', hue: 'purple' },
+};
+
+const STRUCTURE_COLUMNS: TreeGridColumn[] = [
+  { key: 'name', header: 'Name', width: 'minmax(14rem, 3.4fr)' },
+  { key: 'status', header: 'Status', width: 'minmax(9.5rem, 1.8fr)', hideBelow: 600, size: 'sm' },
+  { key: 'lead', header: 'Reports to', width: 'minmax(9rem, 1.2fr)', hideBelow: 980, size: 'sm' },
+  { key: 'problems', header: 'Problems', width: 'minmax(6.5rem, 1fr)', hideBelow: 900, size: 'sm' },
+  { key: 'edit', header: 'Edit', width: 'calc(var(--crewlet-org-table-strip) + var(--spacing-2) * 2)' },
+];
+
+const leadSeat = (name: string | undefined) => Object.keys(ENTITIES).find((id) => ENTITIES[id]!.name === name);
+
+/** The live table every kit piece for an organization's structure meets in. */
+function Structure() {
+  const rows = useMemo(forest, []);
+  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
+  const selection: OrgTableSelection = {
+    checked: (id) => {
+      const agents = agentsUnder(id);
+      if (agents.length === 0) return null;
+      const on = agents.filter((agent) => picked.has(agent)).length;
+      return on === 0 ? false : on === agents.length ? true : 'mixed';
+    },
+    label: (id) => (ENTITIES[id]!.kind === 'agent' ? `Select ${ENTITIES[id]!.name}` : `Select every agent in ${ENTITIES[id]!.name}`),
+    onCheckedChange: (id, on) =>
+      setPicked((was) => {
+        const next = new Set(was);
+        for (const agent of agentsUnder(id)) {
+          if (on) next.add(agent);
+          else next.delete(agent);
+        }
+        return next;
+      }),
+  };
+  const cell = (id: string, column: number, grid: TreeGridContext) => {
+    const entity = ENTITIES[id]!;
+    const seat = entity.kind === 'agent' || entity.kind === 'human';
+    const live = LIVE[id];
+    switch (grid.columnKey(column)) {
+      case 'name': {
+        // A column the width leaves out moves its words into the caption.
+        const caption = !grid.shown('status') && live ? `${String(live.label)} · ${entity.handle ?? ''}` : seat ? `${entity.kind} · ${entity.handle ?? ''}` : entity.caption;
+        if (seat) {
+          return <OrgTableName avatar={{ name: entity.name, kind: entity.kind as 'agent' | 'human' }} name={entity.name} caption={caption} tone={entity.tone} />;
+        }
+        const add = (
+          <OrgTableAdd
+            placement="name"
+            size="xs"
+            label={`Add to ${entity.name}`}
+            onOpen={() => grid.opened(id, column)}
+            sections={[
+              { key: 'unit', label: 'Add a unit', icon: <FolderPlusGlyph />, onSelect: () => {} },
+              { key: 'agent', label: 'Add an agent seat', icon: <BotGlyph />, onSelect: () => {} },
+              { key: 'human', label: 'Add a human seat', icon: <UserPlusGlyph />, onSelect: () => {} },
+            ]}
+          />
+        );
+        return entity.kind === 'company' ? (
+          <OrgTableName logo={{ src: mark, alt: entity.name }} name={entity.name} caption={caption} nameAction={add} />
+        ) : (
+          <OrgTableName icon={<NetworkGlyph />} name={entity.name} caption={caption} nameAction={add} />
+        );
+      }
+      case 'status':
+        return live ? <StatusLine {...live} /> : null;
+      case 'lead': {
+        if (entity.kind === 'company') return <EmptyValue label="Not applicable" />;
+        const lead = leadSeat(entity.lead);
+        if (!lead) {
+          return (
+            <Text variant="inherit" tone="secondary">
+              {entity.lead}
+            </Text>
+          );
+        }
+        const face = FACES[lead];
+        return <EntityChip name={entity.lead!} href={`#/seats/${lead}`} size="xs" kind={ENTITIES[lead]!.kind === 'human' ? 'human' : 'agent'} {...face} />;
+      }
+      case 'problems':
+        return entity.problems ? (
+          <Tag variant="danger" size="sm">
+            {entity.problems} problem
+          </Tag>
+        ) : (
+          <Text variant="inherit" tone="secondary">
+            None
+          </Text>
+        );
+      default:
+        return (
+          <OrgTableActions shown>
+            <IconButton size="sm" label={`Edit ${entity.name}`} icon={<PencilGlyph />} tabIndex={grid.tabStop(id, column) ? 0 : -1} />
+            {entity.kind !== 'company' && (
+              <IconButton size="sm" variant="ghost-danger" label={`Delete ${entity.name}`} icon={<TrashGlyph />} tabIndex={-1} />
+            )}
+            <Menu
+              label={`More actions for ${entity.name}`}
+              tooltip="More actions"
+              align="end"
+              triggerTabIndex={-1}
+              open={grid.menuOpen(id)}
+              onOpenChange={(open) => grid.setMenuOpen(id, open)}
+              items={[
+                { key: 'open', label: 'Open', onSelect: () => {} },
+                { key: 'move', label: 'Move to', icon: <NetworkGlyph />, onSelect: () => {} },
+              ]}
+            />
+          </OrgTableActions>
+        );
+    }
+  };
+  return (
+    <OrgTable
+      label="Organization"
+      layout="container"
+      controls={false}
+      columns={STRUCTURE_COLUMNS}
+      rows={rows}
+      tone={(id) => ENTITIES[id]?.tone}
+      selection={selection}
+      hasRowMenu={() => true}
+      cellHasControl={(id, _column, key) => key === 'edit' || (key === 'name' && ENTITIES[id]!.kind !== 'agent' && ENTITIES[id]!.kind !== 'human') || key === 'lead'}
+      renderCell={cell}
+    />
+  );
+}
+
+/**
+ * Every piece a live organization table draws, together: a select box before
+ * each name, a quiet add beside each group's name, the company's own logo, a
+ * calm one-line status (`StatusLine`), who a row reports to as a chip with the
+ * agent's face (`EntityChip`), those values a step smaller (`size: 'sm'`), and
+ * the row's edit actions at rest with a tooltip on More. Drag a box's corner:
+ * the table fits its container, and Status moves into the caption when it no
+ * longer fits.
+ */
+export const LiveStructure: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ resize: 'horizontal', overflow: 'auto', width: 1100, minWidth: 360, maxWidth: '100%' }}>
+        <Structure />
       </div>
     </BothThemes>
   ),
