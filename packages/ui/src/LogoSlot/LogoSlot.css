@@ -114,10 +114,14 @@
   pointer-events: none;
 }
 
+/* A DEFINITE HEIGHT, the logo's band in the stage, and a width from the
+   logo's own ratio: an SVG with a viewBox and no width or height has a ratio
+   but no size, and in this shrink-to-fit space it laid out at 0 x 0. */
 .crewlet-logo-slot__image {
   display: block;
+  width: auto;
+  height: calc(var(--crewlet-logo-slot-height) - 2 * var(--crewlet-logo-slot-padding) - 2 * var(--crewlet-logo-slot-clear));
   max-width: 100%;
-  max-height: calc(var(--crewlet-logo-slot-height) - 2 * var(--crewlet-logo-slot-padding) - 2 * var(--crewlet-logo-slot-clear));
   object-fit: contain;
 }
 

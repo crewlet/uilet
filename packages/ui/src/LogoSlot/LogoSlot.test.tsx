@@ -136,3 +136,21 @@ test('carries no axe violation, read and edited', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+test('a logo with no size of its own (a viewBox-only SVG) is drawn at the stage band, not 0 x 0', () => {
+  // A replaced element with a ratio but no size takes its width from its
+  // containing block, and the logo's space is shrink-to-fit: with only max
+  // sizes the logo laid out at 0 x 0. A definite height gives it a width.
+  const uninstall = installSheets('LogoSlot/LogoSlot.css');
+  try {
+    render(<LogoSlot label="Primary" ground="light" src="blob:logo" alt="Acme logo" />);
+    const image = getComputedStyle(screen.getByRole('img', { name: 'Acme logo' }));
+    // The stage's height less its padding and the clear space: definite.
+    expect(image.height).toMatch(/px|calc/);
+    expect(image.width).toBe('auto');
+    expect(image.maxWidth).toBe('100%');
+    expect(image.objectFit).toBe('contain');
+  } finally {
+    uninstall();
+  }
+});
