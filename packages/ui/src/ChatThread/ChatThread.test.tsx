@@ -8,7 +8,7 @@
  */
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { createRef } from 'react';
+import { createRef, type ReactNode } from 'react';
 import { afterEach, expect, test } from 'vitest';
 import { installSheets, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 import { Tag } from '../Tag/index.js';
@@ -188,7 +188,7 @@ test('looks into an item the view holds only part of for the row at its top', ()
   ]);
   const rect = (top: number, height: number) =>
     ({ x: 0, y: top, top, bottom: top + height, left: 0, right: 400, width: 400, height, toJSON: () => ({}) }) as DOMRect;
-  const day = (rows: JSX.Element[]) => <section key="day">{rows}</section>;
+  const day = (rows: ReactNode[]) => <section key="day">{rows}</section>;
   const placed = (log: HTMLElement, height: number) => {
     log.getBoundingClientRect = () => rect(0, 400);
     log.querySelector('section')!.getBoundingClientRect = () => rect(-log.scrollTop, height);
