@@ -1,9 +1,10 @@
 /**
  * A conversation as it grows: a focusable log with its live region off, busy
- * while a request runs; it follows the end only while the reader is within
- * 48px of it, counts what arrives once they scroll away, returns with Jump to
- * latest (unless the host leaves that row out), and reveals an item in the
- * middle of the view, or its head when the whole of it does not fit.
+ * while a request runs; it follows the end only while the reader is at it,
+ * lets them leave with the first move up, holds their place while what is
+ * above it changes, counts what arrives once they scroll away, returns with
+ * Jump to latest (unless the host leaves that row out), and reveals an item in
+ * the middle of the view, or its head when the whole of it does not fit.
  */
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
@@ -20,6 +21,16 @@ afterEach(cleanup);
 function layout(log: HTMLElement, content: number) {
   Object.defineProperty(log, 'clientHeight', { configurable: true, value: 400 });
   Object.defineProperty(log, 'scrollHeight', { configurable: true, value: content });
+}
+
+/**
+ * Lays the log out and lets the thread follow its end, as its size observer
+ * does in a browser (jsdom has none): the reader starts at the latest.
+ */
+function laidOut(log: HTMLElement, content: number) {
+  layout(log, content);
+  log.scrollTop = content - 400;
+  fireEvent.scroll(log);
 }
 
 const items = (n: number) => Array.from({ length: n }, (_, index) => <p key={index}>Message {index + 1}</p>);
@@ -44,7 +55,9 @@ test('follows the end while the reader is at it, and stays put once they scroll 
   layout(log, 1000);
   rerender(<ChatThread label="Conversation">{items(4)}</ChatThread>);
   expect(log.scrollTop).toBe(600);
-  // Within 48px of the end still counts as at the end.
+  // Scrolling back down to within 48px of the end counts as at the end.
+  log.scrollTop = 300;
+  fireEvent.scroll(log);
   log.scrollTop = 560;
   fireEvent.scroll(log);
   layout(log, 1200);
@@ -58,10 +71,105 @@ test('follows the end while the reader is at it, and stays put once they scroll 
   expect(log.scrollTop).toBe(100);
 });
 
+// THE FIRST MOVE UP LEAVES THE END. Within 48px of it counted as the end, and
+// the next render pulled the reader back, so a slow wheel or a trackpad near
+// the end could not scroll up at all. Mutation: read the 48px as the end on
+// the way up, and the render puts the reader back at 600.
+test('a reader who scrolls up near the end leaves it, and no render pulls them back', () => {
+  const following: boolean[] = [];
+  const thread = (n: number) => (
+    <ChatThread label="Conversation" onFollowChange={(f) => following.push(f)}>
+      {items(n)}
+    </ChatThread>
+  );
+  const { rerender } = render(thread(3));
+  const log = screen.getByRole('log');
+  layout(log, 1000);
+  rerender(thread(3));
+  expect(log.scrollTop).toBe(600);
+  log.scrollTop = 590;
+  fireEvent.scroll(log);
+  rerender(thread(3));
+  expect(log.scrollTop).toBe(590);
+  layout(log, 1200);
+  rerender(thread(4));
+  expect(log.scrollTop).toBe(590);
+  expect(following).toEqual([false]);
+  fireEvent.click(screen.getByRole('button', { name: 'Jump to latest, 1 new item' }));
+  expect(log.scrollTop).toBe(800);
+  expect(following).toEqual([false, true]);
+});
+
+// THE READER'S PLACE HOLDS while what is above it changes height: an older
+// page landing, a row drawn at its real height. The item at the top of the
+// view stays where it stood, before the paint. Mutation: drop the hold, and
+// the view slides down by the 200px that landed above it.
+test("holds the reader's place while what is above them changes", () => {
+  const tops = new Map<string, number>([
+    ['Message 1', 0],
+    ['Message 2', 300],
+    ['Message 3', 600],
+  ]);
+  const rect = (top: number, height: number) =>
+    ({ x: 0, y: top, top, bottom: top + height, left: 0, right: 400, width: 400, height, toJSON: () => ({}) }) as DOMRect;
+  const placed = (log: HTMLElement) => {
+    log.getBoundingClientRect = () => rect(0, 400);
+    for (const p of Array.from(log.querySelectorAll('p'))) {
+      p.getBoundingClientRect = () => rect((tops.get(p.textContent ?? '') ?? 0) - log.scrollTop, 300);
+    }
+  };
+  const older = <p key="older">Message 0</p>;
+  const { rerender } = render(<ChatThread label="Conversation">{items(3)}</ChatThread>);
+  const log = screen.getByRole('log');
+  layout(log, 900);
+  placed(log);
+  rerender(<ChatThread label="Conversation">{items(3)}</ChatThread>);
+  expect(log.scrollTop).toBe(500);
+  log.scrollTop = 350;
+  fireEvent.scroll(log);
+  // An older item 200px tall lands above everything.
+  for (const [text, top] of tops) tops.set(text, top + 200);
+  tops.set('Message 0', 0);
+  layout(log, 1100);
+  rerender(<ChatThread label="Conversation">{[older, ...items(3)]}</ChatThread>);
+  expect(log.scrollTop).toBe(550);
+});
+
+// A VIEW THAT SHRINKS UNDER A READER AT THE END keeps the latest in sight: a
+// composer growing a line took the last line of the conversation with it.
+test('keeps the latest in sight when the view shrinks under a reader at the end', () => {
+  // An observer stands in for the browser's, firing for what it watches.
+  const watching = new Map<Element, (() => void)[]>();
+  const Real = globalThis.ResizeObserver;
+  globalThis.ResizeObserver = class {
+    private readonly fire: () => void;
+    constructor(fire: () => void) {
+      this.fire = fire;
+    }
+    observe(target: Element) {
+      watching.set(target, [...(watching.get(target) ?? []), this.fire]);
+    }
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+  try {
+    const { rerender } = render(<ChatThread label="Conversation">{items(3)}</ChatThread>);
+    const log = screen.getByRole('log');
+    layout(log, 1000);
+    rerender(<ChatThread label="Conversation">{items(3)}</ChatThread>);
+    expect(log.scrollTop).toBe(600);
+    Object.defineProperty(log, 'clientHeight', { configurable: true, value: 350 });
+    act(() => (watching.get(log) ?? []).forEach((fire) => fire()));
+    expect(log.scrollTop).toBe(650);
+  } finally {
+    globalThis.ResizeObserver = Real;
+  }
+});
+
 test('counts what arrived since the reader scrolled away, and Jump to latest returns them', () => {
   const { rerender } = render(<ChatThread label="Conversation">{items(3)}</ChatThread>);
   const log = screen.getByRole('log');
-  layout(log, 1000);
+  laidOut(log, 1000);
   log.scrollTop = 0;
   fireEvent.scroll(log);
   const jump = screen.getByRole('button', { name: 'Jump to latest' });
@@ -80,7 +188,7 @@ test('counts what arrived since the reader scrolled away, and Jump to latest ret
 test('a smooth jump to the latest is not undone by the positions it passes through', () => {
   const { rerender } = render(<ChatThread label="Conversation">{items(3)}</ChatThread>);
   const log = screen.getByRole('log');
-  layout(log, 1000);
+  laidOut(log, 1000);
   log.scrollTop = 0;
   fireEvent.scroll(log);
   // The browser animates; the test moves the position by hand.
@@ -97,7 +205,7 @@ test('a smooth jump to the latest is not undone by the positions it passes throu
 test("the reader's own scroll ends a jump at once", () => {
   render(<ChatThread label="Conversation">{items(3)}</ChatThread>);
   const log = screen.getByRole('log');
-  layout(log, 1000);
+  laidOut(log, 1000);
   log.scrollTop = 0;
   fireEvent.scroll(log);
   log.scrollTo = () => {};
@@ -115,7 +223,7 @@ test('the pill sits under the log, never over what is being read', () => {
   try {
     render(<ChatThread label="Conversation">{items(3)}</ChatThread>);
     const log = screen.getByRole('log');
-    layout(log, 1000);
+    laidOut(log, 1000);
     log.scrollTop = 0;
     fireEvent.scroll(log);
     const pill = screen.getByRole('button', { name: 'Jump to latest' }).parentElement!;
@@ -214,7 +322,7 @@ test('jump={false} draws no Jump to latest row, however far the reader scrolls',
     </ChatThread>,
   );
   const log = screen.getByRole('log');
-  layout(log, 1000);
+  laidOut(log, 1000);
   log.scrollTop = 0;
   fireEvent.scroll(log);
   expect(screen.queryByRole('button', { name: /Jump to latest/ })).toBeNull();
@@ -274,7 +382,7 @@ test('carries no axe violation, following and detached', async () => {
     </main>,
   );
   const log = screen.getByRole('log');
-  layout(log, 1000);
+  laidOut(log, 1000);
   log.scrollTop = 0;
   fireEvent.scroll(log);
   const result = await axe.run(container, {

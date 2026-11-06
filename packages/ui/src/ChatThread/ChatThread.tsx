@@ -16,7 +16,7 @@ import { REDUCED_MOTION_QUERY, useMediaMatch } from '../MediaMatch/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
-/** How close to the end, in pixels, still counts as reading the latest. */
+/** How close to the end, in pixels, a reader scrolling down is taken back to it. */
 export const CHAT_THREAD_FOLLOW_WITHIN = 48;
 
 export interface ChatThreadLabels {
@@ -64,10 +64,16 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
   /** A request is running: the log is `aria-busy` until it settles. */
   busy?: boolean | undefined;
   /**
-   * Keeps the end in view while the reader is at it (within 48px). `true` by
-   * default; `false` never moves the scroll on its own.
+   * Keeps the end in view while the reader is at it. `true` by default;
+   * `false` never moves the scroll on its own.
    */
   follow?: boolean | undefined;
+  /**
+   * Called when the reader leaves the end or comes back to it: the one
+   * answer to "is the reader at the latest", for a host that counts what
+   * arrives meanwhile rather than reading the scroll position a second way.
+   */
+  onFollowChange?: ((following: boolean) => void) | undefined;
   /**
    * Draws the Jump to latest row under the log while the reader is scrolled
    * away from the end. `true` by default; `false` for a log that offers its
@@ -97,11 +103,19 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
  * `Announcer`, when an answer completes. It is focusable, so a keyboard
  * reader can scroll it, and `aria-busy` while a request runs.
  *
- * IT STICKS TO THE END ONLY WHILE THE READER IS THERE. Within 48px of the end
- * it follows whatever arrives; scrolled up, it stays put and a "Jump to
- * latest" pill counts what arrived since. The browser's own scroll anchoring
- * is turned off (it fights a last child that keeps growing), and the
- * anchoring is done here instead.
+ * IT STICKS TO THE END ONLY WHILE THE READER IS THERE. At the end it follows
+ * whatever arrives, and a view that shrinks under it (a composer growing a
+ * line) keeps the latest in sight. The reader leaves the end with the first
+ * upward move, however small: it used to count anywhere within 48px as the
+ * end and pull them back on the next render, so a slow wheel or a trackpad
+ * near the end could not scroll up at all. Scrolling down to within 48px
+ * takes them back. Scrolled up, a "Jump to latest" pill counts what arrived.
+ *
+ * AND THE READER'S PLACE HOLDS WHILE THEY ARE AWAY. The browser's own scroll
+ * anchoring is turned off (it fights a last child that keeps growing), so the
+ * thread anchors itself: the item at the top of the view stays where it
+ * stood while what is above it changes height (an older page, a row drawn
+ * at its real height, a preview that loads), before the change is painted.
  *
  * A JUMP HOLDS UNTIL IT LANDS. A smooth scroll passes through positions short
  * of the end, and each one read as the reader leaving: the pill came back and
@@ -115,7 +129,18 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
  * `jump={false}`.
  */
 export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function ChatThread(
-  { label, busy = false, follow = true, jump = true, rest: restAt = 'start', children, labels: overrides, className, ...rest },
+  {
+    label,
+    busy = false,
+    follow = true,
+    onFollowChange,
+    jump = true,
+    rest: restAt = 'start',
+    children,
+    labels: overrides,
+    className,
+    ...rest
+  },
   ref,
 ) {
   const labels = overrides ? { ...CHAT_THREAD_LABELS, ...overrides } : CHAT_THREAD_LABELS;
@@ -127,8 +152,16 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
   // the content observer below reads it between renders.
   const atEnd = useRef(true);
   // A smooth jump to the end is under way: the positions it passes through
-  // are not the reader leaving.
+  // are not the reader leaving. And the content's height it set out for.
   const jumping = useRef(false);
+  const jumpedFor = useRef(0);
+  // The position the last scroll was read at, so the next one tells which
+  // way the reader moved.
+  const last = useRef(0);
+  // Away from the end: the item at the top of the view, and its offset there.
+  const anchor = useRef<Anchor | null>(null);
+  const followChange = useRef(onFollowChange);
+  followChange.current = onFollowChange;
   const [detachedAt, setDetachedAt] = useState<number | null>(null);
   const countRef = useRef(count);
   countRef.current = count;
@@ -140,6 +173,16 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
   // shorten: placed again once the row stands.
   const revealing = useRef<HTMLElement | null>(null);
 
+  const settle = useCallback((el: HTMLDivElement) => {
+    last.current = el.scrollTop;
+  }, []);
+
+  const setFollowing = useCallback((following: boolean) => {
+    if (atEnd.current === following) return;
+    atEnd.current = following;
+    followChange.current?.(following);
+  }, []);
+
   const toEnd = useCallback(
     (smooth: boolean) => {
       const el = scroller.current;
@@ -147,29 +190,61 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
       const top = el.scrollHeight - el.clientHeight;
       if (smooth && !reduced && typeof el.scrollTo === 'function') {
         jumping.current = true;
+        jumpedFor.current = el.scrollHeight;
         el.scrollTo({ top, behavior: 'smooth' });
       } else {
         jumping.current = false;
         el.scrollTop = top;
       }
-      atEnd.current = true;
+      settle(el);
+      anchor.current = null;
+      setFollowing(true);
       setDetachedAt(null);
     },
-    [reduced],
+    [reduced, settle, setFollowing],
   );
 
   const onScroll = useCallback(() => {
     const el = scroller.current;
     if (!el) return;
-    const end = el.scrollHeight - el.scrollTop - el.clientHeight <= CHAT_THREAD_FOLLOW_WITHIN;
+    const was = last.current;
+    settle(el);
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
     if (jumping.current) {
       // On the way to the end: only arriving there ends the jump.
-      if (end) jumping.current = false;
+      if (distance <= CHAT_THREAD_FOLLOW_WITHIN) jumping.current = false;
       return;
     }
-    atEnd.current = end;
-    setDetachedAt((prior) => (end ? null : (prior ?? countRef.current)));
-  }, []);
+    // AN UPWARD MOVE THAT DOES NOT LAND ON THE END IS THE READER'S: the
+    // browser moves the scroll up on its own only to clamp it to a shorter
+    // end, and the thread's own corrections are settled before their event.
+    const moved = el.scrollTop - was;
+    let following = atEnd.current;
+    if (distance < 1) following = true;
+    else if (moved < 0) following = false;
+    else if (moved > 0) following = distance <= CHAT_THREAD_FOLLOW_WITHIN;
+    setFollowing(following);
+    anchor.current = following ? null : anchorIn(el, items.current);
+    setDetachedAt((prior) => (following ? null : (prior ?? countRef.current)));
+  }, [settle, setFollowing]);
+
+  // Moves the view by the height that changed above the anchor. Measured in
+  // the content, so the reader's own scroll is never taken for a change.
+  const hold = useCallback(() => {
+    const el = scroller.current;
+    const mark = anchor.current;
+    if (!el || !mark || atEnd.current || jumping.current) return;
+    if (!mark.element.isConnected) {
+      anchor.current = anchorIn(el, items.current);
+      return;
+    }
+    const at = depthIn(el, mark.element);
+    const delta = at - mark.at;
+    if (Math.abs(delta) < 0.5) return;
+    mark.at = at;
+    el.scrollTop += delta;
+    settle(el);
+  }, [settle]);
 
   // The reader's own wheel, touch or key ends a jump at once: what they do is
   // never overridden by the jump they asked for a moment before. A jump the
@@ -192,20 +267,27 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
     };
   }, [toEnd]);
 
-  // Follows what arrives while the reader is at the end: a new item, and a
-  // last item that grows as its answer streams in.
-  useLayoutEffect(() => {
-    if (follow && atEnd.current) toEnd(false);
-  }, [children, follow, toEnd]);
+  // At the end, the end is followed (a new item, a last item growing as its
+  // answer streams in); away from it, the reader's place is held. A smooth
+  // jump lands by itself, unless the content outgrew it on the way.
+  const keep = useCallback(() => {
+    const el = scroller.current;
+    if (!el) return;
+    if (!atEnd.current) hold();
+    else if (follow && !(jumping.current && el.scrollHeight === jumpedFor.current)) toEnd(false);
+  }, [follow, hold, toEnd]);
+  // After every render, before the paint, and whenever the content or the
+  // view changes size between renders.
+  useLayoutEffect(keep);
   useEffect(() => {
-    const el = items.current;
-    if (!follow || !el || typeof ResizeObserver !== 'function') return;
-    const observer = new ResizeObserver(() => {
-      if (atEnd.current) toEnd(false);
-    });
-    observer.observe(el);
+    const view = scroller.current;
+    const content = items.current;
+    if (!view || !content || typeof ResizeObserver !== 'function') return;
+    const observer = new ResizeObserver(keep);
+    observer.observe(content);
+    observer.observe(view);
     return () => observer.disconnect();
-  }, [follow, toEnd]);
+  }, [keep]);
 
   // THE ITEM IN THE MIDDLE OF THE VIEW. A message opened from a link sat with
   // its foot on the view's foot, the messages after it out of sight, and the
@@ -289,3 +371,45 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
     </div>
   );
 });
+
+/** An item the reader's place is kept by, and how far into the content it stands. */
+interface Anchor {
+  element: Element;
+  at: number;
+}
+
+/** How far below the top of the scrolled content `element` stands, in px. */
+function depthIn(view: HTMLElement, element: Element): number {
+  return element.getBoundingClientRect().top - view.getBoundingClientRect().top + view.scrollTop;
+}
+
+/**
+ * The item at the top of the view, as the browser's own anchoring picks one:
+ * the first that reaches into the view, and inside one that starts above it,
+ * the first of its children that does, a few levels down. A pinned or
+ * positioned part (a day's sticky pill) never moves with the content, so it is
+ * stepped over.
+ */
+function anchorIn(view: HTMLElement, content: HTMLElement | null): Anchor | null {
+  const top = view.getBoundingClientRect().top;
+  let found: Element | null = null;
+  let parent: Element | null = content;
+  for (let depth = 0; parent && depth < ANCHOR_DEPTH; depth++) {
+    let next: Element | null = null;
+    for (const child of Array.from(parent.children)) {
+      const box = child.getBoundingClientRect();
+      if (box.height === 0 || box.bottom <= top) continue;
+      const position = getComputedStyle(child).position;
+      if (position === 'sticky' || position === 'fixed' || position === 'absolute') continue;
+      next = child;
+      break;
+    }
+    if (!next) break;
+    found = next;
+    parent = next.getBoundingClientRect().top < top ? next : null;
+  }
+  return found ? { element: found, at: depthIn(view, found) } : null;
+}
+
+/** How deep the anchor is looked for: a day, a row, the row's own parts. */
+const ANCHOR_DEPTH = 4;
