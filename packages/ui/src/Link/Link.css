@@ -50,6 +50,15 @@
   text-decoration: none;
 }
 
+/* A name that is also a link keeps the ink it has there; the underline says it is one. */
+.crewlet-link--plain {
+  color: inherit;
+}
+
+.crewlet-link--plain:focus-visible {
+  text-decoration: underline;
+}
+
 /*
  * FORCED COLORS paints every link in LinkText whatever its state, so the step
  * up to the accent ink cannot be seen there, and a hover with no underline is

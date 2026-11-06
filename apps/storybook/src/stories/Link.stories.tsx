@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Link, Text } from '@crewlethq/ui';
+import { Link, OrgTableName, Text } from '@crewlethq/ui';
+import { BothThemes } from '../BothThemes';
 
 const meta: Meta<typeof Link> = {
   title: 'UI/Link',
@@ -73,5 +74,27 @@ export const BlockRow: Story = {
         <Text variant="caption">execute, 4 rounds</Text>
       </Link>
     </div>
+  ),
+};
+
+/**
+ * A name that is also a link (`variant="plain"`), in the ink it already has
+ * there: a toned row's name keeps its hue, and the underline on hover and
+ * focus says it opens the seat's page.
+ */
+export const Plain: Story = {
+  render: () => (
+    <BothThemes>
+      <OrgTableName
+        avatar={{ name: 'Product Lead', kind: 'agent' }}
+        tone="purple"
+        name={
+          <Link href="#/seats/product-lead" variant="plain" size="inherit">
+            Product Lead
+          </Link>
+        }
+        caption="agent · @product-lead"
+      />
+    </BothThemes>
   ),
 };

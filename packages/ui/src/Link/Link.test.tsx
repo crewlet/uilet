@@ -103,3 +103,19 @@ test('asChild with no element child says so rather than rendering nothing', () =
     ),
   ).toThrow();
 });
+
+test('a plain link keeps the ink around it and is underlined on hover and focus', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Link.css'), 'utf8');
+  render(
+    <p>
+      <Link href="#/seats/product-lead" variant="plain">
+        Product Lead
+      </Link>
+    </p>,
+  );
+  expect(screen.getByRole('link', { name: 'Product Lead' }).className).toContain('crewlet-link--plain');
+  expect(css).toMatch(/\.crewlet-link--plain \{\s*color: inherit;\s*\}/);
+  // The hover underline is every link's own rule.
+  expect(css).toMatch(/\.crewlet-link:hover \{\s*text-decoration: underline;/);
+  expect(css).toMatch(/\.crewlet-link--plain:focus-visible \{\s*text-decoration: underline;/);
+});
