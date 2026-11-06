@@ -309,6 +309,16 @@
   color: var(--color-text-tertiary);
 }
 
+/* Where it happened: its own line under the name, never clamped, broken
+   anywhere a long room name must. */
+.crewlet-inbox-row__where {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
 .crewlet-inbox-row__qualifier--danger {
   color: var(--color-feedback-danger-ink);
 }

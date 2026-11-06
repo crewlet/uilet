@@ -608,3 +608,34 @@ test('the leading slot grows to its mark, and the name keeps its line', () => {
     remove();
   }
 });
+
+test('where it happened has its own unclamped line, read after the qualifier', () => {
+  // Inside the qualifier, a long name pushed "in #room" past the head's two
+  // lines, so a reader could not tell which room was meant.
+  const uninstall = installSheets('InboxList/InboxList.css');
+  try {
+    render(
+      <InboxList label="Activity">
+        <InboxRow
+          title="Bartholomew Achterberg-Oyelaran"
+          qualifier="replied to a thread"
+          where="in #release-coordination-autumn-study-streaks-web-ios-android"
+          meta="4m"
+          onClick={() => {}}
+        >
+          The build is green again.
+        </InboxRow>
+      </InboxList>,
+    );
+    const row = screen.getByRole('button', {
+      name: 'Bartholomew Achterberg-Oyelaran replied to a thread in #release-coordination-autumn-study-streaks-web-ios-android 4m The build is green again.',
+    });
+    const where = within(row).getByText(/^in #release/);
+    expect(where.closest('.crewlet-inbox-row__head')).toBeNull();
+    const style = getComputedStyle(where);
+    expect(style.display).toBe('block');
+    expect(style.overflowWrap).toBe('anywhere');
+  } finally {
+    uninstall();
+  }
+});
