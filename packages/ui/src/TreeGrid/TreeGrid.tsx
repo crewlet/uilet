@@ -43,10 +43,32 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
+import { breakpoint } from '@crewlethq/tokens';
 import { ChevronRightGlyph } from '@crewlethq/icons/glyphs';
+import { Checkbox } from '../Checkbox/index.js';
+import {
+  GRID_FOOT_LABELS,
+  GRID_ICON_TRACK,
+  GridFoot,
+  GridHeadCell,
+  alignOf,
+  droppedNames,
+  headerWord,
+  nextGridSort,
+  overrunning,
+  parseGridSort,
+  sortByValue,
+  squeezedCells,
+  type GridAlign,
+  type GridFootLabels,
+} from '../DataGrid/parts.js';
+// The grid's own entry, so DataGrid's stylesheet (the head and foot this grid draws) comes with it.
+import { fitGridColumns, type GridFit } from '../DataGrid/index.js';
+import { EmptyState } from '../EmptyState/index.js';
 import { LAYER_REPOSITION_EVENT, LayerHost, focusables } from '../Layer/index.js';
 import { LayerNodeBridge } from '../Canvas/layerNode.js';
 import { IconButton } from '../IconButton/index.js';
+import { useMediaMatch } from '../MediaMatch/index.js';
 import {
   treeExpandable,
   treeItemAction,
@@ -60,21 +82,45 @@ import {
   type TreeDefaultExpanded,
   type TreeInput,
   type TreeItemAction,
+  type TreeModel,
   type TreeViewHandle,
 } from '../Tree/index.js';
 import { cx } from '../utils/cx.js';
 import { tableTrack } from '../utils/tableTrack.js';
-import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 export interface TreeGridColumn {
   key: string;
-  /** The column's name. */
-  header: string;
+  /** The column's name: a word, or a glyph named by `label`. */
+  header: ReactNode;
   /**
    * Read but not seen, for a column whose heading would be noise in the sight
    * of it and is still the only thing a screen reader has (an actions column).
    */
   headerHidden?: boolean | undefined;
+  /**
+   * The value a row is ordered by among its SIBLINGS, never across parents:
+   * the hierarchy stays the order, and a sort orders each level of it.
+   */
+  sortValue?: ((id: string) => string | number | null | undefined) | undefined;
+  /**
+   * Whether the head is a sort button. Defaults to whether `sortValue` is set;
+   * a `serverSorted` grid sets it alone, its source ordering each level.
+   */
+  sortable?: boolean | undefined;
+  /**
+   * Which edge the column's values and its head share, as a DataGrid column's:
+   * `right` for figures, times and dates, `center` for one mark per row.
+   */
+  align?: GridAlign | undefined;
+  /** A column of ONE MARK per row: a fixed track, its head and cells centred. Name it with `label`. */
+  icon?: boolean | undefined;
+  /** The column's name where `header` cannot carry one: a glyph head, a hidden one, the phone's card. */
+  label?: string | undefined;
+  /**
+   * A column of ROW CONTROLS that name themselves: its head is read but not
+   * seen, it never sorts, and a phone's card draws no name beside it.
+   */
+  action?: boolean | undefined;
   /**
    * An exact track, in place of the default flexible one. A column whose values a
    * live push changes takes a length: the track list is the whole table's, so a
@@ -94,8 +140,19 @@ export interface TreeGridColumn {
    */
   floor?: string | undefined;
   /**
+   * The order this column GIVES WAY in when the grid cannot draw every column
+   * at its size, as a DataGrid column's: the lowest number goes first, a
+   * column without one never goes, and the foot names what went.
+   */
+  drop?: number | undefined;
+  /** Hidden unless the column set (`cols`) names it. */
+  optional?: boolean | undefined;
+  /**
    * The grid's own width, in CSS pixels, below which this column is left out
    * with its header. A cell's words can then move into another column's.
+   *
+   * @deprecated Use `drop`, which gives way by measurement and says so in the
+   * foot; a pixel width says nothing to the reader.
    */
   hideBelow?: number | undefined;
   /**
@@ -111,6 +168,19 @@ export interface TreeGridAddRow {
   label: string;
   /** How many cells it has, which is what End and Right count to. */
   cells: number;
+}
+
+/** A select box before each row's name, after its indent: see [TreeGridProps.selection]. */
+export interface TreeGridSelection {
+  /**
+   * Whether a row is picked: `true`, `false`, `'mixed'` for a group only some
+   * of whose rows are picked, or `null` for a row with no box.
+   */
+  checked: (id: string) => boolean | 'mixed' | null;
+  /** The box's accessible name: "Select Product Lead", "Select every agent in Engineering". */
+  label: (id: string) => string;
+  /** A press on a row's box, with the state it asks for. */
+  onCheckedChange: (id: string, checked: boolean) => void;
 }
 
 /** What a cell needs from the grid it is drawn in. */
@@ -134,21 +204,64 @@ export interface TreeGridContext {
   setMenuOpen(id: string, open: boolean): void;
   /** The key of the column drawn at this one based position, which moves as columns are left out. */
   columnKey(column: number): string | undefined;
-  /** Whether the column with this key is drawn at the grid's width (`hideBelow`). */
+  /** Whether the column with this key is drawn at the grid's width (`drop`, `hideBelow`, `cols`). */
   shown(key: string): boolean;
+  /** The hierarchy AS DRAWN, each level in the order in force: a drawing that follows it (wires) reads this. */
+  tree: TreeModel;
 }
 
 /** Every string the grid renders on its own. */
-export interface TreeGridLabels {
+export interface TreeGridLabels extends GridFootLabels {
   /** The pointer-only chevron's tooltip, given the row's own label. */
   expand: (label: string) => string;
   collapse: (label: string) => string;
 }
 
 const LABELS: TreeGridLabels = {
+  ...GRID_FOOT_LABELS,
   expand: (label) => `Expand ${label}`,
   collapse: (label) => `Collapse ${label}`,
 };
+
+const NO_DROPS: readonly string[] = [];
+const NO_FIT: GridFit = { set: '', width: 0, dropped: NO_DROPS };
+
+/** Whether a press on a column's head sorts: see [TreeGridColumn.sortable]. */
+function sortsBy(column: TreeGridColumn): boolean {
+  return !column.action && (column.sortable ?? column.sortValue !== undefined);
+}
+
+/**
+ * The forest with every level ordered by `get`, its pinned rows (an add row,
+ * a "more" row) kept last in their level in their own order. PURE, and it
+ * never moves a row to another parent: a sort orders siblings.
+ */
+export function sortTreeLevels(
+  forest: readonly TreeInput[],
+  get: (id: string) => string | number | null | undefined,
+  desc: boolean,
+  pinned: (id: string) => boolean = () => false,
+): TreeInput[] {
+  const level = (nodes: readonly TreeInput[]): TreeInput[] => {
+    const rows = nodes.filter((node) => !pinned(node.id));
+    const pins = nodes.filter((node) => pinned(node.id));
+    return [...sortByValue(rows, (node) => get(node.id), desc), ...pins].map((node) =>
+      node.children && node.children.length > 0 ? { ...node, children: level(node.children) } : node,
+    );
+  };
+  return level(forest);
+}
+
+/** Every id in pre-order: the drawn order's identity, for keeping a sorted forest stable. */
+function orderOf(forest: readonly TreeInput[]): string {
+  const ids: string[] = [];
+  const walk = (node: TreeInput) => {
+    ids.push(node.id);
+    node.children?.forEach(walk);
+  };
+  forest.forEach(walk);
+  return ids.join('\u0000');
+}
 
 /**
  * The control a cell hands its tab stop to: the first focusable element in it
@@ -197,10 +310,18 @@ export interface TreeGridProps {
   rows: readonly TreeInput[];
   /**
    * Draws one cell. `column` is its one based position, which is also its
-   * `aria-colindex`, so a caller reads its own `columns` by `column - 1`. The
-   * first cell is drawn after the chevron strip, inside the same cell.
+   * `aria-colindex`; columns left out (`cols`, `drop`) move it, so a caller
+   * reads which column it is with `grid.columnKey(column)`. The first cell is
+   * drawn after the chevron strip, inside the same cell.
    */
   renderCell: (id: string, column: number, grid: TreeGridContext) => ReactNode;
+  /**
+   * Draws the row's level in its first cell, after the chevron and before the
+   * select box and the caller's content, in place of the cell's own indent: a
+   * drawing of the hierarchy (an org table's wires). Left out, the first cell
+   * is indented by the row's level.
+   */
+  renderIndent?: ((id: string, grid: TreeGridContext) => ReactNode) | undefined;
   /**
    * Whether a cell holds a control that takes the grid's tab stop for itself
    * (a menu trigger, a chooser, a button). It is asked per row as well as per
@@ -210,7 +331,8 @@ export interface TreeGridProps {
   cellHasControl?: ((id: string, column: number, key: string) => boolean) | undefined;
   /**
    * Carries out Enter (activate) or Delete and Backspace (remove) on a row.
-   * Return false when the row has no such action, so the key travels on.
+   * Return false when the row has no such action, so the key travels on (to
+   * the row's link, where it has one).
    *
    * Called only while the ROW itself holds focus, never from inside a cell,
    * and never on an add row. The Menu key is not here: which menu is open is
@@ -229,7 +351,8 @@ export interface TreeGridProps {
   /**
    * Whether a row is an add row, and what it is called. An add row is a row of
    * the grid like any other, so it counts in its siblings' position and set
-   * size; it just holds controls rather than a node's own data.
+   * size; it just holds controls rather than a node's own data. A sort keeps
+   * it last in its level.
    */
   addRow?: ((id: string) => TreeGridAddRow | null) | undefined;
   /** The selected row, drawn as `aria-selected`. */
@@ -239,6 +362,21 @@ export interface TreeGridProps {
    * row, which names no node.
    */
   onSelect?: ((id: string) => void) | undefined;
+  /**
+   * A select box before each row's name, after its indent, in a slot every row
+   * keeps so the names stay in line whichever rows have a box. The box is a
+   * control in the first cell, so that cell hands its tab stop to it.
+   */
+  selection?: TreeGridSelection | undefined;
+  /**
+   * The row's object's page: a real link stretched over the row, as a
+   * DataGrid row's, so a new tab and copying it work. Enter on the row follows
+   * it where `onRowKey` does not take the key, and a modified Enter opens it
+   * elsewhere. The row itself stays the keyboard's way in.
+   */
+  rowHref?: ((id: string) => string | undefined) | undefined;
+  /** A failed row, marked on its edge as a DataGrid's. Its cells say why. */
+  isFailed?: ((id: string) => boolean) | undefined;
   /** Sets `aria-readonly`: the rows can be read and navigated but not edited. */
   readOnly?: boolean | undefined;
   /**
@@ -255,6 +393,39 @@ export interface TreeGridProps {
   /** The open rows a toggle has just produced, whether or not the caller holds them. */
   onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
   /**
+   * The sort as `key` or `-key`, empty for the hierarchy's own order, which is
+   * the default: no head is marked while it is in force. A sort orders each
+   * row's children among themselves and never moves a row to another parent.
+   * Controlled, as a DataGrid's.
+   */
+  sort?: string | undefined;
+  /** The order each level takes while `sort` is empty, drawn on its head. Empty for the tree's own order. */
+  defaultSort?: string | undefined;
+  /** A sortable head pressed: ascending, descending, then back to the default (`''`). */
+  onSortChange?: ((sort: string) => void) | undefined;
+  /** Each level arrives ordered by its source; the grid marks the head and reorders nothing. */
+  serverSorted?: boolean | undefined;
+  /** The column set as `key,key`, in the order to draw it; empty for every column not `optional`. */
+  cols?: string | undefined;
+  /** The way back from a column set: drawn as "Show every column" while one is set. */
+  onColsChange?: ((cols: string) => void) | undefined;
+  /** What an empty grid says, and the one control that is its next step. */
+  empty?: { title: ReactNode; hint?: ReactNode; icon?: ReactNode; action?: ReactNode } | undefined;
+  /** The caller's words under the rows, beside what the width dropped and what is loaded. */
+  footer?: ReactNode;
+  /** "40 of 312 loaded". */
+  loadedNote?: string | undefined;
+  onLoadMore?: (() => void) | undefined;
+  /**
+   * HOW A ROW IS DRAWN WHERE COLUMNS DO NOT FIT (a phone, or a grid whose
+   * give-way columns have all gone): `labelled`, a line per value under the
+   * row's name, or `compact`, the name then its values on one line. Left out,
+   * the grid keeps its columns and scrolls sideways (`layout="scroll"`).
+   */
+  phoneRows?: 'labelled' | 'compact' | undefined;
+  /** The grid is a card's body: no frame of its own, the card's inset at its edges. */
+  flush?: boolean | undefined;
+  /**
    * The column names are READ BUT NOT SEEN: an outline whose cells say what
    * they are in the sight of them (a title, a face, a time) and want no
    * header band above them. A screen reader still hears every cell's column,
@@ -264,8 +435,8 @@ export interface TreeGridProps {
   /**
    * `scroll` (the default) keeps a minimum width and scrolls sideways below
    * it. `container` never scrolls sideways: it fills its container, leaves out
-   * the columns its width cannot hold (`hideBelow`), and its header holds at
-   * the top of the page's scroll as the rows pass under it.
+   * the columns its width cannot hold (`drop`), and its header holds at the
+   * top of the page's scroll as the rows pass under it.
    */
   layout?: 'scroll' | 'container' | undefined;
   /** The grid's own width, in CSS pixels, as it is measured and whenever it changes. */
@@ -275,11 +446,24 @@ export interface TreeGridProps {
   className?: string | undefined;
 }
 
+/**
+ * A hierarchy on DataGrid's terms: the same head (sort buttons, marks, edges,
+ * plain heads), the same give-way columns and foot, the same row link and
+ * failed edge, so a tree table reads and behaves like the list beside it.
+ *
+ * A SORT ORDERS SIBLINGS. The hierarchy is the answer a tree gives, so a sort
+ * never lifts a row out of its parent: each level is ordered among itself,
+ * an add row stays last in its level, and with no sort chosen the rows are in
+ * the tree's own order with no head marked. The model is built over the
+ * sorted forest, so a row's position, the keys and the wires follow what is
+ * drawn.
+ */
 export function TreeGrid({
   label,
   columns,
   rows: forest,
   renderCell,
+  renderIndent,
   cellHasControl,
   onRowKey,
   onRowKeyDown,
@@ -287,10 +471,25 @@ export function TreeGrid({
   addRow,
   selectedId = null,
   onSelect,
+  selection,
+  rowHref,
+  isFailed,
   readOnly,
   defaultExpanded,
   expanded: held,
   onExpandedChange,
+  sort: sortRaw = '',
+  defaultSort = '',
+  onSortChange,
+  serverSorted = false,
+  cols: colsRaw = '',
+  onColsChange,
+  empty,
+  footer,
+  loadedNote,
+  onLoadMore,
+  phoneRows,
+  flush = false,
   headless = false,
   layout = 'scroll',
   onWidthChange,
@@ -298,16 +497,20 @@ export function TreeGrid({
   ref,
   className,
 }: TreeGridProps) {
-  const text = { ...LABELS, ...labels };
+  const text: TreeGridLabels = { ...LABELS, ...labels };
 
   // ---- the columns its own width holds ---------------------------------------
   // Measured before paint, so a narrow grid never flashes the columns it leaves
   // out. An unmeasured grid (0, as in a hidden panel) draws every column.
   const frame = useRef<HTMLDivElement>(null);
+  const gridEl = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const reportWidth = useRef(onWidthChange);
   reportWidth.current = onWidthChange;
-  const measures = onWidthChange !== undefined || columns.some((one) => one.hideBelow !== undefined);
+  const measures =
+    onWidthChange !== undefined ||
+    phoneRows !== undefined ||
+    columns.some((one) => one.hideBelow !== undefined || one.drop !== undefined);
   useLayoutEffect(() => {
     const el = frame.current;
     if (!measures || !el) return;
@@ -323,11 +526,42 @@ export function TreeGrid({
   useEffect(() => {
     if (width > 0) reportWidth.current?.(width);
   }, [width]);
+
+  // THE COLUMN SET, as a DataGrid's: the reader's choice in the reader's
+  // order, else every column that is not optional; then the pixel floors.
+  const shownColumns = useMemo(() => {
+    const asked = colsRaw
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+    const byKey = new Map(columns.map((c) => [c.key, c]));
+    const picked = asked.map((key) => byKey.get(key)).filter((c): c is TreeGridColumn => !!c);
+    const set = picked.length > 0 ? picked : columns.filter((c) => !c.optional);
+    return set.filter((one) => one.hideBelow === undefined || width <= 0 || width >= one.hideBelow);
+  }, [columns, colsRaw, width]);
+  const shownKeys = shownColumns.map((c) => c.key).join(',');
+  const [fit, setFit] = useState<GridFit>(NO_FIT);
+  const phone = useMediaMatch(`(width < ${breakpoint.phone})`);
+  // CARDS ONLY WHERE ASKED (`phoneRows`): a tree that keeps its columns
+  // scrolls sideways below its minimum, as it always has.
+  const stacked = phoneRows !== undefined && (phone || (fit.set === shownKeys && Boolean(fit.stacked)));
+  const dropped = !stacked && fit.set === shownKeys ? fit.dropped : NO_DROPS;
   const drawn = useMemo(
-    () => columns.filter((one) => one.hideBelow === undefined || width <= 0 || width >= one.hideBelow),
-    [columns, width],
+    () => (dropped.length === 0 ? shownColumns : shownColumns.filter((c) => !dropped.includes(c.key))),
+    [shownColumns, dropped],
   );
-  const tree = useTreeState(forest, selectedId, { defaultExpanded, expanded: held, onExpandedChange });
+
+  // ---- the order -------------------------------------------------------------
+  const sort = parseGridSort(sortRaw || defaultSort);
+  const sortValue = sort && !serverSorted ? columns.find((c) => c.key === sort.key)?.sortValue : undefined;
+  const pinned = (id: string) => addRow?.(id) != null;
+  const sortedNow = sortValue && sort ? sortTreeLevels(forest, sortValue, sort.desc, pinned) : forest;
+  // THE SAME ORDER IS THE SAME FOREST: a sort recomputed on every render (its
+  // columns rebuilt by the caller) must not rebuild the model on every push.
+  const drawnOrder = sortValue ? orderOf(sortedNow) : '';
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the forest and its drawn order are the identity
+  const sorted = useMemo(() => sortedNow, [forest, drawnOrder]);
+  const tree = useTreeState(sorted, selectedId, { defaultExpanded, expanded: held, onExpandedChange });
   const { model, expanded, rows, active, setActive, toggle } = tree;
 
   /** The column of the active row that holds focus; `null` when the row itself does. */
@@ -339,6 +573,39 @@ export function TreeGrid({
   const current = useRef({ addRow, onSelect });
   current.current = { addRow, onSelect };
   const isAddRow = (id: string) => current.current.addRow?.(id) ?? null;
+
+  // ---- the fit -----------------------------------------------------------------
+  // AFTER WHATEVER CAN CHANGE WHAT FITS, as a DataGrid's: the drop order goes
+  // first, and a grid that still cannot draw its values stacks where it may.
+  useLayoutEffect(() => {
+    const el = gridEl.current;
+    if (!el || phone || width <= 0) return;
+    if (!drawn.some((one) => one.drop !== undefined) && phoneRows === undefined && fit.set === shownKeys) return;
+    const current = fit.set === shownKeys ? fit : { ...NO_FIT, set: shownKeys };
+    const head = el.querySelector(':scope > .crewlet-tree-grid__head > [role="row"]');
+    const overrun = !current.stacked && overrunning(el, head);
+    const squeeze = current.stacked
+      ? null
+      : squeezedCells(
+          el.clientWidth,
+          head ? [...head.children] : [],
+          [
+            ...el.querySelectorAll(
+              ':scope > .crewlet-tree-grid__body > [role="row"]:not(.crewlet-tree-grid__row--add)',
+            ),
+          ],
+          (row) => [...row.children],
+          drawn,
+        );
+    const next = fitGridColumns({
+      fit: current,
+      width: el.clientWidth,
+      overflows: overrun || squeeze !== null,
+      stack: phoneRows !== undefined && (overrun || squeeze === 'values'),
+      visible: drawn,
+    });
+    if (next !== null) setFit(next);
+  }, [phone, fit, shownKeys, drawn, rows, width, phoneRows]);
 
   // ---- focus -----------------------------------------------------------------
   const rowEls = useRef(new Map<string, HTMLElement>());
@@ -393,11 +660,31 @@ export function TreeGrid({
     focusAt(id, null);
   };
   const { expandAll, collapseAll } = tree;
-  useImperativeHandle(
-    ref,
-    () => ({ focusNode: (id: string) => focusRef.current(id), expandAll, collapseAll }),
-    [expandAll, collapseAll],
-  );
+  useImperativeHandle(ref, () => ({ focusNode: (id: string) => focusRef.current(id), expandAll, collapseAll }), [
+    expandAll,
+    collapseAll,
+  ]);
+
+  /**
+   * Follows a row's link as a click on it would, with the keys held, so a
+   * modified Enter opens it elsewhere as a modified click does. False where
+   * the row has no link.
+   */
+  function follow(row: HTMLElement, event: KeyboardEvent<HTMLElement>): boolean {
+    const link = row.querySelector<HTMLAnchorElement>(':scope > [role="gridcell"] > a.crewlet-tree-grid__row-link');
+    if (!link) return false;
+    link.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        metaKey: event.metaKey,
+        ctrlKey: event.ctrlKey,
+        shiftKey: event.shiftKey,
+        altKey: event.altKey,
+      }),
+    );
+    return true;
+  }
 
   // ---- keys -------------------------------------------------------------------
   function onKeyDownCapture(event: KeyboardEvent<HTMLDivElement>) {
@@ -430,6 +717,13 @@ export function TreeGrid({
       }
       if (action !== null) {
         if (onRowKey?.(id, action)) handled();
+        // A ROW THAT LINKS OPENS FROM THE KEYBOARD as a click on its link would.
+        else if (action === 'activate' && follow(row, event)) handled();
+        return;
+      }
+      // And a modified Enter opens it elsewhere, as a modified click does.
+      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.altKey && follow(row, event)) {
+        handled();
         return;
       }
     }
@@ -532,23 +826,57 @@ export function TreeGrid({
     setMenuOpen: (id, open) => setMenuFor((was) => (open ? id : was === id ? null : was)),
     columnKey: (col) => drawn[col - 1]?.key,
     shown: (key) => drawn.some((one) => one.key === key),
+    tree: model,
   };
 
-  const template = drawn.map(tableTrack).join(' ');
+  // A row's box is a control in its first cell, so the cell hands its tab stop to it.
+  const hasControl = (id: string, col: number, key: string) =>
+    (col === 1 && selection !== undefined && selection.checked(id) !== null) ||
+    (cellHasControl?.(id, col, key) ?? false);
+
+  function headerClick(one: TreeGridColumn): void {
+    if (!sortsBy(one) || !onSortChange) return;
+    onSortChange(nextGridSort(one.key, sortRaw, defaultSort));
+  }
+
+  const template = drawn
+    .map((one) => tableTrack({ ...one, width: one.width ?? (one.icon ? GRID_ICON_TRACK : undefined) }))
+    .join(' ');
+  const frameClass = cx(
+    'crewlet-tree-grid',
+    headless && 'crewlet-tree-grid--headless',
+    layout === 'container' && 'crewlet-tree-grid--container',
+    className,
+  );
+
+  if (forest.length === 0 && empty) {
+    return (
+      <div ref={frame} className={frameClass} data-flush={flush || undefined}>
+        <div className="crewlet-tree-grid__scroller">
+          <EmptyState
+            size="compact"
+            icon={empty.icon}
+            title={empty.title}
+            description={empty.hint}
+            action={empty.action}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={frame}
-      className={cx(
-        'crewlet-tree-grid',
-        headless && 'crewlet-tree-grid--headless',
-        layout === 'container' && 'crewlet-tree-grid--container',
-        className,
-      )}
+      className={frameClass}
+      data-flush={flush || undefined}
+      data-stacked={stacked || undefined}
+      data-phone-rows={stacked && phoneRows === 'compact' ? 'compact' : undefined}
     >
       <LayerHost className="crewlet-tree-grid__layer">
         <div className="crewlet-tree-grid__scroller" onScroll={onScroll}>
           <div
+            ref={gridEl}
             role="treegrid"
             aria-label={label}
             aria-colcount={drawn.length}
@@ -560,9 +888,15 @@ export function TreeGrid({
             <div role="rowgroup" className="crewlet-tree-grid__head">
               <div role="row" className="crewlet-tree-grid__row">
                 {drawn.map((one, index) => (
-                  <div role="columnheader" aria-colindex={index + 1} key={one.key}>
-                    {one.headerHidden ? <VisuallyHidden>{one.header}</VisuallyHidden> : one.header}
-                  </div>
+                  <GridHeadCell
+                    key={one.key}
+                    column={one}
+                    colIndex={index + 1}
+                    sort={sort}
+                    sortable={sortsBy(one) && onSortChange !== undefined}
+                    onSort={() => headerClick(one)}
+                    hidden={one.headerHidden || one.action}
+                  />
                 ))}
               </div>
             </div>
@@ -573,6 +907,7 @@ export function TreeGrid({
                 const expandable = treeExpandable(model, id);
                 const open = expanded.has(id);
                 const name = model.label.get(id) ?? '';
+                const href = add ? undefined : rowHref?.(id);
                 return (
                   /* The row's keys are the GRID's, captured at the treegrid so
                      one handler serves every row and reaches a cell's control
@@ -592,6 +927,8 @@ export function TreeGrid({
                     aria-selected={add ? undefined : id === selectedId}
                     aria-label={add ? add.label : undefined}
                     className={cx('crewlet-tree-grid__row', add && 'crewlet-tree-grid__row--add')}
+                    data-linked={href !== undefined || undefined}
+                    data-failed={(!add && isFailed?.(id)) || undefined}
                     style={{ '--crewlet-tree-grid-depth': treeLevel(model, id) - 1 } as CSSProperties}
                     onClick={(event) => {
                       // A press on a control in the row is the control's; a
@@ -604,15 +941,35 @@ export function TreeGrid({
                   >
                     {Array.from({ length: cells }, (_, index) => {
                       const col = index + 1;
+                      const one = add ? undefined : drawn[index];
+                      const align = one ? alignOf(one) : 'left';
                       return (
                         <div
                           key={col}
                           role="gridcell"
                           aria-colindex={col}
-                          tabIndex={stop(id, col) && !cellHasControl?.(id, col, drawn[col - 1]?.key ?? '') ? 0 : -1}
-                          data-size={!add && drawn[col - 1]?.size === 'sm' ? 'sm' : undefined}
-                          className="crewlet-tree-grid__cell"
+                          tabIndex={stop(id, col) && !hasControl(id, col, drawn[col - 1]?.key ?? '') ? 0 : -1}
+                          data-size={one?.size === 'sm' ? 'sm' : undefined}
+                          // The column's name, for the card a row becomes where columns do not fit.
+                          data-label={
+                            one && !one.action && col > 1 ? headerWord(one) || one.label || undefined : undefined
+                          }
+                          className={cx(
+                            'crewlet-tree-grid__cell',
+                            align !== 'left' && `crewlet-tree-grid__cell--${align}`,
+                            one?.icon && 'crewlet-tree-grid__cell--icon',
+                            one?.shrink && 'crewlet-tree-grid__cell--shrink',
+                            one?.action && 'crewlet-tree-grid__cell--action',
+                          )}
                         >
+                          {col === 1 && href !== undefined && (
+                            /* THE ROW'S LINK, STRETCHED OVER IT, for the pointer:
+                               a real href, so a new tab and copying it work. The
+                               row is the keyboard's and the reader's way in (Enter
+                               follows this), so the link is hidden from both. */
+                            // eslint-disable-next-line jsx-a11y/anchor-has-content
+                            <a className="crewlet-tree-grid__row-link" href={href} tabIndex={-1} aria-hidden="true" />
+                          )}
                           {col === 1 && (
                             /* THE PRESS LANDS ON THE ROW. The chevron is a
                                pointer-only control hidden from assistive
@@ -643,6 +1000,10 @@ export function TreeGrid({
                               )}
                             </span>
                           )}
+                          {col === 1 && renderIndent?.(id, grid)}
+                          {col === 1 && selection && add === null && (
+                            <TreeGridSelect id={id} selection={selection} context={grid} />
+                          )}
                           {renderCell(id, col, grid)}
                         </div>
                       );
@@ -652,9 +1013,45 @@ export function TreeGrid({
               })}
             </div>
           </div>
+          <GridFoot
+            footer={footer}
+            dropped={droppedNames(shownColumns, dropped, text.and)}
+            loadedNote={loadedNote}
+            onLoadMore={onLoadMore}
+            onReset={colsRaw && onColsChange ? () => onColsChange('') : undefined}
+            labels={text}
+          />
         </div>
         <LayerNodeBridge onNode={setLayer} />
       </LayerHost>
     </div>
+  );
+}
+
+/** A row's select box, in the slot every row keeps; a press on it is the box's, not the row's. */
+function TreeGridSelect({
+  id,
+  selection,
+  context,
+}: {
+  id: string;
+  selection: TreeGridSelection;
+  context: TreeGridContext;
+}) {
+  const checked = selection.checked(id);
+  return (
+    <span className="crewlet-tree-grid__select">
+      {checked !== null && (
+        <Checkbox
+          hideLabel
+          label={selection.label(id)}
+          checked={checked === true}
+          indeterminate={checked === 'mixed'}
+          tabIndex={context.tabStop(id, 1) ? 0 : -1}
+          onClick={() => context.opened(id, 1)}
+          onCheckedChange={(next) => selection.onCheckedChange(id, next)}
+        />
+      )}
+    </span>
   );
 }

@@ -164,6 +164,71 @@ test('a data grid, its sortable heads, its row links, its bands and its foot car
   expect(await violations(container)).toEqual([]);
 });
 
+test('a data grid whose foot holds a list and the way back from a column set carries no violation', async () => {
+  // A table owns rows and row groups and nothing else: the foot is its own row group.
+  const rows = [{ id: 'ENG-1', title: 'Rotate the key' }];
+  const { container } = render(
+    <main>
+      <h1>Projects</h1>
+      <DataGrid
+        aria-label="Projects"
+        rows={rows}
+        columns={[
+          { key: 'id', header: 'Key', cell: (r: (typeof rows)[number]) => r.id },
+          { key: 'title', header: 'Title', optional: true, cell: (r: (typeof rows)[number]) => r.title },
+        ]}
+        rowKey={(r) => r.id}
+        cols="id,title"
+        onColsChange={() => {}}
+        footer={
+          <ul role="list" aria-label="Legend">
+            <li>Done</li>
+            <li>Open</li>
+          </ul>
+        }
+        onLoadMore={() => {}}
+      />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('a data grid with open rows, lines under rows, hand order, summaries and placeholders carries no violation', async () => {
+  const rows = [
+    { id: 'ENG-1', title: 'Rotate the key' },
+    { id: 'ENG-2', title: 'Write the runbook' },
+  ];
+  const columns = [
+    { key: 'id', header: 'Key', cell: (r: (typeof rows)[number]) => r.id },
+    { key: 'title', header: 'Title', overflow: 'truncate' as const, cell: (r: (typeof rows)[number]) => r.title },
+  ];
+  const { container } = render(
+    <main>
+      <h1>Priorities</h1>
+      <DataGrid
+        aria-label="Priorities"
+        rows={rows}
+        columns={columns}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `#/worklet/${r.id}`}
+        reorder={{ onMove: () => {}, rowName: (r) => r.id }}
+        ordinal
+        rowTone={(r) => (r.id === 'ENG-1' ? 'warning' : undefined)}
+        rowAccessory={(r) => (r.id === 'ENG-1' ? 'Waiting on a review' : null)}
+        expansion={{
+          isExpanded: (r) => r.id === 'ENG-2',
+          onToggle: () => {},
+          render: (r) => <p>Details of {r.id}</p>,
+          label: (r, open) => `${open ? 'Hide' : 'Show'} ${r.id}`,
+        }}
+        summaryRows={[{ key: 'total', label: 'Total', cells: { title: '2 items' } }]}
+      />
+      <DataGrid aria-label="Loading" rows={[]} columns={columns} rowKey={(r) => r.id} loading density="compact" />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
 test('a histogram, as a picture and as controls, carries no violation', async () => {
   const bars = [0, 3, 1].map((v, i) => ({ t: Date.UTC(2026, 8, 16 + i), v, part: v > 2 ? 1 : 0 }));
   const title = (bar: { t: number; v: number }) => `${new Date(bar.t).toISOString().slice(0, 10)}, ${bar.v}`;

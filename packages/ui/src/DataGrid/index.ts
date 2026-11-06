@@ -21,8 +21,12 @@ export type {
   DataGridAlign,
   DataGridBand,
   DataGridColumn,
+  DataGridExpansion,
   DataGridHandle,
   DataGridLabels,
   DataGridProps,
+  DataGridReorder,
+  DataGridRowTone,
+  DataGridSummaryRow,
   GridFit,
 } from './DataGrid.js';

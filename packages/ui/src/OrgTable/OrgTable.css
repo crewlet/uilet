@@ -92,23 +92,32 @@
   min-width: 0;
 }
 
-/* THE NAME COLUMN'S HEADING STANDS OVER THE NAMES, not over the chevrons. */
+/* THE NAME COLUMN'S HEADING STANDS OVER THE NAMES, not over the chevrons.
+   Its start inset too, so a sort button filling the head takes the same
+   inset back and the whole cell stays the target. */
 .crewlet-org-table [role='columnheader'][aria-colindex='1'] {
+  --crewlet-tree-grid-cell-start: var(--crewlet-org-table-name-start);
+
   padding-inline-start: var(--crewlet-org-table-name-start);
 }
 
 /* With a select box, the names start one slot and one gap further in. */
 .crewlet-org-table[data-select] [role='columnheader'][aria-colindex='1'] {
+  --crewlet-tree-grid-cell-start: calc(
+    var(--crewlet-org-table-name-start) + var(--size-target-min) + var(--spacing-2)
+  );
+
   padding-inline-start: calc(var(--crewlet-org-table-name-start) + var(--size-target-min) + var(--spacing-2));
 }
 
-/* THE SELECT BOX'S SLOT, kept on every row, so a row with no box keeps its name in line. */
-.crewlet-org-table__select {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: var(--size-target-min);
+/* A ROW DRAWN AS A CARD (`phoneRows`) starts its values' lines under its
+   name: the cell's inset, the chevron, the wire's level and its gap. Set on
+   the cell, where the row's depth is known. */
+.crewlet-org-table [role='gridcell'] {
+  --crewlet-tree-grid-value-indent: calc(
+    var(--spacing-2) * 2 + var(--size-control-sm) + var(--crewlet-org-table-indent) *
+      var(--crewlet-tree-grid-depth, 0)
+  );
 }
 
 /* A CONTAINER-WIDTH TABLE steps its indent in as it narrows, so a nested

@@ -7,4 +7,5 @@ export type {
   TreeGridContext,
   TreeGridLabels,
   TreeGridProps,
+  TreeGridSelection,
 } from './TreeGrid.js';

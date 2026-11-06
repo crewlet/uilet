@@ -357,10 +357,145 @@ button.crewlet-data-grid__row-link {
   box-shadow: inset 2px 0 0 var(--color-brand-accent);
 }
 
-/* A FAILED ROW IS MARKED ON ITS EDGE, not tinted: the status column already
-   says so, and two signals for one fact teach a reader to trust neither. */
-.crewlet-data-grid__row--failed {
+/* A ROW'S TONE IS MARKED ON ITS EDGE, not tinted: the row's own cells
+   already say the state in words, and two loud signals for one fact teach a
+   reader to trust neither. The edge runs down the lines under the row too,
+   so the record reads as one. `--failed` is the danger tone's old name. */
+.crewlet-data-grid__row--failed,
+.crewlet-data-grid__row[data-tone='danger'],
+.crewlet-data-grid__subrow[data-tone='danger'] {
   box-shadow: inset 2px 0 0 var(--color-feedback-danger-ink);
+}
+
+.crewlet-data-grid__row[data-tone='warning'],
+.crewlet-data-grid__subrow[data-tone='warning'] {
+  box-shadow: inset 2px 0 0 var(--color-feedback-warning-ink);
+}
+
+.crewlet-data-grid__row[data-tone='info'],
+.crewlet-data-grid__subrow[data-tone='info'] {
+  box-shadow: inset 2px 0 0 var(--color-feedback-info-ink);
+}
+
+/*
+ * A ROW AND THE LINES UNDER IT ARE ONE RECORD: the accessory line that says
+ * what the row cannot, the detail an open row shows. No rule between them;
+ * the last of them draws the record's rule. They start on the first of the
+ * caller's columns (the cell's own `grid-column`), past the grid's own.
+ */
+.crewlet-data-grid__row[data-continued] {
+  border-bottom-color: transparent;
+}
+
+.crewlet-data-grid__subrow {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-data-grid__subrow:not(:last-child):has(+ .crewlet-data-grid__subrow) {
+  border-bottom-color: transparent;
+}
+
+.crewlet-data-grid__subrow:last-child {
+  border-bottom: none;
+}
+
+.crewlet-data-grid__subrow-cell {
+  min-width: 0;
+  padding-block: 0 var(--spacing-2);
+  padding-inline: var(--spacing-3) var(--crewlet-data-grid-edge);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-data-grid__subrow-cell[data-first] {
+  padding-inline-start: var(--crewlet-data-grid-edge);
+}
+
+/* AN OPEN ROW'S DETAIL is its own ground, a step in from the row's, so it
+   reads as the inside of the row above it and not as one more row. */
+.crewlet-data-grid__subrow--detail {
+  background: var(--color-surface-inset);
+}
+
+.crewlet-data-grid__subrow--detail > .crewlet-data-grid__subrow-cell {
+  padding-block: var(--spacing-3);
+  font-size: var(--font-size-compact);
+  color: inherit;
+}
+
+/* THE CHEVRON TURNS to point at the open row's detail, as a tree's does. */
+.crewlet-data-grid__expander {
+  display: inline-flex;
+}
+
+.crewlet-data-grid__expander svg {
+  transition: transform var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-data-grid__expander[data-open] svg {
+  transform: rotate(90deg);
+}
+
+/* A ROW MOVED BY HAND: the handle says it can be carried, the row being
+   carried is a gap outlined where it will land, and a move still being
+   saved is quieter until it lands. */
+.crewlet-data-grid__handle {
+  cursor: grab;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-data-grid__handle:active {
+  cursor: grabbing;
+}
+
+.crewlet-data-grid__row[data-reorder='dragging'] {
+  background: transparent;
+  outline: 1px dashed var(--color-border-strong);
+  outline-offset: -1px;
+}
+
+.crewlet-data-grid__row[data-reorder='dragging'] > *,
+.crewlet-data-grid__row[data-pending] > * {
+  opacity: 0.5;
+}
+
+/*
+ * A SUMMARY ROW IS NOT A RECORD: a total under the rows or the whole above
+ * its parts. On the same tracks, so its figures stand under their heads; in
+ * the weight a total takes; with no pointer, since it opens nothing.
+ */
+.crewlet-data-grid__row--summary,
+.crewlet-data-grid__row--summary:hover {
+  cursor: default;
+  background: var(--color-surface-elevated);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-data-grid__row--summary[data-position='top'] {
+  border-bottom-color: var(--color-border-hover);
+}
+
+.crewlet-data-grid__row--summary[data-position='bottom'] {
+  border-top: 1px solid var(--color-border-hover);
+}
+
+.crewlet-data-grid__row--summary + .crewlet-data-grid__row--summary[data-position='bottom'] {
+  border-top: none;
+}
+
+/* A ROW STILL ON ITS WAY: the head's tracks, a sweeping line in each cell. */
+.crewlet-data-grid__row--loading,
+.crewlet-data-grid__row--loading:hover {
+  cursor: default;
+  background: transparent;
+}
+
+.crewlet-data-grid__row--loading .crewlet-data-grid__cell > * {
+  flex: 1 1 auto;
+  max-width: 10rem;
 }
 
 .crewlet-data-grid__cell {
@@ -423,6 +558,37 @@ button.crewlet-data-grid__row-link {
 
 .crewlet-data-grid__cell--center {
   justify-content: center;
+}
+
+/* A PROSE COLUMN (`overflow: 'wrap'`) breaks over as many lines as it takes,
+   anywhere it must, and its row grows to hold it. */
+.crewlet-data-grid__cell--wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  padding-block: var(--spacing-2);
+}
+
+/*
+ * A COMPACT GRID (`density="compact"`) is a step shorter in its head and in
+ * every row, for a grid in a drawer or a side panel read beside something
+ * else. The type stays; only the rows' height and their air give.
+ */
+.crewlet-data-grid[data-density='compact'] .crewlet-data-grid__head,
+.crewlet-data-grid[data-density='compact'] .crewlet-data-grid__row {
+  min-height: var(--size-row-sm);
+}
+
+.crewlet-data-grid[data-density='compact'] .crewlet-data-grid__th {
+  padding-block: var(--spacing-1);
+}
+
+.crewlet-data-grid[data-density='compact'] .crewlet-data-grid__sort {
+  margin-block: calc(-1 * var(--spacing-1));
+  padding-block: var(--spacing-1);
+}
+
+.crewlet-data-grid[data-density='compact'] .crewlet-data-grid__cell {
+  padding-block: 0;
 }
 
 
@@ -508,8 +674,6 @@ button.crewlet-data-grid__row-link {
 .crewlet-data-grid__foot {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-1) var(--spacing-3);
   min-height: var(--size-control-sm);
   padding: var(--spacing-1) var(--crewlet-data-grid-edge);
   border-top: 1px solid var(--color-border-default);
@@ -517,6 +681,24 @@ button.crewlet-data-grid__row-link {
   color: var(--color-text-tertiary);
   font-size: var(--font-size-2xs);
   line-height: var(--font-line-height-tight);
+}
+
+/* THE FOOT IS THE TABLE'S OWN ROW GROUP (a tfoot): one row, one cell across
+   every column, which lays the caller's words and the grid's notes out on
+   one line that wraps. */
+.crewlet-data-grid__foot-group {
+  display: block;
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.crewlet-data-grid__foot-cell {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-1) var(--spacing-3);
+  min-width: 0;
 }
 
 .crewlet-data-grid__foot-spacer {
@@ -530,8 +712,7 @@ button.crewlet-data-grid__row-link {
 
 .crewlet-data-grid__cols-reset {
   all: unset;
-  /* After the reset, which takes `grid-column` too. */
-  grid-column: 1 / -1;
+  display: block;
   padding: var(--spacing-1) var(--crewlet-data-grid-edge);
   font-size: var(--font-size-2xs);
   color: var(--color-brand-accent-ink);
@@ -582,7 +763,8 @@ button.crewlet-data-grid__row-link {
 @media (prefers-reduced-motion: reduce) {
   .crewlet-data-grid__th,
   .crewlet-data-grid__row,
-  .crewlet-data-grid__sort-mark {
+  .crewlet-data-grid__sort-mark,
+  .crewlet-data-grid__expander svg {
     transition: none;
   }
 }
@@ -616,8 +798,13 @@ button.crewlet-data-grid__row-link {
 }
 
 :where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__body,
-:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__band {
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__band,
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__subrow {
   display: block;
+}
+
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__subrow-cell {
+  padding-inline: var(--crewlet-data-grid-edge);
 }
 
 :where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__row {
