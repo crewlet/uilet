@@ -637,3 +637,14 @@ describe('the inset a host keeps clear', () => {
     expect(css).toContain('width: min(380px, calc(100vw - 2 * var(--spacing-6) - var(--crewlet-toaster-inset-inline)));');
   });
 });
+
+test('a long message is clamped to two lines, its whole words on hover and in what is said', () => {
+  const long = 'Saved "Principal Product Manager for Learner Journeys, Spaced Repetition and Phrase Discovery" to the board';
+  render(<Toaster toasts={[{ id: 1, variant: 'success', message: long }]} onDismiss={() => {}} />);
+  const words = document.querySelector('.crewlet-toast__message > .crewlet-text')!;
+  expect(words.classList.contains('crewlet-text--clamp-2')).toBe(true);
+  Object.defineProperty(words, 'clientHeight', { configurable: true, value: 36 });
+  Object.defineProperty(words, 'scrollHeight', { configurable: true, value: 90 });
+  fireEvent.mouseEnter(words);
+  expect(words.getAttribute('title')).toBe(long);
+});

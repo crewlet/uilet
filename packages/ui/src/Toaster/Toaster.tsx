@@ -12,6 +12,7 @@ import {
 import { createPortal } from 'react-dom';
 import { CircleAlertGlyph, CircleCheckGlyph, InfoGlyph, TriangleAlertGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 import { useLayerContainer } from '../Layer/index.js';
+import { Text } from '../Text/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 
@@ -406,7 +407,15 @@ function ToastItem<TVariant extends string>({
           ) : null}
           <div className="crewlet-toast__body">
             {title ? <div className="crewlet-toast__title">{title}</div> : null}
-            {toast.message ? <div className="crewlet-toast__message">{toast.message}</div> : null}
+            {toast.message ? (
+              // Two lines at most, its whole words on hover: a message quoting a
+              // long title stood four to seven lines and two covered a phone.
+              <div className="crewlet-toast__message">
+                <Text variant="inherit" clamp={2}>
+                  {toast.message}
+                </Text>
+              </div>
+            ) : null}
             {action()}
           </div>
         </>
