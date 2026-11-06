@@ -311,6 +311,7 @@ const SHEET_PEOPLE = Array.from({ length: 15 }, (_, i) => ({ id: `p${i}`, name: 
 export const ShortSheetChoiceList: Story = {
   render: () => (
     <BothThemes>
+      <div style={{ contain: 'inline-size' }}>
       <SheetGrid
         label="Tracker"
         columns={SHEET_COLUMNS}
@@ -322,6 +323,7 @@ export const ShortSheetChoiceList: Story = {
         people={SHEET_PEOPLE}
         onEdit={() => {}}
       />
+      </div>
     </BothThemes>
   ),
 };
