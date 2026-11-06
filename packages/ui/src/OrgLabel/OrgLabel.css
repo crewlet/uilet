@@ -54,6 +54,21 @@
   font-size: var(--font-size-3xl);
 }
 
+/* AN ORGANIZATION'S LOGO, whole and in its own colours: on a node as tall as
+   the name and caption beside it, in a row the size of a seat's badge there. */
+.crewlet-org-label__logo {
+  --crewlet-org-label-logo: calc((var(--font-size-compact) + var(--font-size-2xs)) * var(--font-line-height-tight));
+
+  display: block;
+  width: var(--crewlet-org-label-logo);
+  height: var(--crewlet-org-label-logo);
+  object-fit: contain;
+}
+
+.crewlet-org-label--row .crewlet-org-label__logo {
+  --crewlet-org-label-logo: var(--font-size-xl);
+}
+
 /*
  * THE ZONE IS ONE INK, and the mark in it takes that ink whatever it arrived
  * painted in. A glyph already inherits, but a brand mark or an illustration
@@ -161,6 +176,25 @@
   color: var(--crewlet-tree-canvas-card-ink, var(--color-text-primary));
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* A CONTROL ON THE NAME'S LINE follows the name, and the name gives way first. */
+.crewlet-org-label__name-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.crewlet-org-label__name-line > .crewlet-org-label__name {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.crewlet-org-label__name-line > :not(.crewlet-org-label__name) {
+  flex: none;
 }
 
 /*
@@ -310,6 +344,10 @@
  */
 .crewlet-org-label--row .crewlet-org-label__name {
   max-width: none;
+}
+
+.crewlet-org-label--row .crewlet-org-label__name-line {
+  justify-content: flex-start;
 }
 
 /*

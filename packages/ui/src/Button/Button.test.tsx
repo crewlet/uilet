@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { EllipsisVerticalGlyph } from '@crewlethq/icons/glyphs';
@@ -430,4 +430,84 @@ test('a flush button takes back its own inset at its start and rings inside', ()
   for (const size of ['small', 'medium', 'large']) {
     expect(css).toMatch(new RegExp(`\\.crewlet-btn--${size} \\{[^}]*--crewlet-btn-inset:[^}]*padding: 0 var\\(--crewlet-btn-inset\\)`));
   }
+});
+
+describe('a held control says why in the kit Tooltip, when asked to', () => {
+  const tip = () => document.querySelector<HTMLElement>('[role="tooltip"]');
+  const rest = () =>
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+  test('a held button shows its reason on hover and reads it once', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <Button tooltip disabledReason="Changing the configuration needs Admin access.">
+          Add
+        </Button>,
+      );
+      const button = screen.getByRole('button', { name: 'Add' });
+      fireEvent.pointerEnter(button);
+      rest();
+      expect(tip()?.textContent).toBe('Changing the configuration needs Admin access.');
+      // Shown, not read: the reason is already the button's description.
+      expect(tip()?.querySelector('[aria-hidden="true"]')).not.toBeNull();
+      // The description as it is read: what an element says, past anything hidden from it.
+      const read = (el: HTMLElement | null) => {
+        const copy = el?.cloneNode(true) as HTMLElement | undefined;
+        copy?.querySelectorAll('[aria-hidden="true"]').forEach((hidden) => hidden.remove());
+        return copy?.textContent ?? '';
+      };
+      const described = (button.getAttribute('aria-describedby') ?? '').split(' ').map((id) => read(document.getElementById(id)));
+      expect(described.filter((text) => text === 'Changing the configuration needs Admin access.')).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('a hint of its own comes first, then the reason; an available button with `true` shows nothing', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <>
+          <Button tooltip="Add a seat or a team" disabledReason="This draft is read-only.">
+            Add
+          </Button>
+          <Button tooltip>Save</Button>
+        </>,
+      );
+      fireEvent.pointerEnter(screen.getByRole('button', { name: 'Add' }));
+      rest();
+      expect(tip()?.textContent).toBe('Add a seat or a team. This draft is read-only.');
+      fireEvent.pointerLeave(screen.getByRole('button', { name: 'Add' }));
+      rest();
+      fireEvent.pointerEnter(screen.getByRole('button', { name: 'Save' }));
+      rest();
+      expect(tip()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('an icon button shows its label in place of the native title, and the reason while held', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <>
+          <IconButton label="Pause Product Lead" icon={<EllipsisVerticalGlyph />} tooltip disabledReason="Pausing needs Admin access." />
+          <IconButton label="More actions" icon={<EllipsisVerticalGlyph />} />
+        </>,
+      );
+      const held = screen.getByRole('button', { name: 'Pause Product Lead' });
+      expect(held.getAttribute('title')).toBe('');
+      fireEvent.pointerEnter(held);
+      rest();
+      expect(tip()?.textContent).toBe('Pause Product Lead. Pausing needs Admin access.');
+      // Without the prop, the native title stays as it was.
+      expect(screen.getByRole('button', { name: 'More actions' }).getAttribute('title')).toBe('More actions');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

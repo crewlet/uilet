@@ -38,6 +38,7 @@ import type { TreeInput, TreeModel } from '../Tree/index.js';
 import { installMotion, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { NODE_HUES } from '../utils/nodeHue.js';
 import {
+  TREE_ADD_MARK_MIN_ZOOM,
   TreeCanvas,
   type TreeCanvasGroup,
   type TreeCanvasHandle,
@@ -437,7 +438,25 @@ function Harness({
   connector,
   groups,
   composing = null,
+  minZoom,
+  controlsStart,
+  expanded,
+  onExpandedChange,
+  onViewChange,
+  fitKey,
+  initialView,
+  cardDimmed,
+  overlayEnd,
 }: {
+  fitKey?: string | undefined;
+  initialView?: { x: number; y: number; k: number } | undefined;
+  cardDimmed?: ((id: string) => boolean) | undefined;
+  overlayEnd?: ReactNode | undefined;
+  onViewChange?: ((view: { k: number }) => void) | undefined;
+  expanded?: ReadonlySet<string> | undefined;
+  onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
+  minZoom?: number | undefined;
+  controlsStart?: ReactNode | undefined;
   extra?: readonly string[] | undefined;
   state?: Record<string, string> | undefined;
   handle?: React.Ref<TreeCanvasHandle> | undefined;
@@ -472,6 +491,15 @@ function Harness({
       connector={connector}
       groups={groups}
       composing={composing}
+      minZoom={minZoom}
+      controlsStart={controlsStart}
+      expanded={expanded}
+      onExpandedChange={onExpandedChange}
+      onViewChange={onViewChange}
+      fitKey={fitKey}
+      initialView={initialView}
+      cardDimmed={cardDimmed}
+      overlayEnd={overlayEnd}
       ref={handle}
     />
   );
@@ -539,6 +567,19 @@ describe('the tree', () => {
       ['unit:sales', '2', '3', '3', 'true'],
       ['seat:ae', '3', '1', '1', null],
     ]);
+  });
+
+  test('a caller holding the open nodes keeps a closed branch closed and hears every toggle', () => {
+    const heard: string[][] = [];
+    const open = new Set([COMPANY, 'unit:eng', 'unit:platform']);
+    mount({ expanded: open, onExpandedChange: (next) => heard.push([...next].sort()) });
+    const ids = screen.getAllByRole('treeitem').map((el) => el.getAttribute('data-tree-id'));
+    expect(ids).not.toContain('seat:ae');
+    expect(ids).toContain('seat:sre');
+    act(() => {
+      screen.getByRole('button', { name: `Expand ${nameOf('unit:sales')}`, hidden: true }).click();
+    });
+    expect(heard.at(-1)).toEqual([COMPANY, 'unit:eng', 'unit:platform', 'unit:sales'].sort());
   });
 
   test('a treeitem holds nothing focusable, and the pointer buttons are hidden beside it', () => {
@@ -2152,6 +2193,101 @@ describe('a node being composed', () => {
     expect(world()).not.toBe(before);
     view.rerender({ extra: wide, anchorNode: COMPANY, composing: null });
     expect(world()).toBe(before);
+  });
+
+  /* A CHART THAT MUST OPEN WHOLE names a floor under the canvas's own 25%. */
+  test('a chart wider than its pane opens whole when it names a lower floor', () => {
+    const wide = Array.from({ length: 40 }, (_, at) => `seat:extra${at}`);
+    const zoom = (container: HTMLElement) =>
+      Number(/scale\(([\d.e-]+)\)/.exec(container.querySelector<HTMLElement>('.crewlet-canvas__world')!.style.transform)![1]);
+    const floored = mount({ extra: wide });
+    expect(zoom(floored.container)).toBeCloseTo(0.25);
+    floored.unmount();
+    const whole = mount({ extra: wide, minZoom: 0.02 });
+    expect(zoom(whole.container)).toBeLessThan(0.25);
+    expect(zoom(whole.container)).toBeGreaterThan(0.02);
+  });
+
+  test('a start bar reaches the canvas, in the corner opposite its controls', () => {
+    const { container } = mount({ appearance: 'node', controlsStart: <span>Reporting view</span> });
+    const start = container.querySelector('.crewlet-canvas__controls--start')!;
+    expect(start.textContent).toBe('Reporting view');
+    expect(start.getAttribute('data-placement')).toBe('top-right');
+  });
+
+  /* AN ADD MARK IS A FULL TARGET AT ANY ZOOM: the zoom is on the root for the
+     sheet to undo, and a chart too far out for one says so. */
+  test('the zoom is written on the root, and a chart too far out hides its add marks', () => {
+    const heard: number[] = [];
+    const near = mount({ onViewChange: (view) => heard.push(view.k) });
+    const root = () => document.querySelector<HTMLElement>('.crewlet-tree-canvas')!;
+    const k = Number(root().style.getPropertyValue('--crewlet-tree-canvas-zoom'));
+    expect(k).toBe(heard.at(-1));
+    expect(k).toBeGreaterThanOrEqual(TREE_ADD_MARK_MIN_ZOOM);
+    expect(root().hasAttribute('data-zoomed-out')).toBe(false);
+    near.unmount();
+    mount({ extra: Array.from({ length: 40 }, (_, at) => `seat:extra${at}`) });
+    expect(Number(root().style.getPropertyValue('--crewlet-tree-canvas-zoom'))).toBeCloseTo(0.25);
+    expect(root().hasAttribute('data-zoomed-out')).toBe(true);
+    expect(SHEET).toMatch(
+      /\.crewlet-tree-canvas__under > \.crewlet-add-pill \{\s*scale: max\(1, calc\(1 \/ var\(--crewlet-tree-canvas-zoom\)\)\);\s*transform-origin: 50% 0;/,
+    );
+    expect(SHEET).toMatch(
+      /\.crewlet-tree-canvas\[data-zoomed-out\] \.crewlet-tree-canvas__under > \.crewlet-add-pill \{\s*visibility: hidden;/,
+    );
+  });
+
+  describe('the view a page holds', () => {
+    const world = (container: HTMLElement) => container.querySelector<HTMLElement>('.crewlet-canvas__world')!.style.transform;
+    const zoomIn = () => fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+
+    test('a new fit key fits the whole chart again, and the same key keeps the zoom of the reader', () => {
+      const view = mount({ fitKey: 'open' });
+      const fitted = world(view.container);
+      zoomIn();
+      const zoomed = world(view.container);
+      expect(zoomed).not.toBe(fitted);
+      view.rerender({ fitKey: 'open', state: { 'seat:sre': 'working' } });
+      expect(world(view.container)).toBe(zoomed);
+      view.rerender({ fitKey: 'filtered' });
+      expect(world(view.container)).toBe(fitted);
+    });
+
+    test('a key that changes with the cards fits once the new layout is placed', () => {
+      const wide = Array.from({ length: 40 }, (_, at) => `seat:extra${at}`);
+      const view = mount({ fitKey: 'few' });
+      zoomIn();
+      view.rerender({ fitKey: 'many', extra: wide });
+      // Forty more seats: the fit is the wide chart's, not the one it had.
+      expect(Number(/scale\(([\d.e-]+)\)/.exec(world(view.container))![1])).toBeCloseTo(0.25);
+    });
+
+    test('a saved view opens instead of the fit, and the next new key fits again', () => {
+      const fresh = mount({ fitKey: 'a' });
+      const fitted = world(fresh.container);
+      fresh.unmount();
+      const saved = { x: -120, y: -40, k: 1.2 };
+      const view = mount({ fitKey: 'a', initialView: saved });
+      expect(world(view.container)).toBe('translate(-120px, -40px) scale(1.2)');
+      view.rerender({ fitKey: 'b', initialView: saved });
+      expect(world(view.container)).toBe(fitted);
+    });
+  });
+
+  test('a card pushed back says so, and is drawn grey until the keyboard reaches it', () => {
+    mount({ cardDimmed: (id) => id === 'unit:sales' });
+    const card = (id: string) => document.querySelector(`[data-tree-id="${id}"]`)!.closest('.crewlet-tree-canvas__card')!;
+    expect(card('unit:sales').hasAttribute('data-dimmed')).toBe(true);
+    expect(card('unit:eng').hasAttribute('data-dimmed')).toBe(false);
+    expect(SHEET).toMatch(/\.crewlet-tree-canvas__card\[data-dimmed\] \{\s*filter: grayscale\(1\);/);
+    expect(SHEET).toMatch(/\.crewlet-tree-canvas__card\[data-dimmed\]:has\(:focus-visible\) \{\s*filter: none;/);
+  });
+
+  test('an end bar reaches the canvas, across from its controls', () => {
+    const { container } = mount({ appearance: 'node', overlayEnd: <span>Legend</span> });
+    const end = container.querySelector('.crewlet-canvas__controls--end')!;
+    expect(end.textContent).toBe('Legend');
+    expect(end.getAttribute('data-placement')).toBe('top-right');
   });
 
   /*

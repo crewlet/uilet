@@ -1,0 +1,77 @@
+/*
+ * A status legend (StatusLegend.tsx): each status's dot, word and quiet count
+ * on one line that wraps, in a canvas bar's type. As a filter, each item is a
+ * toggle whose pressed state is the selected surface, never a filled chip.
+ */
+
+.crewlet-status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--spacing-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-status-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing-1) * 1.5);
+  min-width: 0;
+  min-height: var(--size-control-sm);
+  padding: 0 var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  white-space: nowrap;
+}
+
+button.crewlet-status-legend__item {
+  cursor: pointer;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+button.crewlet-status-legend__item:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+button.crewlet-status-legend__item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* PRESSED is the selected surface with the accent's lighter line, as a filter chip that is on. */
+button.crewlet-status-legend__item[aria-pressed='true'] {
+  background: var(--color-surface-selected);
+  box-shadow: inset 0 0 0 1px var(--color-brand-accent-soft-strong);
+  color: var(--color-brand-accent-ink);
+}
+
+/* The count is a quiet figure after the word, in step down the column. */
+.crewlet-status-legend__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
+button.crewlet-status-legend__item[aria-pressed='true'] .crewlet-status-legend__count {
+  color: inherit;
+}
+
+/* NOTHING HOLDS IT: still drawn, so the key stays whole, in the quieter ink. */
+.crewlet-status-legend__item[data-empty]:not([aria-pressed='true']) {
+  color: var(--color-text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.crewlet-status-legend__item {
+    transition: none;
+  }
+}

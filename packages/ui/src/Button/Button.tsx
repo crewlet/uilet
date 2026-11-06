@@ -12,6 +12,8 @@ import {
 } from 'react';
 import { ExternalLinkGlyph } from '@crewlethq/icons/glyphs';
 import { Spinner } from '../Spinner/index.js';
+import { Tooltip } from '../Tooltip/index.js';
+import { heldHint } from '../utils/heldHint.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -71,6 +73,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, Bu
    * `aria-describedby`, so it is read after the name rather than instead of it.
    */
   disabledReason?: string | undefined;
+  /**
+   * The kit Tooltip on hover and keyboard focus: a hint of its own, then the
+   * reason while held; or `true` for the reason alone. Shown and not read, since
+   * the name and the reason already are.
+   */
+  tooltip?: string | boolean | undefined;
   /**
    * Render the single child element with the Button's styling merged onto it
    * instead of a native button, to put this look on a router's own Link while
@@ -145,6 +153,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     loading = false,
     pressed,
     disabledReason,
+    tooltip,
     disabled,
     onClick,
     title,
@@ -154,6 +163,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   ref,
 ) {
   const reasonId = useId();
+  const tip = typeof tooltip === 'string' ? heldHint(tooltip, disabledReason) : tooltip ? disabledReason : undefined;
   const look = { variant, size, shape, leadingIcon, trailingIcon, block, flush, className, children };
   const classes = buttonClass(look, loading ? 'crewlet-btn--loading' : undefined);
 
@@ -174,32 +184,35 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 
   // Soft, never native: see `loading` and `disabledReason`.
   const inert = loading || disabledReason !== undefined;
+  const button = (
+    <button
+      {...rest}
+      ref={ref}
+      type={type}
+      className={classes}
+      disabled={disabled}
+      title={title}
+      aria-label={rest['aria-label'] ?? (children === undefined ? title : undefined)}
+      aria-pressed={pressed}
+      aria-busy={loading || undefined}
+      aria-disabled={inert || undefined}
+      aria-describedby={disabledReason === undefined ? rest['aria-describedby'] : cx(rest['aria-describedby'], reasonId)}
+      onClick={(event: MouseEvent<HTMLButtonElement>) => {
+        if (inert) {
+          event.preventDefault();
+          return;
+        }
+        onClick?.(event);
+      }}
+    >
+      <Inner leadingIcon={leadingIcon} trailingIcon={trailingIcon} loading={loading}>
+        {children}
+      </Inner>
+    </button>
+  );
   return (
     <>
-      <button
-        {...rest}
-        ref={ref}
-        type={type}
-        className={classes}
-        disabled={disabled}
-        title={title}
-        aria-label={rest['aria-label'] ?? (children === undefined ? title : undefined)}
-        aria-pressed={pressed}
-        aria-busy={loading || undefined}
-        aria-disabled={inert || undefined}
-        aria-describedby={disabledReason === undefined ? rest['aria-describedby'] : cx(rest['aria-describedby'], reasonId)}
-        onClick={(event: MouseEvent<HTMLButtonElement>) => {
-          if (inert) {
-            event.preventDefault();
-            return;
-          }
-          onClick?.(event);
-        }}
-      >
-        <Inner leadingIcon={leadingIcon} trailingIcon={trailingIcon} loading={loading}>
-          {children}
-        </Inner>
-      </button>
+      {tip ? <Tooltip content={<span aria-hidden="true">{tip}</span>}>{button}</Tooltip> : button}
       {disabledReason === undefined ? null : <VisuallyHidden id={reasonId}>{disabledReason}</VisuallyHidden>}
     </>
   );

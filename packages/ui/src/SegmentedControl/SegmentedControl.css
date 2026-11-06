@@ -132,8 +132,11 @@
   color: var(--color-text-on-accent);
 }
 
+/* THE PRESSED STEP, which every palette holds a step further from the label:
+   an 11px word on the plain accent sat at the 4.5:1 floor, and its thin
+   strokes drew under it. On this step it clears 5.9:1 in every theme. */
 .crewlet-segmented--chips .crewlet-segmented__option.is-active::before {
-  background: var(--color-brand-accent);
+  background: var(--color-brand-accent-active);
 }
 
 /* A COUNT IN A CHIP IS A FIGURE IN THE CHIP'S OWN INK, as on a FilterChip and

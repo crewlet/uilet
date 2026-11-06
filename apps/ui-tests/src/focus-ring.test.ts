@@ -119,6 +119,8 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'IconButton/IconButton.css | .crewlet-icon-btn:focus-visible',
       // Filled with the accent, its border the fill itself.
       'DataTable/DataTable.css | .crewlet-data-table__items-per-page-btn.is-active:focus-visible',
+      // A checked switch's track, likewise: a flush ring merged into the fill.
+      'Switch/Switch.css | .crewlet-switch__track:has(.crewlet-switch__control:checked:focus-visible)',
       // The recommended answer, filled with the accent as a primary button is
       // while the options send rather than toggle.
       'ChoiceButtons/ChoiceButtons.css | .crewlet-choice-buttons__option--recommended:not([aria-pressed]):focus-visible',

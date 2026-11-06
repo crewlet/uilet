@@ -52,6 +52,25 @@
   font-size: var(--font-size-compact);
 }
 
+/* A CONTAINER-WIDTH GRID never scrolls sideways: it leaves out the columns its
+   width cannot hold, so its header can hold at the top of the page's scroll. */
+.crewlet-tree-grid--container .crewlet-tree-grid__scroller {
+  overflow: visible;
+}
+
+.crewlet-tree-grid--container .crewlet-tree-grid__grid {
+  min-width: 0;
+}
+
+.crewlet-tree-grid--container .crewlet-tree-grid__head {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  background: var(--color-surface-subtle);
+  border-start-start-radius: calc(var(--radius-lg) - 1px);
+  border-start-end-radius: calc(var(--radius-lg) - 1px);
+}
+
 /*
  * INSIDE A FLUSH CARD THE CARD IS THE FRAME. A flush card exists so that a
  * table's rows reach its edges (Card.css), and a grid that drew its own border
@@ -95,6 +114,11 @@
   gap: var(--spacing-2);
   min-width: 0;
   padding: 0 var(--spacing-2);
+}
+
+/* A COLUMN OF VALUES READ AFTER THE NAME takes the caption's size, a step under the name's. */
+.crewlet-tree-grid__cell[data-size='sm'] {
+  font-size: var(--font-size-2xs);
 }
 
 /*

@@ -98,6 +98,8 @@ import {
   type CanvasHandle,
   type CanvasLabels,
   type CanvasRect,
+  type CanvasSize,
+  type CanvasView,
 } from '../Canvas/index.js';
 import { focusables } from '../Layer/index.js';
 import {
@@ -315,6 +317,12 @@ export interface TreeCanvasGroup {
 }
 
 /** The id of the probe the gaps between cards are measured from. */
+/**
+ * The zoom below which a branch's add mark waits for a zoom in: under it a
+ * full pointer target no longer fits between two ranks. The card's own menu still adds.
+ */
+export const TREE_ADD_MARK_MIN_ZOOM = 0.4;
+
 const GAP_PROBE = 'crewlet:tree-canvas-gap';
 
 /**
@@ -400,6 +408,11 @@ export interface TreeCanvasProps {
    * surface and the branch is the chart's own ink.
    */
   cardTone?: ((id: string) => TreeCardTone | undefined) | undefined;
+  /**
+   * A card pushed back, such as a seat a status filter leaves out: drawn in
+   * grey at full contrast, so the cards that are not stand out. Asked per card.
+   */
+  cardDimmed?: ((id: string) => boolean) | undefined;
   /**
    * How a card is drawn.
    *
@@ -488,6 +501,10 @@ export interface TreeCanvasProps {
   controlsExtra?: ReactNode | undefined;
   /** Bars stacked under the canvas's control bar: see [CanvasProps.controlsBelow]. */
   controlsBelow?: ReactNode | undefined;
+  /** A bar in the corner opposite the control bar: see [CanvasProps.controlsStart]. */
+  controlsStart?: ReactNode | undefined;
+  /** A bar across the canvas from the control bar, such as a status legend: see [CanvasProps.overlayEnd]. */
+  overlayEnd?: ReactNode | undefined;
   /** A note under the canvas's controls, about a key or a state: see [CanvasProps.hint]. */
   hint?: ReactNode | undefined;
   /**
@@ -505,6 +522,27 @@ export interface TreeCanvasProps {
   composing?: TreeComposing | null | undefined;
   /** The canvas control labels, for another language. */
   labels?: Partial<CanvasLabels> | undefined;
+  /**
+   * The smallest zoom a fit may take: see [CanvasProps.minZoom]. A chart that
+   * must always open whole, however wide, names a floor under the canvas's own.
+   */
+  minZoom?: number | undefined;
+  /** The open nodes, when the caller holds them, to keep them across a visit: see [TreeStateOptions.expanded]. */
+  expanded?: ReadonlySet<string> | undefined;
+  /** The open nodes a toggle, or an expand or collapse of everything, has just produced. */
+  onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
+  /** Where the view is going, after a fit, a zoom or a pan: see [CanvasProps.onViewChange]. */
+  onViewChange?: ((view: CanvasView, viewport: CanvasSize) => void) | undefined;
+  /**
+   * Fits the whole chart again whenever this value changes, once the layout it
+   * asks for is placed: a branch opened, the arrangement switched, a filter
+   * chosen. A reader's own zoom or pan holds until it next changes.
+   */
+  fitKey?: string | number | undefined;
+  /** The view to open on instead of the fit: see [CanvasProps.initialView]. */
+  initialView?: CanvasView | undefined;
+  /** A resize refits a view still at its fit: see [CanvasProps.refitOnResize]. */
+  refitOnResize?: boolean | undefined;
   ref?: Ref<TreeCanvasHandle> | undefined;
   className?: string | undefined;
 }
@@ -531,15 +569,25 @@ export function TreeCanvas({
   controlsPlacement,
   controlsExtra,
   controlsBelow,
+  controlsStart,
+  overlayEnd,
   hint,
   dimmed = false,
   ground,
   composing = null,
   labels,
+  minZoom,
+  expanded: held,
+  onExpandedChange,
+  onViewChange,
+  fitKey,
+  initialView,
+  refitOnResize,
+  cardDimmed,
   ref,
   className,
 }: TreeCanvasProps) {
-  const tree = useTreeState(nodes, selectedId);
+  const tree = useTreeState(nodes, selectedId, { expanded: held, onExpandedChange });
   const { model, expanded, active, setActive, toggle } = tree;
   const [menuFor, setMenuFor] = useState<string | null>(null);
 
@@ -601,11 +649,14 @@ export function TreeCanvas({
 
   const spacing = ranks ?? (appearance === 'node' ? 'shared' : 'per-parent');
   const previousLayout = useRef<ForestLayout | null>(null);
+  const probes = useMemo(() => {
+    const out = [GAP_PROBE, MARGIN_PROBE];
+    if (shownGroups.length > 0) out.push(GROUP_PAD_PROBE, ...shownGroups.map(({ group }) => groupHeadKey(group.id)));
+    return out;
+  }, [shownGroups]);
+  // Whether the layout is the one for the cards this render asks for, rather than the last one held.
+  const placed = measured([...cardIds, ...probes]);
   const layout = useMemo(() => {
-    const probes = [GAP_PROBE, MARGIN_PROBE];
-    if (shownGroups.length > 0) {
-      probes.push(GROUP_PAD_PROBE, ...shownGroups.map(({ group }) => groupHeadKey(group.id)));
-    }
     if (!measured([...cardIds, ...probes])) return previousLayout.current;
     const size = (id: string) => sizes.get(id)!;
     const gap = size(GAP_PROBE);
@@ -628,7 +679,7 @@ export function TreeCanvas({
       margin: size(MARGIN_PROBE).width,
       groups: boxes,
     });
-  }, [cardForest, cardIds, measured, sizes, spacing, shownGroups]);
+  }, [cardForest, cardIds, measured, sizes, spacing, shownGroups, probes]);
   previousLayout.current = layout;
 
   // WHAT IS DRAWN THIS FRAME, which during a relayout is on its way to the
@@ -646,6 +697,21 @@ export function TreeCanvas({
   );
 
   const canvas = useRef<CanvasHandle>(null);
+
+  /* THE ZOOM IS WRITTEN ON THE ROOT, not rendered, so a pan or a zoom costs no
+     render of the chart: it keeps a branch's add mark a full target at any zoom. */
+  const root = useRef<HTMLDivElement>(null);
+  const viewChanged = useCallback(
+    (view: CanvasView, viewport: CanvasSize) => {
+      const el = root.current;
+      if (el) {
+        el.style.setProperty('--crewlet-tree-canvas-zoom', String(view.k));
+        el.toggleAttribute('data-zoomed-out', view.k < TREE_ADD_MARK_MIN_ZOOM);
+      }
+      onViewChange?.(view, viewport);
+    },
+    [onViewChange],
+  );
   const shownPositions = useRef<ReadonlyMap<string, CanvasPoint> | null>(null);
   // THE NODE THE OPERATOR ACTED ON stays where it was: the node named by
   // `anchorNode`, else the node with focus. A node that did not exist before
@@ -667,6 +733,22 @@ export function TreeCanvas({
   useLayoutEffect(() => {
     shownPositions.current = positions;
   }, [positions]);
+
+  /* A NEW FIT KEY FITS AGAIN once the layout it asks for is placed, after the
+     anchor above. The first placement is the canvas's own fit, or its initial view. */
+  const fittedFor = useRef(fitKey);
+  const placedOnce = useRef(false);
+  useLayoutEffect(() => {
+    if (!placed || !layout) return;
+    if (!placedOnce.current) {
+      placedOnce.current = true;
+      fittedFor.current = fitKey;
+      return;
+    }
+    if (fitKey === fittedFor.current) return;
+    fittedFor.current = fitKey;
+    canvas.current?.fit();
+  }, [fitKey, layout, placed]);
 
   // ---- focus -----------------------------------------------------------------
   const items = useRef(new Map<string, HTMLElement>());
@@ -1037,6 +1119,7 @@ export function TreeCanvas({
 
   return (
     <div
+      ref={root}
       className={cx(
         'crewlet-tree-canvas',
         appearance === 'node' && 'crewlet-tree-canvas--node',
@@ -1057,6 +1140,8 @@ export function TreeCanvas({
         controlsPlacement={controlsPlacement ?? (appearance === 'node' ? 'top-right' : undefined)}
         controlsExtra={controlsExtra}
         controlsBelow={controlsBelow}
+        controlsStart={controlsStart}
+        overlayEnd={overlayEnd}
         hint={hint}
         dimmed={dimmed}
         ground={ground}
@@ -1067,6 +1152,10 @@ export function TreeCanvas({
          */
         largestItemWidth={widestCard}
         labels={labels}
+        minZoom={minZoom}
+        onViewChange={viewChanged}
+        initialView={initialView}
+        refitOnResize={refitOnResize}
       >
         <div className="crewlet-tree-canvas__gap" ref={measure(GAP_PROBE)} aria-hidden="true" />
         <div className="crewlet-tree-canvas__margin" ref={measure(MARGIN_PROBE)} aria-hidden="true" />
@@ -1160,6 +1249,7 @@ export function TreeCanvas({
                   ref={measure(id)}
                   className="crewlet-tree-canvas__card"
                   data-tone={cardTone?.(id)}
+                  data-dimmed={cardDimmed?.(id) ? '' : undefined}
                   // A CARD WAITING ITS TURN IS STILL MEASURED, so it is drawn at
                   // zero rather than removed from the flow: the layout the
                   // entrance is played over is the layout the chart ends at.

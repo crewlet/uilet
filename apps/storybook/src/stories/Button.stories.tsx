@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button } from '@crewlethq/ui';
-import { BookOpenGlyph, SaveGlyph } from '@crewlethq/icons/glyphs';
+import { Button, IconButton } from '@crewlethq/ui';
+import { BookOpenGlyph, PauseGlyph, PlusGlyph, SaveGlyph } from '@crewlethq/icons/glyphs';
+import { BothThemes } from '../BothThemes';
 
 /**
  * The button, and the hierarchy its variants are.
@@ -122,5 +123,28 @@ export const AsChildAnchor: Story = {
         Open external docs
       </a>
     </Button>
+  ),
+};
+
+/**
+ * A held control says why in the kit Tooltip (`tooltip`), on hover and on
+ * keyboard focus, and a screen reader hears the reason once, as the button's
+ * description. `true` on a button shows the reason alone; a hint of its own
+ * comes first. On an icon button `true` shows its label, then the reason.
+ */
+export const HeldWithATooltip: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'flex', gap: 'var(--spacing-3)', alignItems: 'center' }}>
+        <Button variant="outline" size="small" leadingIcon={<PlusGlyph />} tooltip disabledReason="Changing the configuration needs Admin access.">
+          Add
+        </Button>
+        <Button variant="secondary" size="small" tooltip="Pause every selected agent" disabledReason="Pausing needs Admin access.">
+          Pause 3
+        </Button>
+        <IconButton size="sm" label="Pause Product Lead" icon={<PauseGlyph />} tooltip disabledReason="Pausing needs Admin access." />
+        <IconButton size="sm" label="Pause Release Manager" icon={<PauseGlyph />} tooltip />
+      </div>
+    </BothThemes>
   ),
 };

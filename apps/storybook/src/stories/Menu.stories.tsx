@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button, Kbd, Menu, type MenuEntry } from '@crewlethq/ui';
 import { FolderInputGlyph, PencilGlyph, RotateCcwGlyph, TrashGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
+import { BothThemes } from '../BothThemes';
 
 const meta: Meta<typeof Menu> = {
   title: 'UI/Menu',
@@ -152,4 +153,21 @@ export const TriggerWidth: Story = {
       </div>
     ),
   ],
+};
+
+/**
+ * The kit Tooltip on the menu's own trigger (`tooltip`): rest the pointer on
+ * the trigger, or Tab onto it, and the tip names it; it steps aside while the
+ * menu is open. A screen reader hears the trigger's full name ("More actions
+ * for Software Engineer") and not the tip again.
+ */
+export const WithATooltip: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'flex', gap: 'var(--spacing-4)', alignItems: 'center' }}>
+        <Menu label="More actions for Software Engineer" tooltip="More actions" align="end" items={actions} />
+        <Menu label="Add to the organization" trigger="Add" triggerVariant="outline" tooltip="Add a seat or a team" items={actions} />
+      </div>
+    </BothThemes>
+  ),
 };

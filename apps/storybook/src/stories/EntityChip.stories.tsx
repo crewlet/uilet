@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { EntityChip } from '@crewlethq/ui';
+import { BothThemes } from '../BothThemes';
 
 const meta: Meta<typeof EntityChip> = {
   title: 'UI/EntityChip',
@@ -59,5 +60,24 @@ export const Truncating: Story = {
     <div style={{ width: 180, border: '1px dashed var(--color-border-default)', padding: 8 }}>
       <EntityChip name="Customer Success Operations Lead" href="#/seats/cs-ops" />
     </div>
+  ),
+};
+
+/**
+ * Who a seat reports to, as a table value draws it: the smallest badge at the
+ * cell's 11px, an agent drawn as its character in its hue (`character`,
+ * `hue`), and a person by their initials, or their picture (`src`). The name
+ * keeps one line and is cut with an ellipsis in a narrow cell.
+ */
+export const WithAFace: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'grid', gap: 'var(--spacing-2)', width: 160, fontSize: 'var(--font-size-2xs)' }}>
+        <EntityChip name="Product Lead" href="#/seats/product-lead" size="xs" character="hexlet" hue="purple" />
+        <EntityChip name="Release Manager" href="#/seats/release-manager" size="xs" character="prismlet" hue="cyan" />
+        <EntityChip name="Avery Stone" kind="human" href="#/seats/avery" size="xs" />
+        <EntityChip name="Chief Executive Officer of Operations" href="#/seats/ceo" size="xs" character="crewlet" />
+      </div>
+    </BothThemes>
   ),
 };

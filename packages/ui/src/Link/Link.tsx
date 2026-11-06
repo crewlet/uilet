@@ -21,7 +21,12 @@ export type LinkVariant =
    * softer ink than a navigation, never underlined, stepping up to the full
    * accent ink on hover.
    */
-  | 'quiet';
+  | 'quiet'
+  /**
+   * A name that is also a link, in the ink it already has there (a toned row's
+   * name, a heading): no colour of its own, underlined on hover and focus.
+   */
+  | 'plain';
 
 export type LinkSize =
   | 'body'

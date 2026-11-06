@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { OrgLabel } from '@crewlethq/ui';
 import { BotGlyph, BuildingComplexGlyph, TriangleAlertGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
+import mark from '@crewlethq/icons/favicon/crewlet.svg';
+import { BothThemes } from '../BothThemes';
 
 /**
  * UI / OrgLabel.
@@ -197,5 +199,25 @@ export const BothLayouts: Story = {
         </Row>
       </div>
     </div>
+  ),
+};
+
+/**
+ * An organization's own logo in place of the company glyph: whole, in its own
+ * colours, as tall as a node's name and caption and the size of a seat's badge
+ * in a row. Without one, the glyph is drawn as before.
+ */
+export const WithALogo: Story = {
+  name: 'With an organization logo',
+  render: () => (
+    <BothThemes>
+      <div style={stack}>
+        <Node>
+          <OrgLabel logo={{ src: mark, alt: 'Crewlet' }} name="Crewlet" caption="Company" />
+        </Node>
+        <OrgLabel layout="row" logo={{ src: mark, alt: 'Crewlet' }} name="Crewlet" caption="company" />
+        <OrgLabel layout="row" icon={<BuildingComplexGlyph />} name="Crewlet" caption="company, no logo" />
+      </div>
+    </BothThemes>
   ),
 };

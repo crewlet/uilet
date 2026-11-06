@@ -198,6 +198,49 @@
   bottom: auto;
 }
 
+/* THE START BAR mirrors the control bar across the canvas: the same inset
+   from the other side and the zoom bar's height, whatever control it holds. */
+.crewlet-canvas__controls--start {
+  right: auto;
+  left: var(--spacing-3);
+  align-items: flex-start;
+}
+
+.crewlet-canvas__controls--start > .crewlet-canvas__bar {
+  box-sizing: border-box;
+  height: calc(var(--size-control-sm) + var(--spacing-1) * 2 + 2px);
+  padding-inline: var(--spacing-2);
+}
+
+.crewlet-canvas__controls--start > .crewlet-canvas__bar > * {
+  padding-block: 0;
+}
+
+/* THE END BAR stands across the canvas from the control bar, at its end and
+   the same inset, and wraps inside the canvas rather than running off it. */
+.crewlet-canvas__controls--end {
+  left: var(--spacing-3);
+  pointer-events: none;
+}
+
+.crewlet-canvas__controls--end[data-placement='top-right'] {
+  top: auto;
+  bottom: var(--spacing-3);
+}
+
+.crewlet-canvas__controls--end[data-placement='bottom-right'] {
+  top: var(--spacing-3);
+  bottom: auto;
+}
+
+.crewlet-canvas__controls--end > .crewlet-canvas__bar {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: calc(var(--size-control-sm) + var(--spacing-1) * 2 + 2px);
+  flex-wrap: wrap;
+  pointer-events: auto;
+}
+
 /*
  * ONE BAR: a well at the panel radius with its controls lifted inside it. The
  * chip step is exactly one hairline tighter than the well around it, which is

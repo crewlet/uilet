@@ -23,6 +23,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRef, useMemo, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { Button } from '../Button/index.js';
 import { Menu } from '../Menu/index.js';
@@ -740,4 +741,152 @@ describe('a headless grid', () => {
     expect(container.firstElementChild?.className).toContain('crewlet-tree-grid--headless');
     expect(screen.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual(['Name', 'Kind or type']);
   });
+});
+
+describe('a grid that fits its container', () => {
+  /** A ResizeObserver this suite drives, and the width it last reported. */
+  class WidthObserver {
+    static last: WidthObserver | null = null;
+    constructor(private readonly callback: ResizeObserverCallback) {
+      WidthObserver.last = this;
+    }
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+    resize(width: number): void {
+      act(() => this.callback([{ contentRect: { width } } as ResizeObserverEntry], this as unknown as ResizeObserver));
+    }
+  }
+  const real = globalThis.ResizeObserver;
+  afterEach(() => {
+    globalThis.ResizeObserver = real;
+  });
+
+  const FITTED: TreeGridColumn[] = [
+    { key: 'name', header: 'Name' },
+    { key: 'status', header: 'Status', hideBelow: 600 },
+    { key: 'lead', header: 'Reports to', hideBelow: 980 },
+    { key: 'actions', header: 'Actions', headerHidden: true, width: 'var(--size-control-md)' },
+  ];
+
+  function mountFitted(heard: number[] = []) {
+    globalThis.ResizeObserver = WidthObserver as unknown as typeof ResizeObserver;
+    const keys: (string | undefined)[] = [];
+    const view = render(
+      <TreeGrid
+        label="Organization outline"
+        layout="container"
+        columns={FITTED}
+        rows={forest(false)}
+        onWidthChange={(width) => heard.push(width)}
+        renderCell={(id, column, grid) => {
+          if (id === COMPANY) keys.push(grid.columnKey(column));
+          return grid.columnKey(column) === 'name' ? nameOf(id) : `${grid.columnKey(column)} of ${id}`;
+        }}
+      />,
+    );
+    return { ...view, keys };
+  }
+  const headers = () => screen.getAllByRole('columnheader').map((cell) => cell.textContent);
+
+  test('an unmeasured grid draws every column', () => {
+    mountFitted();
+    expect(headers()).toEqual(['Name', 'Status', 'Reports to', 'Actions']);
+  });
+
+  test('it leaves out the columns its width cannot hold, header and cells alike, and says its width', () => {
+    const heard: number[] = [];
+    const { keys } = mountFitted(heard);
+    WidthObserver.last!.resize(720);
+    expect(headers()).toEqual(['Name', 'Status', 'Actions']);
+    expect(screen.getByRole('treegrid').getAttribute('aria-colcount')).toBe('3');
+    expect(within(rowOf(COMPANY)).getAllByRole('gridcell')).toHaveLength(3);
+    // A cell is asked for by the drawn position, and the key says which column it is.
+    expect(keys.slice(-3)).toEqual(['name', 'status', 'actions']);
+    WidthObserver.last!.resize(420);
+    expect(headers()).toEqual(['Name', 'Actions']);
+    WidthObserver.last!.resize(1200);
+    expect(headers()).toEqual(['Name', 'Status', 'Reports to', 'Actions']);
+    expect(heard).toEqual([720, 420, 1200]);
+  });
+
+  test('it never scrolls sideways, and its header holds as the rows pass under it', () => {
+    const { container } = mountFitted();
+    expect(container.firstElementChild?.className).toContain('crewlet-tree-grid--container');
+    const rule = (selector: string) => declarations().find(([one]) => one === selector)?.[1] ?? '';
+    expect(rule('.crewlet-tree-grid--container .crewlet-tree-grid__scroller')).toMatch(/overflow:\s*visible/);
+    expect(rule('.crewlet-tree-grid--container .crewlet-tree-grid__grid')).toMatch(/min-width:\s*0/);
+    const head = rule('.crewlet-tree-grid--container .crewlet-tree-grid__head');
+    expect(head).toMatch(/position:\s*sticky/);
+    expect(head).toMatch(/background:\s*var\(--color-surface-subtle\)/);
+  });
+});
+
+test('a press on a box or its label in a row is the control\'s, and does not choose the row', () => {
+  const onSelect = vi.fn();
+  render(
+    <TreeGrid
+      label="Organization outline"
+      columns={COLUMNS.slice(0, 1)}
+      rows={forest(false)}
+      onSelect={onSelect}
+      cellHasControl={() => true}
+      renderCell={(id) => (
+        <label>
+          <input type="checkbox" tabIndex={-1} />
+          Pick {nameOf(id)}
+        </label>
+      )}
+    />,
+  );
+  fireEvent.click(within(rowOf(COMPANY)).getByRole('checkbox'));
+  fireEvent.click(within(rowOf(COMPANY)).getByText(`Pick ${nameOf(COMPANY)}`));
+  expect(onSelect).not.toHaveBeenCalled();
+  fireEvent.click(rowOf(COMPANY));
+  expect(onSelect).toHaveBeenCalledWith(COMPANY);
+});
+
+test("a column of values read after the name is a step smaller, and its heading is not", () => {
+  render(
+    <TreeGrid
+      label="Organization outline"
+      columns={[
+        { key: 'name', header: 'Name' },
+        { key: 'lead', header: 'Reports to', size: 'sm' },
+      ]}
+      rows={forest(false)}
+      renderCell={(id, column) => (column === 1 ? nameOf(id) : 'Chief Executive')}
+    />,
+  );
+  const cells = within(rowOf(COMPANY)).getAllByRole('gridcell');
+  expect(cells.map((cell) => cell.getAttribute('data-size'))).toEqual([null, 'sm']);
+  expect(screen.getAllByRole('columnheader')[1]!.hasAttribute('data-size')).toBe(false);
+  const rule = declarations().find(([selector]) => selector === ".crewlet-tree-grid__cell[data-size='sm']")?.[1] ?? '';
+  expect(rule).toMatch(/font-size:\s*var\(--font-size-2xs\)/);
+});
+
+test('a press in a surface portalled from a cell does not choose the row', () => {
+  const onSelect = vi.fn();
+  render(
+    <TreeGrid
+      label="Organization outline"
+      columns={COLUMNS.slice(0, 1)}
+      rows={forest(false)}
+      onSelect={onSelect}
+      renderCell={(id) =>
+        id === COMPANY ? (
+          <>
+            {nameOf(id)}
+            {createPortal(<div role="dialog" aria-label="Pause the company">Pausing stops every agent.</div>, document.body)}
+          </>
+        ) : (
+          nameOf(id)
+        )
+      }
+    />,
+  );
+  fireEvent.click(screen.getByText('Pausing stops every agent.'));
+  expect(onSelect).not.toHaveBeenCalled();
+  fireEvent.click(rowOf(COMPANY));
+  expect(onSelect).toHaveBeenCalledWith(COMPANY);
 });

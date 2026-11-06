@@ -37,8 +37,10 @@ type Callback = (entries: { contentRect: { width: number; height: number } }[]) 
 
 class FakeResizeObserver {
   static last: FakeResizeObserver | null = null;
+  static all: FakeResizeObserver[] = [];
   constructor(private callback: Callback) {
     FakeResizeObserver.last = this;
+    FakeResizeObserver.all.push(this);
   }
   observe(): void {}
   unobserve(): void {}
@@ -52,8 +54,14 @@ class FakeResizeObserver {
 // but not configurable, so it can be replaced and must be put back by hand.
 const realResizeObserver = globalThis.ResizeObserver;
 beforeEach(() => {
+  FakeResizeObserver.all = [];
   globalThis.ResizeObserver = FakeResizeObserver as unknown as typeof ResizeObserver;
 });
+
+/** Every observer this canvas made sees the viewport's size: an end bar observes its own box too. */
+const resizeAll = (size: { width: number; height: number }) => {
+  for (const observer of FakeResizeObserver.all) observer.resize(size.width, size.height);
+};
 afterEach(() => {
   cleanup();
   globalThis.ResizeObserver = realResizeObserver;
@@ -741,6 +749,111 @@ test('the controls take the corner they are given, with the caller in the same g
   // And what the caller stacks under it is a bar of its own, under the group.
   expect(group.lastElementChild!.className).toBe('chart-switch');
   uninstall();
+});
+
+/* THE START BAR mirrors the control group across the canvas, in the same row. */
+test('a start bar stands in the opposite corner, on the surface and height of the control bar', () => {
+  const uninstall = installSheets('Canvas/Canvas.css');
+  const { container } = render(
+    <Canvas label="Organization chart" content={SMALL} controlsPlacement="top-right" controlsStart={<span>Reporting view</span>}>
+      <div />
+    </Canvas>,
+  );
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
+  const start = container.querySelector('.crewlet-canvas__controls--start')!;
+  expect(start.getAttribute('data-placement')).toBe('top-right');
+  expect(getComputedStyle(start).right).toBe('auto');
+  expect(px(start, 'left')).toBe(12);
+  expect(px(start, 'top')).toBe(12);
+  const bar = start.querySelector('.crewlet-canvas__bar')!;
+  expect(bar.textContent).toBe('Reporting view');
+  // The zoom bar is a small control, its well's padding and its hairlines.
+  expect(px(bar, 'height')).toBe(26 + 4 * 2 + 2);
+  // The zoom bar keeps its own corner.
+  expect(container.querySelectorAll('.crewlet-canvas__controls:not(.crewlet-canvas__controls--start)')).toHaveLength(1);
+  uninstall();
+});
+
+test('no start bar is drawn unless one is given', () => {
+  const { container } = mount();
+  expect(container.querySelector('.crewlet-canvas__controls--start')).toBeNull();
+});
+
+/* THE END BAR stands across the canvas from the controls, and a fit keeps clear of it. */
+test('an end bar stands at the bottom right beside top-right controls, and wraps inside the canvas', () => {
+  const uninstall = installSheets('Canvas/Canvas.css');
+  const { container } = render(
+    <Canvas label="Organization chart" content={SMALL} controlsPlacement="top-right" overlayEnd={<span>Working 4</span>}>
+      <div />
+    </Canvas>,
+  );
+  resizeAll(SIZE);
+  const end = container.querySelector('.crewlet-canvas__controls--end')!;
+  expect(end.getAttribute('data-placement')).toBe('top-right');
+  expect(getComputedStyle(end).top).toBe('auto');
+  expect(px(end, 'bottom')).toBe(12);
+  expect(px(end, 'right')).toBe(12);
+  expect(px(end, 'left')).toBe(12);
+  const bar = end.querySelector('.crewlet-canvas__bar')!;
+  expect(bar.textContent).toBe('Working 4');
+  expect(getComputedStyle(bar).flexWrap).toBe('wrap');
+  expect(getComputedStyle(bar).maxWidth).toBe('100%');
+  uninstall();
+});
+
+test('beside bottom-right controls the end bar takes the top right', () => {
+  const uninstall = installSheets('Canvas/Canvas.css');
+  const { container } = render(
+    <Canvas label="Organization chart" content={SMALL} overlayEnd={<span>Legend</span>}>
+      <div />
+    </Canvas>,
+  );
+  const end = container.querySelector('.crewlet-canvas__controls--end')!;
+  expect(px(end, 'top')).toBe(12);
+  expect(getComputedStyle(end).bottom).toBe('auto');
+  uninstall();
+});
+
+test('a fit is made in the room the end bar leaves, so no content is drawn under it', () => {
+  const tall: CanvasRect = { x: 0, y: 0, width: 400, height: 1200 };
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    const box = (top: number, height: number) => ({ top, bottom: top + height, left: 0, right: 800, width: 800, height, x: 0, y: top }) as DOMRect;
+    if (this.classList.contains('crewlet-canvas__viewport')) return box(0, 600);
+    if (this.parentElement?.classList.contains('crewlet-canvas__controls--end')) return box(540, 48);
+    return realRect.call(this);
+  };
+  try {
+    const { container } = render(
+      <Canvas label="Organization chart" content={tall} controlsPlacement="top-right" overlayEnd={<span>Legend</span>}>
+        <div />
+      </Canvas>,
+    );
+    resizeAll(SIZE);
+    // The bar's top is 60px above the viewport's foot: the fit is the one for 540px of height.
+    expect(viewOf(container).k).toBeCloseTo(fitView(tall, { width: 800, height: 540 }).k);
+    expect(viewOf(container).k).toBeLessThan(fitView(tall, SIZE).k);
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+  }
+});
+
+test('an initial view opens instead of the fit, held within the zoom range', () => {
+  const { container } = render(
+    <Canvas label="Organization chart" content={SMALL} initialView={{ x: 40, y: 30, k: 1.5 }}>
+      <div />
+    </Canvas>,
+  );
+  resizeAll(SIZE);
+  expect(viewOf(container)).toEqual({ x: 40, y: 30, k: 1.5 });
+  cleanup();
+  const far = render(
+    <Canvas label="Organization chart" content={SMALL} initialView={{ x: 0, y: 0, k: 400 }}>
+      <div />
+    </Canvas>,
+  );
+  resizeAll(SIZE);
+  expect(viewOf(far.container).k).toBe(zoomLimits(SMALL, SIZE).max);
 });
 
 /*

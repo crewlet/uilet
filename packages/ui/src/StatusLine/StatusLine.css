@@ -1,0 +1,55 @@
+/*
+ * A state in one calm line (StatusLine.tsx): the dot and word in the primary
+ * ink, then quiet notes in the secondary ink, at the surrounding text size.
+ */
+
+.crewlet-status-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--spacing-1);
+  min-width: 0;
+  max-width: 100%;
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-status-line__main {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+}
+
+/* A state with no dot says so in the quieter ink, so it never reads as a dotless running one. */
+.crewlet-status-line[data-quiet] .crewlet-status-line__main {
+  color: var(--color-text-secondary);
+}
+
+/* Wrapping, each note is its own item and takes the next line whole. */
+.crewlet-status-line__notes {
+  display: contents;
+}
+
+.crewlet-status-line__note {
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+/* Clipped, the line stays one line and the notes give way first, cut with an ellipsis. */
+.crewlet-status-line--clip {
+  flex-wrap: nowrap;
+}
+
+.crewlet-status-line--clip .crewlet-status-line__main {
+  flex: none;
+}
+
+.crewlet-status-line--clip .crewlet-status-line__notes {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

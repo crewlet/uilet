@@ -17,6 +17,8 @@
  */
 
 .crewlet-tree-canvas {
+  /* The canvas's zoom, written by the component as the view moves. */
+  --crewlet-tree-canvas-zoom: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -334,6 +336,28 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* A CARD PUSHED BACK loses its colour and keeps its contrast, so the others stand out. */
+.crewlet-tree-canvas__card[data-dimmed] {
+  filter: grayscale(1);
+}
+
+/* Reached by the keyboard it comes back in colour, so its focus ring keeps its own. */
+.crewlet-tree-canvas__card[data-dimmed]:has(:focus-visible) {
+  filter: none;
+}
+
+/* AN ADD MARK STAYS A FULL POINTER TARGET at any zoom: the zoom is undone
+   below 100%, and the mark grows down its branch, off its card. */
+.crewlet-tree-canvas__under > .crewlet-add-pill {
+  scale: max(1, calc(1 / var(--crewlet-tree-canvas-zoom)));
+  transform-origin: 50% 0;
+}
+
+/* Too far out for one between two ranks, it waits for a zoom in. */
+.crewlet-tree-canvas[data-zoomed-out] .crewlet-tree-canvas__under > .crewlet-add-pill {
+  visibility: hidden;
 }
 
 /*

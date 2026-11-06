@@ -10,6 +10,8 @@ import {
   OrgNodeLabel,
   OrgNodeLead,
   StatusDot,
+  StatusLegend,
+  Switch,
   Tag,
   TreeCanvas,
   type AvatarStatus,
@@ -21,6 +23,7 @@ import {
   type TreeModel,
 } from '@crewlethq/ui';
 import { CrewletFigure } from '@crewlethq/icons';
+import { BothThemes } from '../BothThemes';
 import {
   BuildingComplexGlyph,
   ChevronDownGlyph,
@@ -427,6 +430,21 @@ function nodeCards(model: TreeModel, expanded: ReadonlySet<string>): TreeCardInp
   return model.roots.map(card);
 }
 
+/** The add pill under a unit's branch: a quiet disc that splits into the three kinds it adds. */
+function orgAdd(id: string) {
+  return ENTITIES[id]!.kind === 'seat' ? null : (
+    <AddPill
+      label={`Add to ${ENTITIES[id]!.name}`}
+      tabIndex={-1}
+      sections={[
+        { key: 'unit', label: 'Add a unit', icon: <FolderPlusGlyph />, onSelect: () => {} },
+        { key: 'agent', label: 'Add an agent seat', icon: <CrewletFigure />, onSelect: () => {} },
+        { key: 'human', label: 'Add a human seat', icon: <UserPlusGlyph />, onSelect: () => {} },
+      ]}
+    />
+  );
+}
+
 /**
  * The console's own org chart, as this package draws it.
  *
@@ -477,34 +495,7 @@ export const OrgChart: Story = {
           cardOf={(id) => id}
           cardTone={toneOf}
           renderCard={(id, card) => <NodeCard id={id} card={card} />}
-          renderUnder={(id) =>
-            ENTITIES[id]!.kind === 'seat' ? null : (
-              <AddPill
-                label={`Add to ${ENTITIES[id]!.name}`}
-                tabIndex={-1}
-                sections={[
-                  {
-                    key: 'unit',
-                    label: 'Add a unit',
-                    icon: <FolderPlusGlyph />,
-                    onSelect: () => {},
-                  },
-                  {
-                    key: 'agent',
-                    label: 'Add an agent seat',
-                    icon: <CrewletFigure />,
-                    onSelect: () => {},
-                  },
-                  {
-                    key: 'human',
-                    label: 'Add a human seat',
-                    icon: <UserPlusGlyph />,
-                    onSelect: () => {},
-                  },
-                ]}
-              />
-            )
-          }
+          renderUnder={orgAdd}
           hasNodeMenu={() => true}
           onNodeKey={() => true}
           selectedId={selected}
@@ -756,6 +747,188 @@ export const UnitGroups: Story = {
           onSelect={setSelected}
         />
       </div>
+    );
+  },
+};
+
+/**
+ * A chart that always opens whole, however narrow its pane: `minZoom` lowers
+ * the floor its fit stops at, so the first fit and Fit to view show every
+ * card, and Zoom in is how a reader reads one. `controlsStart` holds a small
+ * switch in the corner opposite the zoom bar, on the same surface and height.
+ */
+export const AlwaysWhole: Story = {
+  render: function AlwaysWholeStory() {
+    const [reporting, setReporting] = useState(false);
+    return (
+      <BothThemes>
+        <div style={{ height: '40vh', width: '360px' }}>
+          <TreeCanvas
+            label="Org chart"
+            nodes={SEAT_NODES}
+            cards={seatCards}
+            cardOf={(id) => id}
+            ranks="shared"
+            renderCard={(id, card) => <SeatCard id={id} card={card} />}
+            hasNodeMenu={() => false}
+            onNodeKey={() => true}
+            minZoom={0.02}
+            controlsStart={<Switch size="sm" label="Reporting view" checked={reporting} onCheckedChange={setReporting} />}
+          />
+        </div>
+      </BothThemes>
+    );
+  },
+};
+
+/**
+ * The open nodes held by the caller (`expanded`, `onExpandedChange`), as a
+ * page that keeps them in its address does: both charts below draw one held
+ * set, so closing a branch in either closes it in both, and Reset opens all.
+ */
+export const HeldExpansion: Story = {
+  render: function HeldExpansionStory() {
+    const all = new Set(Object.keys(SEATS));
+    const [open, setOpen] = useState<ReadonlySet<string>>(all);
+    return (
+      <div style={{ display: 'grid', gap: 'var(--spacing-3)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
+          <Button size="small" variant="secondary" onClick={() => setOpen(all)}>
+            Reset
+          </Button>
+          <span style={metaText}>{open.size} open</span>
+        </div>
+        <BothThemes>
+          <div style={{ height: '36vh' }}>
+            <TreeCanvas
+              label="Org chart"
+              nodes={SEAT_NODES}
+              cards={seatCards}
+              cardOf={(id) => id}
+              ranks="shared"
+              renderCard={(id, card) => <SeatCard id={id} card={card} />}
+              hasNodeMenu={() => false}
+              onNodeKey={() => true}
+              expanded={open}
+              onExpandedChange={setOpen}
+            />
+          </div>
+        </BothThemes>
+      </div>
+    );
+  },
+};
+
+/**
+ * An add mark stays a full 24px pointer target at any zoom. In a pane this
+ * narrow the chart opens at under half size, and each branch's add is drawn
+ * at its own size rather than the chart's; under 40% it waits for a zoom in.
+ */
+export const AddMarksAtAnyZoom: Story = {
+  render: function AddMarksAtAnyZoomStory() {
+    return (
+      <BothThemes>
+        <div style={{ height: '36vh', width: '480px' }}>
+          <TreeCanvas
+            label="Structure chart"
+            appearance="node"
+            ground="dotted"
+            connector="curve"
+            nodes={NODES}
+            cards={nodeCards}
+            cardOf={(id) => id}
+            cardTone={toneOf}
+            renderCard={(id, card) => <NodeCard id={id} card={card} />}
+            renderUnder={orgAdd}
+            hasNodeMenu={() => true}
+            onNodeKey={() => true}
+            minZoom={0.02}
+          />
+        </div>
+      </BothThemes>
+    );
+  },
+};
+
+const LEGEND = [
+  { key: 'working', label: 'Working', tone: 'info' },
+  { key: 'needs', label: 'Needs you', tone: 'warning' },
+  { key: 'stopped', label: 'Paused or stopped', tone: 'danger' },
+  { key: 'idle', label: 'Idle', tone: 'neutral' },
+] as const;
+
+/**
+ * A status legend in the chart's own corner (`overlayEnd`, across from the
+ * zoom bar) that filters it: a pressed status pushes back every card that is
+ * not in it (`cardDimmed`, grey at full contrast), and a new filter fits the
+ * chart again (`fitKey`); a zoom of the reader's own holds until the next one.
+ * The fit keeps every card clear of the legend.
+ */
+export const StatusLegendInTheChart: Story = {
+  render: function StatusLegendInTheChartStory() {
+    const [show, setShow] = useState<string | null>(null);
+    const items = LEGEND.map((one) => ({
+      ...one,
+      count: Object.values(SEATS).filter((seat) => seat.state === one.key).length,
+    }));
+    const legend = (
+      <StatusLegend
+        label="Filter by status"
+        items={items}
+        value={show}
+        onValueChange={setShow}
+        countLabel={(count) => (count === 1 ? '1 seat' : `${count} seats`)}
+      />
+    );
+    return (
+      <BothThemes>
+        <div style={{ height: '44vh' }}>
+          <TreeCanvas
+            label="Org chart"
+            nodes={SEAT_NODES}
+            cards={seatCards}
+            cardOf={(id) => id}
+            ranks="shared"
+            renderCard={(id, card) => <SeatCard id={id} card={card} />}
+            hasNodeMenu={() => false}
+            onNodeKey={() => true}
+            controlsPlacement="top-right"
+            minZoom={0.02}
+            fitKey={show ?? 'all'}
+            cardDimmed={(id) => show !== null && SEATS[id]?.state !== show}
+            overlayEnd={legend}
+          />
+        </div>
+      </BothThemes>
+    );
+  },
+};
+
+/** The same at a phone's width: the legend wraps inside the canvas, holding its inset. */
+export const StatusLegendOnAPhone: Story = {
+  render: function StatusLegendOnAPhoneStory() {
+    const [show, setShow] = useState<string | null>('needs');
+    const items = LEGEND.map((one) => ({ ...one, count: Object.values(SEATS).filter((seat) => seat.state === one.key).length }));
+    return (
+      <BothThemes>
+        <div style={{ height: '50vh', width: 360 }}>
+          <TreeCanvas
+            label="Org chart"
+            nodes={SEAT_NODES}
+            cards={seatCards}
+            cardOf={(id) => id}
+            ranks="shared"
+            renderCard={(id, card) => <SeatCard id={id} card={card} />}
+            hasNodeMenu={() => false}
+            onNodeKey={() => true}
+            controlsPlacement="top-right"
+            minZoom={0.02}
+            fitKey={show ?? 'all'}
+            cardDimmed={(id) => show !== null && SEATS[id]?.state !== show}
+            overlayEnd={<StatusLegend label="Filter by status" items={items} value={show} onValueChange={setShow} />}
+          />
+        </div>
+      </BothThemes>
     );
   },
 };

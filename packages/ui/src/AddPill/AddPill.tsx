@@ -110,8 +110,10 @@ export interface AddPillProps {
    * pointer target, which is what a chart at rest can carry one of per node.
    * `md` is a ROW's: one control step, drawn at the size it is hit, beside the
    * other controls at the end of a table row.
+   * `xs` is a QUIET row's: beside a name rather than among controls, the plus
+   * a step smaller on a lighter line and no disc, in the same pointer target.
    */
-  size?: 'sm' | 'md' | undefined;
+  size?: 'xs' | 'sm' | 'md' | undefined;
   /**
    * Where the choices appear.
    *

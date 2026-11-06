@@ -92,6 +92,26 @@ export function viewportBounds(): PlacementRect {
 }
 
 /**
+ * Where a surface may be placed, in its layer's own coordinates: the layer's
+ * box clipped to the window, inset by the gap. A layer taller than the window
+ * (a long table's) would otherwise open a surface below the window's foot.
+ */
+export function visibleBounds(host: PlacementRect, inHost: boolean, gap: number = LAYER_GAP): PlacementRect {
+  const view = viewportBounds();
+  const box = inHost ? host : view;
+  const left = Math.max(box.x, view.x);
+  const top = Math.max(box.y, view.y);
+  const right = Math.min(box.x + box.width, view.x + view.width);
+  const bottom = Math.min(box.y + box.height, view.y + view.height);
+  return {
+    x: left - (inHost ? box.x : 0) + gap,
+    y: top - (inHost ? box.y : 0) + gap,
+    width: Math.max(0, right - left - 2 * gap),
+    height: Math.max(0, bottom - top - 2 * gap),
+  };
+}
+
+/**
  * Whether an anchor has left its layer: the ANCHOR'S OWN BOX, in the layer's
  * coordinates, carried entirely outside the layer's whole rectangle (not the
  * gap-inset one a surface is placed in, since an anchor in the gap is at the

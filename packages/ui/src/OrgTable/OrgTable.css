@@ -44,14 +44,15 @@
   --crewlet-org-table-add-kinds: 3;
   /*
    * THE SLOT THE ADD SITS IN: the OPEN pill's own width, which is one pointer
-   * target per kind and the pill's own boundary. Reserved rather than
+   * target per kind, the 1px divider between each two, and the pill's own
+   * boundary. Reserved rather than
    * overflowed, because the pill used to open back over the row and cover the
    * Problems cell beside it, which is the check's own answer for that row; and
    * a pill that opened the other way would have run off the end of the row and
    * out of the grid's scroller.
    */
   --crewlet-org-table-add: calc(
-    var(--size-target-min) * var(--crewlet-org-table-add-kinds) + 2px
+    var(--size-target-min) * var(--crewlet-org-table-add-kinds) + (var(--crewlet-org-table-add-kinds) - 1) * 1px + 2px
   );
   /*
    * THE TRACK A ROW'S CONTROL STRIP TAKES, and why it is a number at all:
@@ -89,10 +90,58 @@
    * reader scans said "SR…" and, on one row, nothing at all.
    */
   --crewlet-tree-grid-min-width: 60rem;
+  /* Where a root row's name begins in its cell: the inset, the chevron, the
+     root's empty wire with a gap either side, and the row's mark. */
+  --crewlet-org-table-name-start: calc(var(--spacing-2) * 4 + var(--size-control-sm) * 2);
   display: flex;
   flex-direction: column;
   align-items: stretch;
   min-width: 0;
+}
+
+/* THE NAME COLUMN'S HEADING STANDS OVER THE NAMES, not over the chevrons. */
+.crewlet-org-table [role='columnheader'][aria-colindex='1'] {
+  padding-inline-start: var(--crewlet-org-table-name-start);
+}
+
+/* With a select box, the names start one slot and one gap further in. */
+.crewlet-org-table[data-select] [role='columnheader'][aria-colindex='1'] {
+  padding-inline-start: calc(var(--crewlet-org-table-name-start) + var(--size-target-min) + var(--spacing-2));
+}
+
+/* THE SELECT BOX'S SLOT, kept on every row, so a row with no box keeps its name in line. */
+.crewlet-org-table__select {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-target-min);
+}
+
+/* A CONTAINER-WIDTH TABLE steps its indent in as it narrows, so a nested
+   name keeps its room; a tree four levels deep steps in one width sooner. */
+.crewlet-org-table--container {
+  container: crewlet-org-table / inline-size;
+}
+
+.crewlet-org-table--container[data-deep] .crewlet-org-table__grid {
+  --crewlet-org-table-indent: var(--spacing-5);
+}
+
+@container crewlet-org-table (width < 60rem) {
+  .crewlet-org-table__grid {
+    --crewlet-org-table-indent: var(--spacing-5);
+  }
+
+  .crewlet-org-table--container[data-deep] .crewlet-org-table__grid {
+    --crewlet-org-table-indent: var(--spacing-3);
+  }
+}
+
+@container crewlet-org-table (width < 40rem) {
+  .crewlet-org-table__grid {
+    --crewlet-org-table-indent: var(--spacing-3);
+  }
 }
 
 /*
@@ -339,6 +388,7 @@
  * a control that fails the focus-visibility rule, so the strip comes back the
  * moment focus enters the row.
  */
+.crewlet-org-table__actions[data-shown],
 .crewlet-org-table [role='row']:hover .crewlet-org-table__actions,
 .crewlet-org-table [role='row']:focus-within .crewlet-org-table__actions,
 .crewlet-org-table [role='row'][aria-selected='true'] .crewlet-org-table__actions {
@@ -381,4 +431,20 @@
   align-items: center;
   justify-content: center;
   width: var(--crewlet-org-table-add);
+}
+
+/* BESIDE A NAME the closed pill takes its mark's room alone, so a name gives
+   way only while the pill is open, and then into the room it opens into. */
+.crewlet-org-table__add[data-placement='name'] {
+  justify-content: flex-start;
+  width: auto;
+}
+
+.crewlet-org-table__add[data-placement='name']:has(.crewlet-add-pill:not([data-phase='closed'])) {
+  width: var(--crewlet-org-table-add);
+}
+
+/* It opens from its mark toward the row's end, never back over the name. */
+.crewlet-org-table__add[data-placement='name'] .crewlet-add-pill[data-layout='split'] {
+  --crewlet-add-pill-origin: translate(calc(var(--size-target-min) / -2), -50%);
 }

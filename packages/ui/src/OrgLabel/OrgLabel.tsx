@@ -97,6 +97,11 @@ export type OrgLabelMark =
        * the glyph alone, as the console table does.
        */
       iconRing?: boolean | undefined;
+      /**
+       * An organization's own logo in place of the glyph: contained in its own
+       * colours, never stretched or cropped, and as tall as the words beside it.
+       */
+      logo?: { src: string; alt: string } | undefined;
       avatar?: undefined;
     }
   | {
@@ -117,12 +122,18 @@ export type OrgLabelMark =
       icon?: undefined;
       iconSize?: undefined;
       iconRing?: undefined;
+      logo?: undefined;
     };
 
 /** What both layouts say besides the mark, in the order they say it. */
 interface OrgLabelWords {
   /** The name, which takes the width the two fixed zones leave and truncates. */
   name: ReactNode;
+  /**
+   * A control on the name's own line, just after the name, such as a quiet
+   * add (`OrgTableAdd placement="name"`). A long name gives way to it first.
+   */
+  nameAction?: ReactNode | undefined;
   /** What kind of thing this is: "Department", "Human seat", "Crewlet agent". */
   caption?: ReactNode | undefined;
   /**
@@ -183,7 +194,11 @@ export function OrgLabel(props: OrgLabelProps) {
         )}
         aria-hidden="true"
       >
-        {props.icon}
+        {props.logo ? (
+          <img className="crewlet-org-label__logo" src={props.logo.src} alt={props.logo.alt} draggable={false} />
+        ) : (
+          props.icon
+        )}
       </span>
     ) : (
       <span className="crewlet-org-label__icon" aria-hidden="true">
@@ -241,13 +256,22 @@ export function OrgLabel(props: OrgLabelProps) {
  */
 function Words({
   name,
+  nameAction,
   caption,
   captionMarks,
   className,
-}: Pick<OrgLabelWords, 'name' | 'caption' | 'captionMarks' | 'className'>) {
+}: Pick<OrgLabelWords, 'name' | 'nameAction' | 'caption' | 'captionMarks' | 'className'>) {
+  const named = <span className="crewlet-org-label__name">{name}</span>;
   return (
     <span className={cx('crewlet-org-label__text', className)}>
-      <span className="crewlet-org-label__name">{name}</span>
+      {nameAction === undefined || nameAction === null ? (
+        named
+      ) : (
+        <span className="crewlet-org-label__name-line">
+          {named}
+          {nameAction}
+        </span>
+      )}
       {(caption !== undefined || captionMarks !== undefined) && (
         <span className="crewlet-org-label__caption">
           {caption !== undefined && <span className="crewlet-org-label__kind">{caption}</span>}

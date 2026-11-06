@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Switch } from '@crewlethq/ui';
+import { BothThemes } from '../BothThemes';
 
 const meta: Meta<typeof Switch> = {
   title: 'UI/Switch',
@@ -84,4 +85,25 @@ export const WithAReason: Story = {
       <Switch label="Designer gets every message" labelHidden checked={false} onChange={() => {}} />
     </div>
   ),
+};
+
+/**
+ * The small switch, for a compact bar such as a canvas corner: a 28 by 16
+ * track in the bar's 12px type. Tab onto a switch that is on to see its focus
+ * ring stand off the filled track.
+ */
+export const Small: Story = {
+  render: function SmallStory() {
+    const [on, setOn] = useState(true);
+    const [off, setOff] = useState(false);
+    return (
+      <BothThemes>
+        <div style={{ display: 'flex', gap: 'var(--spacing-5)', alignItems: 'center' }}>
+          <Switch size="sm" label="Reporting view" checked={on} onCheckedChange={setOn} />
+          <Switch size="sm" label="Show people" checked={off} onCheckedChange={setOff} />
+          <Switch label="Medium, for comparison" checked={on} onCheckedChange={setOn} />
+        </div>
+      </BothThemes>
+    );
+  },
 };

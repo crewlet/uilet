@@ -313,6 +313,18 @@ export interface CanvasProps {
    */
   controlsBelow?: ReactNode | undefined;
   /**
+   * A bar of the caller's own in the opposite corner, on the control bar's
+   * surface, height and inset: a switch that changes what the canvas draws.
+   */
+  controlsStart?: ReactNode | undefined;
+  /**
+   * A bar of the caller's own across the canvas from the control bar, at its
+   * end: the bottom right beside a top-right bar, the top right beside a
+   * bottom-right one. On the bar's surface and inset; it wraps rather than
+   * running off a narrow canvas, and a fit keeps the content clear of it.
+   */
+  overlayEnd?: ReactNode | undefined;
+  /**
    * A note under the controls, about a key or a state: "Press Esc to leave
    * fullscreen".
    *
@@ -399,6 +411,11 @@ export interface CanvasProps {
    * frame of it.
    */
   onViewChange?: ((view: CanvasView, viewport: CanvasSize) => void) | undefined;
+  /**
+   * The view to open on instead of the fit, such as one a reader left and came
+   * back to: read once, when the first content is placed, and kept reachable.
+   */
+  initialView?: CanvasView | undefined;
   ref?: Ref<CanvasHandle> | undefined;
   className?: string | undefined;
 }
@@ -413,6 +430,8 @@ export function Canvas({
   controlsExtra,
   controlsActualSize = false,
   controlsBelow,
+  controlsStart,
+  overlayEnd,
   hint,
   largestItemWidth,
   dimmed = false,
@@ -424,6 +443,7 @@ export function Canvas({
   labels,
   onReady,
   onViewChange,
+  initialView,
   ref,
   className,
 }: CanvasProps) {
@@ -470,18 +490,32 @@ export function Canvas({
    * other piece of state here is, and recomputed on every render because all
    * three of its inputs are already render state.
    */
-  const limits = zoomLimits(content, size, largestItemWidth, CANVAS_FIT_PADDING, minZoom);
+  /*
+   * THE BAND THE END BAR TAKES, at the top or the bottom: a fit is made in the
+   * room it leaves, so no card is drawn under it. Measured from the viewport.
+   */
+  const endBar = useRef<HTMLDivElement>(null);
+  const hasEnd = overlayEnd !== undefined && overlayEnd !== null && overlayEnd !== false;
+  const [band, setBand] = useState({ top: 0, bottom: 0 });
+  const bandNow = useRef(band);
+  const room = { width: size.width, height: Math.max(0, size.height - band.top - band.bottom) };
+  const limits = zoomLimits(content, room, largestItemWidth, CANVAS_FIT_PADDING, minZoom);
   const limitsNow = useRef(limits);
   limitsNow.current = limits;
   const floorNow = useRef(minZoom);
   floorNow.current = minZoom;
 
-  /* The view that shows all of the content, at this canvas's own floor. */
-  const fitOf = useCallback(
-    (bounds: CanvasRect, viewportSize: CanvasSize = sizeNow.current) =>
-      fitView(bounds, viewportSize, CANVAS_FIT_PADDING, floorNow.current),
-    [],
-  );
+  /* The view that shows all of the content, at this canvas's own floor, clear of the end bar. */
+  const fitOf = useCallback((bounds: CanvasRect, viewportSize: CanvasSize = sizeNow.current) => {
+    const { top, bottom } = bandNow.current;
+    const roomy = { width: viewportSize.width, height: Math.max(0, viewportSize.height - top - bottom) };
+    const view = fitView(bounds, roomy, CANVAS_FIT_PADDING, floorNow.current);
+    return top === 0 ? view : { ...view, y: view.y + top };
+  }, []);
+
+  /* The view a caller opens on, read when the first content is placed. */
+  const initialNow = useRef(initialView);
+  initialNow.current = initialView;
 
   /* The view a `focusRegion` left, to be given back on `restoreView`. */
   const left = useRef<CanvasView | null>(null);
@@ -532,18 +566,49 @@ export function Canvas({
     return () => observer.disconnect();
   }, []);
 
+  // ---- the end bar's band, before any fit reads it ---------------------------
+  useLayoutEffect(() => {
+    const bar = endBar.current;
+    const box = viewport.current;
+    const read = () => {
+      const next = { top: 0, bottom: 0 };
+      if (bar && box) {
+        const own = bar.getBoundingClientRect();
+        const pane = box.getBoundingClientRect();
+        if (own.height > 0 && controlsPlacement === 'bottom-right') next.top = Math.max(0, own.bottom - pane.top);
+        if (own.height > 0 && controlsPlacement === 'top-right') next.bottom = Math.max(0, pane.bottom - own.top);
+      }
+      if (next.top === bandNow.current.top && next.bottom === bandNow.current.bottom) return;
+      bandNow.current = next;
+      setBand(next);
+    };
+    read();
+    if (!bar || typeof ResizeObserver !== 'function') return;
+    const observer = new ResizeObserver(read);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [hasEnd, controlsPlacement, size]);
+
   // ---- fit once, on the first layout that can be fitted ---------------------
   const announceReady = useRef(onReady);
   announceReady.current = onReady;
   useLayoutEffect(() => {
     if (ready || !content || size.width <= 0 || size.height <= 0) return;
-    const first = fitOf(content, size);
+    const opening = initialNow.current;
+    // A saved view comes back within this content's zoom range, still reachable.
+    const first = opening
+      ? clampPan(
+          { ...opening, k: Math.min(limits.max, Math.max(Math.min(limits.min, fitOf(content, size).k), opening.k)) },
+          content,
+          size,
+        )
+      : fitOf(content, size);
     viewNow.current = first;
-    fitted.current = first;
+    fitted.current = opening ? null : first;
     setView(first);
     setReady(true);
     announceReady.current?.();
-  }, [ready, content, size, fitOf]);
+  }, [ready, content, size, fitOf, limits.min, limits.max]);
 
   // A resize, or content that changed shape, keeps the view and only makes
   // sure the content is still reachable: a data push never refits. A resize
@@ -933,6 +998,18 @@ export function Canvas({
         {overlay ? <div className="crewlet-canvas__overlay">{overlay}</div> : null}
         <LayerNodeBridge onNode={setLayer} />
       </LayerHost>
+      {controlsStart ? (
+        <div className="crewlet-canvas__controls crewlet-canvas__controls--start" data-placement={controlsPlacement}>
+          <div className="crewlet-canvas__bar">{controlsStart}</div>
+        </div>
+      ) : null}
+      {hasEnd ? (
+        <div className="crewlet-canvas__controls crewlet-canvas__controls--end" data-placement={controlsPlacement}>
+          <div className="crewlet-canvas__bar" ref={endBar}>
+            {overlayEnd}
+          </div>
+        </div>
+      ) : null}
       {(controls || touchActive || controlsBelow || hint) && (
         /*
          * ONE GROUP IN ONE CORNER, as a column of bars: the zoom bar, then

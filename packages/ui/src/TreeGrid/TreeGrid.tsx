@@ -31,8 +31,10 @@
 
 import {
   useCallback,
+  useEffect,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -82,6 +84,16 @@ export interface TreeGridColumn {
    * padding on either side: `calc(var(--size-control-sm) + var(--spacing-2) * 2)`.
    */
   width?: string | undefined;
+  /**
+   * The grid's own width, in CSS pixels, below which this column is left out
+   * with its header. A cell's words can then move into another column's.
+   */
+  hideBelow?: number | undefined;
+  /**
+   * `sm` draws the column's values a step smaller, in the 11px of the caption
+   * under a name, for values read after the row's name. `md` is the grid's own.
+   */
+  size?: 'md' | 'sm' | undefined;
 }
 
 /** A row that holds only controls, such as an inline Add row. */
@@ -111,6 +123,10 @@ export interface TreeGridContext {
   press(id: string): { onMouseDown(event: MouseEvent<HTMLElement>): void };
   menuOpen(id: string): boolean;
   setMenuOpen(id: string, open: boolean): void;
+  /** The key of the column drawn at this one based position, which moves as columns are left out. */
+  columnKey(column: number): string | undefined;
+  /** Whether the column with this key is drawn at the grid's width (`hideBelow`). */
+  shown(key: string): boolean;
 }
 
 /** Every string the grid renders on its own. */
@@ -180,9 +196,9 @@ export interface TreeGridProps {
    * Whether a cell holds a control that takes the grid's tab stop for itself
    * (a menu trigger, a chooser, a button). It is asked per row as well as per
    * column, because one column often holds a control on some rows and plain
-   * text on others.
+   * text on others. `key` is the drawn column's own key.
    */
-  cellHasControl?: ((id: string, column: number) => boolean) | undefined;
+  cellHasControl?: ((id: string, column: number, key: string) => boolean) | undefined;
   /**
    * Carries out Enter (activate) or Delete and Backspace (remove) on a row.
    * Return false when the row has no such action, so the key travels on.
@@ -236,6 +252,15 @@ export interface TreeGridProps {
    * because the header row is still there; only its band is not drawn.
    */
   headless?: boolean | undefined;
+  /**
+   * `scroll` (the default) keeps a minimum width and scrolls sideways below
+   * it. `container` never scrolls sideways: it fills its container, leaves out
+   * the columns its width cannot hold (`hideBelow`), and its header holds at
+   * the top of the page's scroll as the rows pass under it.
+   */
+  layout?: 'scroll' | 'container' | undefined;
+  /** The grid's own width, in CSS pixels, as it is measured and whenever it changes. */
+  onWidthChange?: ((width: number) => void) | undefined;
   labels?: Partial<TreeGridLabels> | undefined;
   ref?: Ref<TreeViewHandle> | undefined;
   className?: string | undefined;
@@ -258,11 +283,41 @@ export function TreeGrid({
   expanded: held,
   onExpandedChange,
   headless = false,
+  layout = 'scroll',
+  onWidthChange,
   labels,
   ref,
   className,
 }: TreeGridProps) {
   const text = { ...LABELS, ...labels };
+
+  // ---- the columns its own width holds ---------------------------------------
+  // Measured before paint, so a narrow grid never flashes the columns it leaves
+  // out. An unmeasured grid (0, as in a hidden panel) draws every column.
+  const frame = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  const reportWidth = useRef(onWidthChange);
+  reportWidth.current = onWidthChange;
+  const measures = onWidthChange !== undefined || columns.some((one) => one.hideBelow !== undefined);
+  useLayoutEffect(() => {
+    const el = frame.current;
+    if (!measures || !el) return;
+    const read = (next: number) => setWidth(Math.round(next));
+    read(el.getBoundingClientRect().width);
+    if (typeof ResizeObserver !== 'function') return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) read(entry.contentRect.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measures]);
+  useEffect(() => {
+    if (width > 0) reportWidth.current?.(width);
+  }, [width]);
+  const drawn = useMemo(
+    () => columns.filter((one) => one.hideBelow === undefined || width <= 0 || width >= one.hideBelow),
+    [columns, width],
+  );
   const tree = useTreeState(forest, selectedId, { defaultExpanded, expanded: held, onExpandedChange });
   const { model, expanded, rows, active, setActive, toggle } = tree;
 
@@ -345,7 +400,7 @@ export function TreeGrid({
     const cellIndex = target.closest("[role='gridcell']")?.getAttribute('aria-colindex');
     const col = onRow || !cellIndex ? null : Number(cellIndex);
     const add = isAddRow(id);
-    const cells = add ? add.cells : columns.length;
+    const cells = add ? add.cells : drawn.length;
     const handled = () => {
       event.preventDefault();
       event.stopPropagation();
@@ -374,8 +429,8 @@ export function TreeGrid({
     const sameColumn = (next: string | null) => {
       if (next === null) return;
       const other = isAddRow(next);
-      const width = other ? other.cells : columns.length;
-      focusAt(next, col === null ? null : Math.min(col, width));
+      const count = other ? other.cells : drawn.length;
+      focusAt(next, col === null ? null : Math.min(col, count));
     };
 
     // A TEXT FIELD IN A CELL IS EDITED WITH ITS OWN KEYS. A name typed in place
@@ -466,18 +521,28 @@ export function TreeGrid({
     }),
     menuOpen: (id) => menuFor === id,
     setMenuOpen: (id, open) => setMenuFor((was) => (open ? id : was === id ? null : was)),
+    columnKey: (col) => drawn[col - 1]?.key,
+    shown: (key) => drawn.some((one) => one.key === key),
   };
 
-  const template = columns.map((one) => one.width ?? 'minmax(0, 1fr)').join(' ');
+  const template = drawn.map((one) => one.width ?? 'minmax(0, 1fr)').join(' ');
 
   return (
-    <div className={cx('crewlet-tree-grid', headless && 'crewlet-tree-grid--headless', className)}>
+    <div
+      ref={frame}
+      className={cx(
+        'crewlet-tree-grid',
+        headless && 'crewlet-tree-grid--headless',
+        layout === 'container' && 'crewlet-tree-grid--container',
+        className,
+      )}
+    >
       <LayerHost className="crewlet-tree-grid__layer">
         <div className="crewlet-tree-grid__scroller" onScroll={onScroll}>
           <div
             role="treegrid"
             aria-label={label}
-            aria-colcount={columns.length}
+            aria-colcount={drawn.length}
             aria-readonly={readOnly || undefined}
             className="crewlet-tree-grid__grid"
             style={{ '--crewlet-tree-grid-columns': template } as CSSProperties}
@@ -485,7 +550,7 @@ export function TreeGrid({
           >
             <div role="rowgroup" className="crewlet-tree-grid__head">
               <div role="row" className="crewlet-tree-grid__row">
-                {columns.map((one, index) => (
+                {drawn.map((one, index) => (
                   <div role="columnheader" aria-colindex={index + 1} key={one.key}>
                     {one.headerHidden ? <VisuallyHidden>{one.header}</VisuallyHidden> : one.header}
                   </div>
@@ -495,7 +560,7 @@ export function TreeGrid({
             <div role="rowgroup">
               {rows.map((id) => {
                 const add = isAddRow(id);
-                const cells = add ? add.cells : columns.length;
+                const cells = add ? add.cells : drawn.length;
                 const expandable = treeExpandable(model, id);
                 const open = expanded.has(id);
                 const name = model.label.get(id) ?? '';
@@ -521,8 +586,10 @@ export function TreeGrid({
                     style={{ '--crewlet-tree-grid-depth': treeLevel(model, id) - 1 } as CSSProperties}
                     onClick={(event) => {
                       // A press on a control in the row is the control's; a
-                      // press on the row itself selects it and takes focus.
-                      if ((event.target as HTMLElement).closest("button, [role='menu']")) return;
+                      // press on the row itself selects it and takes focus. A
+                      // press in a surface portalled from a cell is not in the row.
+                      if (!event.currentTarget.contains(event.target as Node)) return;
+                      if ((event.target as HTMLElement).closest("button, input, label, [role='menu']")) return;
                       focusAt(id, null);
                     }}
                   >
@@ -533,7 +600,8 @@ export function TreeGrid({
                           key={col}
                           role="gridcell"
                           aria-colindex={col}
-                          tabIndex={stop(id, col) && !cellHasControl?.(id, col) ? 0 : -1}
+                          tabIndex={stop(id, col) && !cellHasControl?.(id, col, drawn[col - 1]?.key ?? '') ? 0 : -1}
+                          data-size={!add && drawn[col - 1]?.size === 'sm' ? 'sm' : undefined}
                           className="crewlet-tree-grid__cell"
                         >
                           {col === 1 && (

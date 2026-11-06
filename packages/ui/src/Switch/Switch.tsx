@@ -17,6 +17,8 @@ export interface SwitchProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
    * a room, "Answers when named"). The track alone is drawn.
    */
   labelHidden?: boolean | undefined;
+  /** `sm` for a compact bar such as a canvas corner or a toolbar: a smaller track in the bar's small type. */
+  size?: 'sm' | 'md' | undefined;
   /**
    * Why the switch cannot be moved, as a sentence. It is drawn dimmed and
    * does not move, and stays a tab stop whose reason is read after its name
@@ -62,6 +64,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     onChange,
     onClick,
     labelHidden = false,
+    size = 'md',
     disabledReason,
     className = '',
     disabled,
@@ -97,6 +100,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
         'crewlet-switch',
         framed && 'crewlet-switch--framed',
         labelHidden && 'crewlet-switch--label-hidden',
+        size === 'sm' && 'crewlet-switch--sm',
         (disabled || inert) && 'is-disabled',
         className,
       )}

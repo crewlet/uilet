@@ -6,12 +6,17 @@
  * out whether a webhook was delivering.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Switch } from './Switch.js';
 
 afterEach(cleanup);
+
+const SHEET = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Switch.css'), 'utf8');
 
 test('it exposes its state as a switch, not as a ticked box', () => {
   function Setting() {
@@ -97,4 +102,25 @@ test('a switch whose label is hidden keeps the label as its name', () => {
   expect(screen.getByRole('switch', { name: 'Designer gets every message' })).toBeDefined();
   expect(container.querySelector('.crewlet-switch')?.className).toContain('crewlet-switch--label-hidden');
   expect(container.querySelector('.crewlet-visually-hidden .crewlet-switch__label')).not.toBeNull();
+});
+
+test('a small switch draws a smaller track in the small type', () => {
+  render(<Switch label="Reporting view" size="sm" />);
+  const root = screen.getByRole('switch', { name: 'Reporting view' }).closest('.crewlet-switch');
+  expect(root?.className).toContain('crewlet-switch--sm');
+  expect(SHEET).toMatch(/\.crewlet-switch--sm \{[^}]*--crewlet-switch-height: 16px;[^}]*font-size: var\(--font-size-xs\);/);
+});
+
+test('a switch is medium unless asked to be small', () => {
+  render(<Switch label="Deliver webhooks" />);
+  const root = screen.getByRole('switch', { name: 'Deliver webhooks' }).closest('.crewlet-switch');
+  expect(root?.className).not.toContain('crewlet-switch--sm');
+});
+
+test('a checked switch draws its focus ring off the filled track, so the two never merge', () => {
+  expect(SHEET).toMatch(
+    /\.crewlet-switch__track:has\(\.crewlet-switch__control:checked:focus-visible\) \{\s*outline-offset: 2px;\s*\}/,
+  );
+  // The ring of a switch that is off stays flush with its outlined track.
+  expect(SHEET).toMatch(/\.crewlet-switch__track:has\(\.crewlet-switch__control:focus-visible\) \{[^}]*outline-offset: 0;/);
 });
