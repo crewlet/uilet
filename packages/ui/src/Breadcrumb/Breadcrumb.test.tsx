@@ -216,9 +216,9 @@ test('a heading whose subject changes keeps its element, so the control in it ke
   expect(document.activeElement).toBe(button);
 });
 
-test('the oldest ancestor gives way first, and a cut crumb carries its words on hover', () => {
+test('a cut crumb carries its words on hover', () => {
   // Kept whole, a long parent cut the page itself to "Pri..." and pushed it
-  // off a phone; ancestors now give way first, the oldest the most.
+  // off a phone; ancestors now give way too, cut with an ellipsis.
   render(
     <Breadcrumb
       crumbs={[
@@ -228,8 +228,6 @@ test('the oldest ancestor gives way first, and a cut crumb carries its words on 
       ]}
     />,
   );
-  const parts = [...document.querySelectorAll<HTMLElement>('.crewlet-breadcrumb__part')];
-  expect(parts.map((part) => part.style.flexShrink)).toEqual(['2', '1', '']);
   const words = screen.getByText('Learner Community, Content Rights and Trust and Safety Operations');
   Object.defineProperty(words, 'clientWidth', { configurable: true, value: 40 });
   Object.defineProperty(words, 'scrollWidth', { configurable: true, value: 420 });

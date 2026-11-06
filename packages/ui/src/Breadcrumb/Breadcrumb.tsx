@@ -127,12 +127,7 @@ export function Breadcrumb({ crumbs, current, label = 'Breadcrumb', className, s
           // KEYED BY DEPTH, not by words: the crumb at a depth is the same place
           // in the trail whatever it is called, so a heading whose subject is
           // switched keeps its element, and the control in it keeps focus.
-          <span
-            key={i}
-            className="crewlet-breadcrumb__part"
-            // The oldest ancestor gives way first: its share of a cut is its depth from the page.
-            style={last ? undefined : { flexShrink: crumbs.length - 1 - i }}
-          >
+          <span key={i} className="crewlet-breadcrumb__part">
             {i > 0 ? <ChevronRightGlyph size="xs" className="crewlet-breadcrumb__separator" aria-hidden="true" /> : null}
             {last ? (
               <h1

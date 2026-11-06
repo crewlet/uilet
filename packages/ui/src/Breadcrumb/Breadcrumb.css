@@ -66,10 +66,10 @@
  * cannot reconstruct is the links out of it. So the ancestors keep their width
  * and the last part is the one that ellipsises.
  */
-/* EVERY CRUMB GIVES WAY, the page down to a floor of 24ch and each ancestor
-   to a 2ch stub, the oldest first (its flex-shrink is set per depth), each cut
-   with an ellipsis and titled on hover. Kept whole, one long parent cut the
-   page itself to "Pri..." at 1440 and pushed it off a phone. */
+/* EVERY CRUMB GIVES WAY, in proportion to its length: the page down to a
+   floor of 24ch and each ancestor to a 2ch stub, each cut with an ellipsis and
+   titled on hover. Kept whole, one long parent cut the page itself to "Pri..."
+   at 1440 and pushed it off a phone. */
 .crewlet-breadcrumb__part:not(:last-child) {
   flex: 0 1 auto;
   min-width: 2ch;
