@@ -512,6 +512,10 @@ export interface TreeCanvasProps {
    * must always open whole, however wide, names a floor under the canvas's own.
    */
   minZoom?: number | undefined;
+  /** The open nodes, when the caller holds them, to keep them across a visit: see [TreeStateOptions.expanded]. */
+  expanded?: ReadonlySet<string> | undefined;
+  /** The open nodes a toggle, or an expand or collapse of everything, has just produced. */
+  onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
   ref?: Ref<TreeCanvasHandle> | undefined;
   className?: string | undefined;
 }
@@ -545,10 +549,12 @@ export function TreeCanvas({
   composing = null,
   labels,
   minZoom,
+  expanded: held,
+  onExpandedChange,
   ref,
   className,
 }: TreeCanvasProps) {
-  const tree = useTreeState(nodes, selectedId);
+  const tree = useTreeState(nodes, selectedId, { expanded: held, onExpandedChange });
   const { model, expanded, active, setActive, toggle } = tree;
   const [menuFor, setMenuFor] = useState<string | null>(null);
 

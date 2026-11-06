@@ -791,3 +791,41 @@ export const AlwaysWhole: Story = {
     );
   },
 };
+
+/**
+ * The open nodes held by the caller (`expanded`, `onExpandedChange`), as a
+ * page that keeps them in its address does: both charts below draw one held
+ * set, so closing a branch in either closes it in both, and Reset opens all.
+ */
+export const HeldExpansion: Story = {
+  render: function HeldExpansionStory() {
+    const all = new Set(Object.keys(SEATS));
+    const [open, setOpen] = useState<ReadonlySet<string>>(all);
+    return (
+      <div style={{ display: 'grid', gap: 'var(--spacing-3)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
+          <Button size="small" variant="secondary" onClick={() => setOpen(all)}>
+            Reset
+          </Button>
+          <span style={metaText}>{open.size} open</span>
+        </div>
+        <BothThemes>
+          <div style={{ height: '36vh' }}>
+            <TreeCanvas
+              label="Org chart"
+              nodes={SEAT_NODES}
+              cards={seatCards}
+              cardOf={(id) => id}
+              ranks="shared"
+              renderCard={(id, card) => <SeatCard id={id} card={card} />}
+              hasNodeMenu={() => false}
+              onNodeKey={() => true}
+              expanded={open}
+              onExpandedChange={setOpen}
+            />
+          </div>
+        </BothThemes>
+      </div>
+    );
+  },
+};

@@ -439,7 +439,11 @@ function Harness({
   composing = null,
   minZoom,
   controlsStart,
+  expanded,
+  onExpandedChange,
 }: {
+  expanded?: ReadonlySet<string> | undefined;
+  onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
   minZoom?: number | undefined;
   controlsStart?: ReactNode | undefined;
   extra?: readonly string[] | undefined;
@@ -478,6 +482,8 @@ function Harness({
       composing={composing}
       minZoom={minZoom}
       controlsStart={controlsStart}
+      expanded={expanded}
+      onExpandedChange={onExpandedChange}
       ref={handle}
     />
   );
@@ -545,6 +551,19 @@ describe('the tree', () => {
       ['unit:sales', '2', '3', '3', 'true'],
       ['seat:ae', '3', '1', '1', null],
     ]);
+  });
+
+  test('a caller holding the open nodes keeps a closed branch closed and hears every toggle', () => {
+    const heard: string[][] = [];
+    const open = new Set([COMPANY, 'unit:eng', 'unit:platform']);
+    mount({ expanded: open, onExpandedChange: (next) => heard.push([...next].sort()) });
+    const ids = screen.getAllByRole('treeitem').map((el) => el.getAttribute('data-tree-id'));
+    expect(ids).not.toContain('seat:ae');
+    expect(ids).toContain('seat:sre');
+    act(() => {
+      screen.getByRole('button', { name: `Expand ${nameOf('unit:sales')}`, hidden: true }).click();
+    });
+    expect(heard.at(-1)).toEqual([COMPANY, 'unit:eng', 'unit:platform', 'unit:sales'].sort());
   });
 
   test('a treeitem holds nothing focusable, and the pointer buttons are hidden beside it', () => {
