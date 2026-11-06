@@ -10,8 +10,15 @@
      own in a flush card. */
   --crewlet-tree-grid-inset: var(--spacing-3);
   --crewlet-tree-grid-edge: var(--spacing-3);
+  /* THE HEAD AND THE FOOT ARE DATAGRID'S OWN PARTS (DataGrid/parts.tsx), so
+     they read this grid's edge through DataGrid's name for it. */
+  --crewlet-data-grid-edge: var(--crewlet-tree-grid-edge);
 
   position: relative;
+  /* A flex or grid item that may shrink below its content, as DataGrid's
+     frame: at its automatic minimum a tree widened its parent to its
+     longest line. */
+  min-width: 0;
 }
 
 /*
@@ -76,14 +83,15 @@
 
 .crewlet-tree-grid--container .crewlet-tree-grid__head {
   position: sticky;
-  top: 0;
+  /* At the offset an application gives its grids' heads, as a DataGrid's. */
+  top: var(--crewlet-data-grid-sticky-top, var(--spacing-0));
   z-index: var(--z-index-sticky);
   border-start-start-radius: calc(var(--radius-md) - 1px);
   border-start-end-radius: calc(var(--radius-md) - 1px);
 }
 
 /*
- * INSIDE A FLUSH CARD THE CARD IS THE FRAME. A flush card exists so that a
+ * INSIDE A FLUSH CARD THE CARD IS THE FRAME, and so with `flush`. A flush card exists so that a
  * table's rows reach its edges (Card.css), and a grid that drew its own border
  * and corner there was a second rounded box one pixel inside the first, with
  * the card's footer hanging outside it. The rows keep their own hairlines, and
@@ -97,6 +105,22 @@
   background: none;
   border: none;
   border-radius: 0;
+}
+
+/* `flush` outside a flush card: the card's body, with one rule above its head. */
+.crewlet-tree-grid[data-flush] {
+  --crewlet-tree-grid-edge: var(--spacing-4);
+}
+
+.crewlet-tree-grid[data-flush] .crewlet-tree-grid__scroller {
+  background: none;
+  border: none;
+  border-top: 1px solid var(--color-border-default);
+  border-radius: 0;
+}
+
+.crewlet-card__header + .crewlet-tree-grid[data-flush] .crewlet-tree-grid__scroller {
+  border-top: 0;
 }
 
 .crewlet-tree-grid__row {
@@ -161,6 +185,40 @@
 .crewlet-tree-grid__row > [role='columnheader']:last-child,
 .crewlet-tree-grid__cell:last-child {
   --crewlet-tree-grid-cell-end: var(--crewlet-tree-grid-edge);
+}
+
+/*
+ * THE HEAD IS DATAGRID'S HEAD CELL (its sort button, marks and edges), on this
+ * grid's insets: the button takes back exactly the padding its head has.
+ */
+.crewlet-tree-grid__head > .crewlet-tree-grid__row > .crewlet-data-grid__th {
+  --crewlet-data-grid-cell-start: var(--crewlet-tree-grid-cell-start);
+  --crewlet-data-grid-cell-end: var(--crewlet-tree-grid-cell-end);
+}
+
+/* AN ICON COLUMN keeps the cells' own step on both sides wherever it stands, as a DataGrid's. */
+.crewlet-tree-grid__row > .crewlet-data-grid__th.crewlet-data-grid__th--icon,
+.crewlet-tree-grid__row > .crewlet-tree-grid__cell.crewlet-tree-grid__cell--icon {
+  --crewlet-tree-grid-cell-start: var(--crewlet-tree-grid-inset);
+  --crewlet-tree-grid-cell-end: var(--crewlet-tree-grid-inset);
+}
+
+/* ONE EDGE PER COLUMN, shared by its head and its values, as a DataGrid's:
+   figures and times on the right in tabular digits, one mark centred, and
+   (`safe`) a value wider than its track cut at its end, never its start. */
+.crewlet-tree-grid__cell--right {
+  justify-content: safe flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-tree-grid__cell--center {
+  justify-content: safe center;
+}
+
+/* A SHRINK COLUMN does not wrap inside its capped track, nor paint past it. */
+.crewlet-tree-grid__cell--shrink {
+  white-space: nowrap;
+  overflow: clip;
 }
 
 /* A COLUMN OF VALUES READ AFTER THE NAME takes the caption's size, a step under the name's. */
@@ -250,7 +308,179 @@
   white-space: nowrap;
 }
 
+/* THE SELECT BOX'S SLOT, kept on every row, so a row with no box keeps its name in line. */
+.crewlet-tree-grid__select {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-target-min);
+}
+
+/*
+ * THE ROW'S OWN LINK, STRETCHED OVER IT (`rowHref`), out of flow so it takes
+ * no track. The row is its containing block. The cells' own controls sit
+ * above it, positioned and later in the document; `:where` keeps that at no
+ * weight, so a control that positions itself keeps its own rule.
+ */
+.crewlet-tree-grid__row[data-linked] {
+  position: relative;
+  cursor: pointer;
+}
+
+.crewlet-tree-grid__row-link {
+  position: absolute;
+  inset: 0;
+}
+
+:where(
+  .crewlet-tree-grid__row[data-linked]
+    :is(a, button, input, label, [data-above-row]):not(.crewlet-tree-grid__row-link)
+) {
+  position: relative;
+}
+
+/* A FAILED ROW IS MARKED ON ITS EDGE, as a DataGrid's: its cells say why. */
+.crewlet-tree-grid__row[data-failed] {
+  box-shadow: inset 2px 0 0 var(--color-feedback-danger-ink);
+}
+
 /* The selection is where the reader is, so it takes the accent. */
 .crewlet-tree-grid__row[aria-selected='true'] {
   box-shadow: inset 2px 0 0 var(--color-brand-accent);
+}
+
+/*
+ * THE FOOT IS DATAGRID'S (what the width dropped, what is loaded, the way to
+ * more), under the rows inside the frame. It holds still while the rows
+ * scroll sideways, so its words stay in view.
+ */
+.crewlet-tree-grid__scroller > .crewlet-data-grid__foot-group {
+  position: sticky;
+  inset-inline-start: 0;
+}
+
+/* ---- WHERE COLUMNS DO NOT FIT, A ROW IS A CARD (`phoneRows`) ----------------
+   Set on a phone and where the give-way columns have all gone. The row keeps
+   its first cell (its chevron, its level and its name) and every other value
+   becomes a line under it, named, at the name's indent, so the hierarchy still
+   reads down the left. The head stays for a screen reader, unseen. */
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__scroller {
+  overflow-x: visible;
+}
+
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__grid {
+  display: block;
+  min-width: 0;
+}
+
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__head {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__body,
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__row {
+  display: block;
+}
+
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__row {
+  padding-block: var(--spacing-1);
+}
+
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__cell {
+  align-items: baseline;
+  gap: var(--spacing-3);
+  white-space: normal;
+  justify-content: flex-start;
+}
+
+/* A VALUE'S LINE STARTS WHERE THE ROW'S NAME DOES: past the edge, the chevron
+   and the row's level. A drawn indent (an org table's wires) sets its own. */
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__cell:not(:first-child) {
+  padding-block: 1px;
+  padding-inline: var(
+      --crewlet-tree-grid-value-indent,
+      calc(
+        var(--crewlet-tree-grid-edge) + var(--size-control-sm) + var(--spacing-2) + var(--spacing-5) *
+          var(--crewlet-tree-grid-depth, 0)
+      )
+    )
+    var(--crewlet-tree-grid-edge);
+}
+
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__cell:first-child {
+  align-items: center;
+}
+
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__cell:empty {
+  display: none;
+}
+
+.crewlet-tree-grid[data-stacked] .crewlet-tree-grid__cell[data-label]::before {
+  content: attr(data-label);
+  flex: 0 0 7rem;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--font-letter-spacing-wide);
+  color: var(--color-text-tertiary);
+}
+
+/* THE COMPACT CARD: the name, then its values as one run of marks under it.
+   The row is indented to its values' line and the name takes that back, so
+   a value that wraps to a new line still starts under the name. A zero-height
+   break after the name ends its line, as DataGrid's compact row does. */
+.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--spacing-2);
+  padding-inline: var(
+      --crewlet-tree-grid-value-indent,
+      calc(
+        var(--crewlet-tree-grid-edge) + var(--size-control-sm) + var(--spacing-2) + var(--spacing-5) *
+          var(--crewlet-tree-grid-depth, 0)
+      )
+    )
+    var(--crewlet-tree-grid-edge);
+}
+
+.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__cell:not(:first-child) {
+  padding: 0;
+}
+
+.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__row::after {
+  content: '';
+  order: 1;
+  flex-basis: 100%;
+  height: 0;
+}
+
+.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__cell {
+  order: 2;
+}
+
+.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__cell:first-child {
+  flex: 1 1 auto;
+  order: 0;
+  margin-inline: calc(
+      -1 *
+        var(
+          --crewlet-tree-grid-value-indent,
+          calc(
+            var(--crewlet-tree-grid-edge) + var(--size-control-sm) + var(--spacing-2) + var(--spacing-5) *
+              var(--crewlet-tree-grid-depth, 0)
+          )
+        )
+    )
+    calc(-1 * var(--crewlet-tree-grid-edge));
+}
+
+.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__cell[data-label]::before {
+  content: none;
 }

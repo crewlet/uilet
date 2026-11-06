@@ -6,6 +6,7 @@ import { RelativeTime, type TimeValue } from '../RelativeTime/index.js';
 import { Tag } from '../Tag/index.js';
 import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
+import { titleIfCut } from '../utils/titleIfCut.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import type { Tone } from '../utils/tone.js';
 
@@ -263,7 +264,16 @@ export function TableTagsCell({ tags, max = 3, emptyLabel = 'No tags', labels: o
   );
 }
 
-export type TableTextCellProps = { children: ReactNode } & (
+export type TableTextCellProps = {
+  children: ReactNode;
+  /**
+   * The hover text. Left out, a cut value carries its own whole words on hover
+   * while it is cut, and a value that fits carries none. Given, it is the
+   * hover text whether or not the value is cut (an exact time under a
+   * relative one).
+   */
+  title?: string | undefined;
+} & (
   | {
       /**
        * A mark every row of the column wears, such as the column's own glyph.
@@ -283,23 +293,30 @@ export type TableTextCellProps = { children: ReactNode } & (
 );
 
 /**
- * Plain text with an optional leading mark, cut on one line.
+ * Plain text with an optional leading mark, cut on one line, its whole words
+ * on hover while they are cut.
  *
  * TWO SPELLINGS OF ONE SLOT, because a column's mark and a row's mark are
  * different facts: `icon` is the column's and is hidden, `mark` is the row's
  * and is read. Exactly one of the two, enforced by the type: a cell given both
  * would draw the column's answer over the row's.
  */
-export function TableTextCell({ children, icon, mark }: TableTextCellProps) {
+export function TableTextCell({ children, title, icon, mark }: TableTextCellProps) {
   return (
-    <span className="crewlet-table-cell__text">
+    <span className="crewlet-table-cell__text" title={title}>
       {mark ??
         (icon !== undefined && icon !== null ? (
           <span className="crewlet-table-cell__icon" aria-hidden="true">
             {icon}
           </span>
         ) : null)}
-      <span className="crewlet-table-cell__truncate">{children}</span>
+      {/* A CUT VALUE IS STILL READ WHOLE: measured on hover, as `Text` does. */}
+      <span
+        className="crewlet-table-cell__truncate"
+        onMouseEnter={title === undefined ? (event) => titleIfCut(event.currentTarget) : undefined}
+      >
+        {children}
+      </span>
     </span>
   );
 }

@@ -220,3 +220,33 @@ test('an empty icon or mark leaves the title on the lines, since they are the wh
   expect(unmarked.className).toBe('crewlet-table-cell__lines');
   expect(unmarked.getAttribute('title')).toBe('Linear, remote');
 });
+
+test('a cut text cell carries its whole words on hover while they are cut, and none while they fit', () => {
+  const { container } = render(
+    <TableTextCell icon={<svg />}>
+      Move the storage quotas to <code>File storage</code>
+    </TableTextCell>,
+  );
+  const words = container.querySelector<HTMLElement>('.crewlet-table-cell__truncate')!;
+  const box = (client: number, scroll: number) => {
+    Object.defineProperty(words, 'clientWidth', { configurable: true, value: client });
+    Object.defineProperty(words, 'scrollWidth', { configurable: true, value: scroll });
+  };
+  box(90, 260);
+  fireEvent.mouseEnter(words);
+  expect(words.getAttribute('title')).toBe('Move the storage quotas to File storage');
+  box(260, 260);
+  fireEvent.mouseEnter(words);
+  expect(words.hasAttribute('title')).toBe(false);
+});
+
+test('a text cell given a title carries it whether or not its words are cut', () => {
+  const { container } = render(<TableTextCell title="3 November 2026, 14:02">2 days ago</TableTextCell>);
+  const cell = container.querySelector<HTMLElement>('.crewlet-table-cell__text')!;
+  expect(cell.getAttribute('title')).toBe('3 November 2026, 14:02');
+  const words = cell.querySelector<HTMLElement>('.crewlet-table-cell__truncate')!;
+  Object.defineProperty(words, 'clientWidth', { configurable: true, value: 10 });
+  Object.defineProperty(words, 'scrollWidth', { configurable: true, value: 90 });
+  fireEvent.mouseEnter(words);
+  expect(words.hasAttribute('title')).toBe(false);
+});

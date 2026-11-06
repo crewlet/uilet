@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useCallback,
   useId,
   useImperativeHandle,
@@ -12,14 +13,36 @@ import {
   type Ref,
 } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
-import { ArrowDownGlyph, ArrowUpDownGlyph, ArrowUpGlyph } from '@crewlethq/icons/glyphs';
-import { Button } from '../Button/index.js';
+import { ChevronRightGlyph, GripVerticalGlyph } from '@crewlethq/icons/glyphs';
 import { Checkbox } from '../Checkbox/index.js';
 import { EmptyState } from '../EmptyState/index.js';
+import { IconButton } from '../IconButton/index.js';
 import { useMediaMatch } from '../MediaMatch/index.js';
+import { useReorder, type ReorderLabels } from '../Reorder/index.js';
+import { Skeleton } from '../Skeleton/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
-import { SHRINK_SHARE, tableTrack } from '../utils/tableTrack.js';
+import { tableTrack } from '../utils/tableTrack.js';
+import { titleWhenCut } from '../utils/titleIfCut.js';
+import {
+  GRID_FOOT_LABELS,
+  GRID_ICON_TRACK,
+  GridFoot,
+  GridHeadCell,
+  alignOf,
+  droppedNames,
+  headerWord,
+  nextGridSort,
+  overrunning,
+  parseGridSort,
+  rowLinkTitle,
+  sortByValue,
+  squeezedCells,
+  type GridAlign,
+  type GridFootLabels,
+} from './parts.js';
+
+export { nextGridSort, parseGridSort };
 
 /**
  * What activated a row: a click, a key on the row's overlay, or the
@@ -29,23 +52,24 @@ import { SHRINK_SHARE, tableTrack } from '../utils/tableTrack.js';
 export type DataGridActivationEvent = ReactMouseEvent | ReactKeyboardEvent | KeyboardEvent;
 
 /** The edge a column's head and values share. */
-export type DataGridAlign = 'left' | 'right' | 'center';
+export type DataGridAlign = GridAlign;
 
 /** The track an `icon` column is drawn in: the target size and the cell's inset either side. */
-export const DATA_GRID_ICON_TRACK = 'calc(var(--size-target-min) + var(--spacing-3) * 2)';
-
-/** The edge a column is drawn on: `center` for an icon column unless it says otherwise. */
-function alignOf<T>(column: DataGridColumn<T>): DataGridAlign {
-  return column.align ?? (column.icon ? 'center' : 'left');
-}
+export const DATA_GRID_ICON_TRACK = GRID_ICON_TRACK;
 
 /** One column of a [DataGrid]. */
 export interface DataGridColumn<T> {
   key: string;
   header: ReactNode;
   cell: (row: T) => ReactNode;
-  /** The value sorted on. Omit to make the column unsortable. */
+  /** The value the grid sorts the rows by, on the client. */
   sortValue?: ((row: T) => string | number | null | undefined) | undefined;
+  /**
+   * Whether the head is a sort button. Defaults to whether `sortValue` is set.
+   * A `serverSorted` grid sets it with no `sortValue`: its source orders the
+   * rows, and the head only asks it to (`onSortChange`).
+   */
+  sortable?: boolean | undefined;
   /**
    * Which edge the column's values and its head share: `left` (the default)
    * for words, `right` for figures, times and dates (their digits are
@@ -80,6 +104,19 @@ export interface DataGridColumn<T> {
   /** Shrink to content (up to a fifth of the grid) and never wrap. */
   shrink?: boolean | undefined;
   /**
+   * What a value does that is wider than its column: `truncate` cuts it on
+   * one line with an ellipsis, its whole words on hover; `wrap` breaks it over
+   * as many lines as it takes, for prose (a change described in a sentence).
+   * Left out, the cell lays out whatever `cell` draws as it is.
+   */
+  overflow?: 'truncate' | 'wrap' | undefined;
+  /**
+   * The cell's hover text, where the value drawn is not the whole story (an
+   * exact time under a relative one). Given, it is the title whether or not
+   * the value is cut.
+   */
+  title?: ((row: T) => string | undefined) | undefined;
+  /**
    * On a grid drawn with `phoneRows="compact"`, a cell of the row's FIRST line
    * (what the row is: a key, a title), where every other cell is a fact about
    * it on the line under.
@@ -105,6 +142,11 @@ export interface DataGridColumn<T> {
    * its clipped edge, and says which it dropped.
    */
   drop?: number | undefined;
+}
+
+/** Whether a press on a column's head sorts: see [DataGridColumn.sortable]. */
+function sortsBy<T>(column: DataGridColumn<T>): boolean {
+  return column.sortable ?? column.sortValue !== undefined;
 }
 
 /** One column a reader may turn on or off, as a [ColumnChooser] offers it. */
@@ -241,28 +283,102 @@ export interface DataGridSelection<T> {
   isSelectable?: ((row: T) => boolean) | undefined;
 }
 
+/**
+ * Rows that open in place: a chevron before the first column, and the row's
+ * detail on a full-width row under it while it is open. Controlled, so the
+ * host keeps which rows are open (across a refetch, in its address).
+ */
+export interface DataGridExpansion<T> {
+  isExpanded: (row: T) => boolean;
+  onToggle: (row: T) => void;
+  /** What the open row shows, under it, across every column. */
+  render: (row: T) => ReactNode;
+  /** The chevron's name, which says what a press does: "Show Ada's access", "Hide Ada's access". */
+  label: (row: T, open: boolean) => string;
+  /** A row with nothing to open draws no chevron. Every row can open by default. */
+  canExpand?: ((row: T) => boolean) | undefined;
+}
+
+/** The edge mark a row carries for a state its cells state in words. */
+export type DataGridRowTone = 'info' | 'warning' | 'danger';
+
+/**
+ * Rows a reader puts in order by hand: a handle before the first column,
+ * dragged or moved with the arrow keys, every move said aloud. The order is
+ * the point of such a list, so a reorderable grid draws its rows in the order
+ * given and sorts nothing.
+ */
+export interface DataGridReorder<T> {
+  /** A finished move: `key` now stands before `beforeKey`, or last where that is null. */
+  onMove: (key: string, beforeKey: string | null) => void;
+  /** What a reader calls the row, for its handle ("Move ENG-12") and the move said aloud. */
+  rowName: (row: T) => string;
+  /** A row that holds its place: its handle is drawn and disabled. */
+  canMove?: ((row: T) => boolean) | undefined;
+  /** The row whose move is being saved: quieter, busy, and not movable until it lands. */
+  pendingKey?: string | null | undefined;
+  labels?: Partial<ReorderLabels> | undefined;
+}
+
+/**
+ * A row that is not a record: a total, the whole company above its seats. It
+ * stands on the grid's tracks, so its figures line up under their heads, and
+ * it is never sorted, picked or linked.
+ */
+export interface DataGridSummaryRow {
+  key: string;
+  /** The row's name, drawn in the first column unless `cells` fills that one. */
+  label?: ReactNode;
+  /** A value per column key; a column with none is empty on this row. */
+  cells: Partial<Record<string, ReactNode>>;
+  /** Above the rows, or under them (the default, where a total goes). */
+  position?: 'top' | 'bottom' | undefined;
+}
+
 /** The words a grid says, for an application that says them otherwise. */
-export interface DataGridLabels {
-  /** "Hidden to fit: Due and Updated". */
-  hiddenToFit: (names: string) => string;
-  loadMore: string;
-  showEveryColumn: string;
-  /** Joins the last two names of a list: "Due and Updated". */
-  and: string;
+export interface DataGridLabels extends GridFootLabels {
   /** The head's box, over every row the grid draws. */
   selectAll: string;
+  /** The position column's head (`ordinal`). */
+  ordinal: string;
 }
 
 const LABELS: DataGridLabels = {
-  hiddenToFit: (names) => `Hidden to fit: ${names}`,
-  loadMore: 'Load more',
-  showEveryColumn: 'Show every column',
-  and: 'and',
+  ...GRID_FOOT_LABELS,
   selectAll: 'Select every row',
+  ordinal: '#',
 };
 
-/** The selection column's key: not a key a caller's column takes, and never in a column set. */
+/** The grid's own columns' keys: not keys a caller's column takes, and never in a column set. */
 const SELECT_COLUMN = 'crewlet-select';
+const REORDER_COLUMN = 'crewlet-reorder';
+const ORDINAL_COLUMN = 'crewlet-ordinal';
+const EXPAND_COLUMN = 'crewlet-expand';
+
+/** How many placeholder rows a loading grid draws when it is not told. */
+const LOADING_ROWS = 3;
+
+const NO_KEYS: string[] = [];
+
+/**
+ * The key a single move took, and the key it now stands before: read off the
+ * order before and after it, as an engine stores a manual rank ("move X
+ * before Y"). Null where the two orders are the same.
+ */
+export function movedKey(
+  before: readonly string[],
+  after: readonly string[],
+): { key: string; before: string | null } | null {
+  let at = 0;
+  while (at < before.length && before[at] === after[at]) at += 1;
+  if (at >= before.length) return null;
+  const without = (keys: readonly string[], key: string) => keys.filter((k) => k !== key).join('\u0000');
+  // Moved later: the first key that differs left its place. Moved earlier: the
+  // key that took that place is the one that moved.
+  const key = without(before, before[at]!) === without(after, before[at]!) ? before[at]! : after[at]!;
+  const to = after.indexOf(key);
+  return { key, before: after[to + 1] ?? null };
+}
 
 /**
  * What an application drives a grid's cursor with. The grid binds no keys of
@@ -303,7 +419,43 @@ export interface DataGridProps<T> {
    * its own mark.
    */
   selection?: DataGridSelection<T> | undefined;
+  /** A failed row: the `danger` edge of [rowTone], kept for the grids that only say this. */
   isFailed?: ((row: T) => boolean) | undefined;
+  /**
+   * The edge mark a row carries: `danger` for a row that failed or is
+   * refused, `warning` for one that needs the reader, `info` for one worth a
+   * look. A SECOND SIGNAL ONLY: the row's own cells say the state in words.
+   * Wins over `isFailed` where both are given.
+   */
+  rowTone?: ((row: T) => DataGridRowTone | undefined) | undefined;
+  /** Rows that open in place, with their detail under them: see [DataGridExpansion]. */
+  expansion?: DataGridExpansion<T> | undefined;
+  /**
+   * A full-width line under a row that says what the row cannot say in its
+   * cells (what a seat may not reach, why it is held), always shown. Null
+   * draws no line. The row's link is described by it.
+   */
+  rowAccessory?: ((row: T) => ReactNode) | undefined;
+  /** Rows put in order by hand: see [DataGridReorder]. Rows only, never bands. */
+  reorder?: DataGridReorder<T> | undefined;
+  /** A leading `#` column: each row's position in the order drawn. It never sorts. */
+  ordinal?: boolean | undefined;
+  /** Rows that are not records (totals, the whole above its parts): see [DataGridSummaryRow]. */
+  summaryRows?: readonly DataGridSummaryRow[] | undefined;
+  /**
+   * `compact` draws the head and every row a step shorter, for a grid in a
+   * drawer or a side panel read beside something else.
+   */
+  density?: 'default' | 'compact' | undefined;
+  /**
+   * The rows are on their way. With none yet, the head stays and the body
+   * draws `loadingRows` placeholder rows (never the empty state), so the
+   * grid's shape does not jump when they land; with rows, they stay. The
+   * table says it is busy either way.
+   */
+  loading?: boolean | undefined;
+  /** How many placeholder rows a loading grid with no rows draws. Three by default. */
+  loadingRows?: number | undefined;
   /**
    * The sort as `key` or `-key` (descending), empty for the rows' own order.
    * Controlled, so an application keeps it where it keeps state (an address).
@@ -355,61 +507,10 @@ export interface DataGridProps<T> {
   className?: string | undefined;
 }
 
-/** `-updated` as `{key: "updated", desc: true}`. */
-export function parseGridSort(raw: string): { key: string; desc: boolean } | null {
-  if (!raw) return null;
-  return raw.startsWith('-') ? { key: raw.slice(1), desc: true } : { key: raw, desc: false };
-}
-
-/**
- * The sort a press on a column's head asks for: ascending, then descending,
- * then back to the default. PURE, so the cycle is held without a render.
- *
- * Against the EFFECTIVE sort (the reader's, else the default), because a head
- * that reads "descending" must take its next press as one more step from
- * descending, whoever chose it. Two rules keep every press a visible change:
- *
- * - a column already at its DEFAULT descending turns ascending, where the
- *   cycle's "back to the default" would have changed nothing;
- * - a step that lands on the default is written as `''`, so the address holds
- *   only what the reader chose and the default can change under it.
- */
-export function nextGridSort(column: string, sort: string, defaultSort = ''): string {
-  const chosen = sort === defaultSort ? '' : sort;
-  const current = parseGridSort(chosen || defaultSort);
-  let next: string;
-  if (current?.key !== column) next = column;
-  else if (!current.desc) next = `-${column}`;
-  else next = chosen ? '' : column;
-  return next === defaultSort ? '' : next;
-}
-
-/** A head that is a word, or nothing. */
-function headerWord<T>(column: DataGridColumn<T>): string {
-  return typeof column.header === 'string' ? column.header : '';
-}
-
 /** Every row a band holds, its sub-bands' included, in the order they draw. */
 function bandRows<T>(band: DataGridBand<T>): T[] {
   return band.bands ? band.bands.flatMap(bandRows) : band.rows;
 }
-
-/**
- * A three-way comparator that is STABLE on equal operands: rows pushed live
- * several times a second must not swap places with their equals on every
- * render, which is a list that shuffles itself while somebody reads it.
- */
-function compare(a: string | number, b: string | number): number {
-  if (typeof a === 'number' && typeof b === 'number') {
-    if (Number.isNaN(a)) return Number.isNaN(b) ? 0 : 1;
-    if (Number.isNaN(b)) return -1;
-    return a < b ? -1 : a > b ? 1 : 0;
-  }
-  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
-}
-
-/** How many rows the squeeze check reads: a page's first screen. */
-const SQUEEZE_SAMPLE_ROWS = 12;
 
 /** What the fit has decided for one set of columns, at one width. */
 export interface GridFit {
@@ -482,75 +583,26 @@ export function fitGridColumns({
   return null;
 }
 
-/** Whether the tracks run past the grid's inner edge, read off the head's last cell. */
-function overflowing(wrap: HTMLElement): boolean {
-  const last = wrap.querySelector(':scope > .crewlet-data-grid__head')?.lastElementChild;
-  if (!last) return false;
-  const inner = wrap.getBoundingClientRect().left + wrap.clientLeft + wrap.clientWidth;
-  return last.getBoundingClientRect().right > inner + 0.5;
-}
-
 /**
- * Whether a content-sized column has been SQUEEZED: drawn narrower than its
- * cap AND cutting a value short, or its HEAD. The quieter way a grid fails to
- * fit: rather than overrun, it shrinks a status pill to a letter, or every
- * head of a row of counts to its first letter over values that still fit,
- * while the columns that could have gone stay. Read over the head and the
- * first screen of rows. `leading` is how many of the grid's own columns (the
- * selection column) are drawn before the caller's.
- *
- * `'values'` where a value is cut short (the grid cannot be read: drop, then
- * stack), `'heads'` where only a head is (drop a column if one may go, but a
- * grid whose every value reads is not turned into cards for a head), and
- * null where nothing is.
+ * Whether a content-sized column has been squeezed: see [squeezedCells]. Read
+ * off the grid's head and the first screen of its rows.
  */
 export function squeezed<T>(
   wrap: HTMLElement,
   visible: readonly DataGridColumn<T>[],
   leading = 0,
 ): 'values' | 'heads' | null {
-  const heads = wrap.querySelector(':scope > .crewlet-data-grid__head')?.children;
-  if (!heads) return null;
-  const cap = wrap.clientWidth * SHRINK_SHARE - 1;
-  const rows = [...wrap.querySelectorAll(':scope > .crewlet-data-grid__body .crewlet-data-grid__row')].slice(
-    0,
-    SQUEEZE_SAMPLE_ROWS,
+  const head = wrap.querySelector(':scope > .crewlet-data-grid__head');
+  if (!head) return null;
+  const rows = [...wrap.querySelectorAll(':scope > .crewlet-data-grid__body .crewlet-data-grid__row')];
+  return squeezedCells(
+    wrap.clientWidth,
+    [...head.children],
+    rows,
+    (row) => [...row.querySelectorAll(':scope > .crewlet-data-grid__cell')],
+    visible,
+    leading,
   );
-  let headCut = false;
-  for (let i = 0; i < visible.length; i++) {
-    const column = visible[i]!;
-    if (!column.shrink || column.width || column.icon) continue;
-    const head = heads[i + leading];
-    if (!head || head.getBoundingClientRect().width >= cap) continue;
-    if (cutShort(head)) headCut = true;
-    for (const row of rows) {
-      const cell = row.querySelectorAll(':scope > .crewlet-data-grid__cell')[i + leading];
-      if (cell && cutShort(cell)) return 'values';
-    }
-  }
-  return headCut ? 'heads' : null;
-}
-
-/**
- * Whether an element, or anything with a box inside it, is drawn narrower than
- * what it holds. A box one pixel wide is screen-reader-only text, narrower than
- * its words on purpose, and says nothing about the column's width.
- */
-function cutShort(el: Element): boolean {
-  for (const node of [el, ...el.querySelectorAll('*')]) {
-    const box = node as HTMLElement;
-    if (box.clientWidth > 1 && box.scrollWidth > box.clientWidth + 1) return true;
-  }
-  return false;
-}
-
-/** "Due and Updated": the dropped columns by the names a reader knows them by. */
-function droppedNames<T>(columns: readonly DataGridColumn<T>[], dropped: readonly string[], and: string): string {
-  const names = dropped.map((key) => {
-    const c = columns.find((col) => col.key === key);
-    return (c && (headerWord(c) || c.label)) || key;
-  });
-  return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} ${and} ${names[names.length - 1]}`;
 }
 
 /**
@@ -577,6 +629,10 @@ function droppedNames<T>(columns: readonly DataGridColumn<T>[], dropped: readonl
  * on. Stretched over the row it keeps a real href, and the cells' own links
  * and buttons sit above it.
  *
+ * THE GRID'S OWN COLUMNS COME FIRST, in one order: the selection box, the
+ * reorder handle, the position, the chevron that opens a row. None of them is
+ * in a column set or ever gives way.
+ *
  * The grid makes no scrollport of its own (`overflow: clip`), which is what
  * lets its head stick against the page's scroller; an application whose
  * scroller carries a sticky bar sets `--crewlet-data-grid-sticky-top`.
@@ -591,6 +647,15 @@ export function DataGrid<T>({
   isSelected,
   selection,
   isFailed,
+  rowTone,
+  expansion,
+  rowAccessory,
+  reorder,
+  ordinal = false,
+  summaryRows,
+  density = 'default',
+  loading = false,
+  loadingRows = LOADING_ROWS,
   sort: sortRaw = '',
   defaultSort = '',
   onSortChange,
@@ -611,8 +676,11 @@ export function DataGrid<T>({
   className,
 }: DataGridProps<T>) {
   const text: DataGridLabels = { ...LABELS, ...labels };
+  // A HAND-ORDERED LIST IS DRAWN IN ITS OWN ORDER: a sort over it would move
+  // the rows a reader just put in place.
+  const ordered = reorder !== undefined && !bands;
   // THE SORT IN FORCE: the reader's, else the default the rows arrive in.
-  const sort = parseGridSort(sortRaw || defaultSort);
+  const sort = ordered ? null : parseGridSort(sortRaw || defaultSort);
   const body = useRef<HTMLDivElement>(null);
   const [cursor, setCursor] = useState(-1);
   const gridId = useId();
@@ -648,31 +716,48 @@ export function DataGrid<T>({
   const sortRows = useCallback(
     (input: T[]): T[] => {
       if (!sort || serverSorted) return input;
-      const column = columns.find((c) => c.key === sort.key);
-      if (!column?.sortValue) return input;
-      const get = column.sortValue;
+      const get = columns.find((c) => c.key === sort.key)?.sortValue;
       // A COPY, always: sorting the caller's array would mutate its state.
-      return [...input].sort((a, b) => {
-        const av = get(a);
-        const bv = get(b);
-        // An absent value sorts last in both directions: it is not a value.
-        if (av == null && bv == null) return 0;
-        if (av == null) return 1;
-        if (bv == null) return -1;
-        const cmp = compare(av, bv);
-        return sort.desc ? -cmp : cmp;
-      });
+      return get ? sortByValue(input, get, sort.desc) : input;
     },
     [columns, sort, serverSorted],
   );
 
+  // THE HAND ORDER, with a drag's preview while one is held. The keys are
+  // joined so a caller's fresh array of the same rows is the same order.
+  const keyList = ordered ? (rows ?? []).map(rowKey) : NO_KEYS;
+  const keyText = keyList.join('\u0000');
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the joined keys are the identity
+  const reorderKeys = useMemo(() => keyList, [keyText]);
+  const onMove = reorder?.onMove;
+  const onReorder = useCallback(
+    (next: string[]) => {
+      const move = movedKey(reorderKeys, next);
+      if (move) onMove?.(move.key, move.before);
+    },
+    [reorderKeys, onMove],
+  );
+  const reorderBy = useReorder({
+    keys: reorderKeys,
+    onReorder,
+    nameOf: (key) => {
+      const row = (rows ?? []).find((r) => rowKey(r) === key);
+      return row !== undefined && reorder ? reorder.rowName(row) : key;
+    },
+    labels: reorder?.labels,
+  });
+
   // EVERY ROW IN THE ORDER IT DRAWS, sub-bands included: the list the cursor
   // walks, so a row drawn and missed here is one the cursor steps over.
   const flat = useMemo(() => {
+    if (ordered) {
+      const byKey = new Map((rows ?? []).map((row) => [rowKey(row), row]));
+      return reorderBy.order.map((key) => byKey.get(key)).filter((row): row is T => row !== undefined);
+    }
     const walk = (band: DataGridBand<T>): T[] => (band.bands ? band.bands.flatMap(walk) : sortRows(band.rows));
     if (bands) return bands.flatMap(walk);
     return sortRows(rows ?? []);
-  }, [bands, rows, sortRows]);
+  }, [ordered, reorderBy.order, bands, rows, rowKey, sortRows]);
 
   // THE SELECTION. The anchor is the row whose box was pressed last, by key, so
   // a Shift-press after a re-sort still ranges from the row the reader means.
@@ -715,42 +800,109 @@ export function DataGrid<T>({
     selection.onChange(next);
   };
 
-  const selectColumn: DataGridColumn<T> | null = selection
-    ? {
-        key: SELECT_COLUMN,
-        header: (
+  // The position each row is drawn at, for the `#` column.
+  const position = useMemo(() => new Map(flat.map((row, at) => [rowKey(row), at + 1])), [flat, rowKey]);
+
+  const leadingColumns: DataGridColumn<T>[] = [];
+  if (selection) {
+    leadingColumns.push({
+      key: SELECT_COLUMN,
+      header: (
+        <Checkbox
+          hideLabel
+          label={text.selectAll}
+          checked={allPicked}
+          indeterminate={pickedCount > 0 && !allPicked}
+          disabled={pickable.length === 0}
+          onChange={pickAll}
+        />
+      ),
+      cell: (row) => (
+        // ABOVE THE ROW'S LINK, so the press lands on the box.
+        <span className="crewlet-data-grid__select" data-above-row>
           <Checkbox
             hideLabel
-            label={text.selectAll}
-            checked={allPicked}
-            indeterminate={pickedCount > 0 && !allPicked}
-            disabled={pickable.length === 0}
-            onChange={pickAll}
+            label={selection.rowLabel(row)}
+            checked={selection.selected.has(rowKey(row))}
+            disabled={selection.isSelectable?.(row) === false}
+            onChange={(event) =>
+              pick(row, event.target.checked, (event.nativeEvent as Partial<MouseEvent>).shiftKey === true)
+            }
           />
-        ),
-        cell: (row) => (
-          // ABOVE THE ROW'S LINK, so the press lands on the box.
-          <span className="crewlet-data-grid__select" data-above-row>
-            <Checkbox
-              hideLabel
-              label={selection.rowLabel(row)}
-              checked={selection.selected.has(rowKey(row))}
-              disabled={selection.isSelectable?.(row) === false}
-              onChange={(event) => pick(row, event.target.checked, (event.nativeEvent as Partial<MouseEvent>).shiftKey === true)}
+        </span>
+      ),
+      action: true,
+      phoneLead: true,
+      width: DATA_GRID_ICON_TRACK,
+    });
+  }
+  if (ordered && reorder) {
+    leadingColumns.push({
+      key: REORDER_COLUMN,
+      // THE HANDLES' INSTRUCTION, which every handle is described by, held in
+      // their column's head: the table owns rows and cells and nothing else.
+      header: <VisuallyHidden id={reorderBy.hintId}>{reorderBy.hint}</VisuallyHidden>,
+      cell: (row) => {
+        const key = rowKey(row);
+        const { 'aria-label': name, ...handle } = reorderBy.handleProps(key);
+        const fixed = reorder.canMove?.(row) === false || reorder.pendingKey === key;
+        return (
+          <IconButton
+            size="sm"
+            variant="ghost"
+            className="crewlet-data-grid__handle"
+            label={name}
+            icon={<GripVerticalGlyph size="md" />}
+            {...(fixed ? { disabled: true } : handle)}
+          />
+        );
+      },
+      action: true,
+      phoneLead: true,
+      width: DATA_GRID_ICON_TRACK,
+    });
+  }
+  if (ordinal) {
+    leadingColumns.push({
+      key: ORDINAL_COLUMN,
+      header: text.ordinal,
+      align: 'right',
+      shrink: true,
+      cell: (row) => position.get(rowKey(row)) ?? null,
+    });
+  }
+  if (expansion) {
+    leadingColumns.push({
+      key: EXPAND_COLUMN,
+      header: '',
+      cell: (row) => {
+        if (expansion.canExpand?.(row) === false) return null;
+        const open = expansion.isExpanded(row);
+        return (
+          <span className="crewlet-data-grid__expander" data-open={open ? '' : undefined}>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              label={expansion.label(row, open)}
+              icon={<ChevronRightGlyph />}
+              aria-expanded={open}
+              aria-controls={open ? detailId(row) : undefined}
+              onClick={() => expansion.onToggle(row)}
             />
           </span>
-        ),
-        action: true,
-        phoneLead: true,
-        width: DATA_GRID_ICON_TRACK,
-      }
-    : null;
-  // WHAT IS DRAWN: the selection column, then the columns that fit. The fit
-  // and the column set never see it; it is the grid's own and never gives way.
-  const drawnColumns = selectColumn ? [selectColumn, ...visibleColumns] : visibleColumns;
+        );
+      },
+      action: true,
+      phoneLead: true,
+      width: DATA_GRID_ICON_TRACK,
+    });
+  }
+  // WHAT IS DRAWN: the grid's own columns, then the columns that fit. The fit
+  // and the column set never see the grid's own; they never give way.
+  const drawnColumns = leadingColumns.length > 0 ? [...leadingColumns, ...visibleColumns] : visibleColumns;
   // How many drawn columns come before the caller's: the squeeze check reads
   // the caller's columns at their drawn positions.
-  const leading = drawnColumns.length - visibleColumns.length;
+  const leading = leadingColumns.length;
 
   // A resize the grid reports is a new width, which re-runs the fit. Without
   // the observer the grid keeps the fit of its first width.
@@ -770,7 +922,7 @@ export function DataGrid<T>({
     const current = fit.set === shownKeys ? fit : { ...NO_FIT, set: shownKeys };
     // A STACKED GRID HAS NO COLUMNS TO MEASURE; only its width is read, to
     // try columns again when it grows past the width it stacked at.
-    const overrun = !current.stacked && overflowing(el);
+    const overrun = !current.stacked && overrunning(el, el.querySelector(':scope > .crewlet-data-grid__head'));
     const squeeze = current.stacked ? null : squeezed(el, visibleColumns, leading);
     const next = fitGridColumns({
       fit: current,
@@ -824,7 +976,7 @@ export function DataGrid<T>({
   );
 
   function headerClick(column: DataGridColumn<T>): void {
-    if (!column.sortValue || !onSortChange) return;
+    if (!sortsBy(column) || !onSortChange) return;
     onSortChange(nextGridSort(column.key, sortRaw, defaultSort));
   }
 
@@ -833,8 +985,10 @@ export function DataGrid<T>({
     .join(' ');
 
   // A GROUPED ANSWER WITH NO ROWS ON THIS PAGE IS NOT AN EMPTY ANSWER: a band
-  // still says how many are in it. The empty state is for nothing to draw.
-  if (flat.length === 0 && !bands?.length && empty) {
+  // still says how many are in it. The empty state is for nothing to draw, and
+  // a grid still loading has not said it has nothing.
+  const placeholders = loading && flat.length === 0 && !bands?.length;
+  if (flat.length === 0 && !bands?.length && !summaryRows?.length && empty && !placeholders) {
     return (
       <div className={cx('crewlet-data-grid', className)} data-flush={flush || undefined}>
         <EmptyState
@@ -848,23 +1002,97 @@ export function DataGrid<T>({
     );
   }
 
+  /** The id of the row a chevron opens, which the chevron says it controls. */
+  function detailId(row: T): string {
+    return `${gridId}-detail-${rowKey(row)}`;
+  }
+
+  /**
+   * A full-width row under a record: its accessory line, or its open detail.
+   * It starts on the first of the caller's columns, past the grid's own, so
+   * its words stand on the line the row's first value does.
+   */
+  function subRow(kind: 'accessory' | 'detail', id: string, content: ReactNode, tone: DataGridRowTone | undefined) {
+    return (
+      <div
+        key={id}
+        id={id}
+        role="row"
+        className={cx('crewlet-data-grid__subrow', `crewlet-data-grid__subrow--${kind}`)}
+        data-tone={tone}
+      >
+        <div
+          role="cell"
+          aria-colspan={drawnColumns.length}
+          className="crewlet-data-grid__subrow-cell"
+          data-first={leading === 0 || undefined}
+          style={{ gridColumn: `${leading + 1} / -1` }}
+        >
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  /** One cell: its column's edge and shape, its overflow rule, and its name for the phone's card. */
+  function renderCell(column: DataGridColumn<T>, value: ReactNode, first: ReactNode, title: string | undefined) {
+    const align = alignOf(column);
+    return (
+      <span
+        key={column.key}
+        role="cell"
+        className={cx(
+          'crewlet-data-grid__cell',
+          align !== 'left' && `crewlet-data-grid__cell--${align}`,
+          column.icon && 'crewlet-data-grid__cell--icon',
+          column.shrink && 'crewlet-data-grid__cell--shrink',
+          column.action && 'crewlet-data-grid__cell--action',
+          column.overflow === 'wrap' && 'crewlet-data-grid__cell--wrap',
+        )}
+        title={title}
+        data-lead={column.phoneLead || undefined}
+        data-phone-omit={column.phoneOmit || undefined}
+        // THE CELL CARRIES ITS COLUMN'S OWN NAME, for the phone's card, where
+        // the head is gone: from the head where it is a word and from `label`
+        // where it is not. A cell with no value has no child nodes, so the
+        // card drops its line (`:empty`), and an action column's cell names
+        // itself.
+        data-label={column.action ? undefined : headerWord(column) || column.label || undefined}
+      >
+        {first}
+        {column.overflow === 'truncate' && value !== null && value !== undefined && value !== false ? (
+          // A CUT VALUE IS STILL READ WHOLE: its words on hover while it is cut.
+          <span className="crewlet-data-grid__truncate" onMouseEnter={title === undefined ? titleWhenCut : undefined}>
+            {value}
+          </span>
+        ) : (
+          value
+        )}
+      </span>
+    );
+  }
+
   let index = -1;
   function renderRow(row: T): ReactNode {
     index += 1;
     const at = index;
+    const key = rowKey(row);
     const link = rowHref?.(row);
-    // THE CELL CARRIES ITS COLUMN'S OWN NAME, for the phone's card, where the
-    // head is gone: from the head where it is a word and from `label` where it
-    // is not. A cell with no value has no child nodes, so the card drops its
-    // line (`:empty`), and an action column's cell names itself.
     const marked = Boolean(isSelected?.(row));
-    const picked = Boolean(selection?.selected.has(rowKey(row)));
+    const picked = Boolean(selection?.selected.has(key));
+    const tone = rowTone?.(row) ?? (isFailed?.(row) ? 'danger' : undefined);
     const rowId = `${gridId}-row-${at}`;
+    const accessory = rowAccessory?.(row);
+    const hasAccessory = accessory !== null && accessory !== undefined && accessory !== false;
+    const open = Boolean(expansion?.isExpanded(row) && expansion.canExpand?.(row) !== false);
+    const pending = ordered && reorder?.pendingKey === key;
     // THE ROW'S OWN WAY IN IS AN OVERLAY in its first cell, stretched over the
     // whole row (the row is its containing block): a real link where the row
     // has an address, a button where it only acts. Either is named by the row
     // (`aria-labelledby`), since the overlay holds nothing of its own and a
-    // copy of the row's words inside it would be read twice.
+    // copy of the row's words inside it would be read twice; and described by
+    // its accessory line, which says what the row cannot.
+    const described = hasAccessory ? `${rowId}-accessory` : undefined;
     const overlay =
       link !== undefined ? (
         // eslint-disable-next-line jsx-a11y/anchor-has-content
@@ -872,57 +1100,71 @@ export function DataGrid<T>({
           className="crewlet-data-grid__row-link"
           href={link}
           aria-labelledby={rowId}
+          aria-describedby={described}
           aria-current={marked ? 'true' : undefined}
           onClick={(e) => onRowActivate?.(row, e)}
+          {...rowLinkTitle}
         />
       ) : onRowActivate ? (
         <button
           type="button"
           className="crewlet-data-grid__row-link"
           aria-labelledby={rowId}
+          aria-describedby={described}
           aria-current={marked ? 'true' : undefined}
           onClick={(e) => onRowActivate(row, e)}
+          {...rowLinkTitle}
         />
       ) : null;
-    // THE CELL CARRIES ITS COLUMN'S OWN NAME, for the phone's card, where the
-    // head is gone: from the head where it is a word and from `label` where it
-    // is not. A cell with no value has no child nodes, so the card drops its
-    // line (`:empty`), and an action column's cell names itself.
-    const inner = drawnColumns.map((column, i) => (
-      <span
-        key={column.key}
-        role="cell"
-        className={cx(
-          'crewlet-data-grid__cell',
-          alignOf(column) !== 'left' && `crewlet-data-grid__cell--${alignOf(column)}`,
-          column.icon && 'crewlet-data-grid__cell--icon',
-          column.shrink && 'crewlet-data-grid__cell--shrink',
-          column.action && 'crewlet-data-grid__cell--action',
-        )}
-        data-lead={column.phoneLead || undefined}
-        data-phone-omit={column.phoneOmit || undefined}
-        data-label={column.action ? undefined : headerWord(column) || column.label || undefined}
-      >
-        {i === 0 ? overlay : null}
-        {column.cell(row)}
-      </span>
-    ));
+    const inner = drawnColumns.map((column, i) =>
+      renderCell(column, column.cell(row), i === 0 ? overlay : null, column.title?.(row)),
+    );
+    const item = ordered ? reorderBy.itemProps(key) : undefined;
+    return (
+      <Fragment key={key}>
+        <div
+          {...item}
+          id={rowId}
+          role="row"
+          className={cx(
+            'crewlet-data-grid__row',
+            marked && 'crewlet-data-grid__row--selected',
+            picked && 'crewlet-data-grid__row--picked',
+            tone === 'danger' && 'crewlet-data-grid__row--failed',
+            cursor === at && 'crewlet-data-grid__row--cursor',
+          )}
+          data-row-index={at}
+          data-tone={tone}
+          // THE ROW AND ITS LINES READ AS ONE RECORD: no rule between them.
+          data-continued={hasAccessory || open || undefined}
+          data-pending={pending || undefined}
+          aria-busy={pending || undefined}
+          aria-current={overlay === null && marked ? 'true' : undefined}
+        >
+          {inner}
+        </div>
+        {hasAccessory && subRow('accessory', `${rowId}-accessory`, accessory, tone)}
+        {open && expansion && subRow('detail', detailId(row), expansion.render(row), tone)}
+      </Fragment>
+    );
+  }
+
+  /** A row that is not a record, on the grid's tracks: see [DataGridSummaryRow]. */
+  function renderSummary(summary: DataGridSummaryRow): ReactNode {
+    const first = visibleColumns[0]?.key;
     return (
       <div
-        key={rowKey(row)}
-        id={rowId}
+        key={`summary-${summary.key}`}
         role="row"
-        className={cx(
-          'crewlet-data-grid__row',
-          marked && 'crewlet-data-grid__row--selected',
-          picked && 'crewlet-data-grid__row--picked',
-          isFailed?.(row) && 'crewlet-data-grid__row--failed',
-          cursor === at && 'crewlet-data-grid__row--cursor',
-        )}
-        data-row-index={at}
-        aria-current={overlay === null && marked ? 'true' : undefined}
+        className="crewlet-data-grid__row crewlet-data-grid__row--summary"
+        data-position={summary.position ?? 'bottom'}
       >
-        {inner}
+        {drawnColumns.map((column, i) => {
+          if (i < leading) return renderCell(column, null, null, undefined);
+          const own = summary.cells[column.key];
+          const value = own === undefined && column.key === first ? summary.label : own;
+          return renderCell(column, value ?? null, null, undefined);
+        })}
       </div>
     );
   }
@@ -937,7 +1179,9 @@ export function DataGrid<T>({
         <div className="crewlet-data-grid__band-head" role="row">
           <span className="crewlet-data-grid__band-cell" role="rowheader" aria-colspan={drawnColumns.length}>
             {band.mark}
-            <span className="crewlet-data-grid__truncate">{band.label}</span>
+            <span className="crewlet-data-grid__truncate" onMouseEnter={titleWhenCut}>
+              {band.label}
+            </span>
             {/* THE SOURCE'S COUNT AND THE LOADED COUNT, apart: 12 over 12 of
                 300 is the number a person plans against. */}
             <span className="crewlet-data-grid__band-count">
@@ -957,121 +1201,83 @@ export function DataGrid<T>({
     );
   }
 
+  /** A row the rows have not reached yet: the head's tracks, a line in each cell. */
+  function renderPlaceholder(at: number): ReactNode {
+    return (
+      <div
+        key={`loading-${at}`}
+        role="row"
+        aria-hidden="true"
+        className="crewlet-data-grid__row crewlet-data-grid__row--loading"
+      >
+        {drawnColumns.map((column) =>
+          renderCell(
+            column,
+            column.action || column.icon ? null : <Skeleton variant="text" rows={1} />,
+            null,
+            undefined,
+          ),
+        )}
+      </div>
+    );
+  }
+
+  const top = summaryRows?.filter((s) => s.position === 'top') ?? [];
+  const bottom = summaryRows?.filter((s) => s.position !== 'top') ?? [];
+
   return (
     <div
       ref={setWrap}
       role="table"
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledby}
+      aria-busy={loading || undefined}
       className={cx('crewlet-data-grid', className)}
       data-phone-rows={phoneRows === 'compact' ? 'compact' : undefined}
       data-stacked={stacked || undefined}
       data-flush={flush || undefined}
+      data-density={density === 'compact' ? 'compact' : undefined}
       style={{ gridTemplateColumns: template }}
       onPointerDown={onPointerDown}
     >
       <div className="crewlet-data-grid__head" role="row">
-        {drawnColumns.map((column) => {
-          const sorted = sort?.key === column.key;
-          const sortable = Boolean(column.sortValue && onSortChange);
-          const headClass = cx(
-            'crewlet-data-grid__th',
-            alignOf(column) !== 'left' && `crewlet-data-grid__th--${alignOf(column)}`,
-            column.icon && 'crewlet-data-grid__th--icon',
-            column.shrink && 'crewlet-data-grid__th--shrink',
-            sorted && 'crewlet-data-grid__th--sorted',
-            !sortable && 'crewlet-data-grid__th--plain',
-          );
-          // A HEAD WITH NO WORD DRAWS NO WORD BOX: an empty box and its gap
-          // would push a sortable mark column's arrow off the track's middle.
-          const worded = column.header !== '' && column.header !== null && column.header !== undefined;
-          const label = worded ? <span className="crewlet-data-grid__truncate">{column.header}</span> : null;
-          // THE ARROW SAYS THE ORDER. The sorted head's names its direction;
-          // every other SORTABLE head draws the two-way arrow, shown on hover
-          // and focus, so a head says it sorts before it is pressed. Hidden
-          // from assistive technology, which hears `aria-sort` instead.
-          const arrow = sorted ? (
-            sort?.desc ? (
-              <ArrowDownGlyph size="xs" />
-            ) : (
-              <ArrowUpGlyph size="xs" />
-            )
-          ) : sortable ? (
-            <ArrowUpDownGlyph size="xs" />
-          ) : null;
-          const ariaSort = sorted ? (sort?.desc ? 'descending' : 'ascending') : undefined;
-          const mark = arrow && (
-            <span className="crewlet-data-grid__sort-mark" aria-hidden="true">
-              {arrow}
-            </span>
-          );
-          // A COLUMN THAT CANNOT BE SORTED IS NOT A BUTTON, and a glyph head is
-          // still a named column: its `label`, said and shown on hover.
-          if (!sortable) {
-            const named = !headerWord(column) && !column.action ? column.label : undefined;
-            return (
-              // THE ORDER IN FORCE IS SAID on a head that cannot change it too:
-              // a grid sorted by its default, with nothing to press.
-              <div key={column.key} className={headClass} role="columnheader" title={named} aria-sort={ariaSort}>
-                {label}
-                {mark}
-                {named && <VisuallyHidden>{named}</VisuallyHidden>}
-              </div>
-            );
-          }
-          // THE SORT IS THE COLUMN HEAD'S STATE (`aria-sort` on the
-          // columnheader), and the control that changes it is the button
-          // inside it.
-          return (
-            <div
-              key={column.key}
-              className={headClass}
-              role="columnheader"
-              aria-sort={ariaSort}
-            >
-              <button
-                type="button"
-                className="crewlet-data-grid__sort"
-                onClick={() => headerClick(column)}
-                // A SORTABLE GLYPH HEAD IS NAMED BY ITS LABEL, never by its arrow alone.
-                aria-label={headerWord(column) ? undefined : column.label}
-              >
-                {label}
-                {mark}
-              </button>
-            </div>
-          );
-        })}
+        {drawnColumns.map((column) => (
+          <GridHeadCell
+            key={column.key}
+            column={column}
+            sort={sort}
+            sortable={!ordered && sortsBy(column) && onSortChange !== undefined}
+            onSort={() => headerClick(column)}
+          />
+        ))}
       </div>
 
-      <div className="crewlet-data-grid__body" role="rowgroup" ref={body}>
-        {bands ? bands.map((band) => renderBand(band)) : sortRows(rows ?? []).map(renderRow)}
+      <div
+        className="crewlet-data-grid__body"
+        role="rowgroup"
+        ref={body}
+        {...(ordered ? reorderBy.containerProps : undefined)}
+      >
+        {top.map(renderSummary)}
+        {placeholders
+          ? Array.from({ length: Math.max(1, loadingRows) }, (_, at) => renderPlaceholder(at))
+          : ordered
+            ? flat.map(renderRow)
+            : bands
+              ? bands.map((band) => renderBand(band))
+              : sortRows(rows ?? []).map(renderRow)}
+        {bottom.map(renderSummary)}
       </div>
 
-      {(footer || onLoadMore || loadedNote || dropped.length > 0) && (
-        <div className="crewlet-data-grid__foot">
-          {footer}
-          <span className="crewlet-data-grid__foot-spacer" aria-hidden="true" />
-          {/* A DROPPED COLUMN IS SAID: widening the window brings it back. */}
-          {dropped.length > 0 && (
-            <span className="crewlet-data-grid__note">
-              {text.hiddenToFit(droppedNames(shownColumns, dropped, text.and))}
-            </span>
-          )}
-          {loadedNote && <span className="crewlet-data-grid__note">{loadedNote}</span>}
-          {onLoadMore && (
-            <Button size="small" variant="secondary" onClick={onLoadMore}>
-              {text.loadMore}
-            </Button>
-          )}
-        </div>
-      )}
-      {/* THE WAY BACK FROM A COLUMN SET, visible while one is set. */}
-      {colsRaw && onColsChange && (
-        <button type="button" className="crewlet-data-grid__cols-reset" onClick={() => onColsChange('')}>
-          {text.showEveryColumn}
-        </button>
-      )}
+      <GridFoot
+        columns={drawnColumns.length}
+        footer={footer}
+        dropped={droppedNames(shownColumns, dropped, text.and)}
+        loadedNote={loadedNote}
+        onLoadMore={onLoadMore}
+        onReset={colsRaw && onColsChange ? () => onColsChange('') : undefined}
+        labels={text}
+      />
     </div>
   );
 }

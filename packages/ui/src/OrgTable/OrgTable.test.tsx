@@ -404,7 +404,7 @@ describe("a row's controls", () => {
     expect(frame).not.toMatch(/--crewlet-org-table-actions: auto/);
     // Its heading takes the same edge, so the word stands over the controls it names.
     expect(rule(SHEET, ".crewlet-org-table [role='columnheader']:last-child")).toMatch(
-      /justify-content: flex-end/,
+      /justify-content: safe flex-end/,
     );
     expect(SHEET).toContain(".crewlet-org-table [role='gridcell']:last-child,\n.crewlet-org-table [role='columnheader']:last-child");
   });
@@ -721,7 +721,7 @@ describe('a selection column', () => {
   test('every row keeps the slot, and a row with no box leaves it empty', () => {
     mountPicking(vi.fn(), { ...PICKED, 'seat:dev': null });
     for (const id of ['company', 'unit:eng', 'seat:dev']) {
-      expect(row(id).querySelectorAll('.crewlet-org-table__select')).toHaveLength(1);
+      expect(row(id).querySelectorAll('.crewlet-tree-grid__select')).toHaveLength(1);
     }
     expect(box('seat:dev')).toBeNull();
     expect(box('unit:eng')).not.toBeNull();
@@ -736,8 +736,8 @@ describe('a selection column', () => {
     // The box sits after the indent and before the name.
     const cell = row('seat:dev').querySelector("[role='gridcell']")!;
     const order = [...cell.children].map((child) => child.className.split(' ')[0]);
-    expect(order.indexOf('crewlet-org-table__wire')).toBeLessThan(order.indexOf('crewlet-org-table__select'));
-    expect(order.indexOf('crewlet-org-table__select')).toBeLessThan(order.indexOf('crewlet-org-label'));
+    expect(order.indexOf('crewlet-org-table__wire')).toBeLessThan(order.indexOf('crewlet-tree-grid__select'));
+    expect(order.indexOf('crewlet-tree-grid__select')).toBeLessThan(order.indexOf('crewlet-org-label'));
   });
 
   test('a press on a box belongs to the box: it asks for the new state and does not choose the row', () => {
@@ -765,7 +765,7 @@ describe('a selection column', () => {
       const cell = root.querySelector<HTMLElement>("[role='gridcell']")!;
       const gap = px(cell, 'gap');
       const toggle = px(root.querySelector('.crewlet-tree-grid__toggle')!, 'width');
-      const slot = px(root.querySelector('.crewlet-org-table__select')!, 'width');
+      const slot = px(root.querySelector('.crewlet-tree-grid__select')!, 'width');
       const zone = px(root.querySelector('.crewlet-org-label__icon')!, 'width');
       const label = px(root.querySelector('.crewlet-org-label')!, 'gap');
       // The inset, the chevron, the root's empty wire with a gap either side, the slot and its gap, the mark and its gap.
@@ -790,7 +790,7 @@ describe('a selection column', () => {
         />,
       );
       const root = row('company');
-      expect(root.querySelector('.crewlet-org-table__select')).toBeNull();
+      expect(root.querySelector('.crewlet-tree-grid__select')).toBeNull();
       const cell = root.querySelector<HTMLElement>("[role='gridcell']")!;
       const gap = px(cell, 'gap');
       const toggle = px(root.querySelector('.crewlet-tree-grid__toggle')!, 'width');
@@ -833,4 +833,48 @@ describe('a container-width table', () => {
       /--crewlet-org-table-indent: var\(--spacing-5\);/,
     );
   });
+});
+
+test('a sorted level ends its trunk at the row it draws last, and the head sorts', () => {
+  const rows: readonly TreeInput[] = [
+    {
+      id: 'company',
+      label: 'Nimbus',
+      children: [
+        { id: 'unit:sales', label: 'Sales' },
+        { id: 'unit:eng', label: 'Engineering' },
+      ],
+    },
+  ];
+  const names: Record<string, string> = { company: 'Nimbus', 'unit:sales': 'Sales', 'unit:eng': 'Engineering' };
+  const onSortChange = vi.fn();
+  const draw = (sort: string) => (
+    <OrgTable
+      label="Organization"
+      columns={[{ key: 'name', header: 'Name', sortValue: (id) => names[id] }, COLUMNS[1]!]}
+      rows={rows}
+      sort={sort}
+      onSortChange={onSortChange}
+      renderCell={(id, column) => (column === 1 ? names[id] : null)}
+    />
+  );
+  const { rerender } = render(draw(''));
+  const wire = (id: string) => document.querySelector(`[data-tree-id="${id}"] .crewlet-org-table__wire`)!;
+  // The tree's own order: Engineering is drawn last.
+  expect(wire('unit:eng').hasAttribute('data-last')).toBe(true);
+  expect(wire('unit:sales').hasAttribute('data-last')).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Name' }));
+  expect(onSortChange).toHaveBeenCalledWith('name');
+  rerender(draw('name'));
+  // Sorted by name, Sales is drawn last, so the trunk ends at Sales.
+  expect(wire('unit:sales').hasAttribute('data-last')).toBe(true);
+  expect(wire('unit:eng').hasAttribute('data-last')).toBe(false);
+});
+
+test('a last head that sorts ends with its values, its arrow before its word', () => {
+  const css = SHEET.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ');
+  expect(css).toMatch(
+    /\.crewlet-org-table \[role='columnheader'\]:last-child > \.crewlet-data-grid__sort \{ justify-content: safe flex-end; \}/,
+  );
+  expect(css).toMatch(/\.crewlet-org-table \[role='columnheader'\]:last-child \.crewlet-data-grid__sort-mark \{ order: -1; \}/);
 });

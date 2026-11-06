@@ -92,23 +92,32 @@
   min-width: 0;
 }
 
-/* THE NAME COLUMN'S HEADING STANDS OVER THE NAMES, not over the chevrons. */
+/* THE NAME COLUMN'S HEADING STANDS OVER THE NAMES, not over the chevrons.
+   Its start inset too, so a sort button filling the head takes the same
+   inset back and the whole cell stays the target. */
 .crewlet-org-table [role='columnheader'][aria-colindex='1'] {
+  --crewlet-tree-grid-cell-start: var(--crewlet-org-table-name-start);
+
   padding-inline-start: var(--crewlet-org-table-name-start);
 }
 
 /* With a select box, the names start one slot and one gap further in. */
 .crewlet-org-table[data-select] [role='columnheader'][aria-colindex='1'] {
+  --crewlet-tree-grid-cell-start: calc(
+    var(--crewlet-org-table-name-start) + var(--size-target-min) + var(--spacing-2)
+  );
+
   padding-inline-start: calc(var(--crewlet-org-table-name-start) + var(--size-target-min) + var(--spacing-2));
 }
 
-/* THE SELECT BOX'S SLOT, kept on every row, so a row with no box keeps its name in line. */
-.crewlet-org-table__select {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: var(--size-target-min);
+/* A ROW DRAWN AS A CARD (`phoneRows`) starts its values' lines under its
+   name: the cell's inset, the chevron, the wire's level and its gap. Set on
+   the row, which carries its depth; its cells inherit the length. */
+.crewlet-org-table [role='row'] {
+  --crewlet-tree-grid-value-indent: calc(
+    var(--spacing-2) * 2 + var(--size-control-sm) + var(--crewlet-org-table-indent) *
+      var(--crewlet-tree-grid-depth, 0)
+  );
 }
 
 /* A CONTAINER-WIDTH TABLE steps its indent in as it narrows, so a nested
@@ -207,7 +216,18 @@
  */
 .crewlet-org-table [role='gridcell']:last-child,
 .crewlet-org-table [role='columnheader']:last-child {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
+}
+
+/* AND A LAST HEAD THAT SORTS ENDS WITH ITS VALUES: its button fills the head,
+   so the button takes the end, and its arrow goes before the word, as a
+   right-aligned head's does, so the word stays on the column's edge. */
+.crewlet-org-table [role='columnheader']:last-child > .crewlet-data-grid__sort {
+  justify-content: safe flex-end;
+}
+
+.crewlet-org-table [role='columnheader']:last-child .crewlet-data-grid__sort-mark {
+  order: -1;
 }
 
 .crewlet-org-table__wire {

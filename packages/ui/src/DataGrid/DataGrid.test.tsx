@@ -278,14 +278,15 @@ describe('alignment', () => {
     // ONE INSET: head and cell read the same two variables.
     expect(css).toMatch(/\.crewlet-data-grid__th \{[^}]*padding-inline: var\(--crewlet-data-grid-cell-start\) var\(--crewlet-data-grid-cell-end\)/);
     expect(css).toMatch(/\.crewlet-data-grid__cell \{[^}]*padding-inline: var\(--crewlet-data-grid-cell-start\) var\(--crewlet-data-grid-cell-end\)/);
-    // ONE EDGE: each modifier justifies the head, its sort button and its cells alike.
+    // ONE EDGE: each modifier justifies the head, its sort button and its cells
+    // alike, `safe`, so a value wider than its track keeps its start in view.
     for (const [align, justify] of [
       ['right', 'flex-end'],
       ['center', 'center'],
     ] as const) {
-      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__th--${align} \\{[^}]*justify-content: ${justify}`));
-      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__th--${align} \\.crewlet-data-grid__sort \\{[^}]*justify-content: ${justify}`));
-      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__cell--${align} \\{[^}]*justify-content: ${justify}`));
+      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__th--${align} \\{[^}]*justify-content: safe ${justify}`));
+      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__th--${align} \\.crewlet-data-grid__sort \\{[^}]*justify-content: safe ${justify}`));
+      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__cell--${align} \\{[^}]*justify-content: safe ${justify}`));
     }
     // FIGURES AND TIMES END ON ONE EDGE with tabular digits.
     expect(css).toMatch(/\.crewlet-data-grid__cell--right \{[^}]*font-variant-numeric: tabular-nums/);
