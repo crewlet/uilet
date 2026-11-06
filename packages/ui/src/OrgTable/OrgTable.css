@@ -433,18 +433,20 @@
   width: var(--crewlet-org-table-add);
 }
 
-/* BESIDE A NAME the closed pill takes its mark's room alone, so a name gives
-   way only while the pill is open, and then into the room it opens into. */
+/* BESIDE A NAME the slot is its mark's room, open or closed. A slot that grew
+   as the pill opened squeezed the name and pulled the mark out from under the
+   pointer, which closed the pill, which brought the mark back: a loop. */
 .crewlet-org-table__add[data-placement='name'] {
   justify-content: flex-start;
   width: auto;
 }
 
-.crewlet-org-table__add[data-placement='name']:has(.crewlet-add-pill:not([data-phase='closed'])) {
-  width: var(--crewlet-org-table-add);
-}
-
-/* It opens from its mark toward the row's end, never back over the name. */
+/* It opens from its mark toward the row's end, over the row and never back
+   over the name, on its own opaque ground and above the cells after it. */
 .crewlet-org-table__add[data-placement='name'] .crewlet-add-pill[data-layout='split'] {
   --crewlet-add-pill-origin: translate(calc(var(--size-target-min) / -2), -50%);
+}
+
+.crewlet-org-table__add[data-placement='name'] .crewlet-add-pill__sections {
+  z-index: var(--z-index-raised);
 }

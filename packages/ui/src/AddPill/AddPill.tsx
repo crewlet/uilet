@@ -223,6 +223,10 @@ export function AddPill({
       data-layout={layout}
       ref={group}
       onBlur={onBlur}
+      // ENTER AND LEAVE ARE THE SAME BOX'S: the mark takes no pointer while the
+      // pill is open, so an enter heard on the mark alone could not bring back a
+      // pill that was closing under the pointer.
+      onMouseEnter={() => setPhase((was) => (was === 'locked' ? was : 'preview'))}
       onMouseLeave={() => {
         if (phase === 'preview') close(false);
       }}
@@ -236,7 +240,6 @@ export function AddPill({
         tabIndex={tabIndex}
         ref={mark}
         onKeyDown={onKeyDown}
-        onMouseEnter={() => setPhase((was) => (was === 'locked' ? was : 'preview'))}
         onClick={press}
       >
         {/* THE DISC, as an element for the reason the dividers are: it is the

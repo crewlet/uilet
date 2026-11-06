@@ -354,8 +354,8 @@ export interface OrgTableAddProps extends AddPillProps {
   onOpen?: (() => void) | undefined;
   /**
    * `end` (the default) holds the open pill's room at the row's end. `name`
-   * stands beside a name (`OrgLabel` `nameAction`): closed it takes its mark's
-   * room alone, and open it takes the room it opens into, toward the row's end.
+   * stands beside a name (`OrgLabel` `nameAction`) and takes its mark's room
+   * alone, open or closed, so opening moves nothing: the pill opens over the row.
    */
   placement?: 'end' | 'name' | undefined;
 }
