@@ -86,6 +86,22 @@ describe('Skeleton', () => {
     expect([...periods]).toEqual(['calc(var(--motion-duration-slow) * 5)']);
   });
 
+  test('no animation moves a layout property', () => {
+    // A keyframe on left laid the box out on every frame and recorded a layout
+    // shift each time, for as long as anything was loading.
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Skeleton.css'), 'utf8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    const frames = [...css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)];
+    expect(frames.length).toBeGreaterThan(0);
+    for (const [, name, body] of frames) {
+      const properties = [...body!.matchAll(/([\w-]+)\s*:/g)].map((match) => match[1]);
+      for (const property of properties)
+        expect(property, name).not.toMatch(/^(left|right|top|bottom|inset.*|width|height|margin.*|padding.*)$/);
+    }
+  });
+
   test('carries no axe violation', async () => {
     const { container } = render(
       <main>
