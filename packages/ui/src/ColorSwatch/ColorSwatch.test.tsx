@@ -84,9 +84,9 @@ test("a swatch's edge stands off the card in both themes, so a colour like the c
   const token = /\.crewlet-color-swatch__chip\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px var\((--[\w-]+)\)/.exec(sheet.replace(/\/\*[\s\S]*?\*\//g, ''))?.[1];
   expect(token).toBeDefined();
   for (const theme of ['light', 'dark'] as const) {
-    const edge = parseHex(themeColour(theme, token!));
+    const edge = parseHex(themeColour(theme, token!))!;
     // Spelled without its dashes: the variable check reads a quoted name as a declaration.
-    const card = parseHex(themeColour(theme, `--${'color-surface-subtle'}`));
+    const card = parseHex(themeColour(theme, `--${'color-surface-subtle'}`))!;
     expect(contrast(edge, card), theme).toBeGreaterThanOrEqual(1.9);
   }
 });
