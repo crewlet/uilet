@@ -4,6 +4,9 @@
  * handed back once Clear takes the bar away.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useRef, useState } from 'react';
@@ -112,4 +115,17 @@ test('carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test('compact says so, and stands a small control tall where the bar is not docked', () => {
+  const { container } = render(
+    <SelectionBar count={2} onClear={() => {}} size="compact">
+      <button type="button">Pause</button>
+    </SelectionBar>,
+  );
+  expect(container.querySelector('.crewlet-selection-bar--compact')).not.toBeNull();
+  const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SelectionBar.css'), 'utf8');
+  expect(sheet).toMatch(
+    /@media \(width >= 640px\) \{\s*\.crewlet-toolbar\.crewlet-selection-bar--compact \{\s*min-height: calc\(var\(--size-control-sm\) \+ 2px\);/,
+  );
 });
