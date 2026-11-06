@@ -9,12 +9,12 @@ import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import axe from 'axe-core';
-import { useState } from 'react';
+import { createRef, useState } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import type { SheetCellPresence, SheetColumn, SheetEdit, SheetRow, SheetSort } from '../SheetModel/index.js';
 import { installAtWidth } from '../../../../apps/ui-tests/src/cascade.js';
 import { placeListPanel } from './cells.js';
-import { SheetGrid, type SheetGridProps } from './index.js';
+import { SheetGrid, type SheetGridHandle, type SheetGridProps } from './index.js';
 
 afterEach(cleanup);
 
@@ -959,4 +959,33 @@ describe('a list editor leaves the grid', () => {
     });
     expect(room).toBe(900 - 4 - 160);
   });
+});
+
+test('a host moves the cursor through the handle, to a row it has just added', () => {
+  // With no way to place the cursor, a row added from Add row left focus on
+  // the button, and typing reached the page's shortcuts.
+  const handle = createRef<SheetGridHandle>();
+  function Adding() {
+    const [rows, setRows] = useState(initial);
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => {
+            setRows((before) => [...before, { id: 'hooli', values: { vendor: 'Hooli' } }]);
+            handle.current?.focusCell({ rowId: 'hooli', field: 'vendor' });
+          }}
+        >
+          Add a vendor
+        </button>
+        <SheetGrid ref={handle} label="Vendor scorecard" columns={columns} rows={rows} people={people} onEdit={() => {}} />
+      </>
+    );
+  }
+  render(<Adding />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add a vendor' }));
+  expect(focused().getAttribute('role')).toBe('gridcell');
+  expect(focused().textContent).toContain('Hooli');
+  act(() => handle.current?.focusCell({ rowId: 'acme', field: 'vendor' }));
+  expect(focused().textContent).toContain('Acme Corp');
 });
