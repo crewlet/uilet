@@ -36,6 +36,7 @@ import {
 } from 'react';
 import { ChevronDownGlyph, ChevronUpGlyph } from '@crewlethq/icons/glyphs';
 import { AddPill, type AddPillProps } from '../AddPill/index.js';
+import { Checkbox } from '../Checkbox/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { OrgLabel, type OrgLabelContent } from '../OrgLabel/index.js';
 import {
@@ -71,6 +72,19 @@ const LABELS: Pick<OrgTableLabels, 'expandAll' | 'collapseAll'> = {
   collapseAll: 'Collapse all',
 };
 
+/** A select box before each row's name: see [OrgTableProps.selection]. */
+export interface OrgTableSelection {
+  /**
+   * Whether a row is picked: `true`, `false`, `'mixed'` for a group only some
+   * of whose rows are picked, or `null` for a row with no box.
+   */
+  checked: (id: string) => boolean | 'mixed' | null;
+  /** The box's accessible name: "Select Product Lead", "Select every agent in Engineering". */
+  label: (id: string) => string;
+  /** A press on a row's box, with the state it asks for. */
+  onCheckedChange: (id: string, checked: boolean) => void;
+}
+
 export interface OrgTableProps extends Omit<TreeGridProps, 'className' | 'labels' | 'ref'> {
   /**
    * The hue this row is marked with, or nothing for a neutral row. Asked per
@@ -83,6 +97,11 @@ export interface OrgTableProps extends Omit<TreeGridProps, 'className' | 'labels
    * walk a level at a time.
    */
   controls?: boolean | undefined;
+  /**
+   * A select box before each row's name, after its indent, in a slot every row
+   * keeps so the names stay in line whichever rows have a box.
+   */
+  selection?: OrgTableSelection | undefined;
   labels?: Partial<OrgTableLabels> | undefined;
   ref?: Ref<TreeViewHandle> | undefined;
   className?: string | undefined;
@@ -93,6 +112,9 @@ export function OrgTable({
   renderCell,
   tone,
   controls = true,
+  selection,
+  cellHasControl,
+  layout = 'scroll',
   labels,
   ref,
   className,
@@ -107,6 +129,8 @@ export function OrgTable({
    * from the same model.
    */
   const tree = useMemo(() => createTreeModel(rows), [rows]);
+  // A tree four levels deep or more steps its indent in sooner as it narrows.
+  const deep = useMemo(() => Math.max(0, ...tree.depth.values()) >= 3, [tree]);
 
   const grid = useRef<TreeViewHandle | null>(null);
   useImperativeHandle(
@@ -141,15 +165,28 @@ export function OrgTable({
             trunk={depth > 0 || open}
             last={!open && lastUnderRoot(tree, id)}
           />
+          {selection && <OrgTableSelect id={id} selection={selection} context={context} />}
           {renderCell(id, column, context)}
         </>
       );
     },
-    [tree, renderCell, tone],
+    [tree, renderCell, tone, selection],
+  );
+
+  // A row's box is a control in its first cell, so the cell hands its tab stop to it.
+  const hasControl = useCallback(
+    (id: string, column: number, key: string) =>
+      (column === 1 && selection !== undefined && selection.checked(id) !== null) ||
+      (cellHasControl?.(id, column, key) ?? false),
+    [selection, cellHasControl],
   );
 
   return (
-    <div className={cx('crewlet-org-table', className)}>
+    <div
+      className={cx('crewlet-org-table', layout === 'container' && 'crewlet-org-table--container', className)}
+      data-select={selection ? '' : undefined}
+      data-deep={deep ? '' : undefined}
+    >
       {controls && (
         /*
          * THE CHEVRONS THE ROWS THEMSELVES TURN, pointed at every row at once.
@@ -180,7 +217,9 @@ export function OrgTable({
         {...rest}
         ref={grid}
         rows={rows}
+        layout={layout}
         renderCell={cell}
+        cellHasControl={hasControl}
         labels={labels}
         className="crewlet-org-table__grid"
       />
@@ -199,6 +238,34 @@ function lastUnderRoot(tree: TreeModel, id: string): boolean {
     if (siblings[siblings.length - 1] !== at) return false;
   }
   return true;
+}
+
+/** A row's select box, in the slot every row keeps; a press on it is the box's, not the row's. */
+function OrgTableSelect({
+  id,
+  selection,
+  context,
+}: {
+  id: string;
+  selection: OrgTableSelection;
+  context: TreeGridContext;
+}) {
+  const checked = selection.checked(id);
+  return (
+    <span className="crewlet-org-table__select">
+      {checked !== null && (
+        <Checkbox
+          hideLabel
+          label={selection.label(id)}
+          checked={checked === true}
+          indeterminate={checked === 'mixed'}
+          tabIndex={context.tabStop(id, 1) ? 0 : -1}
+          onClick={() => context.opened(id, 1)}
+          onCheckedChange={(next) => selection.onCheckedChange(id, next)}
+        />
+      )}
+    </span>
+  );
 }
 
 /**

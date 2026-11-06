@@ -689,3 +689,142 @@ test('a strip drawn at rest says so, and the sheet shows it without a hover', ()
   expect(screen.getByRole('button', { name: 'Delete' }).parentElement?.hasAttribute('data-shown')).toBe(false);
   expect(SHEET).toMatch(/\.crewlet-org-table__actions\[data-shown\],[^{]*\{\s*opacity: 1;/);
 });
+
+describe('a selection column', () => {
+  const PICKED: Record<string, boolean | 'mixed' | null> = { company: 'mixed', 'unit:eng': true, 'seat:dev': false };
+  function mountPicking(onSelect = vi.fn(), picked: Record<string, boolean | 'mixed' | null> = PICKED) {
+    const changed = vi.fn<(id: string, checked: boolean) => void>();
+    render(
+      <OrgTable
+        label="Organization"
+        columns={COLUMNS}
+        rows={ROWS}
+        onSelect={onSelect}
+        selection={{
+          checked: (id) => picked[id] ?? null,
+          label: (id) => `Select ${id}`,
+          onCheckedChange: changed,
+        }}
+        renderCell={(id, column) => (column === 1 ? <OrgTableName icon={<svg />} name={id} caption="Unit" /> : null)}
+      />,
+    );
+    return { changed, onSelect };
+  }
+  const box = (id: string) => within(row(id)).queryByRole('checkbox');
+
+  test('every row keeps the slot, and a row with no box leaves it empty', () => {
+    mountPicking(vi.fn(), { ...PICKED, 'seat:dev': null });
+    for (const id of ['company', 'unit:eng', 'seat:dev']) {
+      expect(row(id).querySelectorAll('.crewlet-org-table__select')).toHaveLength(1);
+    }
+    expect(box('seat:dev')).toBeNull();
+    expect(box('unit:eng')).not.toBeNull();
+  });
+
+  test('a box says its row, its state and a group picked in part', () => {
+    mountPicking();
+    expect(screen.getByRole('checkbox', { name: 'Select unit:eng' })).toHaveProperty('checked', true);
+    const mixed = screen.getByRole('checkbox', { name: 'Select company' }) as HTMLInputElement;
+    expect(mixed.indeterminate).toBe(true);
+    expect(mixed.checked).toBe(false);
+    // The box sits after the indent and before the name.
+    const cell = row('seat:dev').querySelector("[role='gridcell']")!;
+    const order = [...cell.children].map((child) => child.className.split(' ')[0]);
+    expect(order.indexOf('crewlet-org-table__wire')).toBeLessThan(order.indexOf('crewlet-org-table__select'));
+    expect(order.indexOf('crewlet-org-table__select')).toBeLessThan(order.indexOf('crewlet-org-label'));
+  });
+
+  test('a press on a box belongs to the box: it asks for the new state and does not choose the row', () => {
+    const { changed, onSelect } = mountPicking();
+    fireEvent.click(box('seat:dev')!);
+    expect(changed).toHaveBeenCalledWith('seat:dev', true);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  test('the box is the control of the first cell: out of the tab order until Right reaches it', () => {
+    mountPicking();
+    expect(box('unit:eng')!.tabIndex).toBe(-1);
+    act(() => row('unit:eng').focus());
+    fireEvent.keyDown(row('unit:eng'), { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(box('unit:eng'));
+    expect(box('unit:eng')!.tabIndex).toBe(0);
+  });
+
+  test('the name heading stands over the names, with and without the slot', () => {
+    const uninstall = installSheets('TreeGrid/TreeGrid.css', 'OrgTable/OrgTable.css', 'OrgLabel/OrgLabel.css');
+    try {
+      mountPicking();
+      const heading = screen.getAllByRole('columnheader')[0]!;
+      const root = row('company');
+      const cell = root.querySelector<HTMLElement>("[role='gridcell']")!;
+      const gap = px(cell, 'gap');
+      const toggle = px(root.querySelector('.crewlet-tree-grid__toggle')!, 'width');
+      const slot = px(root.querySelector('.crewlet-org-table__select')!, 'width');
+      const zone = px(root.querySelector('.crewlet-org-label__icon')!, 'width');
+      const label = px(root.querySelector('.crewlet-org-label')!, 'gap');
+      // The inset, the chevron, the root's empty wire with a gap either side, the slot and its gap, the mark and its gap.
+      expect(px(heading, 'padding-inline-start')).toBe(
+        px(cell, 'padding-inline-start') + toggle + gap * 2 + slot + gap + zone + label,
+      );
+      expect(slot).toBe(24);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('without a selection the heading stands over the names one slot sooner, and no row keeps a slot', () => {
+    const uninstall = installSheets('TreeGrid/TreeGrid.css', 'OrgTable/OrgTable.css', 'OrgLabel/OrgLabel.css');
+    try {
+      render(
+        <OrgTable
+          label="Organization"
+          columns={COLUMNS}
+          rows={ROWS}
+          renderCell={(id, column) => (column === 1 ? <OrgTableName icon={<svg />} name={id} caption="Unit" /> : null)}
+        />,
+      );
+      const root = row('company');
+      expect(root.querySelector('.crewlet-org-table__select')).toBeNull();
+      const cell = root.querySelector<HTMLElement>("[role='gridcell']")!;
+      const gap = px(cell, 'gap');
+      const toggle = px(root.querySelector('.crewlet-tree-grid__toggle')!, 'width');
+      const zone = px(root.querySelector('.crewlet-org-label__icon')!, 'width');
+      const label = px(root.querySelector('.crewlet-org-label')!, 'gap');
+      expect(px(screen.getAllByRole('columnheader')[0]!, 'padding-inline-start')).toBe(
+        px(cell, 'padding-inline-start') + toggle + gap * 2 + zone + label,
+      );
+    } finally {
+      uninstall();
+    }
+  });
+});
+
+describe('a container-width table', () => {
+  test('it says so, and a deep tree says that too', () => {
+    const deep: readonly TreeInput[] = [
+      { id: 'a', label: 'A', children: [{ id: 'b', label: 'B', children: [{ id: 'c', label: 'C', children: [{ id: 'd', label: 'D' }] }] }] },
+    ];
+    const { container, rerender } = render(
+      <OrgTable label="Organization" layout="container" columns={COLUMNS} rows={ROWS} renderCell={() => null} />,
+    );
+    const root = container.querySelector('.crewlet-org-table')!;
+    expect(root.className).toContain('crewlet-org-table--container');
+    expect(root.querySelector('.crewlet-tree-grid')!.className).toContain('crewlet-tree-grid--container');
+    expect(root.hasAttribute('data-deep')).toBe(false);
+    rerender(<OrgTable label="Organization" layout="container" columns={COLUMNS} rows={deep} renderCell={() => null} />);
+    expect(root.hasAttribute('data-deep')).toBe(true);
+  });
+
+  test('its indent steps in as it narrows, one width sooner in a deep tree', () => {
+    expect(rule(SHEET, '.crewlet-org-table--container')).toMatch(/container: crewlet-org-table \/ inline-size;/);
+    expect(SHEET).toMatch(
+      /@container crewlet-org-table \(width < 60rem\) \{\s*\.crewlet-org-table__grid \{\s*--crewlet-org-table-indent: var\(--spacing-5\);/,
+    );
+    expect(SHEET).toMatch(
+      /@container crewlet-org-table \(width < 40rem\) \{\s*\.crewlet-org-table__grid \{\s*--crewlet-org-table-indent: var\(--spacing-3\);/,
+    );
+    expect(rule(SHEET, '.crewlet-org-table--container[data-deep] .crewlet-org-table__grid')).toMatch(
+      /--crewlet-org-table-indent: var\(--spacing-5\);/,
+    );
+  });
+});

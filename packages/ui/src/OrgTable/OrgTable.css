@@ -90,10 +90,58 @@
    * reader scans said "SR…" and, on one row, nothing at all.
    */
   --crewlet-tree-grid-min-width: 60rem;
+  /* Where a root row's name begins in its cell: the inset, the chevron, the
+     root's empty wire with a gap either side, and the row's mark. */
+  --crewlet-org-table-name-start: calc(var(--spacing-2) * 4 + var(--size-control-sm) * 2);
   display: flex;
   flex-direction: column;
   align-items: stretch;
   min-width: 0;
+}
+
+/* THE NAME COLUMN'S HEADING STANDS OVER THE NAMES, not over the chevrons. */
+.crewlet-org-table [role='columnheader'][aria-colindex='1'] {
+  padding-inline-start: var(--crewlet-org-table-name-start);
+}
+
+/* With a select box, the names start one slot and one gap further in. */
+.crewlet-org-table[data-select] [role='columnheader'][aria-colindex='1'] {
+  padding-inline-start: calc(var(--crewlet-org-table-name-start) + var(--size-target-min) + var(--spacing-2));
+}
+
+/* THE SELECT BOX'S SLOT, kept on every row, so a row with no box keeps its name in line. */
+.crewlet-org-table__select {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-target-min);
+}
+
+/* A CONTAINER-WIDTH TABLE steps its indent in as it narrows, so a nested
+   name keeps its room; a tree four levels deep steps in one width sooner. */
+.crewlet-org-table--container {
+  container: crewlet-org-table / inline-size;
+}
+
+.crewlet-org-table--container[data-deep] .crewlet-org-table__grid {
+  --crewlet-org-table-indent: var(--spacing-5);
+}
+
+@container crewlet-org-table (width < 60rem) {
+  .crewlet-org-table__grid {
+    --crewlet-org-table-indent: var(--spacing-5);
+  }
+
+  .crewlet-org-table--container[data-deep] .crewlet-org-table__grid {
+    --crewlet-org-table-indent: var(--spacing-3);
+  }
+}
+
+@container crewlet-org-table (width < 40rem) {
+  .crewlet-org-table__grid {
+    --crewlet-org-table-indent: var(--spacing-3);
+  }
 }
 
 /*

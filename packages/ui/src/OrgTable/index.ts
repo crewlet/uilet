@@ -6,5 +6,6 @@ export type {
   OrgTableLabels,
   OrgTableNameProps,
   OrgTableProps,
+  OrgTableSelection,
   OrgTableTone,
 } from './OrgTable.js';

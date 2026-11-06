@@ -8,6 +8,7 @@ import {
   OrgTableAdd,
   OrgTableName,
   Tag,
+  type OrgTableSelection,
   type OrgTableTone,
   type TreeGridColumn,
   type TreeGridContext,
@@ -280,6 +281,105 @@ export const ActionsAtRest: Story = {
   render: () => (
     <BothThemes>
       <Demo shown />
+    </BothThemes>
+  ),
+};
+
+/** Every seat under a row, the row itself for a seat. */
+function seatsUnder(id: string): string[] {
+  const entity = ENTITIES[id]!;
+  if (entity.kind === 'agent' || entity.kind === 'human') return [id];
+  return Object.keys(ENTITIES)
+    .filter((child) => ENTITIES[child]!.parent === id)
+    .flatMap(seatsUnder);
+}
+
+/** The agents a row's box picks: a seat's own, or every agent a team or the company holds. */
+const agentsUnder = (id: string) => seatsUnder(id).filter((seat) => ENTITIES[seat]!.kind === 'agent');
+
+const LIVE_COLUMNS: TreeGridColumn[] = [
+  { key: 'name', header: 'Name', width: 'minmax(14rem, 3fr)' },
+  { key: 'lead', header: 'Reports to', width: 'minmax(9rem, 1.2fr)', hideBelow: 760 },
+  { key: 'problems', header: 'Problems', width: 'minmax(6.5rem, 1fr)', hideBelow: 640 },
+  { key: 'actions', header: 'Edit', width: 'calc(var(--crewlet-org-table-strip) + var(--spacing-2) * 2)' },
+];
+
+/** A container-width table with a box before every name that can pick an agent. */
+function Picking() {
+  const rows = useMemo(forest, []);
+  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set(['seat:dev']));
+  const selection: OrgTableSelection = {
+    checked: (id) => {
+      const agents = agentsUnder(id);
+      if (agents.length === 0) return null;
+      const on = agents.filter((agent) => picked.has(agent)).length;
+      return on === 0 ? false : on === agents.length ? true : 'mixed';
+    },
+    label: (id) =>
+      ENTITIES[id]!.kind === 'agent' ? `Select ${ENTITIES[id]!.name}` : `Select every agent in ${ENTITIES[id]!.name}`,
+    onCheckedChange: (id, on) =>
+      setPicked((was) => {
+        const next = new Set(was);
+        for (const agent of agentsUnder(id)) {
+          if (on) next.add(agent);
+          else next.delete(agent);
+        }
+        return next;
+      }),
+  };
+  const cell = (id: string, column: number, grid: TreeGridContext) => {
+    const entity = ENTITIES[id]!;
+    const key = grid.columnKey(column);
+    if (key === 'name') {
+      const seat = entity.kind === 'agent' || entity.kind === 'human';
+      const caption = grid.shown('lead') || !entity.lead ? entity.caption : `${entity.caption} · ${entity.lead}`;
+      return seat ? (
+        <OrgTableName avatar={{ name: entity.name, kind: entity.kind as 'agent' | 'human' }} name={entity.name} caption={caption} tone={entity.tone} />
+      ) : (
+        <OrgTableName icon={entity.kind === 'company' ? <BuildingComplexGlyph /> : <NetworkGlyph />} name={entity.name} caption={caption} tone={entity.tone} />
+      );
+    }
+    if (key === 'lead') return entity.lead ?? '';
+    if (key === 'problems') return entity.problems ? <Tag variant="danger">{entity.problems} problem</Tag> : null;
+    return (
+      <OrgTableActions shown>
+        <IconButton size="sm" label={`Edit ${entity.name}`} icon={<PencilGlyph />} tabIndex={grid.tabStop(id, column) ? 0 : -1} />
+      </OrgTableActions>
+    );
+  };
+  return (
+    <div style={{ display: 'grid', gap: 'var(--spacing-2)' }}>
+      <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>{picked.size} picked</span>
+      <OrgTable
+        label="Organization"
+        layout="container"
+        controls={false}
+        columns={LIVE_COLUMNS}
+        rows={rows}
+        tone={(id) => ENTITIES[id]?.tone}
+        selection={selection}
+        cellHasControl={(_id, _column, key) => key === 'actions'}
+        renderCell={cell}
+      />
+    </div>
+  );
+}
+
+/**
+ * A select box before every name (`selection`), after the row's indent, in a
+ * slot every row keeps: a team's or the company's box picks every agent it
+ * holds and shows a part pick as mixed, and a person's row keeps the slot
+ * empty so the names stay in line. The table fits its container
+ * (`layout="container"`): drag a box's corner and the columns its width
+ * cannot hold are left out, Reports to moving into the caption, while the
+ * indent steps in so a nested name keeps its room.
+ */
+export const SelectionAndContainerWidth: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ resize: 'horizontal', overflow: 'auto', width: 880, minWidth: 320, maxWidth: '100%' }}>
+        <Picking />
+      </div>
     </BothThemes>
   ),
 };
