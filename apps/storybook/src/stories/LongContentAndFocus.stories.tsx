@@ -63,11 +63,11 @@ export const DeliveryReceiptManyFollowers: Story = {
 export const PersonRowLongNames: Story = {
   render: () => (
     <BothThemes>
-      <ul role="listbox" aria-label="Mention" style={{ maxWidth: 420, margin: 0, padding: 0 }}>
+      <ul role="listbox" aria-label="Mention" style={{ maxWidth: 420, margin: 0, padding: 0, contain: 'inline-size' }}>
         <PersonRow as="option" density="compact" avatar={<Avatar name={LONG_AGENT} size="xs" />} name={LONG_AGENT} detail="@accessibility-auditor" />
         <PersonRow as="option" density="compact" avatar={<Avatar name="Ada Byron" kind="human" size="xs" />} name="Ada Byron" detail="@ada" />
       </ul>
-      <div style={{ maxWidth: 420 }}>
+      <div style={{ maxWidth: 420, contain: 'inline-size' }}>
         <PersonRow
           avatar={<Avatar name={LONG_AGENT} size="sm" />}
           name={LONG_AGENT}
@@ -229,7 +229,8 @@ export const RoomRowLongNameNarrow: Story = {
 export const ChartLabelsLong: Story = {
   render: () => (
     <BothThemes>
-      <div style={{ maxWidth: 360, display: 'grid', gap: 16 }}>
+      {/* Sized by the panel, as a page section is, not by its longest label. */}
+      <div style={{ maxWidth: 360, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 16, contain: 'inline-size' }}>
         <BarList
           data={[
             { id: 'a', label: LONG_UNIT, value: 4120 },
