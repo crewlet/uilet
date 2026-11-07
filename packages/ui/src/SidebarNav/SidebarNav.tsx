@@ -36,7 +36,7 @@
  * own prop types, so one list of places feeds both shapes.
  */
 
-import { createContext, useContext, useId, useState, type MouseEventHandler, type ReactNode } from 'react';
+import { createContext, useContext, useId, useState, type KeyboardEvent, type MouseEventHandler, type ReactNode } from 'react';
 import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { KeyChip } from '../KeyChip/index.js';
@@ -53,13 +53,14 @@ export interface SidebarNavProps {
    */
   label: string;
   /**
-   * A list read in passing that runs long (a room list, a directory), drawn a
-   * step denser than the application's navigation: rows at the target floor
-   * (24px), the gutter halved so a row's highlight runs nearly from edge to
-   * edge, the row's pad grown by the same step so every glyph and name keeps
-   * the line it was on, a glyph slot as wide as a small face so faces and
-   * glyphs share one column, and names in the regular weight, which is what
-   * lets an `unread` row stand out by weight alone.
+   * A list read in passing that runs long (a room list, a directory), drawn
+   * as one even column: 28px rows with no gap between them, the highlight
+   * inset by the gutter, a glyph slot as wide as a small face so faces and
+   * glyphs share one column, the rows under a named group indented a step
+   * under its heading, names in the regular weight (which is what lets an
+   * `unread` row stand out by weight alone), and a hover that is drawn at
+   * once. The arrow keys move between its rows and headings; Home and End
+   * go to the first and the last.
    */
   dense?: boolean | undefined;
   className?: string | undefined;
@@ -93,6 +94,14 @@ export interface NavGroupProps {
    * rail spent on nothing.
    */
   label?: ReactNode;
+  /**
+   * The group's glyph, in the glyph column of its heading. In a collapsible
+   * group it gives way to the chevron while the heading is pointed at or
+   * focused, and while the group is folded, so the slot says what the group
+   * is at rest and how it folds when the reader reaches for it. Decoration:
+   * the label names the group.
+   */
+  icon?: ReactNode;
   /**
    * A control at the end of the heading. It is a sibling of the heading's
    * words rather than part of them, so the group is still named by its label
@@ -281,10 +290,50 @@ export interface NavItemProps {
   className?: string | undefined;
 }
 
+/** What the arrow keys step through in a dense list: its rows and its folding headings. */
+const DENSE_STOPS = '.crewlet-nav-item__row, .crewlet-nav-group__toggle';
+
+/**
+ * The arrow keys in a dense list: Down and Up to the next and the previous
+ * row or heading, Home and End to the first and the last. ADDITIVE: every row
+ * stays in the tab order, so Tab and a heading's own control work as before,
+ * and a press with a modifier is left to the page (Alt with an arrow is a
+ * common chat shortcut for the next room).
+ */
+function moveInDense(event: KeyboardEvent<HTMLElement>): void {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  const stops = [...event.currentTarget.querySelectorAll<HTMLElement>(DENSE_STOPS)].filter(
+    (stop) => stop.closest('[hidden]') === null,
+  );
+  const at = stops.indexOf(event.target as HTMLElement);
+  if (at < 0) return;
+  const last = stops.length - 1;
+  const next =
+    event.key === 'ArrowDown'
+      ? Math.min(last, at + 1)
+      : event.key === 'ArrowUp'
+        ? Math.max(0, at - 1)
+        : event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? last
+            : -1;
+  if (next < 0) return;
+  // Answered, so the list's scroller does not also move under the arrow.
+  event.preventDefault();
+  stops[next]!.focus();
+}
+
 /** The navigation region in the rail. */
 export function SidebarNav({ label, dense = false, className, children }: SidebarNavProps) {
   return (
-    <nav className={cx('crewlet-sidebar-nav', dense && 'crewlet-sidebar-nav--dense', className)} aria-label={label}>
+    // The keys are its links' and buttons', handled where they bubble to.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    <nav
+      className={cx('crewlet-sidebar-nav', dense && 'crewlet-sidebar-nav--dense', className)}
+      aria-label={label}
+      onKeyDown={dense ? moveInDense : undefined}
+    >
       {children}
     </nav>
   );
@@ -301,6 +350,7 @@ export function SidebarNav({ label, dense = false, className, children }: Sideba
  */
 export function NavGroup({
   label,
+  icon,
   action,
   locked,
   collapsible = false,
@@ -328,6 +378,8 @@ export function NavGroup({
     <div
       className={cx(
         'crewlet-nav-group',
+        named && 'crewlet-nav-group--named',
+        named && icon ? 'crewlet-nav-group--iconic' : undefined,
         groupLocked && 'crewlet-nav-group--locked',
         folded && 'crewlet-nav-group--collapsed',
         className,
@@ -357,15 +409,25 @@ export function NavGroup({
               aria-expanded={!folded}
               onClick={toggle}
             >
-              <span className="crewlet-nav-group__chevron" aria-hidden>
-                <ChevronDownGlyph size="xs" />
+              <span className="crewlet-nav-group__slot" aria-hidden>
+                {icon ? <span className="crewlet-nav-group__icon">{icon}</span> : null}
+                <span className="crewlet-nav-group__chevron">
+                  <ChevronDownGlyph size="xs" />
+                </span>
               </span>
               <span className="crewlet-nav-group__label">{words}</span>
             </button>
           ) : named ? (
-            <span className="crewlet-nav-group__label" id={id}>
-              {words}
-            </span>
+            <>
+              {icon ? (
+                <span className="crewlet-nav-group__slot" aria-hidden>
+                  <span className="crewlet-nav-group__icon">{icon}</span>
+                </span>
+              ) : null}
+              <span className="crewlet-nav-group__label" id={id}>
+                {words}
+              </span>
+            </>
           ) : null}
           {action ? (
             <button type="button" className="crewlet-nav-group__action" aria-label={action.label} onClick={action.onClick}>

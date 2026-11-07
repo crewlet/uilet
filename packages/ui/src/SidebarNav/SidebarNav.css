@@ -130,16 +130,54 @@
   color: inherit;
 }
 
-.crewlet-nav-group__chevron {
-  display: inline-flex;
+/*
+ * THE HEADING'S GLYPH COLUMN: a nav glyph's 14px, holding the chevron and, in
+ * a group with a glyph of its own (`icon`), that glyph on the same spot.
+ */
+.crewlet-nav-group__slot {
+  display: inline-grid;
   flex: none;
-  margin: 0 calc((14px - 12px) / 2);
-  transition: transform var(--motion-duration-fast) var(--motion-easing-default);
+  place-items: center;
+  width: 14px;
+}
+
+.crewlet-nav-group__slot > * {
+  display: inline-flex;
+  grid-area: 1 / 1;
+}
+
+.crewlet-nav-group__chevron {
+  transition:
+    transform var(--motion-duration-fast) var(--motion-easing-default),
+    opacity var(--motion-duration-instant) var(--motion-easing-default);
+}
+
+.crewlet-nav-group__icon {
+  transition: opacity var(--motion-duration-instant) var(--motion-easing-default);
 }
 
 /* Folded, the chevron points at the words it would open. */
 .crewlet-nav-group--collapsed .crewlet-nav-group__chevron {
   transform: rotate(-90deg);
+}
+
+/*
+ * A GROUP WITH A GLYPH shows it at rest, and the chevron takes its spot while
+ * the heading is pointed at or focused, and while the group is folded, so a
+ * folded group still says so at a glance.
+ */
+.crewlet-nav-group--iconic .crewlet-nav-group__chevron {
+  opacity: 0;
+}
+
+.crewlet-nav-group--iconic.crewlet-nav-group--collapsed .crewlet-nav-group__chevron,
+.crewlet-nav-group--iconic .crewlet-nav-group__head:is(:hover, :focus-within) .crewlet-nav-group__chevron {
+  opacity: 1;
+}
+
+.crewlet-nav-group--iconic.crewlet-nav-group--collapsed .crewlet-nav-group__toggle .crewlet-nav-group__icon,
+.crewlet-nav-group--iconic .crewlet-nav-group__head:is(:hover, :focus-within) .crewlet-nav-group__toggle .crewlet-nav-group__icon {
+  opacity: 0;
 }
 
 /* The heading's control. Pushed to the end whether or not the heading has
@@ -508,44 +546,119 @@
 }
 
 /*
- * THE DENSE LIST (`dense`): a list read in passing that runs long, a step
- * denser than the application's navigation.
+ * THE DENSE LIST (`dense`): a list read in passing that runs long, drawn as
+ * one even column.
  *
- * Its rows stand at the 24px target floor, the gutter is halved so a row's
- * highlight runs nearly from edge to edge (a long bar rather than a pill), and
- * the row's pad grows by exactly what the gutter gave up, so every glyph and
- * name stays on the line it was on, whatever the surface set the two tokens
- * to. The glyph column is as wide as a small face (an `Avatar` at `xs`), so a
- * face, a glyph and a group's count stand in one column and every name starts
- * on one line. Names are set in the regular weight, a step lighter than the
- * navigation's, which is what lets an unread row stand out by weight.
+ * ROWS ON A 28px PITCH WITH NOTHING BETWEEN THEM (the target floor and a
+ * step), so a long list reads as a column rather than a stack of pills, and
+ * the highlight is inset by the gutter on both sides, at the small radius. The
+ * glyph column is as wide as a small face (an `Avatar` at `xs`), so a face, a
+ * glyph and a group's count stand in one column and every name starts on one
+ * line; names are at the chat's word step in the regular weight, which is
+ * what lets an unread row stand out by weight.
+ *
+ * THE ROWS UNDER A NAMED GROUP STAND A STEP IN from its heading, whose glyph
+ * column is the plain rows' (the views above the groups), so a room reads as
+ * a child of its section without a guide line.
+ *
+ * A POINTED ROW IS DRAWN AT ONCE. In a list scanned by moving the pointer down
+ * it, a fade trails the pointer by a row.
  */
 .crewlet-sidebar-nav--dense {
-  --crewlet-nav-dense-pad: calc(var(--size-nav-row-pad) + var(--size-nav-gutter) - var(--spacing-1));
+  --crewlet-nav-dense-row: calc(var(--spacing-6) + var(--spacing-1));
+  --crewlet-nav-dense-pad: var(--spacing-2);
+  --crewlet-nav-dense-indent: var(--spacing-4);
   --crewlet-nav-dense-slot: 20px;
-  padding-right: var(--spacing-1);
-  padding-left: var(--spacing-1);
+  gap: 0;
+  padding-right: var(--size-nav-gutter);
+  padding-left: var(--size-nav-gutter);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-group {
+  --crewlet-nav-row-gap: 0px;
+  gap: 0;
 }
 
 .crewlet-sidebar-nav--dense .crewlet-nav-item__row {
-  min-height: var(--size-target-min);
+  min-height: var(--crewlet-nav-dense-row);
   padding-right: var(--crewlet-nav-dense-pad);
   padding-left: var(--crewlet-nav-dense-pad);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-regular);
+  transition-property: none;
 }
 
-.crewlet-sidebar-nav--dense .crewlet-nav-group__head {
-  padding-right: calc(var(--crewlet-nav-dense-pad) - (var(--size-target-min) - 14px) / 2);
-  padding-left: var(--crewlet-nav-dense-pad);
+.crewlet-sidebar-nav--dense .crewlet-nav-group--named > .crewlet-nav-item > .crewlet-nav-item__head > .crewlet-nav-item__row {
+  padding-left: calc(var(--crewlet-nav-dense-pad) + var(--crewlet-nav-dense-indent));
 }
 
-.crewlet-sidebar-nav--dense .crewlet-nav-item__icon {
+.crewlet-sidebar-nav--dense .crewlet-nav-item__icon,
+.crewlet-sidebar-nav--dense .crewlet-nav-group__slot {
   min-width: var(--crewlet-nav-dense-slot);
 }
 
-.crewlet-sidebar-nav--dense .crewlet-nav-group__chevron {
-  margin-right: calc((var(--crewlet-nav-dense-slot) - 12px) / 2);
-  margin-left: calc((var(--crewlet-nav-dense-slot) - 12px) / 2);
+/*
+ * THE HEADING is a row of the list: the row's height, its pad and its type
+ * step, in the medium weight and the secondary ink, 10px below the run above.
+ * A heading that folds is pressed anywhere along it and takes the pointed
+ * fill at once, at the extra-small radius so it reads as a heading rather
+ * than a destination.
+ */
+.crewlet-sidebar-nav--dense .crewlet-nav-group__head {
+  min-height: var(--crewlet-nav-dense-row);
+  margin-top: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  padding-right: calc(var(--crewlet-nav-dense-pad) - (var(--size-target-min) - 14px) / 2);
+  padding-left: var(--crewlet-nav-dense-pad);
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-group__head:has(> .crewlet-nav-group__toggle):hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-group__toggle {
+  flex: 1 1 auto;
+  align-self: stretch;
+  text-align: start;
+  color: var(--color-text-secondary);
+  transition-property: none;
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-group__head:hover .crewlet-nav-group__toggle {
+  color: var(--color-text-primary);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-group__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-group__toggle > .crewlet-nav-group__label {
+  color: inherit;
+}
+
+/* Pressed on a pointed heading, the control is one step stronger than it. */
+.crewlet-sidebar-nav--dense .crewlet-nav-group__action:hover {
+  background: var(--color-surface-pressed);
+}
+
+/*
+ * THE HEADING'S CONTROL SHOWS WHERE THE READER REACHES FOR IT: under the
+ * pointer and while focus is in the heading. It keeps its place while hidden,
+ * so the label never moves as it comes and goes, and it stays in the tab
+ * order, which is what shows it to a keyboard. Where nothing hovers (touch),
+ * it is always shown.
+ */
+@media (hover: hover) {
+  .crewlet-sidebar-nav--dense .crewlet-nav-group__action {
+    opacity: 0;
+  }
+
+  .crewlet-sidebar-nav--dense .crewlet-nav-group__head:is(:hover, :focus-within) .crewlet-nav-group__action {
+    opacity: 1;
+  }
 }
 
 .crewlet-sidebar-nav--dense .crewlet-nav-item__children {
@@ -554,14 +667,14 @@
 }
 
 /*
- * A ROW WITH NEWS (`unread`): its name a step heavier than its neighbours' and
- * in the primary ink, which is the whole of the signal in a dense list whose
- * names are regular. A muted row is never drawn unread (the component drops
+ * A ROW WITH NEWS (`unread`): its name two steps heavier than a dense row's
+ * regular (semibold) and in the primary ink, which is the whole of the signal:
+ * one step read as a different face rather than as news. A muted row is never drawn unread (the component drops
  * the class), so the two rules never meet.
  */
 .crewlet-nav-item--unread > .crewlet-nav-item__head > .crewlet-nav-item__row {
   color: var(--color-text-primary);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
 }
 
 /*
@@ -576,6 +689,7 @@
   .crewlet-nav-group__action,
   .crewlet-nav-group__toggle,
   .crewlet-nav-group__chevron,
+  .crewlet-nav-group__icon,
   .crewlet-nav-item__row,
   .crewlet-nav-item__chevron {
     transition: none;
