@@ -223,7 +223,7 @@ export const RichTextWords: Story = {
           </p>
           <ul style={{ margin: 0 }}>
             <li>Token rotation no longer drops a session.</li>
-            <li>Flashcards keep their order after a sync.</li>
+            <li>Search keeps its filters after a reload.</li>
           </ul>
         </Prose>
       </Row>
