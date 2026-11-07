@@ -103,13 +103,47 @@ test('marks a mention, a flash, an outbox row and an edit by class', () => {
 });
 
 // No bold: the name is the medium weight.
-test('sets the name at the medium weight and the time in the meta step', () => {
+test('sets the name at the semibold weight and the time in the meta step', () => {
   const uninstall = installSheets(...SHEETS);
   try {
     render(<Row />);
     const row = screen.getByRole('article');
-    expect(getComputedStyle(row.querySelector('.crewlet-chat-message__author')!).fontWeight).toBe('500');
+    expect(getComputedStyle(row.querySelector('.crewlet-chat-message__author')!).fontWeight).toBe('600');
     expect(getComputedStyle(row.querySelector('.crewlet-chat-message__time')!).fontVariantNumeric).toBe('tabular-nums');
+  } finally {
+    uninstall();
+  }
+});
+
+// A FOOTER WHOSE PIECES ALL DRAW NOTHING TAKES NO ROOM: a host passes its
+// footer whole, and its gap made every row 6px taller than its words.
+// Mutation: drop the :empty rule, and the empty footer is displayed.
+test('a footer that draws nothing takes no room, and one that does is shown', () => {
+  const uninstall = installSheets(...SHEETS);
+  try {
+    const { rerender } = render(<Row footer={<>{false}{null}</>} />);
+    const footer = () => screen.getByRole('article').querySelector('.crewlet-chat-message__footer')!;
+    expect(getComputedStyle(footer()).display).toBe('none');
+    rerender(<Row footer={<span>2 replies</span>} />);
+    expect(getComputedStyle(footer()).display).not.toBe('none');
+  } finally {
+    uninstall();
+  }
+});
+
+// THE ROW IS A SIZE CONTAINER AND NOTHING MORE: no layout or paint containment
+// and no stacking context of its own, so its toolbar keeps rising over the
+// day's pinned pill in the transcript's one stacking context. Mutation: give
+// the row \`contain: layout\` or a z-index, and this fails.
+test('a row queries its own width without isolating its toolbar', () => {
+  const uninstall = installSheets(...SHEETS);
+  try {
+    render(<Row />);
+    const style = getComputedStyle(screen.getByRole('article'));
+    expect(style.getPropertyValue('container-type')).toBe('inline-size');
+    expect(['', 'none']).toContain(style.getPropertyValue('contain'));
+    expect(['', 'auto']).toContain(style.zIndex);
+    expect(['', 'auto']).toContain(style.isolation);
   } finally {
     uninstall();
   }
