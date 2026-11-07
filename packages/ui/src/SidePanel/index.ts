@@ -11,6 +11,7 @@ export {
   SidePanelFrame,
 } from './SidePanel.js';
 export type {
+  SidePanelDensity,
   SidePanelFrameProps,
   SidePanelInitialFocus,
   SidePanelLabels,

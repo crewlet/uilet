@@ -12,8 +12,10 @@ import {
   createContext,
   useContext,
   useId,
+  useEffect,
   useLayoutEffect,
   useRef,
+  useState,
   type ReactNode,
   type Ref,
   type RefObject,
@@ -41,6 +43,9 @@ export type SidePanelShape = 'column' | 'drawer' | 'sheet';
 /** What a `SidePanelFrame` tells the panel inside it. Null where the frame measures (`shape` left out). */
 export const SidePanelFrameContext = createContext<{ shape: SidePanelShape | null } | null>(null);
 
+/** The head's register: `chat` for a chat pane (a thread, a room's details, a profile). */
+export type SidePanelDensity = 'default' | 'chat';
+
 /** Where focus goes when the panel opens. */
 export type SidePanelInitialFocus = 'heading' | 'none' | RefObject<HTMLElement | null>;
 
@@ -64,6 +69,7 @@ export interface SidePanelBaseProps {
   ringHeading?: boolean | undefined;
   /** Whether the title is drawn, or only names the panel. */
   hideTitle?: boolean | undefined;
+  density?: SidePanelDensity | undefined;
   expanded?: boolean | undefined;
   onExpandedChange?: ((expanded: boolean) => void) | undefined;
   expandLabel?: string | undefined;
@@ -99,6 +105,7 @@ export function SidePanelBase({
   initialFocus = 'heading',
   ringHeading = false,
   hideTitle = false,
+  density = 'default',
   expanded = false,
   onExpandedChange,
   expandLabel = 'Expand',
@@ -121,6 +128,9 @@ export function SidePanelBase({
   const heading = useRef<HTMLHeadingElement>(null);
   const before = useRef<Element | null>(null);
   const start = useRef(initialFocus);
+  const body = useRef<HTMLDivElement>(null);
+  const chat = density === 'chat';
+  const scrolled = useScrolled(body, chat && !flush);
 
   /*
    * WHERE IT STANDS. In the shell's aside the shell is the region (it names
@@ -184,7 +194,13 @@ export function SidePanelBase({
       <div
         ref={root as Ref<HTMLDivElement>}
         id={panelId}
-        className={cx('crewlet-side-panel', inShell && 'crewlet-side-panel--fill', alias, className)}
+        className={cx(
+          'crewlet-side-panel',
+          inShell && 'crewlet-side-panel--fill',
+          chat && 'crewlet-side-panel--chat',
+          alias,
+          className,
+        )}
         role={role}
         aria-modal={modal || undefined}
         aria-labelledby={inShell ? undefined : titleId}
@@ -204,7 +220,13 @@ export function SidePanelBase({
             edge="left"
           />
         ) : null}
-        <div className={cx(part('head', alias), subtitled && 'crewlet-side-panel__head--subtitled')}>
+        <div
+          className={cx(
+            part('head', alias),
+            subtitled && 'crewlet-side-panel__head--subtitled',
+            scrolled && 'crewlet-side-panel__head--scrolled',
+          )}
+        >
           {icon ? (
             <span className={part('icon', alias)} aria-hidden>
               {icon}
@@ -237,6 +259,7 @@ export function SidePanelBase({
         </div>
         {/* THE PANEL'S TITLE IS ITS LEVEL TWO, so a section inside it heads at three. */}
         <div
+          ref={body}
           className={cx(
             part('body', alias),
             flush && 'crewlet-side-panel__body--flush',
@@ -253,6 +276,23 @@ export function SidePanelBase({
       {modal ? <SheetLayer panel={root} onClose={onClose} /> : null}
     </>
   );
+}
+
+/** Whether `el` is scrolled away from its top, followed while `enabled`. */
+function useScrolled(el: RefObject<HTMLElement | null>, enabled: boolean): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const node = el.current;
+    if (!enabled || !node) {
+      setScrolled(false);
+      return;
+    }
+    const read = () => setScrolled(node.scrollTop > 0);
+    read();
+    node.addEventListener('scroll', read, { passive: true });
+    return () => node.removeEventListener('scroll', read);
+  }, [el, enabled]);
+  return scrolled;
 }
 
 /**

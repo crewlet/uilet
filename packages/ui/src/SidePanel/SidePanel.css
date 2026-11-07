@@ -88,6 +88,27 @@
   border-bottom: 1px solid var(--color-border-default);
 }
 
+/*
+ * THE CHAT DENSITY (`density="chat"`): a chat pane's head, 49px with the title at the 18px
+ * step in the bold weight, and its rule transparent until the panel's own body is scrolled.
+ */
+.crewlet-side-panel--chat {
+  --crewlet-side-panel-head-height: 49px;
+}
+
+.crewlet-side-panel--chat > .crewlet-side-panel__head {
+  border-bottom-color: transparent;
+}
+
+.crewlet-side-panel--chat > .crewlet-side-panel__head--scrolled {
+  border-bottom-color: var(--color-border-default);
+}
+
+.crewlet-side-panel--chat .crewlet-side-panel__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
 /* With a subtitle the head holds one or two lines, so its height is a floor
    rather than a height, and its controls stay on the first line. */
 .crewlet-side-panel__head--subtitled {
@@ -96,6 +117,11 @@
   min-height: var(--crewlet-side-panel-head-height);
   padding-block: calc((var(--crewlet-side-panel-head-height) - var(--size-control-sm)) / 2);
   box-sizing: border-box;
+}
+
+/* The chat head keeps its height with a subtitle: the padding leaves room for the rule. */
+.crewlet-side-panel--chat > .crewlet-side-panel__head--subtitled {
+  padding-block: calc((var(--crewlet-side-panel-head-height) - var(--size-control-sm) - 1px) / 2);
 }
 
 /* The title and the subtitle on one baseline, the subtitle dropping under
