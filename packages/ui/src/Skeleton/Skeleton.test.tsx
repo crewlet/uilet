@@ -12,7 +12,8 @@ import axe from 'axe-core';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, describe, expect, test } from 'vitest';
+import { act } from 'react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { Skeleton } from './index.js';
 
 afterEach(cleanup);
@@ -42,6 +43,38 @@ describe('Skeleton', () => {
   test('without a label it says nothing at all', () => {
     render(<Skeleton variant="list" rows={3} />);
     expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  test('the chat variant draws message rows, a face and a name on the first rows only', () => {
+    const { container } = render(<Skeleton variant="chat" rows={6} />);
+    const rows = [...container.querySelectorAll('.crewlet-skeleton__message')];
+    expect(rows).toHaveLength(6);
+    for (const row of rows) {
+      const first = row.classList.contains('crewlet-skeleton__message--first');
+      expect(row.querySelectorAll('.crewlet-skeleton__avatar')).toHaveLength(first ? 1 : 0);
+      expect(row.querySelectorAll('.crewlet-skeleton__line--name')).toHaveLength(first ? 1 : 0);
+      expect(row.querySelectorAll('.crewlet-skeleton__line--words').length).toBeGreaterThan(0);
+    }
+    // A transcript opens on a message with its sender, so the newest row and
+    // the oldest are both first rows: never a run of bare lines.
+    expect(rows[0]!.classList.contains('crewlet-skeleton__message--first')).toBe(true);
+  });
+
+  test('held, it draws and says nothing until a quick answer has had time to land', () => {
+    // Mutation: drop the hold and the placeholder flashes on every quick load.
+    vi.useFakeTimers();
+    try {
+      const { container } = render(<Skeleton variant="chat" rows={3} label="Reading the room" held />);
+      expect(container.querySelector('.crewlet-skeleton')).toBeNull();
+      expect(screen.queryByRole('status')).toBeNull();
+      act(() => vi.advanceTimersByTime(449));
+      expect(container.querySelector('.crewlet-skeleton')).toBeNull();
+      act(() => vi.advanceTimersByTime(1));
+      expect(container.querySelector('.crewlet-skeleton')).not.toBeNull();
+      expect(screen.getByRole('status').textContent).toBe('Reading the room');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test('every animation has a reduced-motion rule', () => {

@@ -1,3 +1,4 @@
+import '../ChatMessage/ChatScale.css';
 import './Skeleton.css';
 
 export { Skeleton } from './Skeleton.js';
