@@ -199,6 +199,15 @@
   font-size: var(--font-size-xs);
 }
 
+/* The chat density (`density="chat"`): labels at the 13px step in the bold weight on a 36px row. */
+.crewlet-tabs--underline.crewlet-tabs--chat .crewlet-tabs__tab {
+  min-height: var(--size-row-md);
+  padding-block: 0;
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--font-line-height-snug);
+}
+
 /*
  * THE RING IS DRAWN INSIDE THE TAB. The row is a scroller, so an outset ring
  * on any tab in it is clipped by the row's own box, top and bottom, and on

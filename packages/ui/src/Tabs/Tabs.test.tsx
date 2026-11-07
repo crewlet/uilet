@@ -16,6 +16,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRef } from 'react';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { DENSITIES, installSheetsAtDensity } from '../../../../apps/ui-tests/src/density.js';
 import { afterEach, expect, test, vi } from 'vitest';
 import { SegmentedControl } from '../SegmentedControl/index.js';
@@ -931,4 +932,32 @@ test('a chip past the room a bar leaves is scrolled into view, and only inside a
   render(chips(false));
   expect(still.at).toBe(0);
   vi.restoreAllMocks();
+});
+
+test("the chat density sets an underline row's labels at 13px in the bold weight on a 36px row", () => {
+  const uninstall = installSheets('Tabs/Tabs.css');
+  try {
+    const items = [
+      { value: 'about', label: 'About' },
+      { value: 'members', label: 'Members', count: 7 },
+    ];
+    render(
+      <>
+        <Tabs variant="underline" size="sm" density="chat" ariaLabel="Details" items={items} value="about" />
+        <Tabs variant="underline" size="sm" ariaLabel="Plain" items={items} value="about" />
+      </>,
+    );
+    const chat = within(screen.getByRole('tablist', { name: 'Details' })).getByRole('tab', { name: /About/ });
+    expect(chat.closest('.crewlet-tabs')?.classList.contains('crewlet-tabs--chat')).toBe(true);
+    expect(px(chat, 'font-size')).toBe(13);
+    expect(getComputedStyle(chat).fontWeight).toBe('700');
+    expect(px(chat, 'min-height')).toBe(36);
+    // Without it the row is as it was: the small step's 12px at the medium weight.
+    const plain = within(screen.getByRole('tablist', { name: 'Plain' })).getByRole('tab', { name: /About/ });
+    expect(plain.closest('.crewlet-tabs')?.classList.contains('crewlet-tabs--chat')).toBe(false);
+    expect(px(plain, 'font-size')).toBe(12);
+    expect(getComputedStyle(plain).fontWeight).toBe('500');
+  } finally {
+    uninstall();
+  }
 });

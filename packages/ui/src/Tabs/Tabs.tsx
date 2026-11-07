@@ -20,6 +20,12 @@ export type TabsVariant = 'pill' | 'underline' | 'chip';
 export type TabsSize = 'sm' | 'md';
 
 /**
+ * `chat` sets an underline row in a chat pane's register: labels at the 13px step in the
+ * bold weight on a 36px row. It changes the underline variant only.
+ */
+export type TabsDensity = 'default' | 'chat';
+
+/**
  * What a row does with tabs it has no room for. `scroll` scrolls the row with
  * its bar hidden; `menu` draws the tabs that fit and folds the rest into a
  * "More" menu at the row's end.
@@ -112,6 +118,8 @@ export interface TabsProps {
   items: TabsItem[];
   variant?: TabsVariant;
   size?: TabsSize;
+  /** The underline row's register: `chat` for the tabs of a chat pane. */
+  density?: TabsDensity | undefined;
   /** Names the row. A tab row with no name is announced as "tab list" alone. */
   ariaLabel?: string;
   /**
@@ -246,6 +254,7 @@ export function Tabs({
   items,
   variant = 'pill',
   size = 'md',
+  density = 'default',
   ariaLabel,
   className = '',
   value,
@@ -371,6 +380,7 @@ export function Tabs({
     'crewlet-tabs',
     `crewlet-tabs--${variant}`,
     `crewlet-tabs--${size}`,
+    density === 'chat' && 'crewlet-tabs--chat',
     folding && 'crewlet-tabs--fold',
     !boxed && !barred && className,
   );
