@@ -72,6 +72,16 @@ export interface ChatMessageProps extends Omit<HTMLAttributes<HTMLElement>, 'id'
   children: ReactNode;
 }
 
+/**
+ * Moves focus to a row the keys walked to: scrolled into view first, the
+ * least that shows it (under a pinned day pill, by its scroll margin), then
+ * focused where it stands, so the toolbar is measured in its final place.
+ */
+function landOn(row: HTMLElement) {
+  row.scrollIntoView?.({ block: 'nearest' });
+  row.focus({ preventScroll: true });
+}
+
 /** The nearest ancestor that scrolls vertically: the edge a toolbar over the row would be cut by. */
 function scrollerOf(element: HTMLElement): HTMLElement | null {
   for (let node = element.parentElement; node; node = node.parentElement) {
@@ -105,8 +115,11 @@ function scrollerOf(element: HTMLElement): HTMLElement | null {
  * replying, saving and the More menu are reached by touch as well.
  *
  * THE KEYS. ArrowUp and ArrowDown on a focused row move to the row before and
- * after it in the same log. A host's own `onKeyDown` runs first, and a key it
- * handles (`preventDefault`) is left alone.
+ * after it in the same log, and Home and End to its first and last row. The
+ * row is scrolled into view first, the least that shows it, so its toolbar is
+ * measured where it lands. A chord (with Alt, Control, Meta or Shift) is left
+ * to the host, and so is a key the host's own `onKeyDown` handles
+ * (`preventDefault`), which runs first.
  *
  * NO BOLD. The name is the medium weight and everything else on the head the
  * regular one, in the meta step and the tertiary ink.
@@ -160,15 +173,21 @@ export const ChatMessage = forwardRef<HTMLElement, ChatMessageProps>(function Ch
   function keys(event: KeyboardEvent<HTMLElement>) {
     onKeyDown?.(event);
     if (event.defaultPrevented || event.target !== event.currentTarget) return;
-    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const row = event.currentTarget;
     const within = row.closest('[role="log"]') ?? row.parentElement;
     if (!within) return;
     const rows = [...within.querySelectorAll<HTMLElement>(`.${CHAT_MESSAGE_CLASS}`)];
-    const next = rows[rows.indexOf(row) + (event.key === 'ArrowUp' ? -1 : 1)];
+    const at = rows.indexOf(row);
+    let next: HTMLElement | undefined;
+    if (event.key === 'ArrowUp') next = rows[at - 1];
+    else if (event.key === 'ArrowDown') next = rows[at + 1];
+    else if (event.key === 'Home') next = rows[0];
+    else if (event.key === 'End') next = rows.at(-1);
+    else return;
     if (!next) return;
     event.preventDefault();
-    next.focus();
+    landOn(next);
   }
 
   return (

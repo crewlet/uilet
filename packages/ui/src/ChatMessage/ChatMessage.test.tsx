@@ -333,3 +333,60 @@ test('carries no axe violation, as a head row, a continuation and a failed row',
   });
   expect(result.violations).toEqual([]);
 });
+
+// HOME AND END go to the log's first and last row, and a chord is the host's.
+// Mutation: drop Home and End, or move on Alt+ArrowUp (a host's room switch).
+test('Home and End go to the first and last row, and a chord is left to the host', () => {
+  render(
+    <ChatThread label="Conversation">
+      <Row id="a" label="First" />
+      <Row id="b" label="Second" />
+      <Row id="c" label="Third" />
+    </ChatThread>,
+  );
+  const [first, second, third] = screen.getAllByRole('article');
+  second!.focus();
+  fireEvent.keyDown(second!, { key: 'End' });
+  expect(document.activeElement).toBe(third);
+  fireEvent.keyDown(third!, { key: 'Home' });
+  expect(document.activeElement).toBe(first);
+  // At the first row, Home stays and keeps the log from scrolling away from it.
+  expect(fireEvent.keyDown(first!, { key: 'Home' })).toBe(false);
+  expect(document.activeElement).toBe(first);
+  for (const chord of [{ altKey: true }, { ctrlKey: true }, { metaKey: true }, { shiftKey: true }]) {
+    expect(fireEvent.keyDown(first!, { key: 'ArrowDown', ...chord })).toBe(true);
+    expect(document.activeElement).toBe(first);
+  }
+});
+
+// THE ROW IS SCROLLED INTO VIEW BEFORE IT IS FOCUSED, the least that shows
+// it, so its toolbar is measured where it lands. Mutation: focus first (the
+// browser's own focus scroll comes after the focus event), and the toolbar is
+// measured off screen and drawn inside a row that has room above it.
+test('a row the keys move to is scrolled into view first, then focused and measured where it lands', () => {
+  const calls: string[] = [];
+  const scrollIntoView = vi.fn(function (this: HTMLElement, options?: ScrollIntoViewOptions) {
+    calls.push(`scroll ${String(options?.block)}`);
+    geometry(this, 300, 100);
+  });
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scrollIntoView });
+  try {
+    render(
+      <ChatThread label="Conversation">
+        <Row id="a" label="First" actions={tray} />
+        <Row id="b" label="Second" actions={tray} />
+      </ChatThread>,
+    );
+    const [first, second] = screen.getAllByRole('article');
+    // Above the log's top edge until it is scrolled to.
+    geometry(first!, 40, 100);
+    first!.addEventListener('focus', () => calls.push('focus'));
+    second!.focus();
+    fireEvent.keyDown(second!, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(first);
+    expect(calls).toEqual(['scroll nearest', 'focus']);
+    expect(first!.classList.contains('has-actions-inside')).toBe(false);
+  } finally {
+    Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+  }
+});
