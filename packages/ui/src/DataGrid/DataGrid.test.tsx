@@ -493,6 +493,33 @@ describe('the sticky stack', () => {
     }
   });
 
+  test('a band head stays one line: a long name gives way, the mark and the count keep their size', () => {
+    const uninstall = installSheets('DataGrid/DataGrid.css');
+    try {
+      const { container } = render(
+        <DataGrid
+          columns={COLUMNS}
+          rowKey={(r) => r.id}
+          bands={[{ key: 'eng', label: 'A group name far longer than any narrow column holds', mark: <svg />, total: 1200, rows: [ROWS[0]!] }]}
+        />,
+      );
+      const head = container.querySelector<HTMLElement>('.crewlet-data-grid__band-head')!;
+      const [mark, name, count] = [...head.querySelectorAll<HTMLElement>('.crewlet-data-grid__band-cell > *')];
+      // The head draws one line, so its definite height always holds it.
+      expect(getComputedStyle(head).whiteSpace).toBe('nowrap');
+      // "1 of 1200" broke across two lines and spilled out of the head.
+      for (const kept of [mark!, count!]) expect(getComputedStyle(kept).flexShrink).toBe('0');
+      const label = getComputedStyle(name!);
+      expect([label.flexShrink, label.minWidth, label.overflow, label.textOverflow]).toEqual(['1', '0px', 'hidden', 'ellipsis']);
+      // Cut, the name's whole text is its title.
+      Object.defineProperties(name!, { scrollWidth: { value: 400 }, clientWidth: { value: 120 } });
+      fireEvent.mouseEnter(name!);
+      expect(name!.getAttribute('title')).toBe('A group name far longer than any narrow column holds');
+    } finally {
+      uninstall();
+    }
+  });
+
   test("a stacked grid's band heads stick at the application's offset, with no column heads above them", () => {
     const uninstall = installSheets('DataGrid/DataGrid.css');
     try {

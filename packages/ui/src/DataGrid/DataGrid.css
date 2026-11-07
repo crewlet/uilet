@@ -642,6 +642,8 @@ button.crewlet-data-grid__row-link {
   font-size: var(--font-size-xs);
   line-height: var(--font-line-height-normal);
   font-weight: var(--font-weight-semibold);
+  /* One line, so it never outgrows its height onto the rows under it. */
+  white-space: nowrap;
   position: sticky;
   /* Under the column heads and under the head of every band it is inside: its
      level of grouping (`--crewlet-data-grid-band-depth`, which DataGrid.tsx
@@ -654,6 +656,16 @@ button.crewlet-data-grid__row-link {
   /* Above the rows (which isolate), below the column heads, and a level under
      the head of the band it is inside, which it slides beneath as it leaves. */
   z-index: calc(var(--z-index-sticky) - 1 - var(--crewlet-data-grid-band-depth, 0));
+}
+
+/* THE NAME GIVES WAY, the mark and the count keep their size: the name ends
+   in an ellipsis and carries its whole text as its title while it is cut. */
+.crewlet-data-grid__band-head > .crewlet-data-grid__band-cell > * {
+  flex: none;
+}
+
+.crewlet-data-grid__band-head > .crewlet-data-grid__band-cell > .crewlet-data-grid__truncate {
+  flex: 0 1 auto;
 }
 
 /* A SECOND AXIS IS A BAND INSIDE A BAND, inset and quieter, so it does not

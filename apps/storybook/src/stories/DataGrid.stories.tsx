@@ -393,6 +393,33 @@ export const StickyHeadsOverARaisedCell: Story = {
   ),
 };
 
+/**
+ * Long group names at both levels, with counts of the whole group beside the
+ * rows loaded, in a 320px scroller. Every band head stays one line its own
+ * height: the name ends in an ellipsis (its full text on hover), and the mark
+ * and the count keep their size.
+ */
+export const StickyBandHeadsWithLongLabels: Story = {
+  render: () => (
+    <Scroller width={320}>
+      <DataGrid
+        columns={COLUMNS.map((c) => ({ ...c, drop: undefined, optional: false }))}
+        rowKey={(t: Task) => t.key}
+        bands={STATES.map((state) => ({
+          key: state,
+          label: `${state}: everything the platform and infrastructure group has committed to this quarter`,
+          mark: <BugGlyph size="sm" aria-hidden="true" />,
+          total: 1200,
+          rows: [],
+          bands: byOwner(MANY.filter((t) => t.status === state))
+            .filter((band) => band.rows.length)
+            .map((band) => ({ ...band, label: `${band.label}, working across the search, study and accessibility areas`, total: 340 })),
+        }))}
+      />
+    </Scroller>
+  ),
+};
+
 /** In a card the grid is the card's body: one edge, the card's. Empty, it says so with its next step. */
 export const InACardAndEmpty: Story = {
   render: () => (
