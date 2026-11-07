@@ -40,7 +40,9 @@ import {
  * Point at a row: its fill steps up, a continuation shows its time in the
  * gutter, and the toolbar rests on the row's first line, over the row above.
  * On a touch screen a tap on the row shows the toolbar, and the add pill
- * stays in view. Focus a row and ArrowUp and ArrowDown walk the transcript.
+ * stays in view. Focus a row (Tab into the transcript lands on one): ArrowUp
+ * and ArrowDown walk the transcript, Home and End go to its first and last
+ * row, and the focused row shows its toolbar.
  */
 const meta: Meta<typeof ChatMessage> = {
   title: 'UI/ChatMessage',
