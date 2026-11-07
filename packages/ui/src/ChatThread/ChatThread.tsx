@@ -116,6 +116,9 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
  * thread anchors itself: the item at the top of the view stays where it
  * stood while what is above it changes height (an older page, a row drawn
  * at its real height, a preview that loads), before the change is painted.
+ * The anchor is read again after every layout pass, so a jump that lands on
+ * a part a windowed host has not drawn yet (a spacer) anchors on the rows the
+ * host then draws there, never on the day that holds them.
  *
  * A JUMP HOLDS UNTIL IT LANDS. A smooth scroll passes through positions short
  * of the end, and each one read as the reader leaving: the pill came back and
@@ -228,22 +231,21 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
     setDetachedAt((prior) => (following ? null : (prior ?? countRef.current)));
   }, [settle, setFollowing]);
 
-  // Moves the view by the height that changed above the anchor. Measured in
-  // the content, so the reader's own scroll is never taken for a change.
+  // Moves the view by the height that changed above the anchor, then reads the
+  // anchor again from what is now drawn: one read in a scroll event saw the
+  // content before the host drew what that scroll brought into view.
   const hold = useCallback(() => {
     const el = scroller.current;
     const mark = anchor.current;
-    if (!el || !mark || atEnd.current || jumping.current) return;
-    if (!mark.element.isConnected) {
-      anchor.current = anchorIn(el, items.current);
-      return;
+    if (!el || atEnd.current || jumping.current) return;
+    if (mark?.element.isConnected) {
+      const delta = depthIn(el, mark.element) - mark.at;
+      if (Math.abs(delta) >= 0.5) {
+        el.scrollTop += delta;
+        settle(el);
+      }
     }
-    const at = depthIn(el, mark.element);
-    const delta = at - mark.at;
-    if (Math.abs(delta) < 0.5) return;
-    mark.at = at;
-    el.scrollTop += delta;
-    settle(el);
+    anchor.current = anchorIn(el, items.current);
   }, [settle]);
 
   // The reader's own wheel, touch or key ends a jump at once: what they do is

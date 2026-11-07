@@ -211,6 +211,84 @@ test('looks into an item the view holds only part of for the row at its top', ()
   expect(log.scrollTop).toBe(550);
 });
 
+// A JUMP THAT LANDS ON A WINDOWED HOST'S SPACER anchors on the rows the host
+// then draws there, never on the day that holds them: older rows landing at
+// the start of that day moved the reader's row down and left the view on what
+// had just landed. Mutation: keep the anchor read in the scroll event, and the
+// view stays at 0 while the reader's row moves to 300.
+test('anchors a jump on the rows a windowed host draws after it, not on their day', () => {
+  const rect = (top: number, height: number) =>
+    ({ x: 0, y: top, top, bottom: top + height, left: 0, right: 400, width: 400, height, toJSON: () => ({}) }) as DOMRect;
+  // Each drawn part, top to bottom, at its height: the day stacks them.
+  const day = (parts: [string, number][]) => (
+    <section key="day">
+      {parts.map(([name, height]) =>
+        name === 'spacer' ? (
+          <div key="spacer" data-height={height} style={{ overflowAnchor: 'none' }} />
+        ) : (
+          <p key={name} data-height={height}>
+            {name}
+          </p>
+        ),
+      )}
+    </section>
+  );
+  const placed = (log: HTMLElement) => {
+    log.getBoundingClientRect = () => rect(0, 400);
+    const section = log.querySelector('section')!;
+    let top = 0;
+    for (const part of Array.from(section.children) as HTMLElement[]) {
+      const at = top;
+      const height = Number(part.dataset.height);
+      part.getBoundingClientRect = () => rect(at - log.scrollTop, height);
+      top += height;
+    }
+    section.getBoundingClientRect = () => rect(-log.scrollTop, top);
+    layout(log, top);
+  };
+  const drawn = day([
+    ['Message 1', 300],
+    ['Message 2', 300],
+    ['Message 3', 300],
+  ]);
+  const { rerender } = render(<ChatThread label="Conversation">{drawn}</ChatThread>);
+  const log = screen.getByRole('log');
+  placed(log);
+  rerender(<ChatThread label="Conversation">{drawn}</ChatThread>);
+  expect(log.scrollTop).toBe(500);
+  // The reader leaves the end, then jumps to the top while the host still
+  // holds the first two rows as a spacer.
+  log.scrollTop = 400;
+  fireEvent.scroll(log);
+  rerender(
+    <ChatThread label="Conversation">
+      {day([
+        ['spacer', 600],
+        ['Message 3', 300],
+      ])}
+    </ChatThread>,
+  );
+  placed(log);
+  log.scrollTop = 0;
+  fireEvent.scroll(log);
+  // The host draws the rows the jump brought into view.
+  rerender(<ChatThread label="Conversation">{drawn}</ChatThread>);
+  placed(log);
+  rerender(<ChatThread label="Conversation">{drawn}</ChatThread>);
+  expect(log.scrollTop).toBe(0);
+  // An older row lands at the start of the same day.
+  const landed = day([
+    ['Older', 300],
+    ['Message 1', 300],
+    ['Message 2', 300],
+    ['Message 3', 300],
+  ]);
+  rerender(<ChatThread label="Conversation">{landed}</ChatThread>);
+  placed(log);
+  rerender(<ChatThread label="Conversation">{landed}</ChatThread>);
+  expect(log.scrollTop).toBe(300);
+});
+
 // A VIEW THAT SHRINKS UNDER A READER AT THE END keeps the latest in sight: a
 // composer growing a line took the last line of the conversation with it.
 test('keeps the latest in sight when the view shrinks under a reader at the end', () => {
