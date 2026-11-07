@@ -163,6 +163,49 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/*
+ * THE ACTIVE-DESCENDANT MODE (`activeDescendant`). Focus stays on the panel,
+ * which draws no ring outside forced colours, and the highlighted row is the one cue: the accent fill
+ * under the on-accent ink (3:1 or more on the panel, its words 4.5:1). The
+ * pointer moves that highlight, so there is no separate hover fill.
+ */
+.crewlet-menu--descendant:focus-visible {
+  outline: 2px solid transparent;
+}
+
+.crewlet-menu--descendant .crewlet-menu__item:hover:not(.is-disabled) {
+  background: transparent;
+}
+
+.crewlet-menu--descendant .crewlet-menu__item.is-active {
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
+}
+
+.crewlet-menu--descendant .crewlet-menu__item.is-active :is(.crewlet-menu__icon, .crewlet-menu__check, .crewlet-menu__hint, .crewlet-menu__description) {
+  color: inherit;
+}
+
+.crewlet-menu--descendant .crewlet-menu__item.is-active.is-danger {
+  background: var(--color-feedback-danger);
+  color: var(--color-text-on-danger);
+}
+
+/* An unavailable row is highlighted without the fill that invites a press. */
+.crewlet-menu--descendant .crewlet-menu__item.is-active.is-disabled {
+  background: var(--color-surface-pressed);
+  box-shadow: inset 2px 0 0 var(--color-brand-accent);
+  color: var(--color-text-tertiary);
+}
+
+/* Forced colours drop the fill, and keep this outline in its place. */
+@media (forced-colors: active) {
+  .crewlet-menu--descendant .crewlet-menu__item.is-active {
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+  }
+}
+
 /* The whole row, its glyph included: a destructive action is one thing. */
 .crewlet-menu__item.is-danger,
 .crewlet-menu__item.is-danger .crewlet-menu__icon {

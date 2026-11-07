@@ -221,6 +221,15 @@ export interface MenuProps {
    * name, which a screen reader already hears, so it is shown and not read.
    */
   tooltip?: ReactNode;
+  /**
+   * Focus stays on the menu and the keys move a highlight it points at with
+   * `aria-activedescendant`: it opens with nothing highlighted (ArrowDown or
+   * ArrowUp on the trigger opens on the first or last item), the arrows, Home,
+   * End and a letter move it, Enter or Space runs it, and the pointer moves it
+   * too. The highlighted row is drawn as the accent fill, with no ring. Off by
+   * default: each item takes focus in turn.
+   */
+  activeDescendant?: boolean | undefined;
   className?: string | undefined;
 }
 
@@ -240,17 +249,21 @@ export function Menu({
   renderTrigger,
   header,
   tooltip,
+  activeDescendant = false,
   className,
 }: MenuProps) {
   const id = useId();
   const menuId = `${id}-menu`;
   const headerId = `${id}-header`;
+  const itemId = (index: number) => `${id}-item-${index}`;
+  // The highlighted item in the active-descendant mode; -1 is none.
+  const [active, setActive] = useState(-1);
   const [uncontrolled, setUncontrolled] = useState(false);
   const open = controlled ?? uncontrolled;
   const triggerRef = useRef<HTMLElement | null>(null);
   const menu = useRef<HTMLDivElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
-  const startAt = useRef<'first' | 'last'>('first');
+  const startAt = useRef<'first' | 'last' | 'none'>('first');
   const [place, setPlace] = useState<{ left: number; top: number; floor: number | undefined; room: number } | null>(null);
   const container = useLayerContainer();
 
@@ -258,8 +271,10 @@ export function Menu({
   // are registered once per opening, not once per parent render.
   const isControlled = useRef(controlled !== undefined);
   const report = useRef(onOpenChange);
+  const descendant = useRef(activeDescendant);
   isControlled.current = controlled !== undefined;
   report.current = onOpenChange;
+  descendant.current = activeDescendant;
 
   const setOpen = useCallback((next: boolean) => {
     if (!isControlled.current) setUncontrolled(next);
@@ -388,9 +403,24 @@ export function Menu({
   useLayoutEffect(() => {
     if (!placed) return;
     const all = entries();
-    (startAt.current === 'last' ? all[all.length - 1] : all[0])?.focus();
+    if (descendant.current) {
+      menu.current?.focus();
+      setActive(startAt.current === 'none' || all.length === 0 ? -1 : startAt.current === 'last' ? all.length - 1 : 0);
+    } else {
+      (startAt.current === 'last' ? all[all.length - 1] : all[0])?.focus();
+    }
     startAt.current = 'first';
   }, [placed]);
+
+  useEffect(() => {
+    if (!open) setActive(-1);
+  }, [open]);
+
+  // The highlighted row is kept in view as the keys move it.
+  useEffect(() => {
+    if (!activeDescendant || active < 0) return;
+    entries()[active]?.scrollIntoView?.({ block: 'nearest' });
+  }, [active, activeDescendant]);
 
   function onTriggerKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -406,16 +436,27 @@ export function Menu({
       event.stopPropagation();
     }
     const all = entries();
-    const at = all.indexOf(document.activeElement as HTMLElement);
-    const go = (index: number) => all[(index + all.length) % all.length]?.focus();
+    const at = activeDescendant ? active : all.indexOf(document.activeElement as HTMLElement);
+    const go = (index: number) => {
+      const next = (index + all.length) % all.length;
+      if (activeDescendant) setActive(next);
+      else all[next]?.focus();
+    };
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
-        go(at + 1);
+        go(at < 0 ? 0 : at + 1);
         return;
       case 'ArrowUp':
         event.preventDefault();
-        go(at - 1);
+        go(at < 0 ? all.length - 1 : at - 1);
+        return;
+      case 'Enter':
+      case ' ':
+        // Focus is on the menu, not a row, so the row is run from here.
+        if (!activeDescendant) return;
+        event.preventDefault();
+        if (at >= 0) all[at]?.click();
         return;
       case 'Home':
         event.preventDefault();
@@ -437,7 +478,7 @@ export function Menu({
             const candidate = all[(at + step) % all.length]!;
             if ((candidate.textContent ?? '').trim().toLocaleLowerCase().startsWith(letter)) {
               event.preventDefault();
-              candidate.focus();
+              go(all.indexOf(candidate));
               return;
             }
           }
@@ -463,6 +504,11 @@ export function Menu({
     entry.description !== false &&
     entry.description !== '';
 
+  // Every item's place among the items the keys walk, for its id and its highlight.
+  const order = new Map(
+    items.filter((entry): entry is MenuItem => entry.kind !== 'separator').map((entry, index) => [entry.key, index]),
+  );
+
   const item = (entry: MenuItem) => (
     <button
       key={entry.key}
@@ -470,7 +516,12 @@ export function Menu({
       role={entry.checked === undefined ? 'menuitem' : 'menuitemradio'}
       aria-checked={entry.checked}
       tabIndex={-1}
+      id={activeDescendant ? itemId(order.get(entry.key)!) : undefined}
+      // The pointer moves the highlight and never takes focus off the menu.
+      onPointerMove={activeDescendant ? () => setActive(order.get(entry.key)!) : undefined}
+      onMouseDown={activeDescendant ? (event) => event.preventDefault() : undefined}
       className={cx(
+        activeDescendant && order.get(entry.key) === active && 'is-active',
         'crewlet-menu__item',
         // A row with a second line is taller than a row of verbs, and says
         // so: the row height alone would hold both lines in the space meant
@@ -499,11 +550,17 @@ export function Menu({
 
   const list = open ? (
     <div
-      className={cx('crewlet-menu', container !== null && container !== document.body ? 'crewlet-menu--in-host' : null, className)}
+      className={cx(
+        'crewlet-menu',
+        container !== null && container !== document.body ? 'crewlet-menu--in-host' : null,
+        activeDescendant && 'crewlet-menu--descendant',
+        className,
+      )}
       id={menuId}
       role="menu"
       aria-label={label}
       aria-describedby={header ? headerId : undefined}
+      aria-activedescendant={activeDescendant && active >= 0 ? itemId(active) : undefined}
       // Focusable programmatically, never by Tab: focus rests on an item, and
       // this is where it lands if a menu is ever opened with no items in it.
       tabIndex={-1}
@@ -559,7 +616,7 @@ export function Menu({
       if (open) {
         close(true);
       } else {
-        startAt.current = 'first';
+        startAt.current = activeDescendant ? 'none' : 'first';
         setOpen(true);
       }
     },
