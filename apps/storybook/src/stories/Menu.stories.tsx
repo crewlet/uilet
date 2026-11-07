@@ -25,6 +25,15 @@ export const RowActions: Story = {
   args: { label: 'Actions for Software Engineer', items: actions },
 };
 
+/**
+ * Focus stays on the menu (`activeDescendant`): it opens with nothing
+ * highlighted, ArrowDown highlights the first item, and the highlighted row is
+ * the accent fill with no ring. The pointer moves the same highlight.
+ */
+export const ActiveDescendant: Story = {
+  args: { label: 'Actions for this message', items: actions, activeDescendant: true },
+};
+
 /** A trigger with visible text, for a toolbar where there is room for a word. */
 export const WithLabel: Story = {
   args: { label: 'Actions for Software Engineer', items: actions, trigger: 'Actions', triggerVariant: 'secondary' },
