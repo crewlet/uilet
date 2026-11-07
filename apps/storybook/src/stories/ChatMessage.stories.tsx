@@ -128,7 +128,7 @@ function Row({ id, who, at, children, withActions = true, ...rest }: RowProps) {
       badges={who.agent ? <Tag size="xs" appearance="quiet">Agent</Tag> : undefined}
       time={`${at} AM`}
       gutterTime={at}
-      timeTitle={`Thursday, October 30 at ${at} AM`}
+      timeTitle={`Thursday, October 30, 2026 at ${at}:07 AM`}
       active={busy > 0}
       actions={withActions ? <Actions saved={saved} onSave={() => setSaved((was) => !was)} onBusy={(open) => setBusy((n) => n + (open ? 1 : -1))} /> : undefined}
       {...rest}
