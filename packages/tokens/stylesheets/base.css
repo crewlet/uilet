@@ -202,14 +202,17 @@ img {
 
 /* The one place a reduced-motion preference is honoured for the whole
    document. A component still states its own rule, because a component is
-   also used in a document that does not import this file. */
+   also used in a document that does not import this file. Transitions are
+   zeroed, not shortened: the default `transition-property` is `all`, so any
+   length above 0s starts a `visibility` transition nobody declared, and a
+   layer that opens and focuses in one frame is still hidden when it asks. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 0s !important;
     scroll-behavior: auto !important;
   }
 }
