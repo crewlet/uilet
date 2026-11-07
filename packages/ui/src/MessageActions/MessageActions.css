@@ -7,7 +7,7 @@
  */
 .crewlet-toolbar.crewlet-message-actions {
   flex-wrap: nowrap;
-  gap: var(--crewlet-chat-toolbar-inset);
+  gap: 0;
   height: var(--crewlet-chat-toolbar);
   box-sizing: border-box;
   padding: var(--crewlet-chat-toolbar-inset);
@@ -42,6 +42,27 @@
 
 .crewlet-message-actions__emoji:hover {
   background: var(--color-fill-soft);
+}
+
+/* THE ONE FLOURISH: the glyph under the pointer grows a fifth, and a quick
+   reaction tilts as it does, in the short decelerating step. The tile itself
+   steps at once. */
+.crewlet-message-actions :is(.crewlet-message-actions__emoji, .crewlet-icon-btn) > * {
+  transition: transform var(--motion-duration-instant) var(--motion-easing-emphasized);
+}
+
+.crewlet-message-actions .crewlet-icon-btn:not([aria-disabled='true']):hover > * {
+  transform: scale(1.2);
+}
+
+.crewlet-message-actions__emoji:not([aria-disabled='true']):hover > * {
+  transform: scale(1.2) rotate(4deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-message-actions :is(.crewlet-message-actions__emoji, .crewlet-icon-btn) > * {
+    transition: none;
+  }
 }
 
 .crewlet-message-actions__emoji:active {
