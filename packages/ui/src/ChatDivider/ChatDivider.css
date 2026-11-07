@@ -88,6 +88,29 @@
 }
 
 /*
+ * A PULSE AS IT APPEARS (`pulse`): the line glows in its own hue, in for a
+ * step, held, and out for a step, once. Still under reduced motion.
+ */
+.crewlet-chat-divider--unread.is-pulsing::before {
+  animation: crewlet-chat-divider-pulse calc(var(--motion-duration-base) * 5) var(--motion-easing-default);
+}
+
+@keyframes crewlet-chat-divider-pulse {
+  20%,
+  80% {
+    box-shadow:
+      0 0 0 1px var(--color-feedback-danger),
+      0 0 var(--spacing-2) var(--spacing-1) var(--color-feedback-danger-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-chat-divider--unread.is-pulsing::before {
+    animation: none;
+  }
+}
+
+/*
  * FORCED COLORS drops the line's background, which is the whole line. A
  * border is the one edge the mode keeps, painted in its own text colour.
  */

@@ -126,3 +126,18 @@ test('a day and its Jump to pill carry no axe violation', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+test("the New line on a day's rule pulses when the day asks", () => {
+  const { container, rerender } = render(
+    <ChatDay label="Today" unread="New">
+      <p>Words</p>
+    </ChatDay>,
+  );
+  expect(container.querySelector('.crewlet-chat-divider--unread.is-pulsing')).toBeNull();
+  rerender(
+    <ChatDay label="Today" unread="New" pulse>
+      <p>Words</p>
+    </ChatDay>,
+  );
+  expect(container.querySelector('.crewlet-chat-divider--unread.is-pulsing')).not.toBeNull();
+});

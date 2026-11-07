@@ -7,8 +7,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
-import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
+import { installMotion, installSheets, pseudoElement } from '../../../../apps/ui-tests/src/cascade.js';
 import { afterEach, expect, test } from 'vitest';
+import { motion } from '@crewlethq/tokens';
+import { tokenMs } from '../utils/tokenMs.js';
 import { ChatDivider } from './index.js';
 
 afterEach(cleanup);
@@ -53,5 +55,37 @@ test('a count stands at the start on the faces\' edge, its hairline running on a
     expect(line.firstElementChild!.textContent).toBe('24 replies');
   } finally {
     uninstall();
+  }
+});
+
+// THE NEW LINE GLOWS ONCE AS IT APPEARS, when asked: in for a step, held, out
+// for a step, and still under reduced motion. Mutation: drop the animation or
+// its reduced-motion stop.
+test('a pulsing New line glows once as it appears, and stands still under reduced motion', () => {
+  const sheets = ['ChatMessage/ChatScale.css', 'ChatDivider/ChatDivider.css'] as const;
+  const moving = installMotion('no-preference', ...sheets);
+  try {
+    const { container, rerender } = render(<ChatDivider variant="unread" label="New" />);
+    const line = () => pseudoElement(container.querySelector('.crewlet-chat-divider')!, 'before');
+    expect(['', 'none']).toContain(getComputedStyle(line()).animationName);
+    rerender(<ChatDivider variant="unread" label="New" pulse />);
+    expect(getComputedStyle(line()).animation).toMatch(/crewlet-chat-divider-pulse/);
+    // Five base steps: about 150ms in, 450ms held and 150ms out.
+    expect(getComputedStyle(line()).animation).toMatch(/calc\(var\(--motion-duration-base\) \* 5\)/);
+    expect(tokenMs(motion.duration.base) * 5).toBeGreaterThanOrEqual(700);
+    expect(tokenMs(motion.duration.base) * 5).toBeLessThanOrEqual(800);
+    // Only the New line pulses.
+    rerender(<ChatDivider variant="date" label="Today" pulse />);
+    expect(container.querySelector('.is-pulsing')).toBeNull();
+  } finally {
+    moving();
+    cleanup();
+  }
+  const still = installMotion('reduce', ...sheets);
+  try {
+    const { container } = render(<ChatDivider variant="unread" label="New" pulse />);
+    expect(getComputedStyle(pseudoElement(container.querySelector('.crewlet-chat-divider')!, 'before')).animation).toBe('none');
+  } finally {
+    still();
   }
 });
