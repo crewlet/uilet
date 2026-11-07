@@ -4,40 +4,37 @@
  * It is placed by arithmetic (see Tooltip.tsx), so this owns what the panel
  * looks like and how it arrives.
  *
- * TWO THINGS ARE DELIBERATE AND LOOK LIKE OVERSIGHTS.
+ * It TAKES THE POINTER (`pointer-events: auto`), so a reader can travel onto
+ * it and read at their own pace, as WCAG 2.2's 1.4.13 asks.
  *
- * It TAKES THE POINTER (`pointer-events: auto`, which the layer host's own
- * children already have). A panel a pointer cannot land on cannot be hovered,
- * and WCAG 2.2's 1.4.13 asks that it can be, so the reader can travel onto it
- * and read the line at their own pace.
- *
- * It is OPAQUE and it is SMALL, but it is not quiet: the ink is the primary
- * step on the panel surface, not a muted one. A hint drawn in a decoration
- * ink is a hint nobody with low vision can read, and the whole point of it is
- * to be read.
- *
- * IT IS DRAWN AS THE SMALLEST MEMBER OF THE OVERLAY FAMILY, on the same panel
- * step as a menu, a popover and a dialog, with the same corner the other small
- * floating objects take. A tooltip is the one surface a reader meets by
- * accident, and a surface that arrives looking like nothing else in the
- * product is one they have to work out before they can read it.
+ * A DARK BUBBLE IN BOTH MODES (`--color-tooltip-*`), its words a step heavier
+ * than the page's small text: a hint set apart from every panel it can sit
+ * over, light on dark at 4.5:1 or more in every theme.
  */
 
 .crewlet-tooltip {
   position: fixed;
   max-width: 260px;
-  padding: var(--spacing-1) var(--spacing-2);
-  background: var(--color-surface-subtle);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-default);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--color-tooltip-surface);
+  color: var(--color-tooltip-text);
+  border: 1px solid var(--color-tooltip-edge);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-snug);
   /* One short line, wrapped rather than cut: a hint that ends in an ellipsis
      is a hint that failed. */
   overflow-wrap: break-word;
-  animation: crewlet-tooltip-in var(--motion-duration-base) var(--motion-easing-emphasized);
+  animation: crewlet-tooltip-in var(--motion-duration-instant) var(--motion-easing-out);
+}
+
+/* A keycap in the bubble takes the bubble's second ink and its hairline. */
+.crewlet-tooltip .crewlet-kbd {
+  border-color: var(--color-tooltip-edge);
+  background: none;
+  color: var(--color-tooltip-meta);
 }
 
 /* Inside a LayerHost the panel is absolute in that host's own box. */
@@ -47,20 +44,13 @@
 
 /*
  * The side the tip was placed on is left on the element for anything that has
- * to know which way it went, and it draws nothing: the entrance is a rise
- * rather than a scale now, and a transform-origin under a translate is a
- * declaration that reads as a decision and is not one.
+ * to know which way it went, and it draws nothing.
  */
 
-/*
- * The same entrance every floating surface here has, at the smallest step: a
- * short rise. A scale was its own gesture for no reason, and next to a menu
- * opening beside it the two read as two different products.
- */
+/* A short fade in at the instant step, and no fade out: it goes when it closes. */
 @keyframes crewlet-tooltip-in {
   from {
     opacity: 0;
-    transform: translateY(var(--spacing-1));
   }
 }
 

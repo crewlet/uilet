@@ -12,7 +12,7 @@ import { dirname, relative, resolve, sep } from 'node:path';
 // from the one the palette suite measures. It is read from the TypeScript
 // source, which Node strips, because the build runs before tsc has emitted
 // dist/color.js; the palette suite and the package entry read the built copy.
-import { contrast, oklabHex, parseHex, parseRgba, toOklab, withAlpha } from '../src/color.ts';
+import { contrast, formatHex, oklabHex, parseHex, parseRgba, toOklab, withAlpha } from '../src/color.ts';
 // The brand mapping's one source is stylesheets/brand.css; the scope's
 // stylesheet is written from it by the same module the artifact kit reads the
 // mapping's public tokens through, so the two cannot disagree about it.
@@ -119,6 +119,16 @@ const BOX_EDGE = { light: 'hairline', dark: 'medium' };
 // a control.
 const FILL_ALPHAS = { row: 0.04, soft: 0.06 };
 
+// THE TOOLTIP, `color.tooltip.*`: a dark bubble in both modes, read from the
+// palette's own steps. Light takes the inverse pair; dark takes the raised
+// rung over the page with the primary ink. Its edge is the hairline of its own
+// words, and `meta` (a keycap, a second line) those words mixed into the bubble.
+const TOOLTIP_STEPS = {
+  light: { surface: ['surface', 'inverse'], text: ['text', 'inverse'] },
+  dark: { surface: ['surface', 'elevated'], text: ['text', 'primary'] },
+};
+const TOOLTIP_META_SHARE = 0.72;
+
 // THE ARTIFACT KIND GROUNDS: the steps a card drawn ON a kind's hue reads (a
 // first-step card, a call to make something of that kind). Six kinds alias a
 // node hue in the base (tokens/color.json) and one carries its own; the steps
@@ -186,17 +196,22 @@ function kindEdge(hue, ink, against, from, where) {
   throw new Error(`${where}: no step of the hue toward the ink clears ${KIND_EDGE_CONTRAST}:1 on the sheet and the card's tint`);
 }
 
-/** A palette's card rung as the opaque colour it paints: `surface.subtle` over `surface.background`. */
-function cardRung(tokens, where) {
+/** A surface rung as the opaque colour it paints over `surface.background`. */
+function opaqueRung(tokens, rung, where) {
   const sheet = parseHex(tokens.color?.surface?.background?.value ?? '');
-  if (sheet === null) throw new Error(`${where}: color.surface.background is not #rrggbb, and the kind grounds are mixed into the card over it`);
-  const subtle = tokens.color?.surface?.subtle?.value ?? '';
-  const opaque = parseHex(subtle);
+  if (sheet === null) throw new Error(`${where}: color.surface.background is not #rrggbb, and color.surface.${rung} is painted over it`);
+  const value = tokens.color?.surface?.[rung]?.value ?? '';
+  const opaque = parseHex(value);
   if (opaque !== null) return opaque;
-  const tint = parseRgba(subtle);
-  if (tint === null) throw new Error(`${where}: color.surface.subtle is "${subtle}", neither #rrggbb nor rgba()`);
+  const tint = parseRgba(value);
+  if (tint === null) throw new Error(`${where}: color.surface.${rung} is "${value}", neither #rrggbb nor rgba()`);
   const over = (top, under) => top * tint.a + under * (1 - tint.a);
   return { r: over(tint.rgb.r, sheet.r), g: over(tint.rgb.g, sheet.g), b: over(tint.rgb.b, sheet.b) };
+}
+
+/** A palette's card rung as the opaque colour it paints: `surface.subtle` over `surface.background`. */
+function cardRung(tokens, where) {
+  return opaqueRung(tokens, 'subtle', where);
 }
 
 /**
@@ -333,6 +348,20 @@ function deriveTints(tokens, where, { contrast = 'standard', kindHues, mode } = 
   tokens.color.fill = Object.fromEntries(
     Object.entries(FILL_ALPHAS).map(([step, alpha]) => [step, { value: withAlpha(fill('text', 'primary'), alpha) }]),
   );
+  // The tooltip's bubble. See TOOLTIP_STEPS.
+  const tooltip = TOOLTIP_STEPS[mode];
+  if (tooltip === undefined) throw new Error(`${where}: the mode is "${mode}", and the tooltip is derived for light or dark`);
+  const bubble = opaqueRung(tokens, tooltip.surface[1], where);
+  const words = fill(...tooltip.text);
+  const wordsRgb = parseHex(words);
+  if (wordsRgb === null) throw new Error(`${where}: color.${tooltip.text.join('.')} is "${words}"; the tooltip's words are #rrggbb`);
+  const mix = (share) => ({ r: wordsRgb.r * share + bubble.r * (1 - share), g: wordsRgb.g * share + bubble.g * (1 - share), b: wordsRgb.b * share + bubble.b * (1 - share) });
+  tokens.color.tooltip = {
+    surface: { value: formatHex(bubble) },
+    text: { value: words },
+    meta: { value: formatHex(mix(TOOLTIP_META_SHARE)) },
+    edge: { value: contrast === 'high' ? fill('border', 'control') : withAlpha(words, EDGE_ALPHAS.hairline[2]) },
+  };
   // The start sheet's shadow. See mirrorShadow.
   const sheetShadow = tokens.shadow?.sheet?.value;
   if (sheetShadow === undefined) throw new Error(`${where}: shadow.sheet is missing, and shadow.sheetStart is derived from it`);
@@ -793,7 +822,7 @@ ${contrastBlock([':root', ':root:not([data-theme="dark"])', ':root[data-theme="l
  * whichever palette block won.
  */
 const MORE_CONTRAST = '@media (prefers-contrast: more)';
-const CONTRAST_EDGES = [...Object.keys(EDGE_ALPHAS).map((step) => `--color-edge-${step}`), '--color-edge-box'];
+const CONTRAST_EDGES = [...Object.keys(EDGE_ALPHAS).map((step) => `--color-edge-${step}`), '--color-edge-box', '--color-tooltip-edge'];
 
 function contrastBlock(selectors) {
   const declarations = CONTRAST_EDGES.map((name) => `    ${name}: var(--color-border-control);`).join('\n');
