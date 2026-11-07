@@ -21,6 +21,7 @@ import {
   Menu,
   MessageAction,
   MessageActions,
+  Prose,
   QuickReaction,
   ReactionBar,
   Tag,
@@ -199,6 +200,32 @@ export const Continuation: Story = {
       </Row>
       <Row id="d" who={SWE} at="11:05">
         On it. The token rotation fix is in the list as well.
+      </Row>
+    </Transcript>
+  ),
+};
+
+/**
+ * Rich text in the words: a `Prose` block a host renders markdown into. It
+ * takes the chat body step (14px on a 22px line), so the name, the plain
+ * words and the rich text in a row are one size on one rhythm.
+ */
+export const RichTextWords: Story = {
+  render: () => (
+    <Transcript>
+      <Row id="a" who={PM} at="11:02">
+        Plain words, set on the row itself.
+      </Row>
+      <Row id="b" who={SWE} at="11:04">
+        <Prose as="div" measure="none">
+          <p>
+            Rich text from a renderer, at the same size: <strong>two fixes</strong> landed in the release branch.
+          </p>
+          <ul style={{ margin: 0 }}>
+            <li>Token rotation no longer drops a session.</li>
+            <li>Search keeps its filters after a reload.</li>
+          </ul>
+        </Prose>
       </Row>
     </Transcript>
   ),

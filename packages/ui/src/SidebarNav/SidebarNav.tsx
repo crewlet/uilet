@@ -36,14 +36,25 @@
  * own prop types, so one list of places feeds both shapes.
  */
 
-import { createContext, useContext, useId, useState, type KeyboardEvent, type MouseEventHandler, type ReactNode } from 'react';
-import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
+import {
+  createContext,
+  useContext,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEventHandler,
+  type ReactNode,
+} from 'react';
+import { ArrowDownGlyph, ArrowUpGlyph, ChevronDownGlyph } from '@crewlethq/icons/glyphs';
+import { Button } from '../Button/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { KeyChip } from '../KeyChip/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { LockedLabel } from '../LockedLabel/index.js';
 import type { CountTone } from '../Count/index.js';
+import { useUnseenRows, type UnseenSide } from './unseen.js';
 
 export interface SidebarNavProps {
   /**
@@ -63,9 +74,19 @@ export interface SidebarNavProps {
    * go to the first and the last.
    */
   dense?: boolean | undefined;
+  /**
+   * While an `unread` row (not muted) lies wholly outside the view of the scroller
+   * holding the list, a pill floats at that edge ("3 unread below"); pressed, it
+   * scrolls the least that reveals the nearest one and moves focus to its row.
+   */
+  unreadPills?: boolean | undefined;
+  /** The pill's words, for a list whose rows are not counted as unread. */
+  unreadPillLabel?: ((count: number, side: UnseenSide) => string) | undefined;
   className?: string | undefined;
   children?: ReactNode;
 }
+
+const pillLabel = (count: number, side: UnseenSide) => `${count} unread ${side}`;
 
 /**
  * The one control a group's heading can carry at its end: the add beside
@@ -325,17 +346,61 @@ function moveInDense(event: KeyboardEvent<HTMLElement>): void {
 }
 
 /** The navigation region in the rail. */
-export function SidebarNav({ label, dense = false, className, children }: SidebarNavProps) {
+export function SidebarNav({
+  label,
+  dense = false,
+  unreadPills = false,
+  unreadPillLabel = pillLabel,
+  className,
+  children,
+}: SidebarNavProps) {
+  const nav = useRef<HTMLElement>(null);
+  const { unseen, reveal } = useUnseenRows(nav, unreadPills);
+  const pill = (side: UnseenSide, count: number) =>
+    count > 0 ? <UnseenPill side={side} label={unreadPillLabel(count, side)} onReveal={reveal} /> : null;
   return (
     // The keys are its links' and buttons', handled where they bubble to.
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <nav
+      ref={nav}
       className={cx('crewlet-sidebar-nav', dense && 'crewlet-sidebar-nav--dense', className)}
       aria-label={label}
       onKeyDown={dense ? moveInDense : undefined}
     >
+      {pill('above', unseen.above)}
       {children}
+      {pill('below', unseen.below)}
     </nav>
+  );
+}
+
+/**
+ * A pill held at one edge of the scroller's view by a sticky, zero-height anchor, so it
+ * floats over the rows without moving them, and comes and goes with the hidden rows.
+ */
+function UnseenPill({
+  side,
+  label,
+  onReveal,
+}: {
+  side: UnseenSide;
+  label: string;
+  onReveal: (side: UnseenSide, pill: HTMLElement | null) => void;
+}) {
+  const Arrow = side === 'above' ? ArrowUpGlyph : ArrowDownGlyph;
+  return (
+    <div className={cx('crewlet-sidebar-nav__unseen', `crewlet-sidebar-nav__unseen--${side}`)}>
+      <Button
+        className="crewlet-sidebar-nav__unseen-pill"
+        variant="secondary"
+        size="small"
+        shape="pill"
+        leadingIcon={<Arrow size="sm" />}
+        onClick={(event) => onReveal(side, event.currentTarget)}
+      >
+        {label}
+      </Button>
+    </div>
   );
 }
 

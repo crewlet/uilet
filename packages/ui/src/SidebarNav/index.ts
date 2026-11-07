@@ -2,6 +2,7 @@ import '../HitArea/HitArea.css';
 import './SidebarNav.css';
 
 export { NavGroup, NavItem, SidebarNav } from './SidebarNav.js';
+export type { UnseenSide as NavUnseenSide } from './unseen.js';
 export type {
   NavBadge,
   NavCount,
