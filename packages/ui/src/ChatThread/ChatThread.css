@@ -34,6 +34,10 @@
   overflow: auto;
   overflow-anchor: none;
   overscroll-behavior: contain;
+  /* A control focused from out of view (Tab onto a row scrolled off the top)
+     comes in a step clear of the edge, so its outset ring is not cut. */
+  scroll-padding-top: var(--spacing-2);
+  scroll-padding-bottom: var(--spacing-2);
 }
 
 /* A ring inside the region, which an edge-to-edge scroller would otherwise clip. */
