@@ -248,6 +248,19 @@
   pointer-events: auto;
 }
 
+/* A ROW NARROWER THAN THE FULL TOOLBAR CAN SPARE drops the quick reactions
+   and keeps the tools, so the toolbar covers less of the name it stands over;
+   the add-reaction tool still opens the whole picker. */
+.crewlet-chat-message {
+  container: crewlet-chat-row / inline-size;
+}
+
+@container crewlet-chat-row (max-width: 420px) {
+  .crewlet-chat-message__actions .crewlet-message-actions__emoji {
+    display: none;
+  }
+}
+
 /* Over a continued row it rises further, so its foot covers only the top of
    the row's one line and the rest of the words stay readable. */
 .crewlet-chat-message.is-continuation > .crewlet-chat-message__actions {
