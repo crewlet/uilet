@@ -289,6 +289,61 @@ test('anchors a jump on the rows a windowed host draws after it, not on their da
   expect(log.scrollTop).toBe(300);
 });
 
+// A DAY SHORT ENOUGH TO FIT THE VIEW IS LOOKED INTO as well: a room's newest
+// page often holds only the last few rows of the day before, and older rows
+// land at that day's start. Mutation: take an item the view holds whole as
+// the anchor, and the view stays at 0 while the reader's row moves to 300.
+test('looks into an item the view holds whole for the row at its top', () => {
+  // A layout read from the DOM as it stands when asked: rows 100px tall
+  // (Message 4, 600px), a section as tall as its rows, all stacked.
+  const heightOf = (el: Element): number =>
+    el.tagName === 'P' ? (el.textContent === 'Message 4' ? 600 : 100) : Array.from(el.children).reduce((sum, c) => sum + heightOf(c), 0);
+  const topOf = (el: Element, log: HTMLElement): number => {
+    if (el.classList.contains('crewlet-chat-thread__items')) return -log.scrollTop;
+    const parent = el.parentElement!;
+    let top = topOf(parent, log);
+    for (const sibling of Array.from(parent.children)) {
+      if (sibling === el) break;
+      top += heightOf(sibling);
+    }
+    return top;
+  };
+  const real = HTMLElement.prototype.getBoundingClientRect;
+  let log: HTMLElement | null = null;
+  HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+    if (!log || this === log) return { x: 0, y: 0, top: 0, bottom: 400, left: 0, right: 400, width: 400, height: 400, toJSON: () => ({}) } as DOMRect;
+    if (!log.contains(this)) return real.call(this);
+    const top = topOf(this, log);
+    const height = heightOf(this);
+    return { x: 0, y: top, top, bottom: top + height, left: 0, right: 400, width: 400, height, toJSON: () => ({}) } as DOMRect;
+  };
+  try {
+    const days = (rows: ReactNode[]) => [
+      <section key="yesterday">{rows}</section>,
+      <section key="today">
+        <p>Message 4</p>
+      </section>,
+    ];
+    const { rerender } = render(<ChatThread label="Conversation">{days(items(3))}</ChatThread>);
+    log = screen.getByRole('log');
+    layout(log, 900);
+    rerender(<ChatThread label="Conversation">{days(items(3))}</ChatThread>);
+    expect(log.scrollTop).toBe(500);
+    log.scrollTop = 0;
+    fireEvent.scroll(log);
+    // Three older rows land at the start of the day the view holds whole.
+    layout(log, 1200);
+    rerender(
+      <ChatThread label="Conversation">
+        {days([<p key="o1">Older 1</p>, <p key="o2">Older 2</p>, <p key="o3">Older 3</p>, ...items(3)])}
+      </ChatThread>,
+    );
+    expect(log.scrollTop).toBe(300);
+  } finally {
+    HTMLElement.prototype.getBoundingClientRect = real;
+  }
+});
+
 // A VIEW THAT SHRINKS UNDER A READER AT THE END keeps the latest in sight: a
 // composer growing a line took the last line of the conversation with it.
 test('keeps the latest in sight when the view shrinks under a reader at the end', () => {
