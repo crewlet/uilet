@@ -131,6 +131,24 @@ test('a footer that draws nothing takes no room, and one that does is shown', ()
   }
 });
 
+// THE ROW IS A SIZE CONTAINER AND NOTHING MORE: no layout or paint containment
+// and no stacking context of its own, so its toolbar keeps rising over the
+// day's pinned pill in the transcript's one stacking context. Mutation: give
+// the row \`contain: layout\` or a z-index, and this fails.
+test('a row queries its own width without isolating its toolbar', () => {
+  const uninstall = installSheets(...SHEETS);
+  try {
+    render(<Row />);
+    const style = getComputedStyle(screen.getByRole('article'));
+    expect(style.getPropertyValue('container-type')).toBe('inline-size');
+    expect(['', 'none']).toContain(style.getPropertyValue('contain'));
+    expect(['', 'auto']).toContain(style.zIndex);
+    expect(['', 'auto']).toContain(style.isolation);
+  } finally {
+    uninstall();
+  }
+});
+
 test('the flash fades out, and stands still under reduced motion', () => {
   const moving = installMotion('no-preference', ...SHEETS);
   try {

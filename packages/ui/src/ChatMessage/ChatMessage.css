@@ -253,7 +253,8 @@
    and keeps the tools, so the toolbar covers less of the name it stands over;
    the add-reaction tool still opens the whole picker. */
 .crewlet-chat-message {
-  container: crewlet-chat-row / inline-size;
+  container-name: crewlet-chat-row;
+  container-type: inline-size;
 }
 
 @container crewlet-chat-row (max-width: 420px) {
