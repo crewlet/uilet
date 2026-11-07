@@ -7,8 +7,9 @@ export interface ActivityLineProps extends Omit<HTMLAttributes<HTMLDivElement>, 
   typing?: string | undefined;
   /**
    * The agents at work, drawn as one `WorkingLine`: their faces, one sentence
-   * naming them and, on demand, a line per agent. Empty or left out, nothing
-   * is drawn for them.
+   * naming them and, on demand, a line per agent. Empty, nothing is drawn and
+   * the line's region waits for the first to start; left out, the line has
+   * no working line at all (a line that only ever says who is typing).
    */
   agents?: readonly WorkingAgent[] | undefined;
   /** The working line's words, for a surface in another language. */
@@ -40,7 +41,9 @@ export function ActivityLine({ typing, agents, workingLabels, className, ...rest
           </>
         ) : null}
       </span>
-      <WorkingLine agents={agents ?? []} labels={workingLabels} className="crewlet-activity-line__working" />
+      {agents === undefined ? null : (
+        <WorkingLine agents={agents} labels={workingLabels} className="crewlet-activity-line__working" />
+      )}
     </div>
   );
 }

@@ -31,7 +31,7 @@ test('says who is typing in a status, with the dots after the words, and stands 
 });
 
 test('draws the agents at work as one working line, whose region stays mounted while none is', () => {
-  const { container, rerender } = render(<ActivityLine />);
+  const { container, rerender } = render(<ActivityLine agents={[]} />);
   const line = container.querySelector('.crewlet-working-line')!;
   const region = line.querySelector('[role="status"]')!;
   expect(line.classList.contains('is-idle')).toBe(true);
@@ -40,6 +40,12 @@ test('draws the agents at work as one working line, whose region stays mounted w
   expect(line.querySelector('.crewlet-working-line__names')!.textContent).toBe('Senior Backend Engineer and CTO');
   expect(line.querySelector('.crewlet-working-line__verb')!.textContent).toBe('are working');
   expect(region.textContent).toBe('Senior Backend Engineer and CTO are working.');
+});
+
+test('carries no working line where it is never handed agents', () => {
+  const { container } = render(<ActivityLine typing="Designer is typing" />);
+  expect(container.querySelector('.crewlet-working-line')).toBeNull();
+  expect(screen.getAllByRole('status')).toHaveLength(1);
 });
 
 test('keeps people typing apart from agents at work: words and dots, with no face', () => {
