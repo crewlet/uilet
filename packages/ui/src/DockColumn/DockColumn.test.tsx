@@ -12,7 +12,7 @@ import { StrictMode, useRef } from 'react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
 import { Tooltip } from '../Tooltip/index.js';
-import { DockColumn } from './index.js';
+import { DockColumn, type DockColumnSide } from './index.js';
 
 const restorers: (() => void)[] = [];
 
@@ -335,7 +335,15 @@ describe('the stylesheet', () => {
 });
 
 describe('sized by the reader', () => {
-  function Sized({ open = true, side = 'start' as const, onValueChange = (_px: number) => {} }) {
+  function Sized({
+    open = true,
+    side = 'start',
+    onValueChange = () => {},
+  }: {
+    open?: boolean;
+    side?: DockColumnSide;
+    onValueChange?: (px: number) => void;
+  }) {
     return (
       <DockColumn
         open={open}
