@@ -22,7 +22,8 @@ export interface ActivityLineProps extends Omit<HTMLAttributes<HTMLDivElement>, 
  *
  * KEPT APART. People typing are words and dots, with no face; agents at work
  * are faces, names under a sweeping band and dots. Both at once stand side by
- * side, and wrap to two lines where the column is too narrow for both.
+ * side, the people first, and wrap to two lines where the column is too
+ * narrow for both.
  *
  * EACH ANNOUNCED ONCE PER CHANGE. Typing is a polite status as it changes;
  * the working line's own region names who starts and stops, never a phrase.
@@ -31,7 +32,6 @@ export interface ActivityLineProps extends Omit<HTMLAttributes<HTMLDivElement>, 
 export function ActivityLine({ typing, agents, workingLabels, className, ...rest }: ActivityLineProps) {
   return (
     <div {...rest} className={cx('crewlet-activity-line', className)}>
-      <WorkingLine agents={agents ?? []} labels={workingLabels} className="crewlet-activity-line__working" />
       <span className="crewlet-activity-line__typing" role="status">
         {typing ? (
           <>
@@ -40,6 +40,7 @@ export function ActivityLine({ typing, agents, workingLabels, className, ...rest
           </>
         ) : null}
       </span>
+      <WorkingLine agents={agents ?? []} labels={workingLabels} className="crewlet-activity-line__working" />
     </div>
   );
 }

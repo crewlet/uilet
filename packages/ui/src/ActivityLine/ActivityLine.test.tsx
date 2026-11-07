@@ -48,6 +48,9 @@ test('keeps people typing apart from agents at work: words and dots, with no fac
   expect(typing.querySelector('.crewlet-avatar')).toBeNull();
   expect(typing.textContent).toBe('Designer is typing');
   expect(container.querySelector('.crewlet-working-line .crewlet-avatar-stack')).not.toBeNull();
+  // People first, in reading order as on screen.
+  const root = container.firstElementChild!;
+  expect(root.firstElementChild).toBe(typing);
 });
 
 test('keeps one line of height, and never grows wider than its column', () => {

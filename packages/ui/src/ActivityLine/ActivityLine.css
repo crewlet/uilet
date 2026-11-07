@@ -19,6 +19,12 @@
   max-width: 100%;
 }
 
+/* The working line takes the room the typing before it leaves, and wraps
+   under it below 16rem. */
+.crewlet-activity-line > .crewlet-working-line {
+  flex: 1 1 16rem;
+}
+
 .crewlet-activity-line__typing {
   display: inline-flex;
   align-items: center;

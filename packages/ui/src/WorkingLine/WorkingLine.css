@@ -8,8 +8,13 @@
 .crewlet-working-line {
   /* The ground the faces' cut-out is drawn in: the transcript's. */
   --crewlet-avatar-stack-ground: var(--crewlet-chat-ground);
+  /* Its own width decides how it words three or more agents (below), so it
+     takes its column's width rather than its words'. */
+  container: crewlet-working-line / inline-size;
   display: flex;
+  box-sizing: border-box;
   flex-direction: column;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   color: var(--color-text-secondary);
@@ -24,12 +29,14 @@
   display: contents;
 }
 
-/* One line as tall as its 20px faces, never wider than its column. */
+/* One line as tall as its 20px faces, as wide as its words and never wider
+   than its column: the toggle's target is the words, not the empty column. */
 .crewlet-working-line__summary {
   position: relative;
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+  width: fit-content;
   min-width: 0;
   max-width: 100%;
   min-height: 20px;
@@ -77,6 +84,24 @@
 .crewlet-working-line__names {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* "6 agents": in place of the names where the line is narrow (below). */
+.crewlet-working-line__count {
+  display: none;
+}
+
+/* Under 21rem three or more names would be cut to a few letters, so they are
+   counted instead: "6 agents are working". */
+@container crewlet-working-line (max-width: 21rem) {
+  .crewlet-working-line__who.is-counted > .crewlet-working-line__names,
+  .crewlet-working-line__who.is-counted > .crewlet-working-line__others {
+    display: none;
+  }
+
+  .crewlet-working-line__who.is-counted > .crewlet-working-line__count {
+    display: block;
+  }
 }
 
 .crewlet-working-line__verb {
