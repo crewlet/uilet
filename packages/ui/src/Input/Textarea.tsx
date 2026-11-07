@@ -129,11 +129,15 @@ function contentHeight(el: HTMLTextAreaElement): string | null {
   mirror.rows = el.rows;
   mirror.placeholder = el.placeholder;
   mirror.value = el.value;
+  const content = mirror.scrollHeight;
+  // Emptied once read, so a draft's words never stay in a hidden field.
+  mirror.value = '';
+  mirror.placeholder = '';
   const border =
     style.boxSizing === 'border-box'
       ? Number.parseFloat(style.borderTopWidth || '0') + Number.parseFloat(style.borderBottomWidth || '0')
       : 0;
-  return `${mirror.scrollHeight + (Number.isFinite(border) ? border : 0)}px`;
+  return `${content + (Number.isFinite(border) ? border : 0)}px`;
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
@@ -179,12 +183,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
    * The border is added back from the computed style rather than assumed,
    * since a caller's own class can change it.
    *
-   * MEASURED ON A MIRROR, never by collapsing the field itself. Setting the
-   * field's own height to `auto` to read its content laid the page out with a
-   * one-line box for a moment on every keystroke: a message list above a
-   * growing composer was briefly taller, the browser clamped its scroll, and
-   * the list took the clamp for the reader scrolling up and stopped following
-   * its newest message.
+   * Measured on a hidden mirror, never by collapsing the field: collapsing it
+   * relaid the page on every keystroke.
    */
   useEffect(() => {
     if (!autoResize) return;

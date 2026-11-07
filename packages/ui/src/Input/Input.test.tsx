@@ -920,6 +920,21 @@ test('an auto-resizing textarea never collapses its own height to measure it', (
   }
 });
 
+// THE MIRROR KEEPS NO WORDS: a draft measured on it is cleared from it once
+// its height is read. Mutation: leave the value, and the hidden field holds
+// the draft.
+test('the hidden field an auto-resizing textarea is measured on is emptied after each measurement', () => {
+  render(<Textarea autoResize defaultValue="" placeholder="Message the room" aria-label="Notes" style={{ width: '200px' }} />);
+  const box = screen.getByLabelText('Notes') as HTMLTextAreaElement;
+  fireEvent.input(box, { target: { value: 'a private draft' } });
+  const hidden = Array.from(document.querySelectorAll<HTMLTextAreaElement>('textarea[aria-hidden="true"]'));
+  expect(hidden.length).toBeGreaterThan(0);
+  for (const mirror of hidden) {
+    expect(mirror.value).toBe('');
+    expect(mirror.placeholder).toBe('');
+  }
+});
+
 test('helperOnFocus keeps the helper described but shows it only while the field has focus', () => {
   const { container } = render(
     <FormField label="Name" helper="Seat names are unique." helperOnFocus>
