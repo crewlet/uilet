@@ -108,6 +108,24 @@ export const NewLine: Story = {
 };
 
 /**
+ * The New line glows once as it appears (`pulse`), drawing the eye to where
+ * the reader left off: in for a step, held, out for a step. Still under
+ * reduced motion. Remount the story to see it again.
+ */
+export const NewLinePulse: Story = {
+  render: () => (
+    <List>
+      <ChatDay label="Yesterday">
+        {rows('Yesterday', 3)}
+        <ChatDivider variant="unread" label="New" pulse />
+        {rows('Yesterday, unread', 3)}
+      </ChatDay>
+      <ChatDay label="Today">{rows('Today', 2)}</ChatDay>
+    </List>
+  ),
+};
+
+/**
  * A host with a bar floating over the top of the list (an unread banner)
  * raises the pin, so the pills pin under the bar rather than behind it.
  */

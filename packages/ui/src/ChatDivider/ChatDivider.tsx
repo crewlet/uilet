@@ -21,6 +21,13 @@ export interface ChatDividerProps extends Omit<HTMLAttributes<HTMLDivElement>, '
   variant: ChatDividerVariant;
   /** The words on the line, and its name for a screen reader: "New", "3 replies". */
   label: string;
+  /**
+   * The `unread` line glows once as it appears, drawing the eye to where the
+   * reader left off; still under reduced motion. Pass it for the render that
+   * opens a room at the reader's place, not for a line a windowed list draws
+   * again as it scrolls back into view. Off by default.
+   */
+  pulse?: boolean | undefined;
 }
 
 /**
@@ -38,14 +45,19 @@ export interface ChatDividerProps extends Omit<HTMLAttributes<HTMLDivElement>, '
  * find it again by `data-divider` (to bring it into view, or to tell whether
  * it is on screen for an unread banner).
  */
-export function ChatDivider({ variant, label, className, ...rest }: ChatDividerProps) {
+export function ChatDivider({ variant, label, pulse = false, className, ...rest }: ChatDividerProps) {
   return (
     <div
       {...rest}
       role="separator"
       aria-label={label}
       data-divider={variant}
-      className={cx('crewlet-chat-divider', `crewlet-chat-divider--${variant}`, className)}
+      className={cx(
+        'crewlet-chat-divider',
+        `crewlet-chat-divider--${variant}`,
+        pulse && variant === 'unread' && 'is-pulsing',
+        className,
+      )}
     >
       <span className="crewlet-chat-divider__label" aria-hidden="true">
         {label}

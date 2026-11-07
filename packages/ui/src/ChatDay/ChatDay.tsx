@@ -18,6 +18,8 @@ export interface ChatDayProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role
    * line, rather than as a second line under it.
    */
   unread?: string | undefined;
+  /** The New line on the rule glows once as it appears (ChatDivider's `pulse`). */
+  pulse?: boolean | undefined;
   /** The day's rows, oldest first. */
   children?: ReactNode;
 }
@@ -41,11 +43,11 @@ export interface ChatDayProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role
  * same name, drawn; the rule is decoration, unless it carries the New line,
  * which is a separator of its own.
  */
-export function ChatDay({ label, pill, unread, className, children, ...rest }: ChatDayProps) {
+export function ChatDay({ label, pill, unread, pulse = false, className, children, ...rest }: ChatDayProps) {
   return (
     <div {...rest} role="group" aria-label={label} className={cx('crewlet-chat-day', className)}>
       <div className="crewlet-chat-day__label">{pill ?? <span className="crewlet-chat-day__pill">{label}</span>}</div>
-      <div className="crewlet-chat-day__rule">{unread ? <ChatDivider variant="unread" label={unread} /> : null}</div>
+      <div className="crewlet-chat-day__rule">{unread ? <ChatDivider variant="unread" label={unread} pulse={pulse} /> : null}</div>
       {children}
     </div>
   );
