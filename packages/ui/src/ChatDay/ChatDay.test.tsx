@@ -93,7 +93,8 @@ test('the pill pins within its own day, and its own margins stay positive', () =
   const label = rule(css, '.crewlet-chat-day__label');
   expect(label).toMatch(/position:\s*sticky;/);
   expect(label).toMatch(/top:\s*var\(--crewlet-chat-day-pin\);/);
-  expect(label).toMatch(/margin-top:\s*calc\(var\(--crewlet-chat-day-gap\) - var\(--crewlet-chat-day-pill\) \/ 2\);/);
+  // Twice the day's gap above the rule, the gap under it: positive either way.
+  expect(label).toMatch(/margin-top:\s*calc\(var\(--crewlet-chat-day-gap\) \* 2 - var\(--crewlet-chat-day-pill\) \/ 2\);/);
   expect(label).not.toMatch(/margin[\w-]*:\s*-|margin[\w-]*:\s*calc\(\s*-/);
   expect(rule(css, '.crewlet-chat-day__rule')).toMatch(/margin:\s*calc\(var\(--crewlet-chat-day-pill\) \/ -2\)/);
   // The day is the sticky box's range.
