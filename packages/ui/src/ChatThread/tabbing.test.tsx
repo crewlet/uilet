@@ -152,3 +152,15 @@ test('a control in the log scrolled out of view is passed over, not scrolled to'
   tab(true);
   expect(focused()).toBe(button('Before'));
 });
+
+test('Tab from a control between rows follows the same rule', () => {
+  mount();
+  layout({ 1: -400, 2: 30, 3: 160 }, { 'Older messages': -900, 'Day pill': 4 });
+  button('Day pill').focus();
+  tab(true);
+  // Not Older messages far above, not the rows' controls, not the log.
+  expect(focused()).toBe(button('Before'));
+  button('Day pill').focus();
+  tab();
+  expect(focused()).toBe(button('After'));
+});

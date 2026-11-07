@@ -38,16 +38,16 @@ function inView(el: HTMLElement, log: HTMLElement): boolean {
 }
 
 /**
- * The next stop from `row` outward, skipping every control inside another
+ * The next stop from `from` (a row, or a control between rows) outward, skipping every control inside another
  * row, the log itself, and a control in the log scrolled out of view (Older
  * messages at the head of a long history), which focus would scroll to.
  */
-function stopBeside(row: HTMLElement, log: HTMLElement, backward: boolean): HTMLElement | null {
-  const all = tabbables(row.ownerDocument);
-  const mine = new Set(tabbables(row));
-  const after = (el: HTMLElement) => row.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING;
+function stopBeside(from: HTMLElement, log: HTMLElement, backward: boolean): HTMLElement | null {
+  const all = tabbables(from.ownerDocument);
+  const mine = new Set(tabbables(from));
+  const after = (el: HTMLElement) => from.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING;
   const candidates = backward
-    ? all.filter((el) => !after(el) && !mine.has(el) && el !== row).reverse()
+    ? all.filter((el) => !after(el) && !mine.has(el) && el !== from).reverse()
     : all.filter((el) => after(el) && !mine.has(el));
   return candidates.find((el) => el !== log && !rowOf(el, log) && (!log.contains(el) || inView(el, log))) ?? null;
 }
@@ -94,7 +94,16 @@ export function useLogTabbing(log: RefObject<HTMLElement | null>) {
         next = landing(scroller, last.current);
       } else {
         const row = rowOf(target, scroller);
-        if (!row) return;
+        if (!row) {
+          // A control between rows (a day's pill) moves by the same rule, so
+          // a stop out of view above it is never scrolled to either.
+          if (!scroller.contains(target)) return;
+          next = stopBeside(target, scroller, event.shiftKey);
+          if (!next) return;
+          event.preventDefault();
+          next.focus();
+          return;
+        }
         const inside = tabbables(row).filter((el) => el !== row);
         const at = target === row ? -1 : inside.indexOf(target);
         if (event.shiftKey) next = at > 0 ? inside[at - 1]! : at === 0 ? row : stopBeside(row, scroller, true);
