@@ -10,7 +10,11 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { installAtWidth, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
+import { installAtWidth, installMotion, installThemed, userAction } from '../../../../apps/ui-tests/src/cascade.js';
+import { shadow, themes } from '@crewlethq/tokens';
+import { contrast, flatten, parseHex } from '@crewlethq/tokens/test/palette';
+import { FOCUS_MODALITY_ATTRIBUTE } from '../utils/focusModality.js';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { SendButton } from '../SendButton/index.js';
 import { Tag } from '../Tag/index.js';
 import { COMPOSER_COUNTER_AT, Composer } from './index.js';
@@ -314,3 +318,89 @@ test('a chat composer says when it is empty, which is when its formatting row re
   fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), { target: { value: 'Hello' } });
   expect(box.classList.contains('is-empty')).toBe(false);
 });
+
+/*
+ * THE CHAT BOX'S EDGE AND FOCUS. At rest the quiet box edge (the hairline in
+ * light, the medium step in dark), unmoved by the pointer; on focus the strong
+ * step and a softer lift, and for the keyboard that step two pixels thick, as
+ * an outline in the same grey rather than an accent ring.
+ */
+function chatBox() {
+  const { container } = render(<Composer appearance="chat" value="" onChange={() => {}} label="Message" submitOn="enter" />);
+  return { box: container.querySelector<HTMLElement>('.crewlet-composer')!, field: screen.getByRole('textbox', { name: 'Message' }) };
+}
+
+test('a chat box rests on the quiet box edge, and the pointer passing over it changes nothing', () => {
+  for (const theme of ['light', 'dark'] as const) {
+    const { edge } = themes[theme].color;
+    const uninstall = installThemed(theme, 'ChatMessage/ChatScale.css', 'Composer/Composer.css');
+    const { box } = chatBox();
+    const rest = getComputedStyle(box).borderTopColor;
+    expect(rest, theme).toBe(probe(edge.box));
+    expect(edge.box, theme).toBe(theme === 'light' ? edge.hairline : edge.medium);
+    const leave = userAction(box, 'hover');
+    expect(getComputedStyle(box).borderTopColor, `${theme} hover`).toBe(rest);
+    leave();
+    cleanup();
+    uninstall();
+  }
+});
+
+test('focus steps a chat box to the strong edge, two pixels for the keyboard, with no accent ring', () => {
+  for (const theme of ['light', 'dark'] as const) {
+    const { color } = themes[theme];
+    const uninstall = installThemed(theme, 'Input/Input.css', 'ChatMessage/ChatScale.css', 'Composer/Composer.css');
+    const { box, field } = chatBox();
+    tabTo(field);
+    const strong = probe(color.edge.strong);
+    const style = getComputedStyle(box);
+    expect(style.borderTopColor, theme).toBe(strong);
+    expect([style.outlineStyle, style.outlineWidth, style.outlineColor], theme).toEqual(['solid', '2px', strong]);
+    expect(style.boxShadow, theme).toBe(shadow.sm);
+    // The step clears 3:1 against the page round the box and the box's own ground.
+    const page = parseHex(color.surface.background)!;
+    const ground = flatten(color.fill.row, page);
+    const edge = parseHex(color.edge.strong)!;
+    expect(contrast(edge, page), `${theme} on the page`).toBeGreaterThanOrEqual(3);
+    expect(contrast(edge, ground), `${theme} on the box`).toBeGreaterThanOrEqual(3);
+    // At rest the edge is quiet, under the 3:1 a field's edge draws.
+    expect(contrast(flatten(color.edge.box, page), page), `${theme} at rest`).toBeLessThan(3);
+    cleanup();
+    uninstall();
+  }
+});
+
+test('a pointer gets the edge step alone, its outline drawn only in forced colours', () => {
+  const uninstall = installThemed('light', 'Input/Input.css', 'ChatMessage/ChatScale.css', 'Composer/Composer.css');
+  document.documentElement.setAttribute(FOCUS_MODALITY_ATTRIBUTE, 'pointer');
+  try {
+    const { box, field } = chatBox();
+    field.focus();
+    const style = getComputedStyle(box);
+    expect(style.borderTopColor).toBe(probe(themes.light.color.edge.strong));
+    expect([style.outlineWidth, style.outlineColor]).toEqual(['1px', probe('transparent')]);
+  } finally {
+    document.documentElement.removeAttribute(FOCUS_MODALITY_ATTRIBUTE);
+    uninstall();
+  }
+});
+
+test('a chat box steps its edge at the chat feedback step, and not at all under reduced motion', () => {
+  for (const [preference, expected] of [['no-preference', /border-color/], ['reduce', /^(none|all 0s ease 0s)?$/]] as const) {
+    const uninstall = installMotion(preference, 'ChatMessage/ChatScale.css', 'Composer/Composer.css');
+    const { box } = chatBox();
+    expect(getComputedStyle(box).transition, preference).toMatch(expected);
+    cleanup();
+    uninstall();
+  }
+});
+
+/** A colour as jsdom computes it, for comparing a token's value with a computed style. */
+function probe(colour: string): string {
+  const el = document.createElement('i');
+  el.style.color = colour;
+  document.body.append(el);
+  const value = getComputedStyle(el).color;
+  el.remove();
+  return value;
+}

@@ -3,8 +3,10 @@ import { IconButton, IconButtonLink } from '@crewlethq/ui';
 import {
   ArrowUpGlyph,
   CopyGlyph,
+  EllipsisVerticalGlyph,
   GripVerticalGlyph,
   PlusGlyph,
+  SearchGlyph,
   SettingsGlyph,
   SlidersVerticalGlyph,
   TrashGlyph,
@@ -21,7 +23,7 @@ const meta: Meta<typeof IconButton> = {
     icon: <PlusGlyph />,
   },
   argTypes: {
-    size: { control: 'inline-radio', options: ['sm', 'md', 'lg'] },
+    size: { control: 'inline-radio', options: ['sm', 'md', 'lg', 'header'] },
     variant: {
       control: 'inline-radio',
       options: ['primary', 'secondary', 'ghost', 'ghost-brand', 'ghost-danger', 'soft-brand'],
@@ -91,6 +93,32 @@ export const Sizes: Story = {
       <IconButton variant="ghost" size="sm" label="Small" icon={<SettingsGlyph />} />
       <IconButton variant="ghost" size="md" label="Medium" icon={<SettingsGlyph />} />
       <IconButton variant="ghost" size="lg" label="Large" icon={<SettingsGlyph />} />
+      <IconButton variant="ghost" size="header" label="Header" icon={<SettingsGlyph />} />
+    </div>
+  ),
+};
+
+/**
+ * `header`: the md square (30px) with an 18px glyph, for the few controls in a pane or
+ * room header, so they read at the weight of the 18px title beside them.
+ */
+export const InAHeader: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--spacing-1)',
+        width: 360,
+        minHeight: 49,
+        padding: '0 var(--spacing-3)',
+        background: 'var(--color-surface-background)',
+      }}
+    >
+      <span style={{ flex: 1, fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-bold)' }}>Thread</span>
+      <IconButton variant="ghost" size="header" label="Search" icon={<SearchGlyph />} />
+      <IconButton variant="ghost" size="header" label="More actions" icon={<EllipsisVerticalGlyph />} />
+      <IconButton variant="ghost" size="header" label="Close" icon={<XGlyph />} />
     </div>
   ),
 };

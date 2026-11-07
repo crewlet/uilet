@@ -199,6 +199,14 @@
   overflow-wrap: anywhere;
 }
 
+/* ONE TYPE SIZE IN A ROW. Rich text drawn in the words (a `Prose`) takes the
+   chat body step rather than its own document step, at two classes so it
+   holds in any bundle order. */
+.crewlet-chat-message__body .crewlet-prose {
+  font-size: var(--crewlet-chat-text);
+  line-height: var(--crewlet-chat-line);
+}
+
 /* Emphasis in a message is the semibold step, as it is everywhere else in
    the product: the browser's own bold read heavier than the names. */
 .crewlet-chat-message__body :is(b, strong) {

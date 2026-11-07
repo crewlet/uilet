@@ -77,6 +77,13 @@
   height: var(--size-control-lg);
 }
 
+/* A header's control: the md square, its glyph at the 18px step so it reads beside a title. */
+.crewlet-icon-btn--header {
+  --crewlet-icon-btn-glyph-inset: calc((var(--size-control-md) - var(--font-size-lg)) / 2);
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+}
+
 /*
  * The glyph inside follows the button's step, at the ratio a label sets: a
  * medium button draws its leading glyph at its own 13px text, so a square one
@@ -100,6 +107,11 @@
 .crewlet-icon-btn--lg .crewlet-glyph {
   width: var(--font-size-xl);
   height: var(--font-size-xl);
+}
+
+.crewlet-icon-btn--header .crewlet-glyph {
+  width: var(--font-size-lg);
+  height: var(--font-size-lg);
 }
 
 /*
