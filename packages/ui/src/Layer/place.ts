@@ -47,6 +47,13 @@ export const LAYER_REPOSITION_EVENT = 'crewlet:viewchange';
 export const LAYER_GAP = 4;
 
 /**
+ * How a popup arrives: `rise`, a short rise and fade, or `instant`, drawn the
+ * frame it is placed, for a surface opened over and over while a reader
+ * works (a chat's message menu, its emoji picker).
+ */
+export type PopupEntrance = 'rise' | 'instant';
+
+/**
  * Where a surface of `size` goes beside `anchor`, inside `bounds`.
  *
  * On the preferred side of the anchor and aligned to its start; on the other

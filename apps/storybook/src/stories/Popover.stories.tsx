@@ -34,6 +34,28 @@ export const Basic: Story = {
   ),
 };
 
+/** Drawn the frame it is placed (`entrance="instant"`), for a panel a reader opens over and over, as in a conversation. */
+export const InstantEntrance: Story = {
+  render: () => (
+    <Popover
+      label="Details"
+      entrance="instant"
+      trigger={(open, toggle) => (
+        <Button variant="outline" onClick={toggle}>
+          {open ? 'Close menu' : 'Open menu'}
+        </Button>
+      )}
+    >
+      {(close) => (
+        <div style={{ padding: 'var(--spacing-3)' }}>
+          <p style={{ margin: '0 0 var(--spacing-2)' }}>Popover content.</p>
+          <Button size="small" onClick={close}>Close</Button>
+        </div>
+      )}
+    </Popover>
+  ),
+};
+
 export const AlignEnd: Story = {
   render: () => (
     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

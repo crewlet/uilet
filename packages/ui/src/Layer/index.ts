@@ -20,7 +20,7 @@ export type {
 } from './stack.js';
 
 export { LAYER_GAP, LAYER_REPOSITION_EVENT, anchorGone, outsideBounds, placePopup, viewportBounds, visibleBounds } from './place.js';
-export type { Placement, PlacementRect, PlacementSize } from './place.js';
+export type { Placement, PlacementRect, PlacementSize, PopupEntrance } from './place.js';
 
 export { LayerHost, useLayerContainer } from './LayerHost.js';
 export type { LayerHostProps } from './LayerHost.js';

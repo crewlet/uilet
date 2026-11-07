@@ -181,6 +181,11 @@
  * The rows carry no transition, and that is the rule rather than an omission:
  * the arrows move the highlight, and a fade lags a held arrow key.
  */
+/* `entrance="instant"`: drawn the frame it is placed, with no rise or fade. */
+.crewlet-popover--instant {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .crewlet-popover {
     animation: none;

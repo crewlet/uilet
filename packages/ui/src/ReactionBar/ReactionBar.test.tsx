@@ -187,3 +187,14 @@ test('a reaction stored as a shortcode is drawn as its glyph and toggled as stor
   // One the picker does not know is drawn by its words, never its colons.
   expect(screen.getByRole('button', { name: /sparkles/ }).querySelector('.crewlet-reaction__emoji')?.textContent).toBe('sparkles');
 });
+
+// In a conversation the picker opens over and over, so it arrives at once.
+test('the add pill opens its picker with the instant entrance, unless told otherwise', () => {
+  const { unmount } = render(<AddReaction onPick={() => {}} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add a reaction' }));
+  expect(screen.getByRole('dialog', { name: 'Add a reaction' }).classList.contains('crewlet-popover--instant')).toBe(true);
+  unmount();
+  render(<AddReaction onPick={() => {}} entrance="rise" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add a reaction' }));
+  expect(screen.getByRole('dialog', { name: 'Add a reaction' }).classList.contains('crewlet-popover--instant')).toBe(false);
+});

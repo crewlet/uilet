@@ -61,6 +61,11 @@
   position: absolute;
 }
 
+/* `entrance="instant"`: drawn the frame it is placed, with no rise or fade. */
+.crewlet-menu--instant {
+  animation: none;
+}
+
 /* Up from under its trigger, which is where it is about to be. */
 @keyframes crewlet-menu-in {
   from {

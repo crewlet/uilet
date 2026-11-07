@@ -1,7 +1,7 @@
 import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactElement } from 'react';
 import { SearchGlyph } from '@crewlethq/icons/glyphs';
 import { Input } from '../Input/index.js';
-import { isComposing } from '../Layer/index.js';
+import { isComposing, type PopupEntrance } from '../Layer/index.js';
 import { Popover, type PopoverAlign, type PopoverSide } from '../Popover/index.js';
 import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
@@ -46,6 +46,8 @@ export interface EmojiPickerProps {
   align?: PopoverAlign | undefined;
   /** The preferred side, `bottom` by default; it flips where there is no room. */
   side?: PopoverSide | undefined;
+  /** How the panel arrives: `rise` by default, or `instant`, drawn the frame it is placed. */
+  entrance?: PopupEntrance | undefined;
   /** The emoji offered, `EMOJI_GROUPS` by default. */
   groups?: readonly EmojiGroup[] | undefined;
   labels?: Partial<EmojiPickerLabels> | undefined;
@@ -103,6 +105,7 @@ export function EmojiPicker({
   onOpenChange,
   align = 'end',
   side = 'bottom',
+  entrance,
   groups = EMOJI_GROUPS,
   labels: overrides,
 }: EmojiPickerProps) {
@@ -171,6 +174,7 @@ export function EmojiPicker({
       label={label}
       align={align}
       side={side}
+      entrance={entrance}
       className="crewlet-emoji-picker"
       initialFocus={() => field.current}
       trigger={(open, toggle) =>

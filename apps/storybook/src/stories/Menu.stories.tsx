@@ -25,6 +25,11 @@ export const RowActions: Story = {
   args: { label: 'Actions for Software Engineer', items: actions },
 };
 
+/** Drawn the frame it is placed (`entrance="instant"`), for a menu a reader opens over and over, such as a message's. */
+export const InstantEntrance: Story = {
+  args: { label: 'Actions for this message', items: actions, entrance: 'instant' },
+};
+
 /** A trigger with visible text, for a toolbar where there is room for a word. */
 export const WithLabel: Story = {
   args: { label: 'Actions for Software Engineer', items: actions, trigger: 'Actions', triggerVariant: 'secondary' },
