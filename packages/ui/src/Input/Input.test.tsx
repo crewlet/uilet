@@ -823,7 +823,7 @@ test('an uncontrolled auto-resizing textarea re-measures as it is typed into', (
     },
   });
   try {
-    render(<Textarea autoResize defaultValue="one line" aria-label="Notes" />);
+    render(<Textarea autoResize defaultValue="one line" aria-label="Notes" style={{ width: '200px' }} />);
     const box = screen.getByLabelText('Notes') as HTMLTextAreaElement;
     heights.push(box.style.height);
 
@@ -874,13 +874,48 @@ test('and it adds back the border scrollHeight leaves out', () => {
   const realStyle = globalThis.getComputedStyle;
   globalThis.getComputedStyle = ((el: Element, pseudo?: string | null) =>
     el instanceof HTMLTextAreaElement
-      ? ({ boxSizing: 'border-box', borderTopWidth: '1px', borderBottomWidth: '1px' } as CSSStyleDeclaration)
+      ? ({ width: '200px', boxSizing: 'border-box', borderTopWidth: '1px', borderBottomWidth: '1px' } as CSSStyleDeclaration)
       : realStyle(el, pseudo)) as typeof globalThis.getComputedStyle;
   try {
     render(<Textarea autoResize defaultValue="x" aria-label="Notes" />);
     expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).style.height).toBe('42px');
   } finally {
     globalThis.getComputedStyle = realStyle;
+    delete (HTMLTextAreaElement.prototype as unknown as Record<string, unknown>).scrollHeight;
+  }
+});
+
+/*
+ * A GROWING FIELD IS MEASURED WITHOUT BEING COLLAPSED. Setting its own height
+ * to `auto` to read its content laid the page out with a one-line box for a
+ * moment on every keystroke, and a message list above a growing composer had
+ * its scroll clamped and stopped following its newest message. Mutation:
+ * measure by setting the field's height to `auto`, and the field's height
+ * passes through `auto` on input.
+ */
+test('an auto-resizing textarea never collapses its own height to measure it', () => {
+  let content = 1;
+  Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', {
+    configurable: true,
+    get() {
+      return content * 20;
+    },
+  });
+  try {
+    render(<Textarea autoResize defaultValue="one line" aria-label="Notes" style={{ width: '200px' }} />);
+    const box = screen.getByLabelText('Notes') as HTMLTextAreaElement;
+    const seen: string[] = [];
+    const observer = new MutationObserver((records) => {
+      for (const record of records) seen.push(record.oldValue ?? '');
+    });
+    observer.observe(box, { attributes: true, attributeFilter: ['style'], attributeOldValue: true });
+    content = 3;
+    fireEvent.input(box, { target: { value: 'one\ntwo\nthree' } });
+    for (const record of observer.takeRecords()) seen.push(record.oldValue ?? '');
+    observer.disconnect();
+    expect(box.style.height).toBe('60px');
+    expect([...seen, box.getAttribute('style') ?? ''].some((style) => /height:\s*auto/.test(style))).toBe(false);
+  } finally {
     delete (HTMLTextAreaElement.prototype as unknown as Record<string, unknown>).scrollHeight;
   }
 });
