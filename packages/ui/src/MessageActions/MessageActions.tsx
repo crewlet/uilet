@@ -20,9 +20,9 @@ export interface MessageActionsProps {
  * `ChatMessage`'s `actions`, which places it on the row's first line.
  *
  * A SOFT TRAY OF TOOLS, NOT A FRAMED BAR: the transcript's own ground ringed
- * with the hairline and a small shadow, with the large corner, and 30px tools
- * inside a 4px inset. It is a `Toolbar`, so it is one tab stop that the
- * arrow keys walk.
+ * with the hairline and a small shadow, with the large corner, and 32px tools
+ * with 18px glyphs inside a 4px inset. It is a `Toolbar`, so it is one tab
+ * stop that the arrow keys walk.
  */
 export function MessageActions({ label = 'Message actions', className, children }: MessageActionsProps) {
   return (
@@ -48,7 +48,7 @@ export interface MessageActionProps extends Omit<ButtonHTMLAttributes<HTMLButton
 }
 
 /**
- * One tool in the tray: a 30px ghost icon button named by `label`, with the
+ * One tool in the tray: a 32px ghost icon button named by `label`, with the
  * same words as its hint. It spreads what it is given on the button, so it
  * can be a `Menu`'s own trigger (`renderTrigger`), and its hint steps aside
  * while the menu it opens is open.
