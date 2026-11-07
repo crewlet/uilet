@@ -1,21 +1,90 @@
 /*
- * A searchable grid of emoji in a popover: the field, then each group under
- * its quiet heading, eight to a row, in a scroller of its own, and a preview
- * line under the grid that is always there, so the panel never changes size.
+ * A searchable grid of emoji in a popover: a row of category tabs, the
+ * field, then each group under its quiet heading, nine to a row, in a
+ * scroller of a fixed height, and a preview line under the grid. The panel is
+ * one size whatever it shows, so nothing moves under the pointer.
  */
 
 .crewlet-emoji-picker__body {
+  /* A cell is 36 wide and 32 tall on a 33px pitch, and the field 36 tall. */
+  --crewlet-emoji-picker-cell: 36px;
+  --crewlet-emoji-picker-cell-height: 32px;
+  --crewlet-emoji-picker-pitch: 1px;
+  --crewlet-emoji-picker-grid: 300px;
+  --crewlet-emoji-picker-field: var(--size-row-md);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2);
-  width: 296px;
+  width: calc(
+    var(--crewlet-emoji-picker-columns) * var(--crewlet-emoji-picker-cell) +
+      (var(--crewlet-emoji-picker-columns) - 1) * var(--crewlet-emoji-picker-pitch) + 2 * var(--spacing-3)
+  );
   max-width: 100%;
   box-sizing: border-box;
-  padding: var(--spacing-2);
+}
+
+/* The panel holds the picker at its own size, past a popover's default cap,
+   inside the viewport: only a viewport smaller than the picker scrolls it.
+   Two classes, so it holds in any bundle order. */
+.crewlet-popover.crewlet-emoji-picker {
+  max-width: calc(100vw - var(--spacing-4) * 2);
+  max-height: calc(100dvh - var(--spacing-4) * 2);
+}
+
+/* THE TABS: one per group, icon only, on a hairline; the group at the grid's
+   top is underlined in the accent, and the underline moves in the fast step. */
+.crewlet-toolbar.crewlet-emoji-picker__tabs {
+  flex-wrap: nowrap;
+  gap: 0;
+  height: calc(var(--size-control-md) + var(--spacing-2));
+  box-sizing: border-box;
+  padding: 0 var(--spacing-2);
+  box-shadow: inset 0 -1px 0 var(--color-edge-hairline);
+}
+
+.crewlet-emoji-picker__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: var(--crewlet-emoji-picker-cell);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: box-shadow var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-emoji-picker__tab:hover,
+.crewlet-emoji-picker__tab.is-current {
+  color: var(--color-text-primary);
+}
+
+.crewlet-emoji-picker__tab.is-current {
+  box-shadow: inset 0 -2px 0 var(--color-brand-accent);
+}
+
+.crewlet-emoji-picker__tab:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* The field, 36 tall with the chat step's words, on a band of its own. */
+.crewlet-emoji-picker__body > .crewlet-input {
+  width: auto;
+  min-height: var(--crewlet-emoji-picker-field);
+  margin: var(--spacing-3) var(--spacing-3) var(--spacing-2);
+}
+
+.crewlet-emoji-picker__body > .crewlet-input .crewlet-input__control {
+  font-size: var(--font-size-sm);
 }
 
 .crewlet-emoji-picker__scroll {
-  max-height: 240px;
+  position: relative;
+  height: var(--crewlet-emoji-picker-grid);
+  padding: 0 var(--spacing-3);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -33,16 +102,16 @@
 .crewlet-emoji-picker__grid {
   display: grid;
   grid-template-columns: repeat(var(--crewlet-emoji-picker-columns), minmax(0, 1fr));
-  gap: 2px;
+  gap: var(--crewlet-emoji-picker-pitch);
 }
 
 .crewlet-emoji-picker__cell {
-  aspect-ratio: 1;
+  height: var(--crewlet-emoji-picker-cell-height);
   padding: 0;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   line-height: 1;
   cursor: pointer;
 }
@@ -68,7 +137,7 @@
   align-items: center;
   gap: var(--spacing-2);
   min-height: var(--size-control-md);
-  padding: var(--spacing-2) var(--spacing-1) 0;
+  padding: var(--spacing-2) var(--spacing-3);
   border-top: 1px solid var(--color-edge-hairline);
 }
 
@@ -102,4 +171,10 @@
   margin: var(--spacing-3) var(--spacing-1);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-emoji-picker__tab {
+    transition: none;
+  }
 }
