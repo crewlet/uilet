@@ -9,7 +9,18 @@ import {
   type ReactNode,
 } from 'react';
 import { CopyButton } from '../Copyable/index.js';
+import { copyGlyph, CopyStatus } from '../Copyable/CopyButton.js';
+import { IconButton } from '../IconButton/index.js';
+import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
+import { useClipboard } from '../utils/useClipboard.js';
+
+/**
+ * Where a block's copy control stands: `header`, in the header strip beside
+ * the filename or language, or `corner`, an icon button in the block's top
+ * corner with no header at all.
+ */
+export type CodeBlockCopyPlacement = 'header' | 'corner';
 
 interface CodeBlockLook extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   /** The code to display and copy. A trailing newline is trimmed. */
@@ -21,8 +32,15 @@ interface CodeBlockLook extends Omit<HTMLAttributes<HTMLDivElement>, 'children'>
   showLineNumbers?: boolean | undefined;
   /** Render the copy control. On by default. */
   copyable?: boolean | undefined;
-  /** Names the copy control's action. */
+  /** Names the copy control's action: "Copy", or "Copy code" in the corner. */
   copyLabel?: string | undefined;
+  /**
+   * Where the copy control stands, `header` by default. `corner` draws no
+   * header (no filename, no language) and puts the control in the block's top
+   * corner, shown while the block is pointed at or holds focus, for a block
+   * set inside other words, such as a chat message.
+   */
+  copyPlacement?: CodeBlockCopyPlacement | undefined;
   /** A per-line prefix that is not part of the copy: `$` for a shell command. */
   prompt?: string | undefined;
   /**
@@ -137,7 +155,8 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
     filename,
     showLineNumbers = false,
     copyable = true,
-    copyLabel = 'Copy',
+    copyLabel,
+    copyPlacement = 'header',
     prompt,
     wrap = true,
     maxHeight,
@@ -153,7 +172,8 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
 ) {
   const box = useRef<HTMLPreElement>(null);
   const body = code.replace(/\n+$/, '');
-  const showHeader = !plain && (filename !== undefined || language !== undefined || copyable);
+  const corner = !plain && copyable && copyPlacement === 'corner';
+  const showHeader = !plain && !corner && (filename !== undefined || language !== undefined || copyable);
   // A prefix is drawn per line, so it needs the lines even with numbers off.
   const perLine = showLineNumbers || prompt !== undefined;
 
@@ -268,6 +288,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
         'crewlet-codeblock',
         showLineNumbers && 'crewlet-codeblock--numbered',
         !wrap && 'crewlet-codeblock--nowrap',
+        corner && 'crewlet-codeblock--corner',
         maxHeight !== undefined && 'crewlet-codeblock--bounded',
         className,
       )}
@@ -291,9 +312,10 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
               <span className="crewlet-codeblock__lang">{language}</span>
             ) : null}
           </span>
-          {copyable ? <CopyButton text={code} label={copyLabel} className="crewlet-codeblock__copy" /> : null}
+          {copyable ? <CopyButton text={code} label={copyLabel ?? 'Copy'} className="crewlet-codeblock__copy" /> : null}
         </div>
       ) : null}
+      {corner ? <CornerCopy text={code} label={copyLabel ?? 'Copy code'} /> : null}
       {/*
         A named region that takes one key, which is what the rule below exists
         to catch and is exactly what this is. It is not a widget and must not
@@ -322,3 +344,26 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
     </div>
   );
 });
+
+/**
+ * The copy control in a block's corner: an icon button named by `label`, with
+ * the same words as its hint until the copy lands or fails, and the outcome
+ * said once through a status region beside it.
+ */
+function CornerCopy({ text, label }: { text: string; label: string }) {
+  const { state, attempt, copy } = useClipboard();
+  const hint = state === 'copied' ? 'Copied' : state === 'failed' ? 'Copy failed' : label;
+  return (
+    <span className="crewlet-codeblock__corner">
+      <Tooltip content={hint}>
+        <IconButton label={label} size="sm" variant="ghost" icon={copyGlyph(state)} onClick={() => void copy(text)} />
+      </Tooltip>
+      <CopyStatus
+        state={state}
+        attempt={attempt}
+        copiedMessage="copied to the clipboard"
+        failedMessage="the browser refused the clipboard"
+      />
+    </span>
+  );
+}

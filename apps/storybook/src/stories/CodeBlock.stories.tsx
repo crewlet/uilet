@@ -12,6 +12,7 @@ const meta: Meta<typeof CodeBlock> = {
     plain: { control: 'boolean' },
     maxHeight: { control: 'text' },
     focusWhenScrollable: { control: 'boolean' },
+    copyPlacement: { control: 'inline-radio', options: ['header', 'corner'] },
   },
 };
 
@@ -166,6 +167,26 @@ export const ACeilingFromTheCascade: Story = {
     <div style={{ '--crewlet-codeblock-max-height': '160px', display: 'grid', gap: 16 } as CSSProperties}>
       <CodeBlock code={LOG} filename="bounded-by-the-wrapper.log" focusWhenScrollable label="The bounded log" />
       <CodeBlock code={LOG} filename="opted-out.log" maxHeight="none" />
+    </div>
+  ),
+};
+
+/**
+ * The copy control in the corner (`copyPlacement="corner"`), for a block set
+ * inside other words such as a chat message: no header, and an icon button
+ * that fades in while the block is pointed at or holds focus. Tab reaches it
+ * whether it is shown or not, and focusing it shows it.
+ */
+export const CopyInTheCorner: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 16, maxWidth: 520 }}>
+      <CodeBlock code="npm ci --ignore-scripts" copyPlacement="corner" />
+      <CodeBlock
+        code={'git fetch origin main\ngit switch -c fix/token-rotation origin/main\nnpm test -- --run src/session'}
+        language="sh"
+        copyPlacement="corner"
+        copyLabel="Copy the commands"
+      />
     </div>
   ),
 };
