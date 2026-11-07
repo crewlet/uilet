@@ -40,6 +40,25 @@
 /* Under the shell's breakpoint, strictly, as the shell switches: the wide
    controls fold into the overflow where the rail becomes a drawer. */
 @media (width < 1024px) {
+  :where(.crewlet-toolbar:not(.crewlet-toolbar--fold-container)) .crewlet-toolbar__wide {
+    display: none;
+  }
+
+  :where(.crewlet-toolbar:not(.crewlet-toolbar--fold-container)) .crewlet-toolbar__overflow {
+    display: flex;
+  }
+}
+
+/* FOLDED BY ITS OWN WIDTH: the row is its own query container and takes the
+   width of the box it stands in, so what folds never changes what decides.
+   The width is TOOLBAR_FOLD_WIDTH (Toolbar.tsx). */
+.crewlet-toolbar--fold-container {
+  container: crewlet-toolbar / inline-size;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+}
+
+@container crewlet-toolbar (width < 20rem) {
   .crewlet-toolbar__wide {
     display: none;
   }
@@ -47,4 +66,14 @@
   .crewlet-toolbar__overflow {
     display: flex;
   }
+}
+
+/* A thin upright rule between groups, a small control's half height. */
+.crewlet-toolbar__separator {
+  flex: none;
+  align-self: center;
+  width: 1px;
+  height: var(--spacing-5);
+  margin: 0 var(--spacing-1);
+  background: var(--color-border-default);
 }

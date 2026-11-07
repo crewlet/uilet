@@ -1,4 +1,4 @@
 import './Toolbar.css';
 
-export { Toolbar, ToolbarOverflow, ToolbarWide } from './Toolbar.js';
-export type { ToolbarMode, ToolbarProps, ToolbarSlotProps } from './Toolbar.js';
+export { TOOLBAR_FOLD_WIDTH, Toolbar, ToolbarOverflow, ToolbarSeparator, ToolbarWide } from './Toolbar.js';
+export type { ToolbarFold, ToolbarMode, ToolbarProps, ToolbarSlotProps } from './Toolbar.js';

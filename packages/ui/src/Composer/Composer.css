@@ -256,15 +256,42 @@
   box-shadow: var(--shadow-xs);
 }
 
-.crewlet-composer--chat .crewlet-composer__field {
+/* One line to start, a line's height per line after it, and at most
+   fourteen lines or half the window, whichever is less, before the words
+   scroll inside the field and the rows above and below stay put. Stated on
+   the textarea's own class so its auto-resize inset cannot outrank it. */
+.crewlet-composer--chat .crewlet-composer__field.crewlet-textarea {
+  --crewlet-composer-line: calc(var(--crewlet-chat-line) * var(--crewlet-chat-text));
+
   min-height: 0;
+  max-height: min(calc(var(--crewlet-composer-line) * 14 + 2 * var(--spacing-2)), 50dvh);
   padding: var(--spacing-2) var(--spacing-3);
   font-size: var(--crewlet-chat-text);
   line-height: var(--crewlet-chat-line);
 }
 
+/* The placeholder names where the words go on one line, cut rather than
+   wrapped, so it never makes an empty box taller. */
+.crewlet-composer--chat .crewlet-composer__field::placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* THE FORMATTING ROW AS A BAND the height of the footer, its glyphs on the
+   footer's inset from the box's edge, the controls a step apart, as the
+   footer's tools are. */
+.crewlet-composer--chat .crewlet-composer__toolbar {
+  padding-block-start: calc(var(--spacing-1) + (var(--size-control-md) - var(--size-control-sm)) / 2);
+}
+
+.crewlet-composer--chat .crewlet-composer__toolbar .crewlet-toolbar {
+  gap: var(--spacing-1);
+  padding: 0;
+}
+
 .crewlet-composer--chat .crewlet-composer__footer {
-  gap: 2px;
+  gap: var(--spacing-1);
   padding: var(--spacing-1);
   padding-inline-start: var(--spacing-3);
   border-top: 0;
@@ -277,9 +304,14 @@
   color: var(--color-text-primary);
 }
 
-/* The formatting row's glyphs rest in the tertiary ink while the box is not
-   in use, so the row reads as part of the field rather than as a toolbar
-   competing with the conversation, and take their own ink once it is. */
-.crewlet-composer--chat:not(:focus-within) .crewlet-composer__toolbar :is(button, [role='button']):not(:hover) {
+/* The formatting row's glyphs rest in the tertiary ink while the box is
+   empty and not in use, so the row reads as part of the field rather than as
+   a toolbar competing with the conversation. Focus or words bring their own
+   ink back; the footer's tools never dim. */
+.crewlet-composer--chat.is-empty:not(:focus-within) .crewlet-composer__toolbar :is(button, [role='button']):not(:hover) {
   color: var(--color-text-tertiary);
+}
+
+.crewlet-composer--chat .crewlet-composer__tools {
+  gap: var(--spacing-1);
 }

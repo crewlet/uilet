@@ -302,3 +302,15 @@ test('a chat composer carries no axe violation, enabled and disabled', async () 
   );
   expect((await run()).violations).toEqual([]);
 });
+
+test('a chat composer says when it is empty, which is when its formatting row rests', () => {
+  function Box() {
+    const [value, setValue] = useState('');
+    return <Composer appearance="chat" value={value} onChange={setValue} label="Message" submitOn="enter" />;
+  }
+  const { container } = render(<Box />);
+  const box = container.querySelector('.crewlet-composer')!;
+  expect(box.classList.contains('is-empty')).toBe(true);
+  fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), { target: { value: 'Hello' } });
+  expect(box.classList.contains('is-empty')).toBe(false);
+});
