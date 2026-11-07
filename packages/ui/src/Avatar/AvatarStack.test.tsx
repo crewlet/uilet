@@ -15,7 +15,7 @@ import axe from 'axe-core';
 import type { CSSProperties } from 'react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { parseHex } from '@crewlethq/tokens/test/palette';
-import { channels, installThemed, px, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installThemed, px, themeColour, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
 import { AVATAR_SIZES, AvatarStack, avatarStackLabel, type AvatarStackMember } from './index.js';
 
 let uninstall: (() => void) | undefined;
@@ -348,6 +348,8 @@ test('takes a size in px, and spread lays the faces side by side a step apart', 
   expect(px(stack, 'gap')).toBe(4);
   expect(px(members[1]!, 'margin-inline-start')).toBe(0);
   expect(getComputedStyle(members[1]!).boxShadow).toBe('none');
+  // With no ring between them, each face keeps its own hairline.
+  expect(channels(getComputedStyle(members[0]!).borderTopColor)).toEqual(channels(themeColour('dark', property('color-edge-hairline'))));
 });
 
 test('overlaps as before without spread', () => {

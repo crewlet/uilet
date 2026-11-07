@@ -90,6 +90,12 @@
   box-shadow: none;
 }
 
+/* Standing apart, each face keeps its own hairline, as a lone face does. */
+.crewlet-avatar-stack.crewlet-avatar-stack--spread > .crewlet-avatar-stack__member.crewlet-avatar,
+.crewlet-avatar-stack.crewlet-avatar-stack--spread > .crewlet-avatar-stack__member > .crewlet-avatar {
+  border-color: var(--color-edge-hairline);
+}
+
 .crewlet-avatar-stack.crewlet-avatar-stack--spread > .crewlet-avatar-stack__member + .crewlet-avatar-stack__member {
   margin-inline-start: 0;
 }
