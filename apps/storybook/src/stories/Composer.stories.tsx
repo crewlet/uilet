@@ -203,13 +203,13 @@ function RoomComposer({ width = 560 }: { width?: number }) {
         placeholder="Message #engineering"
         toolbar={
           <Toolbar label="Formatting" fold="container">
-            <IconButton label="Bold" icon={<BoldGlyph size="md" />} size="sm" variant="ghost" onClick={() => apply('bold')} />
-            <IconButton label="Italic" icon={<ItalicGlyph size="md" />} size="sm" variant="ghost" onClick={() => apply('italic')} />
-            <IconButton label="Strikethrough" icon={<StrikethroughGlyph size="md" />} size="sm" variant="ghost" onClick={() => apply('strikethrough')} />
+            <IconButton label="Bold" icon={<BoldGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('bold')} />
+            <IconButton label="Italic" icon={<ItalicGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('italic')} />
+            <IconButton label="Strikethrough" icon={<StrikethroughGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('strikethrough')} />
             <Toolbar.Separator />
             <Toolbar.Wide>
-              <IconButton label="Numbered list" icon={<ListOrderedGlyph size="md" />} size="sm" variant="ghost" onClick={() => apply('numberedList')} />
-              <IconButton label="Bulleted list" icon={<ListGlyph size="md" />} size="sm" variant="ghost" onClick={() => apply('bulletList')} />
+              <IconButton label="Numbered list" icon={<ListOrderedGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('numberedList')} />
+              <IconButton label="Bulleted list" icon={<ListGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('bulletList')} />
             </Toolbar.Wide>
             <Toolbar.Overflow>
               <Menu
@@ -224,9 +224,9 @@ function RoomComposer({ width = 560 }: { width?: number }) {
         }
         tools={
           <>
-            <IconButton label="Attach" icon={<PlusGlyph size="md" />} size="sm" variant="ghost" />
-            <IconButton label="Emoji" icon={<FaceSlightlySmilingGlyph size="md" />} size="sm" variant="ghost" />
-            <IconButton label="Mention someone" icon={<AtSignGlyph size="md" />} size="sm" variant="ghost" />
+            <IconButton label="Attach" icon={<PlusGlyph size="xs" />} size="sm" variant="ghost" />
+            <IconButton label="Emoji" icon={<FaceSlightlySmilingGlyph size="xs" />} size="sm" variant="ghost" />
+            <IconButton label="Mention someone" icon={<AtSignGlyph size="xs" />} size="sm" variant="ghost" />
           </>
         }
         actions={<SendButton mode="send" disabledReason={text.trim() === '' ? 'Write a message first' : undefined} onPress={() => setText('')} />}
