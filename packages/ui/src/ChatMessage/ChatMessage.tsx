@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Button } from '../Button/index.js';
+import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
 
 /** Why a row is drawn apart from the rest: it names the reader, or the whole room. */
@@ -41,7 +42,11 @@ export interface ChatMessageProps extends Omit<HTMLAttributes<HTMLElement>, 'id'
   badges?: ReactNode;
   /** The short time beside the name ("11:40 AM"). */
   time: string;
-  /** The full time, shown on hover of either time. */
+  /**
+   * The full date and time, with seconds ("Friday, November 7, 2026 at
+   * 9:41:07 AM"): the hint either time shows under the pointer or keyboard
+   * focus.
+   */
   timeTitle: string;
   /** The machine-readable time, for the `<time>` elements' `dateTime`. */
   dateTime?: string | undefined;
@@ -226,9 +231,9 @@ export const ChatMessage = forwardRef<HTMLElement, ChatMessageProps>(function Ch
     >
       <div className="crewlet-chat-message__gutter">
         {continuation ? (
-          <time className="crewlet-chat-message__gutter-time" dateTime={dateTime} title={timeTitle}>
+          <MessageTime className="crewlet-chat-message__gutter-time" dateTime={dateTime} full={timeTitle}>
             {gutterTime ?? time}
-          </time>
+          </MessageTime>
         ) : (
           avatar
         )}
@@ -238,9 +243,9 @@ export const ChatMessage = forwardRef<HTMLElement, ChatMessageProps>(function Ch
           <div className="crewlet-chat-message__head">
             <span className="crewlet-chat-message__author">{author}</span>
             {badges}
-            <time className="crewlet-chat-message__time" dateTime={dateTime} title={timeTitle}>
+            <MessageTime className="crewlet-chat-message__time" dateTime={dateTime} full={timeTitle}>
               {time}
-            </time>
+            </MessageTime>
           </div>
         )}
         <div className="crewlet-chat-message__body">{children}</div>
@@ -250,6 +255,22 @@ export const ChatMessage = forwardRef<HTMLElement, ChatMessageProps>(function Ch
     </article>
   );
 });
+
+/**
+ * A message's time, with its full date and time as a hint under the pointer
+ * or keyboard focus. It is a stop among the row's own controls, so a keyboard
+ * reader can read the full time too.
+ */
+function MessageTime({ className, dateTime, full, children }: { className: string; dateTime: string | undefined; full: string; children: ReactNode }) {
+  return (
+    <Tooltip content={full}>
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focus is what shows the full time to a keyboard reader */}
+      <time className={className} dateTime={dateTime} tabIndex={0}>
+        {children}
+      </time>
+    </Tooltip>
+  );
+}
 
 /** The words a failed row's line says. */
 export interface ChatMessageFailureLabels {

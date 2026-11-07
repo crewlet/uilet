@@ -264,3 +264,32 @@ export const WithSubtitle: Story = {
     );
   },
 };
+
+/**
+ * THE CHAT DENSITY (`density="chat"`): a chat pane's head (a thread, a room's details, a
+ * profile), 49px, with the title at the 18px step in the bold weight and no rule under it
+ * until the body is scrolled. Scroll the body to see the rule come in.
+ */
+export const ChatHead: Story = {
+  render: function Render() {
+    return (
+      <div style={{ height: 420, display: 'grid' }}>
+        <SidePanelFrame
+          panel={
+            <SidePanel title="Details" subtitle={<a href="#engineering">#engineering</a>} density="chat" onClose={() => {}}>
+              <Stack gap={3}>
+                {Array.from({ length: 30 }, (_, i) => (
+                  <Text key={i}>The room&apos;s topic, its members, its files and its settings, part {i + 1}.</Text>
+                ))}
+              </Stack>
+            </SidePanel>
+          }
+        >
+          <div style={{ padding: 'var(--spacing-4)' }}>
+            <Text>The conversation beside the panel.</Text>
+          </div>
+        </SidePanelFrame>
+      </div>
+    );
+  },
+};

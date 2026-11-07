@@ -7,7 +7,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
 import { BookmarkGlyph, EllipsisGlyph, MessagesSquareGlyph } from '@crewlethq/icons/glyphs';
-import { installThemed } from '../../../../apps/ui-tests/src/cascade.js';
+import { installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { Menu } from '../Menu/index.js';
 import { ActionDivider, MessageAction, MessageActions, QuickReaction } from './index.js';
@@ -148,4 +148,32 @@ test('carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations).toEqual([]);
+});
+
+// THE TOOLS ARE 32px WITH 18px GLYPHS, touching, so the marks read at a glance
+// while the pointer passes; the tray is the tool, its 4px inset and its
+// hairline, twice. Mutation: drop the tool step and the tools fall back to the
+// medium button's 30px with 14px glyphs.
+test('draws 32px tools with 18px glyphs and emoji, in a 42px tray', () => {
+  const uninstall = installSheets(
+    'ChatMessage/ChatScale.css',
+    'IconButton/IconButton.css',
+    'Toolbar/Toolbar.css',
+    'MessageActions/MessageActions.css',
+  );
+  try {
+    render(<Tray />);
+    const reply = screen.getByRole('button', { name: 'Reply in thread' });
+    expect(px(reply, 'width')).toBe(32);
+    expect(px(reply, 'height')).toBe(32);
+    const glyph = reply.querySelector('.crewlet-glyph')!;
+    expect(px(glyph, 'width')).toBe(18);
+    expect(px(glyph, 'height')).toBe(18);
+    const emoji = screen.getByRole('button', { name: 'React with check' });
+    expect(px(emoji, 'width')).toBe(32);
+    expect(px(emoji, 'font-size')).toBe(18);
+    expect(px(screen.getByRole('toolbar'), 'height')).toBe(42);
+  } finally {
+    uninstall();
+  }
 });

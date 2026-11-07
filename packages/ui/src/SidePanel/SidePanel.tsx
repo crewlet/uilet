@@ -3,11 +3,12 @@ import { cx } from '../utils/cx.js';
 import {
   SidePanelBase,
   SidePanelFrameContext,
+  type SidePanelDensity,
   type SidePanelInitialFocus,
   type SidePanelShape,
 } from './SidePanelBase.js';
 
-export type { SidePanelInitialFocus, SidePanelShape } from './SidePanelBase.js';
+export type { SidePanelDensity, SidePanelInitialFocus, SidePanelShape } from './SidePanelBase.js';
 
 /** The panel's resting width, in px, where the host names none. */
 export const SIDE_PANEL_WIDTH = 420;
@@ -42,6 +43,11 @@ export interface SidePanelProps {
   icon?: ReactNode;
   /** Draw the title for assistive technology only, where the icon says it. */
   hideTitle?: boolean | undefined;
+  /**
+   * `chat` draws a chat pane's head: 49px, the title at the 18px step in the bold weight,
+   * and no rule under it until the panel's own body is scrolled.
+   */
+  density?: SidePanelDensity | undefined;
   /** Closes the panel: its close button, and Escape from anywhere inside it. */
   onClose: () => void;
   /** Controls in the head, before Close: New conversation, a history menu. */
@@ -128,6 +134,7 @@ export function SidePanel({
   subtitle,
   icon,
   hideTitle,
+  density,
   onClose,
   actions,
   footer,
@@ -152,6 +159,7 @@ export function SidePanel({
       subtitle={subtitle}
       icon={icon}
       hideTitle={hideTitle}
+      density={density}
       onClose={onClose}
       closeLabel={words.close(title)}
       resizeLabel={words.resize(title)}

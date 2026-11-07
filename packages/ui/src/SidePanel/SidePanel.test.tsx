@@ -5,11 +5,14 @@
  * from the same parts under the names they have always published.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { useRef, useState } from 'react';
+import { act, useRef, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { ArtifactPanel, ArtifactWorkspace } from '../ArtifactPanel/index.js';
 import { ChatThread } from '../ChatThread/index.js';
 import { Popover } from '../Popover/index.js';
@@ -401,4 +404,66 @@ test('a flowing body takes its content height, so the foot follows the content',
   } finally {
     uninstall();
   }
+});
+
+test("the chat density draws a chat pane's head: the title at 18px in the bold weight, a 49px head", () => {
+  const uninstall = installSheets('SidePanel/SidePanel.css');
+  try {
+    render(
+      <>
+        <SidePanel title="Thread" density="chat" onClose={() => {}}>
+          <p>Replies</p>
+        </SidePanel>
+        <SidePanel title="Details" onClose={() => {}}>
+          <p>About</p>
+        </SidePanel>
+      </>,
+    );
+    const chat = screen.getByRole('heading', { name: 'Thread' });
+    expect(chat.closest('.crewlet-side-panel')?.classList.contains('crewlet-side-panel--chat')).toBe(true);
+    expect(px(chat, 'font-size')).toBe(18);
+    expect(getComputedStyle(chat).fontWeight).toBe('700');
+    // Without it the head is as it was: the title at the 14px step.
+    const plain = screen.getByRole('heading', { name: 'Details' });
+    expect(plain.closest('.crewlet-side-panel')?.classList.contains('crewlet-side-panel--chat')).toBe(false);
+    expect(px(plain, 'font-size')).toBe(14);
+  } finally {
+    uninstall();
+  }
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SidePanel.css'), 'utf8');
+  expect(css).toMatch(/\.crewlet-side-panel--chat \{\s*--crewlet-side-panel-head-height: 49px;/);
+  expect(css).toMatch(/\.crewlet-side-panel--chat > \.crewlet-side-panel__head \{\s*border-bottom-color: transparent;/);
+});
+
+test('a chat head draws its rule only while the panel body is scrolled, and a flush body leaves it to its content', () => {
+  render(
+    <>
+      <SidePanel title="Details" density="chat" onClose={() => {}}>
+        <p>About</p>
+      </SidePanel>
+      <SidePanel title="Thread" density="chat" flush onClose={() => {}}>
+        <p>Replies</p>
+      </SidePanel>
+    </>,
+  );
+  const panel = (name: string) => screen.getByRole('heading', { name }).closest('.crewlet-side-panel')!;
+  const head = (name: string) => panel(name).querySelector('.crewlet-side-panel__head')!;
+  const body = panel('Details').querySelector<HTMLElement>('.crewlet-side-panel__body')!;
+  expect(head('Details').classList.contains('crewlet-side-panel__head--scrolled')).toBe(false);
+  act(() => {
+    body.scrollTop = 40;
+    fireEvent.scroll(body);
+  });
+  expect(head('Details').classList.contains('crewlet-side-panel__head--scrolled')).toBe(true);
+  act(() => {
+    body.scrollTop = 0;
+    fireEvent.scroll(body);
+  });
+  expect(head('Details').classList.contains('crewlet-side-panel__head--scrolled')).toBe(false);
+  const flush = panel('Thread').querySelector<HTMLElement>('.crewlet-side-panel__body')!;
+  act(() => {
+    flush.scrollTop = 40;
+    fireEvent.scroll(flush);
+  });
+  expect(head('Thread').classList.contains('crewlet-side-panel__head--scrolled')).toBe(false);
 });

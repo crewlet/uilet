@@ -193,6 +193,21 @@
   line-height: 1;
 }
 
+/* Either time is underlined under the pointer and keyboard focus, where its
+   full date and time shows as a hint. */
+.crewlet-chat-message__time:is(:hover, :focus-visible),
+.crewlet-chat-message__gutter-time:is(:hover, :focus-visible) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.crewlet-chat-message__time:focus-visible,
+.crewlet-chat-message__gutter-time:focus-visible {
+  border-radius: var(--radius-xs);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .crewlet-chat-message__body {
   min-width: 0;
   color: var(--color-text-primary);

@@ -46,6 +46,8 @@ function mount() {
 
 const row = (n: number) => screen.getByRole('article', { name: `Message ${n}` });
 const button = (name: string) => screen.getByRole('button', { name });
+/** A row's head time: the first of its own controls, where its full time shows. */
+const time = (n: number) => row(n).querySelector<HTMLElement>('.crewlet-chat-message__time')!;
 const focused = () => document.activeElement;
 /** Tab as a reader presses it: the key on the focused element, then the focus it causes. */
 function tab(shift = false) {
@@ -81,6 +83,8 @@ test('Tab from a row walks its own controls in order, then leaves', () => {
   mount();
   row(2).focus();
   tab();
+  expect(focused()).toBe(time(2));
+  tab();
   expect(focused()).toBe(button('React 2'));
   tab();
   expect(focused()).toBe(button('Reply 2'));
@@ -102,6 +106,8 @@ test("Shift+Tab mirrors it: back through the row's controls to the row, then out
   button('Reply 3').focus();
   tab(true);
   expect(focused()).toBe(button('React 3'));
+  tab(true);
+  expect(focused()).toBe(time(3));
   tab(true);
   expect(focused()).toBe(row(3));
   tab(true);

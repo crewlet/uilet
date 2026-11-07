@@ -156,6 +156,9 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'ChatMessage/ChatMessage.css | .crewlet-chat-message__author > button:focus-visible',
       // A message's face as a button, which draws no edge: the ring stands off the face.
       'ChatMessage/ChatMessage.css | .crewlet-chat-message__gutter > button:focus-visible',
+      // A message's times, set as text: they draw no edge of their own.
+      'ChatMessage/ChatMessage.css | .crewlet-chat-message__gutter-time:focus-visible',
+      'ChatMessage/ChatMessage.css | .crewlet-chat-message__time:focus-visible',
       // A name in a message's words, a soft fill with no edge, ringed as a link is.
       'MentionChip/MentionChip.css | button.crewlet-mention-chip:focus-visible',
       // A tab is borderless; the pill variant's chips override it (see below).

@@ -10,6 +10,7 @@ import axe from 'axe-core';
 import { createRef, type ReactNode, type Ref } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { installHover, installMotion, installSheets, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { ChatThread } from '../ChatThread/index.js';
 import { Prose } from '../Prose/index.js';
 import { CodeBlock } from '../CodeBlock/index.js';
@@ -50,7 +51,6 @@ test('is an article named for who wrote it and when, focusable out of the tab or
   expect(screen.getByTestId('face')).toBeTruthy();
   const time = row.querySelector('.crewlet-chat-message__head time')!;
   expect(time.textContent).toBe('11:02 AM');
-  expect(time.getAttribute('title')).toBe('Thursday, October 30, 11:02 AM');
   expect(time.getAttribute('datetime')).toBe('2026-10-30T11:02:00Z');
   // The name, the badge and the time on one head line, in that order.
   const head = row.querySelector('.crewlet-chat-message__head')!;
@@ -65,7 +65,6 @@ test('a continuation draws no face and no head, and its gutter holds the face-wi
   expect(row.querySelector('.crewlet-chat-message__head')).toBeNull();
   const gutter = row.querySelector('.crewlet-chat-message__gutter time')!;
   expect(gutter.textContent).toBe('11:02');
-  expect(gutter.getAttribute('title')).toBe('Thursday, October 30, 11:02 AM');
 });
 
 test("a continuation's gutter shows the short time when no face-wide one is given", () => {
@@ -394,6 +393,41 @@ test("a code block in a row's words takes the small corner, an 8px inset, and sh
     const release = userAction(row, 'hover');
     expect(getComputedStyle(corner).opacity).toBe('1');
     release();
+  } finally {
+    uninstall();
+  }
+});
+
+// THE FULL TIME IS A HINT, NOT A NATIVE TITLE: the kit's tooltip, under the
+// pointer or keyboard focus, so a keyboard reader can read it too. Mutation:
+// put the native title back, and the time is no stop and shows no tooltip.
+test('either time shows the full date and time as a tooltip on keyboard focus, and is a stop of its own', () => {
+  const { rerender } = render(<Row />);
+  const head = screen.getByRole('article').querySelector<HTMLElement>('.crewlet-chat-message__time')!;
+  expect(head.hasAttribute('title')).toBe(false);
+  expect(head.tabIndex).toBe(0);
+  tabTo(head);
+  const tip = screen.getByRole('tooltip');
+  expect(tip.textContent).toBe('Thursday, October 30, 11:02 AM');
+  expect(head.getAttribute('aria-describedby')).toBe(tip.id);
+  head.blur();
+  rerender(<Row continuation />);
+  const gutter = screen.getByRole('article').querySelector<HTMLElement>('.crewlet-chat-message__gutter-time')!;
+  expect(gutter.hasAttribute('title')).toBe(false);
+  tabTo(gutter);
+  expect(screen.getByRole('tooltip').textContent).toBe('Thursday, October 30, 11:02 AM');
+});
+
+test('a time is underlined, and ringed, under keyboard focus', () => {
+  const uninstall = installSheets(...SHEETS);
+  try {
+    render(<Row />);
+    const head = screen.getByRole('article').querySelector<HTMLElement>('.crewlet-chat-message__time')!;
+    expect(getComputedStyle(head).textDecorationLine || getComputedStyle(head).textDecoration).not.toMatch(/underline/);
+    tabTo(head);
+    expect(getComputedStyle(head).textDecoration).toMatch(/underline/);
+    // The ring's colour is a theme token jsdom leaves standing; its offset is not.
+    expect(getComputedStyle(head).outlineOffset).toBe('2px');
   } finally {
     uninstall();
   }
