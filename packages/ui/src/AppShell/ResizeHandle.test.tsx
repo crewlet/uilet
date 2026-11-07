@@ -4,6 +4,9 @@
  * back only when it is one the panel can take.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
@@ -179,4 +182,13 @@ test('storage that throws leaves the width working for the session', () => {
   expect(result.current.width).toBeNull();
   act(() => result.current.commitWidth(400));
   expect(result.current.width).toBe(400);
+});
+
+test("the pointer's wash waits a beat, and focus and a drag show it at once", () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ResizeHandle.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  expect(css).toMatch(
+    /\.crewlet-resize-handle:hover:not\(:focus-visible, \[data-dragging\]\) \{\s*transition-delay: var\(--motion-duration-base\);/,
+  );
+  // Only the pointer's rule waits: no other rule delays the wash.
+  expect(css.match(/transition-delay/g)).toHaveLength(1);
 });

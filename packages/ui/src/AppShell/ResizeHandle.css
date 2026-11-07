@@ -45,6 +45,15 @@
   background: var(--color-brand-accent-soft);
 }
 
+/*
+ * THE POINTER'S WASH WAITS A BEAT, so a pointer crossing the seam on its way
+ * somewhere else does not flash it; the cursor says it is a grip from the
+ * first pixel. Focus and a drag show it at once, and it leaves at once.
+ */
+.crewlet-resize-handle:hover:not(:focus-visible, [data-dragging]) {
+  transition-delay: var(--motion-duration-base);
+}
+
 /* Inside its own box: it draws no edge, and the seam it stands in is the
    two neighbours' edges, which a ring set outward would run over. */
 .crewlet-resize-handle:focus-visible {

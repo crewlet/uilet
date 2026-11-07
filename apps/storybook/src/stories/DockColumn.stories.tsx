@@ -133,3 +133,38 @@ export const Unpinned: Story = {
 export const AtTheEnd: Story = {
   render: () => <Pinnable side="end" initial />,
 };
+
+function Sizeable() {
+  const [docked, setDocked] = useState(true);
+  const [width, setWidth] = useState(280);
+  const toggle = useRef<HTMLButtonElement | null>(null);
+  return (
+    <Host
+      side="start"
+      column={
+        <DockColumn
+          open={docked}
+          width={width}
+          style={SUBTLE}
+          focusOnClose={() => toggle.current}
+          resize={{ label: 'Resize the Rooms panel', min: 220, max: 440, onValueChange: setWidth, defaultValue: 280 }}
+        >
+          <Rooms onUnpin={() => setDocked(false)} />
+        </DockColumn>
+      }
+    >
+      <Conversation ref={toggle} docked={docked} onToggle={() => setDocked((open) => !open)} />
+    </Host>
+  );
+}
+
+/**
+ * SIZED BY THE READER (`resize`): the handle straddles the column's edge. Its
+ * wash waits a beat under a passing pointer and shows at once under focus or a
+ * drag; the column follows a drag or an arrow key at once, between 220px and
+ * 440px, and Enter or a double press puts it back at 280px. Pinning and
+ * unpinning still ease.
+ */
+export const SizedByTheReader: Story = {
+  render: () => <Sizeable />,
+};

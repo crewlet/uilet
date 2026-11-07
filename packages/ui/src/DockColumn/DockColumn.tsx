@@ -28,14 +28,40 @@
  * A PLAIN COLUMN, NOT A LANDMARK: what it holds names itself (a navigation
  * named Rooms), and a column named the same as the region inside it is two
  * landmarks of one name a screen reader cannot tell apart.
+ *
+ * THE READER MAY SIZE IT (`resize`): the kit's `ResizeHandle` straddles the
+ * edge that faces the content, the column follows a drag or a key at once
+ * rather than easing, and the host keeps the width it is handed. The clip is
+ * an element inside the column, so the handle can stand across the edge
+ * without being cut by it.
  */
 
-import { useCallback, useLayoutEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
+import { ResizeHandle } from '../AppShell/ResizeHandle.js';
 import { releaseFocus, usePresence } from '../Presence/index.js';
 import { cx } from '../utils/cx.js';
 
 /** The edge of the content the column stands at, in the inline direction. */
 export type DockColumnSide = 'start' | 'end';
+
+/** How the reader sizes the column, and what the host does with the width. */
+export interface DockColumnResize {
+  /** Names the handle: "Resize the Rooms panel". */
+  label: string;
+  /** The narrowest the column may be, in px. */
+  min: number;
+  /**
+   * The widest, in px. A host that keeps the content beside the column at a
+   * floor passes the cap that leaves it, so a drag stops where it must.
+   */
+  max: number;
+  /** Every step of a drag or a key: draw it by passing it back as `width`. */
+  onValueChange: (px: number) => void;
+  /** Where a gesture ends: the moment to keep the width. */
+  onValueCommit?: ((px: number) => void) | undefined;
+  /** The resting width Enter and a double press return to. */
+  defaultValue?: number | undefined;
+}
 
 export interface DockColumnProps extends HTMLAttributes<HTMLDivElement> {
   /** Whether the panel is docked. The column eases open and shut on a change. */
@@ -64,6 +90,12 @@ export interface DockColumnProps extends HTMLAttributes<HTMLDivElement> {
    */
   focusOnClose?: (() => HTMLElement | null | undefined) | undefined;
   /**
+   * Lets the reader size the column from the edge that faces the content.
+   * Its value is `width` where that is a number, and the column's own drawn
+   * width where it is any other length.
+   */
+  resize?: DockColumnResize | undefined;
+  /**
    * The panel. Its ground is the column's `--crewlet-dock-column-ground`,
    * which a host sets on its own class (`var(--color-surface-subtle)`), and
    * none by default.
@@ -80,12 +112,14 @@ export function DockColumn({
   side = 'start',
   divider = true,
   focusOnClose,
+  resize,
   className,
   style,
   children,
   ...rest
 }: DockColumnProps) {
   const column = useRef<HTMLDivElement | null>(null);
+  const drawn = useDrawnWidth(column, resize !== undefined && typeof width !== 'number');
   // The column's own width transition is the motion the panel waits out, and
   // nothing the panel's content runs.
   const { present, leaving } = usePresence(open, column, DOCK_MOTION);
@@ -104,13 +138,47 @@ export function DockColumn({
       data-open={open ? '' : undefined}
       style={{ ...style, '--crewlet-dock-column-width': typeof width === 'number' ? `${width}px` : width } as CSSProperties}
     >
-      {present ? (
-        <DockPanel leaving={leaving} isClosed={isClosed} focusOnClose={focusOnClose}>
-          {children}
-        </DockPanel>
+      <div className="crewlet-dock-column__clip">
+        {present ? (
+          <DockPanel leaving={leaving} isClosed={isClosed} focusOnClose={focusOnClose}>
+            {children}
+          </DockPanel>
+        ) : null}
+      </div>
+      {resize && open && !leaving ? (
+        <ResizeHandle
+          className="crewlet-dock-column__handle"
+          label={resize.label}
+          edge={side === 'start' ? 'right' : 'left'}
+          value={typeof width === 'number' ? width : drawn}
+          min={resize.min}
+          max={resize.max}
+          onValueChange={resize.onValueChange}
+          onValueCommit={resize.onValueCommit}
+          defaultValue={resize.defaultValue}
+        />
       ) : null}
     </div>
   );
+}
+
+/**
+ * The column's drawn width, for a handle whose host gave the width as a
+ * length rather than a number (`var(--rooms-dock)`); 0 until measured, and
+ * not measured at all where it is not needed.
+ */
+function useDrawnWidth(column: { current: HTMLDivElement | null }, needed: boolean): number {
+  const [drawn, setDrawn] = useState(0);
+  useLayoutEffect(() => {
+    const element = column.current;
+    if (!needed || !element || typeof ResizeObserver === 'undefined') return;
+    const measure = () => setDrawn(Math.round(element.getBoundingClientRect().width));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [column, needed]);
+  return drawn;
 }
 
 /**
