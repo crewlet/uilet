@@ -1052,6 +1052,10 @@ describe('the dense list', () => {
       expect(px(room, 'padding-left')).toBe(px(view, 'padding-left') + 16);
       expect(px(head, 'min-height')).toBe(28);
       expect(px(head, 'margin-top')).toBe(10);
+      // Pressed anywhere along the heading, its words still start on the label line.
+      const fold = screen.getByRole('button', { name: 'Channels' });
+      expect(getComputedStyle(fold).flexGrow).toBe('1');
+      expect(getComputedStyle(fold).textAlign).toBe('start');
     } finally {
       uninstall();
     }

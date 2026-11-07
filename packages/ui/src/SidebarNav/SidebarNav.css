@@ -620,6 +620,7 @@
 .crewlet-sidebar-nav--dense .crewlet-nav-group__toggle {
   flex: 1 1 auto;
   align-self: stretch;
+  text-align: start;
   color: var(--color-text-secondary);
   transition-property: none;
 }
