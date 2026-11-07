@@ -16,10 +16,11 @@
   /* Times, counts, reactions and second lines: one step down. */
   --crewlet-chat-meta: var(--font-size-xs);
   /* The row's side inset, the face column, the gap after it, and the space
-     between the pieces stacked under a message's words. */
+     between the pieces stacked under a message's words. The words start
+     64px in (20 + 36 + 8), so a group reads as one column close to its face. */
   --crewlet-chat-pad-x: var(--spacing-5);
   --crewlet-chat-avatar: 36px;
-  --crewlet-chat-gap: var(--spacing-3);
+  --crewlet-chat-gap: var(--spacing-2);
   --crewlet-chat-stack: 6px;
   /* One width for every link preview, so a stack of them shares both edges. */
   --crewlet-chat-card: 440px;
@@ -39,4 +40,11 @@
   --crewlet-chat-ground: var(--color-surface-background);
   /* A row that names the reader: a light wash of the warning hue. */
   --crewlet-chat-mention: var(--color-feedback-warning-soft);
+  /* Motion. Feedback (a colour, an opacity, a border) takes the instant step
+     and anything that travels (a pinned pill moving) the base step, both
+     decelerating. A row's hover surface takes neither: it snaps, because a
+     fade lags behind a pointer sweeping down the list. */
+  --crewlet-chat-feedback: var(--motion-duration-instant);
+  --crewlet-chat-travel: var(--motion-duration-base);
+  --crewlet-chat-ease: var(--motion-easing-out);
 }

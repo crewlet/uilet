@@ -38,7 +38,7 @@
   pointer-events: none;
   /* A host that raises the pin (a banner arriving) moves the pinned pill
      down with it rather than jumping it. */
-  transition: top var(--motion-duration-fast) var(--motion-easing-default);
+  transition: top var(--crewlet-chat-travel) var(--crewlet-chat-ease);
 }
 
 /*
