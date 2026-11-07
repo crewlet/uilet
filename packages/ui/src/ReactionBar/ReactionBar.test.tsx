@@ -77,16 +77,16 @@ test('draws nothing with no reactions and nothing to add one with', () => {
 
 // AT REST A PILL IS A FILL, NOT A FRAME; yours is ringed in the accent with
 // a heavier count. Mutation: give every pill the edge at rest.
-test('a pill rests on a fill with no edge, and yours carries a ring and a medium count', () => {
+test('a pill rests on a fill with no edge and a semibold count, and yours carries a ring', () => {
   const uninstall = installSheets(...SHEETS);
   try {
     render(<ReactionBar reactions={[eyes, check]} onToggle={() => {}} />);
     const theirs = screen.getByRole('button', { name: /check/ });
     expect(['transparent', 'rgba(0, 0, 0, 0)']).toContain(getComputedStyle(theirs).borderColor);
-    expect(getComputedStyle(theirs.querySelector('.crewlet-reaction__count')!).fontWeight).toBe('400');
+    expect(getComputedStyle(theirs.querySelector('.crewlet-reaction__count')!).fontWeight).toBe('600');
     const mine = screen.getByRole('button', { name: /eyes/ });
     expect(mine.classList.contains('is-mine')).toBe(true);
-    expect(getComputedStyle(mine.querySelector('.crewlet-reaction__count')!).fontWeight).toBe('500');
+    expect(getComputedStyle(mine.querySelector('.crewlet-reaction__count')!).fontWeight).toBe('600');
   } finally {
     uninstall();
   }
@@ -130,12 +130,14 @@ function Row() {
 
 // THE ADD PILL IS QUIET IN A ROW UNTIL THE ROW IS POINTED AT, and always
 // shown on a touch screen, where there is no pointing.
-test('in a message the add pill shows under the pointer, and always on a touch screen', () => {
+// ONCE A MESSAGE HAS A REACTION, ADDING ONE NEEDS NO HUNT: the add pill is
+// drawn at rest with the pills, not only under the pointer.
+test('in a message the add pill is always shown, with or without a pointer', () => {
   const hovering = installHover('hover', ...SHEETS);
   try {
     render(<Row />);
     const add = screen.getByRole('button', { name: 'Add a reaction' });
-    expect(getComputedStyle(add).opacity).toBe('0');
+    expect(getComputedStyle(add).opacity).toBe('1');
     const release = userAction(screen.getByRole('article'), 'hover');
     expect(getComputedStyle(add).opacity).toBe('1');
     release();

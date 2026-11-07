@@ -103,13 +103,29 @@ test('marks a mention, a flash, an outbox row and an edit by class', () => {
 });
 
 // No bold: the name is the medium weight.
-test('sets the name at the medium weight and the time in the meta step', () => {
+test('sets the name at the semibold weight and the time in the meta step', () => {
   const uninstall = installSheets(...SHEETS);
   try {
     render(<Row />);
     const row = screen.getByRole('article');
-    expect(getComputedStyle(row.querySelector('.crewlet-chat-message__author')!).fontWeight).toBe('500');
+    expect(getComputedStyle(row.querySelector('.crewlet-chat-message__author')!).fontWeight).toBe('600');
     expect(getComputedStyle(row.querySelector('.crewlet-chat-message__time')!).fontVariantNumeric).toBe('tabular-nums');
+  } finally {
+    uninstall();
+  }
+});
+
+// A FOOTER WHOSE PIECES ALL DRAW NOTHING TAKES NO ROOM: a host passes its
+// footer whole, and its gap made every row 6px taller than its words.
+// Mutation: drop the :empty rule, and the empty footer is displayed.
+test('a footer that draws nothing takes no room, and one that does is shown', () => {
+  const uninstall = installSheets(...SHEETS);
+  try {
+    const { rerender } = render(<Row footer={<>{false}{null}</>} />);
+    const footer = () => screen.getByRole('article').querySelector('.crewlet-chat-message__footer')!;
+    expect(getComputedStyle(footer()).display).toBe('none');
+    rerender(<Row footer={<span>2 replies</span>} />);
+    expect(getComputedStyle(footer()).display).not.toBe('none');
   } finally {
     uninstall();
   }
