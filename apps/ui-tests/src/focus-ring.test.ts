@@ -128,6 +128,9 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'Toaster/Toaster.css | .crewlet-toast__action-btn:focus-visible',
       'Toaster/Toaster.css | .crewlet-toast__action-link:focus-visible',
       'Toaster/Toaster.css | .crewlet-toast__dismiss:focus-visible',
+      // The working line, faces and words with no box: its toggle's target is
+      // the whole line, so the ring stands round the line.
+      'WorkingLine/WorkingLine.css | .crewlet-working-line__summary:has(.crewlet-working-line__toggle:focus-visible)',
       // Text and marks with no boundary: a link, the brand mark, a chip that is
       // only a link, a plain text button, and an image that is the target.
       'Link/Link.css | .crewlet-link:focus-visible',

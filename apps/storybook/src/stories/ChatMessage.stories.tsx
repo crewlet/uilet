@@ -26,8 +26,8 @@ import {
   QuickReaction,
   ReactionBar,
   Tag,
-  ThinkingIndicator,
   ThreadSummary,
+  WorkingLine,
   type ChatMessageProps,
   type ReactionSummary,
 } from '@crewlethq/ui';
@@ -171,7 +171,7 @@ const thread = (
       { name: 'Product Manager', kind: 'human' },
     ]}
     onOpen={() => {}}
-    working={<ThinkingIndicator status="Senior Backend Engineer is writing a reply · Reading the diff" label="Senior Backend Engineer is writing a reply" />}
+    working={<WorkingLine agents={[{ id: 'swe', name: 'Senior Backend Engineer', character: 'gemlet', hue: 'cyan', status: 'is thinking it through...' }]} />}
   />
 );
 

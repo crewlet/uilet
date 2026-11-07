@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Avatar, ChatDivider, ChatMessage, ThinkingIndicator, ThreadSummary } from '@crewlethq/ui';
+import { Avatar, ChatDivider, ChatMessage, ThreadSummary, WorkingLine } from '@crewlethq/ui';
 
 /**
  * The line under a message with replies: the repliers' faces, "4 replies" at
@@ -36,7 +36,12 @@ function Toggling(props: { unread?: number; working?: boolean }) {
       onOpen={() => setOpen((was) => !was)}
       working={
         props.working ? (
-          <ThinkingIndicator status="Senior Backend Engineer is writing a reply · Reading the diff" label="Senior Backend Engineer is writing a reply" />
+          <WorkingLine
+            agents={[
+              { id: 'swe', name: 'Senior Backend Engineer', character: 'gemlet', hue: 'cyan', status: 'is thinking it through...' },
+              { id: 'cto', name: 'CTO', character: 'crewlet', hue: 'rose', status: 'is crewleting...' },
+            ]}
+          />
         ) : undefined
       }
     />
@@ -49,7 +54,7 @@ export const Default: Story = { render: () => <Toggling /> };
 /** Two replies the reader has not seen. */
 export const WithNewReplies: Story = { render: () => <Toggling unread={2} /> };
 
-/** An agent writing a reply in the thread, under the line. */
+/** Agents writing replies in the thread, on one line under it. */
 export const WithAgentWorking: Story = { render: () => <Toggling unread={1} working /> };
 
 /** Under its message, open: the message wears the selected surface, the line says so. */

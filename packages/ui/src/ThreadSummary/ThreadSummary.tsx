@@ -37,7 +37,7 @@ export interface ThreadSummaryProps {
   last: string;
   /** Replies the reader has not read; none by default. */
   unread?: number | undefined;
-  /** Under the line: an agent writing a reply in the thread, as a `ThinkingIndicator`. */
+  /** Under the line: the agents writing replies in the thread, as a `WorkingLine`. */
   working?: ReactNode;
   /** The thread is open beside the room (`aria-expanded`). */
   open?: boolean | undefined;

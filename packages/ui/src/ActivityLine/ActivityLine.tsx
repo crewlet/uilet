@@ -1,60 +1,42 @@
 import type { HTMLAttributes } from 'react';
-import { ThinkingIndicator } from '../ThinkingIndicator/index.js';
 import { cx } from '../utils/cx.js';
+import { BouncingDots, WorkingLine, type WorkingAgent, type WorkingLineLabels } from '../WorkingLine/index.js';
 
 export interface ActivityLineProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   /** Who is typing, in words: "Product Manager is typing". Empty or left out, nothing is drawn for it. */
   typing?: string | undefined;
   /**
-   * The agent at work, in words, beside the Ask Crewlet mark under its
-   * shimmer: "Senior Backend Engineer is writing a reply · Reading the diff".
-   * It may change with every step.
+   * The agents at work, drawn as one `WorkingLine`: their faces, one sentence
+   * naming them and, on demand, a line per agent. Empty or left out, nothing
+   * is drawn for them.
    */
-  working?: string | undefined;
-  /**
-   * What a screen reader is told once when the agent starts, which never
-   * changes with its steps: "Senior Backend Engineer is writing a reply".
-   * `working` by default.
-   */
-  workingLabel?: string | undefined;
-  /**
-   * The agent has not started on it yet: the request waits behind something
-   * it is already doing, and `working` says so ("Product Manager is queued
-   * behind its current task"). Drawn as a queued `ThinkingIndicator`, still,
-   * until the work starts.
-   */
-  queued?: boolean | undefined;
+  agents?: readonly WorkingAgent[] | undefined;
+  /** The working line's words, for a surface in another language. */
+  workingLabels?: Partial<WorkingLineLabels> | undefined;
 }
 
 /**
- * Who is typing and which agent is working, in one quiet line under a
+ * Who is typing and which agents are working, in one quiet line under a
  * composer. It keeps one line's height when it is empty, so the box above it
  * never moves as people start and stop.
  *
- * TYPING is announced politely as it changes. WORKING is a
- * `ThinkingIndicator`, which announces its label once and keeps its changing
- * steps to the eye.
+ * KEPT APART. People typing are words and dots, with no face; agents at work
+ * are faces, names under a sweeping band and dots. Both at once stand side by
+ * side, and wrap to two lines where the column is too narrow for both.
+ *
+ * EACH ANNOUNCED ONCE PER CHANGE. Typing is a polite status as it changes;
+ * the working line's own region names who starts and stops, never a phrase.
+ * Both regions stay mounted while empty, so the first change is heard.
  */
-export function ActivityLine({ typing, working, workingLabel, queued, className, ...rest }: ActivityLineProps) {
+export function ActivityLine({ typing, agents, workingLabels, className, ...rest }: ActivityLineProps) {
   return (
     <div {...rest} className={cx('crewlet-activity-line', className)}>
-      {working ? (
-        <ThinkingIndicator
-          status={working}
-          label={workingLabel ?? working}
-          queued={queued}
-          className="crewlet-activity-line__working"
-        />
-      ) : null}
+      <WorkingLine agents={agents ?? []} labels={workingLabels} className="crewlet-activity-line__working" />
       <span className="crewlet-activity-line__typing" role="status">
         {typing ? (
           <>
-            <span className="crewlet-activity-line__dots" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
             {typing}
+            <BouncingDots />
           </>
         ) : null}
       </span>

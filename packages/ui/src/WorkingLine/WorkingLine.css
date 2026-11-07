@@ -1,0 +1,332 @@
+/*
+ * Every agent at work on one line (WorkingLine.tsx): a stack of faces, one
+ * sentence under a sweeping band, bouncing dots, and one line per agent on
+ * demand. In the chat's meta step, so it sits under a message, at the end of
+ * a thread and under a composer alike.
+ */
+
+.crewlet-working-line {
+  /* The ground the faces' cut-out is drawn in: the transcript's. */
+  --crewlet-avatar-stack-ground: var(--crewlet-chat-ground);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--crewlet-chat-meta);
+  line-height: 20px;
+}
+
+/* Nobody at work: no box at all, only the live region, which is positioned
+   out of the flow, so a host's gap and height never count an empty line. */
+.crewlet-working-line.is-idle {
+  display: contents;
+}
+
+/* One line as tall as its 20px faces, never wider than its column. */
+.crewlet-working-line__summary {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  max-width: 100%;
+  min-height: 20px;
+  border-radius: var(--radius-sm);
+}
+
+.crewlet-working-line__faces {
+  flex: none;
+}
+
+/*
+ * THE WORDS. Only the names give way where the column is narrow, down to a
+ * few letters, so the count of the rest, the verb and the dots always read
+ * whole: any shrink at all would put an ellipsis in the verb. Past that, in a
+ * column too narrow for the line, the words are clipped rather than spilling
+ * out of it.
+ */
+.crewlet-working-line__text {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-1);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/*
+ * Who: the names and, after three or more, the count of the rest, which is
+ * drawn whole. A grid, because its names track (at least a few letters, at
+ * most every name) is what bounds how far the pair shrinks; unwrapped text in
+ * a flex row would count its whole width as its minimum. The sweep crosses
+ * both, clipped to their glyphs.
+ */
+.crewlet-working-line__who {
+  display: grid;
+  flex: 0 1 auto;
+  grid-auto-columns: max-content;
+  grid-auto-flow: column;
+  grid-template-columns: minmax(var(--spacing-6), max-content);
+  column-gap: var(--spacing-1);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-working-line__names {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crewlet-working-line__verb {
+  flex: none;
+  animation: crewlet-working-line-phase var(--motion-duration-slow) var(--motion-easing-out);
+}
+
+.crewlet-working-line__queued {
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-working-line__queued::before {
+  content: '\00b7';
+  margin-inline-end: var(--spacing-1);
+}
+
+/*
+ * THE SWEEP: a lighter band crosses the names, left to right, then rests off
+ * the end for the last 30% of the period before it loops. The names are the
+ * secondary ink at rest and the band is the primary ink, so they read at every
+ * point of it in both palettes. The gradient is twice the names' width and
+ * repeats, so the band enters from beyond the start and leaves past the end.
+ */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .crewlet-working-line__who {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-text-secondary) 0%,
+      var(--color-text-secondary) 43%,
+      var(--color-text-primary) 50%,
+      var(--color-text-secondary) 57%,
+      var(--color-text-secondary) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: crewlet-working-line-sweep var(--motion-duration-breath) linear infinite;
+  }
+}
+
+@keyframes crewlet-working-line-sweep {
+  0% {
+    background-position: 150% 0;
+  }
+
+  70%,
+  100% {
+    background-position: -50% 0;
+  }
+}
+
+/* A new phrase arrives from a third of its strength, so the change is seen
+   without the words ever vanishing. */
+@keyframes crewlet-working-line-phase {
+  from {
+    opacity: 0.3;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* QUEUED: nothing has started, so nothing moves. */
+.crewlet-working-line.is-queued .crewlet-working-line__who {
+  background-image: none;
+  color: var(--color-text-secondary);
+  animation: none;
+}
+
+.crewlet-working-line.is-queued .crewlet-working-line__verb {
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * THE TOGGLE: a chevron at the line's end whose target is the whole line, so
+ * the line opens wherever it is pressed while the button stays one control
+ * with one name. The ring is drawn round the whole line.
+ */
+.crewlet-working-line__toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.crewlet-working-line__toggle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+/* The ring is the line's (below); the button keeps a transparent outline,
+   which forced-colors mode paints in the system ink. */
+.crewlet-working-line__toggle:focus-visible {
+  outline: 2px solid transparent;
+}
+
+.crewlet-working-line__summary:has(.crewlet-working-line__toggle:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-working-line__summary:has(.crewlet-working-line__toggle:hover) .crewlet-working-line__toggle,
+.crewlet-working-line__summary:has(.crewlet-working-line__toggle:hover) .crewlet-working-line__verb {
+  color: var(--color-text-primary);
+}
+
+.crewlet-working-line__chevron {
+  transition: transform var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-working-line.is-open .crewlet-working-line__chevron {
+  transform: rotate(180deg);
+}
+
+/* ONE COMPACT LINE PER AGENT: a 20px face, the name and its own phrase. */
+.crewlet-working-line__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: var(--spacing-1) 0 0;
+  list-style: none;
+}
+
+.crewlet-working-line__agent {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  min-height: 22px;
+  white-space: nowrap;
+}
+
+.crewlet-working-line__agent-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+}
+
+.crewlet-working-line__agent-phrase {
+  flex: 0 10 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: crewlet-working-line-phase var(--motion-duration-slow) var(--motion-easing-out);
+}
+
+.crewlet-working-line__agent.is-queued .crewlet-working-line__agent-phrase {
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * THE DOTS, three in turn, each lifting and brightening once a period. Shared
+ * with somebody typing (ActivityLine), in the ink around them.
+ */
+.crewlet-bouncing-dots {
+  display: inline-flex;
+  flex: none;
+  align-items: flex-end;
+  align-self: center;
+  gap: 2px;
+}
+
+.crewlet-bouncing-dots > i {
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-circle);
+  background: currentColor;
+  animation: crewlet-bouncing-dots calc(var(--motion-duration-slow) * 4) var(--motion-easing-in-out) infinite;
+}
+
+.crewlet-bouncing-dots > i:nth-child(2) {
+  animation-delay: var(--motion-duration-base);
+}
+
+.crewlet-bouncing-dots > i:nth-child(3) {
+  animation-delay: var(--motion-duration-slow);
+}
+
+@keyframes crewlet-bouncing-dots {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: none;
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* UNDER REDUCED MOTION every part holds still: the names in the primary ink
+   without the band, the phrases without their fade, the dots at full
+   strength, and the chevron turned at once. */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-working-line__who {
+    background-image: none;
+    color: var(--color-text-primary);
+    animation: none;
+  }
+
+  .crewlet-working-line.is-queued .crewlet-working-line__who {
+    color: var(--color-text-secondary);
+  }
+
+  .crewlet-working-line__verb {
+    animation: none;
+  }
+
+  .crewlet-working-line__agent-phrase {
+    animation: none;
+  }
+
+  .crewlet-working-line__chevron {
+    transition: none;
+  }
+
+  .crewlet-bouncing-dots > i {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/* The system's own ink: a gradient clipped to text is dropped there. */
+@media (forced-colors: active) {
+  .crewlet-working-line__who {
+    background-image: none;
+    color: CanvasText;
+  }
+
+  .crewlet-working-line__summary:has(.crewlet-working-line__toggle:focus-visible) {
+    outline-color: Highlight;
+  }
+}
