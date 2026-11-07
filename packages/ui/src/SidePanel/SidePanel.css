@@ -208,6 +208,13 @@
   overflow: clip;
 }
 
+/* FLOWING, the body takes its content's height, so the foot follows the
+   content in a short panel; past the panel's height it shrinks to the room
+   left, as any body does, and the foot stays in reach. */
+.crewlet-side-panel__body--flow {
+  flex: 0 1 auto;
+}
+
 /* THE FOOT holds the panel's own commit, outside the scrolling body, so it
    stays in reach at every scroll. Its inset is the body's. */
 .crewlet-side-panel__foot {

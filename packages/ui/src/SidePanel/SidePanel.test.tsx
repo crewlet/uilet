@@ -377,3 +377,28 @@ test('carries no violation as a column and as a sheet', async () => {
   open();
   expect(await run()).toEqual([]);
 });
+
+test('a flowing body takes its content height, so the foot follows the content', () => {
+  const uninstall = installSheets('SidePanel/SidePanel.css');
+  try {
+    const { rerender } = render(
+      <SidePanel title="Thread" onClose={() => {}} flush flow footer={<textarea aria-label="Reply" />}>
+        <p>One reply</p>
+      </SidePanel>,
+    );
+    const body = () => screen.getByText('One reply').closest<HTMLElement>('.crewlet-side-panel__body')!;
+    expect(body().classList.contains('crewlet-side-panel__body--flow')).toBe(true);
+    // It may shrink to scroll, but it never grows into the panel's free height.
+    expect(getComputedStyle(body()).flexGrow).toBe('0');
+    expect(getComputedStyle(body()).flexShrink).toBe('1');
+    rerender(
+      <SidePanel title="Thread" onClose={() => {}} flush footer={<textarea aria-label="Reply" />}>
+        <p>One reply</p>
+      </SidePanel>,
+    );
+    expect(body().classList.contains('crewlet-side-panel__body--flow')).toBe(false);
+    expect(getComputedStyle(body()).flexGrow).toBe('1');
+  } finally {
+    uninstall();
+  }
+});

@@ -60,10 +60,10 @@ function Content({ onOpen }: { onOpen: () => void }) {
  * whose first words are visually hidden, and the thread ends on a control
  * to focus.
  */
-function Thread({ sentWith = false }: { sentWith?: boolean }) {
+function Thread({ sentWith = false, short = false }: { sentWith?: boolean; short?: boolean }) {
   return (
     <ChatThread label="Conversation">
-      {ROWS.slice(0, sentWith ? 12 : 6).flatMap((row, index) => [
+      {ROWS.slice(0, sentWith ? 12 : short ? 1 : 6).flatMap((row, index) => [
         <MessageBubble key={`q${index}`} from="self">
           What does this say? ({index + 1})
         </MessageBubble>,
@@ -97,11 +97,13 @@ function Demo({
   focusComposer = false,
   thread = false,
   sentWith = false,
+  flow = false,
 }: {
   shape?: SidePanelShape;
   focusComposer?: boolean;
   thread?: boolean;
   sentWith?: boolean;
+  flow?: boolean;
 }) {
   const [open, setOpen] = useState(true);
   const stored = useStoredWidth({ key: 'crewlet.storybook.side-panel.width', min: SIDE_PANEL_MIN_WIDTH, max: SIDE_PANEL_MAX_WIDTH });
@@ -124,6 +126,7 @@ function Demo({
               onWidthCommit={stored.commitWidth}
               initialFocus={focusComposer ? composer : 'heading'}
               flush={thread}
+              flow={flow}
               actions={
                 <>
                   <IconButton size="sm" variant="ghost" label="New conversation" icon={<PencilGlyph size="sm" />} />
@@ -133,7 +136,7 @@ function Demo({
               footer={<Textarea ref={composer} aria-label="Message" rows={2} placeholder="Ask about this page" />}
             >
               {thread ? (
-                <Thread sentWith={sentWith} />
+                <Thread sentWith={sentWith} short={flow} />
               ) : (
                 <Stack gap={3}>
                   <Text>The head stands at the page bar's height. The body scrolls under it, and the foot stays in reach.</Text>
@@ -196,6 +199,13 @@ export const FlushBodyForAThread: Story = { render: () => <Demo shape="column" t
 export const FlushBodyStaysPut: Story = { render: () => <Demo shape="column" thread sentWith /> };
 
 /** Every shape from one control. */
+/**
+ * FLOWING: the body takes its content's height, so a short conversation keeps
+ * the composer right under its last line rather than at the panel's bottom.
+ * Grown taller than the panel, the body shrinks and the thread scrolls.
+ */
+export const FlowingFootFollowsAShortThread: Story = { render: () => <Demo shape="column" thread flow /> };
+
 export const Shapes: Story = {
   render: function Render() {
     const [shape, setShape] = useState<SidePanelShape>('column');
