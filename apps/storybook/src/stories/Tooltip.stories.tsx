@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, IconButton, LayerHost, Tooltip } from '@crewlethq/ui';
-import { CircleQuestionMarkGlyph, ClockGlyph } from '@crewlethq/icons/glyphs';
+import { Button, IconButton, LayerHost, ShortcutTip, Tooltip } from '@crewlethq/ui';
+import { BoldGlyph, CircleQuestionMarkGlyph, ClockGlyph, FaceSlightlySmilingPlusGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * UI / Tooltip.
@@ -28,6 +28,27 @@ export const Basic: Story = {
       <Tooltip content="Below the control instead" placement="bottom">
         <Button variant="secondary">Below</Button>
       </Tooltip>
+    </div>
+  ),
+};
+
+/**
+ * The typical uses, each a dark bubble in both themes: an icon button's name,
+ * a label cut short by its column, and a tool with its shortcut, whose
+ * keycaps take the bubble's second ink.
+ */
+export const TypicalUses: Story = {
+  render: () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-6)', padding: 'var(--spacing-10)' }}>
+      <IconButton label="Add a reaction" icon={<FaceSlightlySmilingPlusGlyph />} size="sm" variant="ghost" tooltip />
+      <Tooltip content="Quarterly planning for the platform team">
+        <Button variant="ghost" style={{ maxWidth: 140 }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Quarterly planning for the platform team</span>
+        </Button>
+      </Tooltip>
+      <ShortcutTip label="Bold" keys={['Mod', 'B']}>
+        <IconButton label="Bold" icon={<BoldGlyph />} size="sm" variant="ghost" title="" />
+      </ShortcutTip>
     </div>
   ),
 };
