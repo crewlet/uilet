@@ -15,7 +15,7 @@ export default meta;
 type Story = StoryObj;
 
 const SIZES = ['2xs', 'xs', 'compact', 'sm', 'md', 'lg', 'xl', '2xl', 'display', '3xl', '4xl', '5xl'];
-const WEIGHTS = ['regular', 'medium', 'semibold', 'bold', 'extrabold'];
+const WEIGHTS = ['regular', 'medium', 'semibold', 'bold', 'extrabold', 'black'];
 const LEADING = ['tight', 'snug', 'body', 'normal', 'relaxed'];
 const TRACKING = ['tight', 'snug', 'normal', 'wide', 'wider'];
 const CONTROLS = ['sm', 'md', 'lg'];

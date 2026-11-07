@@ -250,6 +250,26 @@
   max-width: 100%;
 }
 
+/* A CODE BLOCK IN THE WORDS: a hairline at the small corner and an 8px inset,
+   12px on an 18px line. Its corner copy control shows with the row's other
+   tools, while the row is pointed at or focused. */
+.crewlet-chat-message__body .crewlet-codeblock {
+  border-color: var(--color-edge-hairline);
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-chat-message__body .crewlet-codeblock__pre {
+  padding-block: var(--spacing-2);
+  padding-inline-start: var(--spacing-2);
+}
+
+.crewlet-chat-message:hover .crewlet-codeblock__corner,
+.crewlet-chat-message:focus-visible .crewlet-codeblock__corner,
+.crewlet-chat-message:has(:focus-visible) .crewlet-codeblock__corner,
+.crewlet-chat-message.is-active .crewlet-codeblock__corner {
+  opacity: 1;
+}
+
 /* THE TOOLBAR STRADDLES THE ROW'S TOP EDGE, 16px over the row above and the
    rest over the row's own first line, near its end where the words rarely
    reach, and over the day's pinned pill as well as the rows: a toolbar that

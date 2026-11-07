@@ -30,7 +30,7 @@
  * selector: themes.css is imported second and is what paints.
  */
 
-import { cascade, chroma, contrast, deltaE, flatten, hue, parseBlocks, parseHex, separation, VISIONS, withAlpha } from './color.mjs';
+import { cascade, chroma, contrast, deltaE, flatten, hue, luminance, parseBlocks, parseHex, separation, VISIONS, withAlpha } from './color.mjs';
 
 export * from './color.mjs';
 
@@ -920,6 +920,18 @@ function checkState(state, values, profile, push, theme = { tint: null, contrast
         say('text-muted is decoration', ratio > 2.8 && ratio < 4.5, '--color-text-muted', ratio, `2.8 < ${ratio.toFixed(2)}:1 < 4.5 on ${name}`);
       }
     }
+  }
+
+  {
+    // A tooltip is a dark bubble in both modes, and its words read on it.
+    const bubble = colour('--color-tooltip-surface');
+    const words = colour('--color-tooltip-text');
+    const floor = high ? HIGH_CONTRAST.text : 4.5;
+    const ratio = contrast(words, bubble);
+    say("a tooltip's words read on its bubble", ratio >= floor, '--color-tooltip-text', ratio, `${ratio.toFixed(2)}:1 >= ${floor}`);
+    say('a tooltip is a dark bubble under light words', luminance(bubble) < luminance(words), '--color-tooltip-surface', ratio, `bubble darker than its words`);
+    const meta = contrast(colour('--color-tooltip-meta'), bubble);
+    say("a tooltip's second ink reads on its bubble", meta >= floor, '--color-tooltip-meta', meta, `${meta.toFixed(2)}:1 >= ${floor}`);
   }
 
   for (const name of INK_STEPS) {

@@ -9,10 +9,12 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { createRef, type ReactNode, type Ref } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installHover, installMotion, installSheets, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { installHover, installMotion, installSheets, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { ChatThread } from '../ChatThread/index.js';
 import { Prose } from '../Prose/index.js';
+import { CodeBlock } from '../CodeBlock/index.js';
 import { ChatMessage, ChatMessageFailure, type ChatMessageProps } from './index.js';
 
 afterEach(cleanup);
@@ -362,6 +364,36 @@ test("rich text in a row's words takes the chat body step, 14px on a 22px line",
     expect(lineOf(words)).toBeCloseTo(22, 3);
     // The head line is the same 22px, so the name and the words share one rhythm.
     expect(lineOf(screen.getByRole('article').querySelector('.crewlet-chat-message__head')!)).toBeCloseTo(22, 3);
+  } finally {
+    uninstall();
+  }
+});
+
+// A CODE BLOCK IN THE WORDS: the small corner and an 8px inset, its copy
+// control shown with the row's other tools. Mutation: drop the chat rules and
+// the block keeps its 8px corner and 12px inset, and the control stays hidden
+// while the row is pointed at.
+test("a code block in a row's words takes the small corner, an 8px inset, and shows its copy with the row", () => {
+  const uninstall = installSheets('CodeBlock/CodeBlock.css', ...SHEETS);
+  try {
+    render(
+      <Row>
+        <CodeBlock code="npm ci" copyPlacement="corner" />
+      </Row>,
+    );
+    const row = screen.getByRole('article');
+    const block = row.querySelector<HTMLElement>('.crewlet-codeblock')!;
+    const pre = block.querySelector('pre')!;
+    expect(getComputedStyle(block).borderRadius).toBe('4px');
+    // jsdom keeps a logical shorthand as written rather than mapping it.
+    expect(getComputedStyle(pre).getPropertyValue('padding-block')).toBe('8px');
+    expect(px(pre, 'padding-inline-start')).toBe(8);
+    expect(px(pre, 'padding-inline-end')).toBe(34);
+    const corner = block.querySelector<HTMLElement>('.crewlet-codeblock__corner')!;
+    expect(getComputedStyle(corner).opacity).toBe('0');
+    const release = userAction(row, 'hover');
+    expect(getComputedStyle(corner).opacity).toBe('1');
+    release();
   } finally {
     uninstall();
   }

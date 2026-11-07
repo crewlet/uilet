@@ -17,6 +17,11 @@ import { Tooltip } from './index.js';
 import { LayerHost } from '../Layer/index.js';
 import { Popover } from '../Popover/index.js';
 import { FOCUS_MODALITY_ATTRIBUTE, FOCUS_RETURNED_ATTRIBUTE } from '../utils/focusModality.js';
+import { font, motion, radius, spacing } from '@crewlethq/tokens';
+import { contrast, luminance } from '@crewlethq/tokens/test/palette';
+import { channels, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
+import { Kbd } from '../Kbd/index.js';
+import { tokenMs } from '../utils/tokenMs.js';
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -491,6 +496,96 @@ test('a start-aligned tip lines up with its trigger\'s leading edge, on either s
     settle();
     // Right to left, its right edge on the trigger's: 526 - 120 = 406.
     expect(tip()!.style.left).toBe('406px');
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+  }
+});
+
+/*
+ * A DARK BUBBLE IN BOTH MODES. In the light theme the panel was the light
+ * panel step under dark words, light on light beside every menu and card it
+ * floats over. Mutation: point it back at the panel step and the light theme's
+ * bubble is lighter than its words.
+ */
+test('is a dark bubble under light words in both themes, at 4.5:1 or more, keycaps included', () => {
+  vi.useRealTimers();
+  for (const theme of ['light', 'dark'] as const) {
+    const uninstall = installThemed(theme, 'Kbd/Kbd.css', 'Tooltip/Tooltip.css');
+    const { unmount } = render(
+      <Tooltip content={<span>Bold <Kbd keys={['Mod', 'B']} subtle /></span>}>
+        <button>Bold</button>
+      </Tooltip>,
+    );
+    tabTo(screen.getByRole('button', { name: 'Bold' }));
+    const panel = getComputedStyle(tip()!);
+    const bubble = channels(panel.backgroundColor);
+    const words = channels(panel.color);
+    expect(luminance(bubble), theme).toBeLessThan(luminance(words));
+    expect(contrast(words, bubble), theme).toBeGreaterThanOrEqual(4.5);
+    const cap = getComputedStyle(tip()!.querySelector('.crewlet-kbd')!);
+    expect(contrast(channels(cap.color), bubble), theme).toBeGreaterThanOrEqual(4.5);
+    unmount();
+    uninstall();
+  }
+});
+
+// 13px semibold on an 8 by 12 inset with the medium corner.
+test('sets its words at 13px semibold, 8px by 12px in, on the medium corner', () => {
+  vi.useRealTimers();
+  const uninstall = installThemed('light', 'Tooltip/Tooltip.css');
+  try {
+    render(
+      <Tooltip content="Bold">
+        <button>Bold</button>
+      </Tooltip>,
+    );
+    tabTo(screen.getByRole('button', { name: 'Bold' }));
+    const panel = getComputedStyle(tip()!);
+    expect(panel.fontSize).toBe(font.size.compact);
+    expect(panel.fontWeight).toBe(String(font.weight.semibold));
+    expect([panel.paddingTop, panel.paddingRight]).toEqual([spacing['2'], spacing['3']]);
+    expect(panel.borderRadius).toBe(radius.md);
+  } finally {
+    uninstall();
+  }
+});
+
+// A short intent delay: the fast step, not the slow one.
+test('opens after the fast step of the motion scale under a resting pointer', () => {
+  render(
+    <Tooltip content="Bold">
+      <button>Bold</button>
+    </Tooltip>,
+  );
+  fireEvent.pointerEnter(screen.getByRole('button', { name: 'Bold' }));
+  const wait = tokenMs(motion.duration.fast);
+  act(() => {
+    vi.advanceTimersByTime(wait - 1);
+  });
+  expect(tip()).toBeNull();
+  act(() => {
+    vi.advanceTimersByTime(1);
+  });
+  expect(tip()).not.toBeNull();
+});
+
+// One spacing step clear of its trigger, above it.
+test('stands one spacing step clear of its trigger', () => {
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.getAttribute('role') === 'tooltip') return { left: 0, top: 0, width: 60, height: 34, right: 60, bottom: 34, x: 0, y: 0 } as DOMRect;
+    if (this.tagName === 'BUTTON') return { left: 500, top: 200, width: 28, height: 28, right: 528, bottom: 228, x: 500, y: 200 } as DOMRect;
+    return realRect.call(this);
+  };
+  try {
+    render(
+      <Tooltip content="Bold">
+        <button>Bold</button>
+      </Tooltip>,
+    );
+    fireEvent.pointerEnter(screen.getByRole('button', { name: 'Bold' }));
+    settle();
+    expect(tip()!.style.top).toBe(`${200 - Number.parseFloat(spacing['2']) - 34}px`);
   } finally {
     Element.prototype.getBoundingClientRect = realRect;
   }
