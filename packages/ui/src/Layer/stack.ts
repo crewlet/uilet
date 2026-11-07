@@ -61,7 +61,7 @@
  * on the other: Escape would close both, and Tab would leave.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import { zIndex } from '@crewlethq/tokens';
 import { returnFocus } from '../utils/focusModality.js';
 
@@ -556,6 +556,37 @@ export function useBodyScrollLock(active: boolean): void {
       }
     };
   }, [active]);
+}
+
+/**
+ * Escape for a surface that is NOT on the stack: a side panel beside the
+ * content, the shell's aside. Heard at the document after everything inside,
+ * so a control that answers Escape itself prevents the default first; only a
+ * press from inside `root` counts, and none while any layer is open, because
+ * the stack's topmost entry owns Escape then, whichever listener the document
+ * happens to call first.
+ */
+export function useEscapeWithin(
+  root: RefObject<HTMLElement | null>,
+  onEscape: (() => void) | null | undefined,
+  active = true,
+): void {
+  const handler = useRef(onEscape);
+  handler.current = onEscape;
+  useEffect(() => {
+    const surface = root.current;
+    if (!active || !surface) return undefined;
+    const doc = surface.ownerDocument;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || isComposing(event)) return;
+      if (!(event.target instanceof Node) || !surface.contains(event.target)) return;
+      if (shared.entries.length > 0 || !handler.current) return;
+      event.preventDefault();
+      handler.current();
+    };
+    doc.addEventListener('keydown', onKeyDown);
+    return () => doc.removeEventListener('keydown', onKeyDown);
+  }, [active, root]);
 }
 
 /** How many surfaces are on the stack. Exported for the package's own suites. */

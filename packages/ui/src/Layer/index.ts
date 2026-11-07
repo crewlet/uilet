@@ -6,6 +6,7 @@ export {
   isModalLayerOpen,
   layerCount,
   useBodyScrollLock,
+  useEscapeWithin,
   useModalLayer,
   usePopupLayer,
 } from './stack.js';
