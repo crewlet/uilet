@@ -1,14 +1,32 @@
-import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactElement } from 'react';
-import { SearchGlyph } from '@crewlethq/icons/glyphs';
+import {
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+import { ClockGlyph, FaceSlightlySmilingGlyph, HashGlyph, LaptopGlyph, SearchGlyph } from '@crewlethq/icons/glyphs';
 import { Input } from '../Input/index.js';
 import { isComposing } from '../Layer/index.js';
 import { Popover, type PopoverAlign, type PopoverSide } from '../Popover/index.js';
+import { Toolbar } from '../Toolbar/index.js';
 import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
 import { EMOJI_GROUPS, searchEmoji, type EmojiEntry, type EmojiGroup } from './emoji.js';
 
 /** How many emoji stand in a row of the grid; the arrow keys walk the same rows. */
-export const EMOJI_PICKER_COLUMNS = 8;
+export const EMOJI_PICKER_COLUMNS = 9;
+
+/** The glyph each of `EMOJI_GROUPS`' tabs draws, by the group's label. */
+export const EMOJI_GROUP_GLYPHS: Readonly<Record<string, ReactNode>> = {
+  'Frequently used': <ClockGlyph size="lg" />,
+  Smileys: <FaceSlightlySmilingGlyph size="lg" />,
+  Work: <LaptopGlyph size="lg" />,
+};
 
 export interface EmojiPickerLabels {
   /** Names the search field. */
@@ -19,6 +37,8 @@ export interface EmojiPickerLabels {
   none: (query: string) => string;
   /** The preview line while no emoji is pointed at or chosen. */
   idle: string;
+  /** Names the row of category tabs. */
+  categories: string;
 }
 
 export const EMOJI_PICKER_LABELS: EmojiPickerLabels = {
@@ -26,6 +46,7 @@ export const EMOJI_PICKER_LABELS: EmojiPickerLabels = {
   results: 'Results',
   none: (query) => `No emoji match “${query}”.`,
   idle: 'Pick an emoji',
+  categories: 'Emoji categories',
 };
 
 export interface EmojiPickerProps {
@@ -48,6 +69,11 @@ export interface EmojiPickerProps {
   side?: PopoverSide | undefined;
   /** The emoji offered, `EMOJI_GROUPS` by default. */
   groups?: readonly EmojiGroup[] | undefined;
+  /**
+   * The glyph each group's tab draws, by the group's label,
+   * `EMOJI_GROUP_GLYPHS` by default. A group not named here draws a hash.
+   */
+  groupGlyphs?: Readonly<Record<string, ReactNode>> | undefined;
   labels?: Partial<EmojiPickerLabels> | undefined;
 }
 
@@ -81,6 +107,11 @@ function layout(groups: readonly EmojiGroup[]) {
  * A searchable grid of emoji in a popover, for starting a reaction or
  * putting an emoji in a message.
  *
+ * A FIXED INSTRUMENT. The panel keeps one size whatever it shows, a search's
+ * few matches or every group, so nothing under the pointer moves while the
+ * reader types. A row of category tabs over the field jumps the grid to a
+ * group, and the tab of the group at the grid's top is marked.
+ *
  * WHAT ENTER WILL PICK IS SHOWN. While a search has matches, the one Enter
  * picks is marked in the grid, and the line under the grid previews whatever
  * is pointed at or chosen, large and by name, so the cells need no hints.
@@ -89,8 +120,9 @@ function layout(groups: readonly EmojiGroup[]) {
  * by name, Enter picks the marked match, and ArrowDown goes into the grid. The
  * grid is one tab stop; the arrows walk it by its rows, across groups, Home
  * and End go to its first and last emoji, ArrowUp from the top row returns to
- * the field, and Enter or Space picks. Escape closes the panel and returns
- * focus to the trigger.
+ * the field, and Enter or Space picks. The tabs are one tab stop the arrows
+ * walk, before the field. Escape closes the panel and returns focus to the
+ * trigger.
  *
  * Each emoji is a button named by its name ("eyes"), and each group is named
  * by its visible heading.
@@ -104,6 +136,7 @@ export function EmojiPicker({
   align = 'end',
   side = 'bottom',
   groups = EMOJI_GROUPS,
+  groupGlyphs = EMOJI_GROUP_GLYPHS,
   labels: overrides,
 }: EmojiPickerProps) {
   const labels = overrides ? { ...EMOJI_PICKER_LABELS, ...overrides } : EMOJI_PICKER_LABELS;
@@ -115,6 +148,10 @@ export function EmojiPicker({
   const [pointed, setPointed] = useState<EmojiEntry | null>(null);
   const field = useRef<HTMLInputElement | null>(null);
   const grid = useRef<HTMLDivElement | null>(null);
+  // The group at the grid's top, whose tab is marked; none while searching.
+  const [current, setCurrent] = useState(0);
+  // A tab pressed during a search: the group to bring up once the groups are back.
+  const pending = useRef<number | null>(null);
 
   const found = useMemo(() => searchEmoji(query, groups), [query, groups]);
   const { drawn, cells } = useMemo(
@@ -125,6 +162,44 @@ export function EmojiPicker({
   // The match Enter in the field picks: marked only while searching.
   const chosen = found && found.length > 0 ? cells[stop] : undefined;
   const shown = pointed ?? chosen?.entry ?? null;
+
+  /** Brings a group's heading to the grid's top, at once. */
+  const showGroup = (index: number) => {
+    const scroller = grid.current;
+    const head = scroller?.querySelector<HTMLElement>(`[data-group-index="${index}"]`);
+    if (!scroller || !head) return;
+    scroller.scrollTop = head.offsetTop;
+    setCurrent(index);
+  };
+
+  const jumpTo = (index: number) => {
+    if (found) {
+      pending.current = index;
+      setQuery('');
+      setAt(0);
+      return;
+    }
+    showGroup(index);
+  };
+
+  useLayoutEffect(() => {
+    if (found || pending.current === null) return;
+    const index = pending.current;
+    pending.current = null;
+    showGroup(index);
+  });
+
+  // The last group whose heading has reached the grid's top, or the last
+  // group once the grid is scrolled to its end.
+  const track = () => {
+    const scroller = grid.current;
+    if (!scroller || found) return;
+    const heads = [...scroller.querySelectorAll<HTMLElement>('[data-group-index]')];
+    const atEnd = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+    let next = Number(heads[0]?.dataset['groupIndex'] ?? 0);
+    for (const head of heads) if (atEnd || head.offsetTop <= scroller.scrollTop + 1) next = Number(head.dataset['groupIndex']);
+    setCurrent(next);
+  };
 
   const focusCell = (index: number) => {
     setAt(index);
@@ -187,15 +262,35 @@ export function EmojiPicker({
           setQuery('');
           setAt(0);
           setPointed(null);
+          setCurrent(0);
         }
         onOpenChange?.(open);
       }}
     >
       {(close) => (
-        <div className="crewlet-emoji-picker__body">
+        <div
+          className="crewlet-emoji-picker__body"
+          style={{ '--crewlet-emoji-picker-columns': EMOJI_PICKER_COLUMNS } as CSSProperties}
+        >
+          <Toolbar label={labels.categories} className="crewlet-emoji-picker__tabs">
+            {groups.map((group, number) =>
+              group.items.length === 0 ? null : (
+                <Tooltip key={group.label} content={group.label}>
+                  <button
+                    type="button"
+                    className={cx('crewlet-emoji-picker__tab', !found && number === current && 'is-current')}
+                    aria-label={group.label}
+                    aria-current={!found && number === current ? 'true' : undefined}
+                    onClick={() => jumpTo(number)}
+                  >
+                    {groupGlyphs[group.label] ?? <HashGlyph size="lg" />}
+                  </button>
+                </Tooltip>
+              ),
+            )}
+          </Toolbar>
           <Input
             ref={field}
-            inputSize="sm"
             placeholder={labels.search}
             aria-label={labels.search}
             leading={<SearchGlyph size="sm" />}
@@ -206,15 +301,15 @@ export function EmojiPicker({
             }}
             onKeyDown={(event) => onFieldKeys(event, close)}
           />
-          <div
-            ref={grid}
-            className="crewlet-emoji-picker__scroll"
-            style={{ '--crewlet-emoji-picker-columns': EMOJI_PICKER_COLUMNS } as CSSProperties}
-          >
+          <div ref={grid} className="crewlet-emoji-picker__scroll" onScroll={track}>
             {drawn.map((group, number) =>
               group.cells.length === 0 ? null : (
                 <div key={group.label} role="group" aria-labelledby={`${id}-group-${number}`}>
-                  <div id={`${id}-group-${number}`} className="crewlet-emoji-picker__group">
+                  <div
+                    id={`${id}-group-${number}`}
+                    className="crewlet-emoji-picker__group"
+                    data-group-index={found ? undefined : number}
+                  >
                     {group.label}
                   </div>
                   <div className="crewlet-emoji-picker__grid">

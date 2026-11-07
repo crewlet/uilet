@@ -6,7 +6,8 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
-import { EMOJI_GROUPS, EmojiPicker, emojiName, emojiOfShortcode, emojiShortcode, isShortcode, searchEmoji, type EmojiPickerProps } from './index.js';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { EMOJI_GROUPS, EMOJI_PICKER_COLUMNS, EmojiPicker, emojiName, emojiOfShortcode, emojiShortcode, isShortcode, searchEmoji, type EmojiPickerProps } from './index.js';
 
 afterEach(cleanup);
 
@@ -126,7 +127,8 @@ test('the arrows walk the grid by its rows, across groups, and up to the field',
   const { field } = await open();
   fireEvent.keyDown(field, { key: 'ArrowDown' });
   expect(document.activeElement).toBe(cell('thumbs up'));
-  const stops = () => screen.getAllByRole('button').filter((button) => button.tabIndex === 0 && button.closest('[role="dialog"]'));
+  const stops = () =>
+    screen.getAllByRole('button').filter((button) => button.tabIndex === 0 && button.closest('.crewlet-emoji-picker__grid'));
   expect(stops()).toEqual([cell('thumbs up')]);
   fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
   expect(document.activeElement).toBe(cell('check'));
@@ -135,7 +137,7 @@ test('the arrows walk the grid by its rows, across groups, and up to the field',
   expect(document.activeElement).toBe(cell('smile'));
   expect(stops()).toEqual([cell('smile')]);
   fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
-  expect(document.activeElement).toBe(cell('sleeping'));
+  expect(document.activeElement).toBe(cell('mind blown'));
   fireEvent.keyDown(document.activeElement!, { key: 'End' });
   expect(document.activeElement).toBe(cell('memo'));
   fireEvent.keyDown(document.activeElement!, { key: 'Home' });
@@ -150,13 +152,13 @@ test('a short last row is reached from the column past its end', async () => {
   fireEvent.change(field, { target: { value: 's' } });
   // More than one row of matches, the second one short.
   const matches = searchEmoji('s')!;
-  expect(matches.length).toBeGreaterThan(8);
-  expect(matches.length % 8).not.toBe(0);
+  expect(matches.length).toBeGreaterThan(EMOJI_PICKER_COLUMNS);
+  expect(matches.length % EMOJI_PICKER_COLUMNS).not.toBe(0);
   fireEvent.keyDown(field, { key: 'ArrowDown' });
   fireEvent.keyDown(document.activeElement!, { key: 'End' });
   const last = document.activeElement;
   fireEvent.keyDown(last!, { key: 'Home' });
-  for (let step = 0; step < 7; step += 1) fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
+  for (let step = 0; step < EMOJI_PICKER_COLUMNS - 1; step += 1) fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
   fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
   expect(document.activeElement).toBe(last);
 });
@@ -219,4 +221,83 @@ test('every emoji it offers carries its standard shortcode, and the two spelling
   expect(emojiName(':white_flag:')).toBe('white flag');
   expect(isShortcode(':eyes:')).toBe(true);
   expect(isShortcode('👀')).toBe(false);
+});
+
+/** Lays the grid out by hand, as jsdom lays out nothing: each group's heading at its `top`. */
+function layoutGroups(dialog: HTMLElement, tops: number[]) {
+  const scroller = dialog.querySelector<HTMLElement>('.crewlet-emoji-picker__scroll')!;
+  const heads = [...dialog.querySelectorAll<HTMLElement>('.crewlet-emoji-picker__group')];
+  heads.forEach((head, index) => Object.defineProperty(head, 'offsetTop', { configurable: true, value: tops[index] }));
+  Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 300 });
+  Object.defineProperty(scroller, 'scrollHeight', { configurable: true, value: 900 });
+  return scroller;
+}
+
+// A ROW OF CATEGORY TABS jumps the grid to a group and marks the group at the
+// grid's top. Mutation: drop the tabs, and there is no quick way to a group.
+test('a tab per group, one tab stop, jumps the grid to its group and marks it', async () => {
+  render(<Picker />);
+  const { dialog } = await open();
+  const tabs = within(dialog).getByRole('toolbar', { name: 'Emoji categories' });
+  const names = within(tabs).getAllByRole('button').map((tab) => tab.getAttribute('aria-label'));
+  expect(names).toEqual(EMOJI_GROUPS.map((group) => group.label));
+  expect(within(tabs).getAllByRole('button').filter((tab) => tab.tabIndex === 0)).toHaveLength(1);
+  expect(within(tabs).getByRole('button', { name: 'Frequently used' }).getAttribute('aria-current')).toBe('true');
+  const scroller = layoutGroups(dialog, [0, 60, 220]);
+  fireEvent.click(within(tabs).getByRole('button', { name: 'Work' }));
+  expect(scroller.scrollTop).toBe(220);
+  expect(within(tabs).getByRole('button', { name: 'Work' }).getAttribute('aria-current')).toBe('true');
+  expect(within(tabs).getByRole('button', { name: 'Frequently used' }).hasAttribute('aria-current')).toBe(false);
+});
+
+test('scrolling the grid marks the tab of the group at its top', async () => {
+  render(<Picker />);
+  const { dialog } = await open();
+  const scroller = layoutGroups(dialog, [0, 60, 220]);
+  scroller.scrollTop = 80;
+  fireEvent.scroll(scroller);
+  expect(within(dialog).getByRole('button', { name: 'Smileys' }).getAttribute('aria-current')).toBe('true');
+  // At the end of the grid the last group is marked, though its heading never reaches the top.
+  scroller.scrollTop = 600;
+  fireEvent.scroll(scroller);
+  expect(within(dialog).getByRole('button', { name: 'Work' }).getAttribute('aria-current')).toBe('true');
+});
+
+test('a tab pressed during a search clears it and shows its group', async () => {
+  render(<Picker />);
+  const { dialog, field } = await open();
+  fireEvent.change(field, { target: { value: 'fire' } });
+  expect(within(dialog).queryByRole('button', { name: 'Smileys', current: true })).toBeNull();
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Smileys' }));
+  expect((field as HTMLInputElement).value).toBe('');
+  expect(within(dialog).getByRole('group', { name: 'Smileys' })).toBeTruthy();
+  expect(within(dialog).getByRole('button', { name: 'Smileys' }).getAttribute('aria-current')).toBe('true');
+});
+
+// A FIXED INSTRUMENT: nine 36 x 32 cells to a row on a 33px pitch, 20px emoji,
+// a 36px field at 14px, and a grid of one height whatever it shows.
+// Mutation: put back the 8 columns, the square cells or the 24px field.
+test('draws nine 36 x 32 cells, 20px emoji, a 36px field and a grid of a fixed height', async () => {
+  const uninstall = installSheets('Input/Input.css', 'Toolbar/Toolbar.css', 'EmojiPicker/EmojiPicker.css');
+  try {
+    render(<Picker />);
+    const { dialog, field } = await open();
+    expect(EMOJI_PICKER_COLUMNS).toBe(9);
+    const body = dialog.querySelector<HTMLElement>('.crewlet-emoji-picker__body')!;
+    expect(body.style.getPropertyValue('--crewlet-emoji-picker-columns')).toBe('9');
+    const thumbs = cell('thumbs up');
+    expect(px(thumbs, 'height')).toBe(32);
+    expect(px(thumbs, 'font-size')).toBe(20);
+    expect(getComputedStyle(thumbs).aspectRatio || 'auto').toBe('auto');
+    const scroller = dialog.querySelector<HTMLElement>('.crewlet-emoji-picker__scroll')!;
+    expect(px(scroller, 'height')).toBe(300);
+    expect(getComputedStyle(scroller).maxHeight).toBe('none');
+    const box = field.closest<HTMLElement>('.crewlet-input')!;
+    expect(px(box, 'min-height')).toBe(36);
+    expect(px(field, 'font-size')).toBe(14);
+    const tabs = dialog.querySelector<HTMLElement>('.crewlet-emoji-picker__tabs')!;
+    expect(px(tabs, 'height')).toBe(38);
+  } finally {
+    uninstall();
+  }
 });
