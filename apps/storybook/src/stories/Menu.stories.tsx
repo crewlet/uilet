@@ -25,6 +25,11 @@ export const RowActions: Story = {
   args: { label: 'Actions for Software Engineer', items: actions },
 };
 
+/** Drawn the frame it is placed (`entrance="instant"`), for a menu a reader opens over and over, such as a message's. */
+export const InstantEntrance: Story = {
+  args: { label: 'Actions for this message', items: actions, entrance: 'instant' },
+};
+
 /**
  * Focus stays on the menu (`activeDescendant`): it opens with nothing
  * highlighted, ArrowDown highlights the first item, and the highlighted row is

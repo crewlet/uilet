@@ -136,7 +136,7 @@ export function ReactionBar({ reactions, onToggle, add, disabledReason, labels: 
   );
 }
 
-export interface AddReactionProps extends Pick<EmojiPickerProps, 'onPick' | 'onOpenChange' | 'side' | 'groups'> {
+export interface AddReactionProps extends Pick<EmojiPickerProps, 'onPick' | 'onOpenChange' | 'side' | 'groups' | 'entrance'> {
   /** The pill's name and hint, and the picker's: "Add a reaction" by default. */
   label?: string | undefined;
   /** Which edge of the pill the picker lines up with, `start` by default. */
@@ -152,11 +152,14 @@ export interface AddReactionProps extends Pick<EmojiPickerProps, 'onPick' | 'onO
 /**
  * The pill after a message's reactions that opens the emoji picker. Inside a
  * `ChatMessage` it is quiet until the row is pointed at, focused or tapped.
+ * The picker arrives the frame it is placed (`entrance="instant"`), as every
+ * popup a reader opens over and over in a conversation does.
  */
-export function AddReaction({ label = 'Add a reaction', align = 'start', disabledReason, ...picker }: AddReactionProps) {
+export function AddReaction({ label = 'Add a reaction', align = 'start', entrance = 'instant', disabledReason, ...picker }: AddReactionProps) {
   return (
     <EmojiPicker
       {...picker}
+      entrance={entrance}
       label={label}
       tooltip={heldHint(label, disabledReason)}
       align={align}

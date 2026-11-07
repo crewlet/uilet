@@ -95,6 +95,7 @@ import {
   usePopupLayer,
   viewportBounds,
   type PlacementRect,
+  type PopupEntrance,
 } from '../Layer/index.js';
 import { Button, type ButtonVariant } from '../Button/index.js';
 import { IconButton } from '../IconButton/index.js';
@@ -221,6 +222,8 @@ export interface MenuProps {
    * name, which a screen reader already hears, so it is shown and not read.
    */
   tooltip?: ReactNode;
+  /** How the panel arrives: `rise` (the default), or `instant`, drawn the frame it is placed. */
+  entrance?: PopupEntrance | undefined;
   /**
    * Focus stays on the menu and the keys move a highlight it points at with
    * `aria-activedescendant`: it opens with nothing highlighted (ArrowDown or
@@ -249,6 +252,7 @@ export function Menu({
   renderTrigger,
   header,
   tooltip,
+  entrance = 'rise',
   activeDescendant = false,
   className,
 }: MenuProps) {
@@ -553,6 +557,7 @@ export function Menu({
       className={cx(
         'crewlet-menu',
         container !== null && container !== document.body ? 'crewlet-menu--in-host' : null,
+        entrance === 'instant' && 'crewlet-menu--instant',
         activeDescendant && 'crewlet-menu--descendant',
         className,
       )}

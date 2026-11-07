@@ -16,6 +16,7 @@ import { ChevronDownGlyph, FolderInputGlyph, PencilGlyph } from '@crewlethq/icon
 import { LAYER_REPOSITION_EVENT, LayerHost, useModalLayer } from '../Layer/index.js';
 import { FOCUS_RETURNED_ATTRIBUTE } from '../utils/focusModality.js';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
+import { installMotion } from '../../../../apps/ui-tests/src/cascade.js';
 import { Menu, type MenuEntry } from './index.js';
 
 afterEach(cleanup);
@@ -847,6 +848,25 @@ test('a menu may grow to the room beside its anchor, not a fixed 360px', () => {
   // And the stylesheet reads it as the ceiling.
   const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Menu.css'), 'utf8');
   expect(sheet).toMatch(/max-height:\s*var\(--crewlet-menu-room,/);
+});
+
+// `instant` is drawn the frame it is placed; the default rises; reduced motion stills both.
+test('an instant menu arrives with no animation; the default rises; reduced motion stills both', () => {
+  for (const [preference, entrance, moves] of [
+    ['no-preference', 'rise', true],
+    ['no-preference', 'instant', false],
+    ['reduce', 'rise', false],
+  ] as const) {
+    const uninstall = installMotion(preference, 'Menu/Menu.css');
+    render(<Menu label="Actions for Software Engineer" items={entries()} entrance={entrance} />);
+    fireEvent.click(trigger());
+    const panel = screen.getByRole('menu');
+    expect(panel.classList.contains('crewlet-menu--instant'), `${preference} ${entrance}`).toBe(entrance === 'instant');
+    // Only the stop and the instant rule write `none`; the rise is left as written.
+    expect(getComputedStyle(panel).animation === 'none', `${preference} ${entrance}`).toBe(!moves);
+    cleanup();
+    uninstall();
+  }
 });
 
 describe('the active-descendant mode', () => {

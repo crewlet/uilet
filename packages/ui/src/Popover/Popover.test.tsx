@@ -16,6 +16,7 @@ import { useCallback, useState, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { LAYER_REPOSITION_EVENT, LayerHost, useModalLayer } from '../Layer/index.js';
 import { Popover } from './index.js';
+import { installMotion } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(cleanup);
 
@@ -565,4 +566,27 @@ test("the trigger keeps its own ref, across the popover's re-renders", () => {
   fireEvent.click(screen.getByRole('button', { name: 'Owner (open)' }));
   // Handed its element once, never released while it stood in the document.
   expect(own.mock.calls).toEqual([[button]]);
+});
+
+/*
+ * THE ENTRANCE. `rise` (the default) arrives with a short rise; `instant` is
+ * drawn the frame it is placed, and reduced motion stills both. Mutation: drop
+ * the instant rule and the panel still rises.
+ */
+test('an instant panel arrives with no animation; the default rises; reduced motion stills both', () => {
+  for (const [preference, entrance, moves] of [
+    ['no-preference', 'rise', true],
+    ['no-preference', 'instant', false],
+    ['reduce', 'rise', false],
+  ] as const) {
+    const uninstall = installMotion(preference, 'Popover/Popover.css');
+    render(<Chip entrance={entrance} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+    const panel = screen.getByRole('dialog', { name: 'Owner' });
+    expect(panel.classList.contains('crewlet-popover--instant'), `${preference} ${entrance}`).toBe(entrance === 'instant');
+    // Only the stop and the instant rule write `none`; the rise is left as written.
+    expect(getComputedStyle(panel).animation === 'none', `${preference} ${entrance}`).toBe(!moves);
+    cleanup();
+    uninstall();
+  }
 });

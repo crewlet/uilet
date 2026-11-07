@@ -24,6 +24,7 @@ import {
   viewportBounds,
   type DismissReason,
   type PlacementRect,
+  type PopupEntrance,
 } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
 import { returnFocus } from '../utils/focusModality.js';
@@ -69,6 +70,8 @@ interface PopoverBaseProps {
    * searches, so a panel opened by a tap can start on itself instead.
    */
   initialFocus?: (() => HTMLElement | null) | undefined;
+  /** How the panel arrives: `rise` (the default), or `instant`, drawn the frame it is placed. */
+  entrance?: PopupEntrance | undefined;
   className?: string | undefined;
   /** Controlled. Leave it out for a panel that owns its own open state. */
   open?: boolean | undefined;
@@ -155,6 +158,7 @@ export function Popover({
   initialFocus,
   role = 'dialog',
   label,
+  entrance = 'rise',
   className,
   open: controlled,
   defaultOpen = false,
@@ -366,6 +370,7 @@ export function Popover({
         'crewlet-popover',
         `crewlet-popover--${place?.side ?? (side === 'top' ? 'above' : 'below')}`,
         container !== null && container !== document.body ? 'crewlet-popover--in-host' : 'crewlet-popover--fixed',
+        entrance === 'instant' && 'crewlet-popover--instant',
         className,
       )}
       style={{ ...style, zIndex: layer.zIndex }}
