@@ -15,7 +15,7 @@ import axe from 'axe-core';
 import type { CSSProperties } from 'react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { parseHex } from '@crewlethq/tokens/test/palette';
-import { channels, installThemed, px, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installThemed, px, themeColour, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
 import { AVATAR_SIZES, AvatarStack, avatarStackLabel, type AvatarStackMember } from './index.js';
 
 let uninstall: (() => void) | undefined;
@@ -333,3 +333,28 @@ test('draws an agent member as its character, in its hue', () => {
   expect(person!.textContent).toBe('JF');
 });
 
+
+// A SIZE IN PX, for a line that sets its own, and SPREAD: side by side, a step
+// apart, with no overlap and no cut-out. Mutation: drop the spread rules, and
+// the faces overlap by 6px under their ring.
+test('takes a size in px, and spread lays the faces side by side a step apart', () => {
+  uninstall = installThemed('dark', 'Avatar/Avatar.css', 'Avatar/AvatarStack.css');
+  const { container } = render(<AvatarStack members={AGENTS} size={24} max={3} spread />);
+  const stack = container.querySelector<HTMLElement>('.crewlet-avatar-stack')!;
+  expect(stack.classList.contains('crewlet-avatar-stack--spread')).toBe(true);
+  expect([...stack.classList].some((name) => /^crewlet-avatar-stack--(xs|sm|md|lg)$/.test(name))).toBe(false);
+  expect(stack.style.getPropertyValue(property('crewlet-avatar-stack-size'))).toBe('24px');
+  const members = [...stack.querySelectorAll<HTMLElement>('.crewlet-avatar-stack__member')];
+  expect(px(stack, 'gap')).toBe(4);
+  expect(px(members[1]!, 'margin-inline-start')).toBe(0);
+  expect(getComputedStyle(members[1]!).boxShadow).toBe('none');
+  // With no ring between them, each face keeps its own hairline.
+  expect(channels(getComputedStyle(members[0]!).borderTopColor)).toEqual(channels(themeColour('dark', property('color-edge-hairline'))));
+});
+
+test('overlaps as before without spread', () => {
+  uninstall = installThemed('dark', 'Avatar/Avatar.css', 'Avatar/AvatarStack.css');
+  const { container } = render(<AvatarStack members={AGENTS} size={24} max={3} />);
+  const members = [...container.querySelectorAll<HTMLElement>('.crewlet-avatar-stack__member')];
+  expect(px(members[1]!, 'margin-inline-start')).toBe(-6);
+});

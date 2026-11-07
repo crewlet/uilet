@@ -34,7 +34,8 @@ export interface AvatarStackProps extends Omit<HTMLAttributes<HTMLSpanElement>, 
    */
   max?: number | undefined;
   /**
-   * The badges' step, `sm` by default.
+   * The badges' step, `sm` by default, or a size in px for a line that sets
+   * its own (a thread's summary line draws 24px faces).
    *
    * NOT THE NEAREST STEP TO THE DESIGN'S 22px, which is `xs`, because the
    * design draws its stacks' initials at 9px and this kit's smallest type is
@@ -42,7 +43,12 @@ export interface AvatarStackProps extends Omit<HTMLAttributes<HTMLSpanElement>, 
    * 2px cut-out; `xs` overlaps by 2px instead (AvatarStack.css), so its
    * smaller face keeps both of its initials clear.
    */
-  size?: AvatarSizeStep | undefined;
+  size?: AvatarSizeStep | number | undefined;
+  /**
+   * Side by side, a step apart, rather than overlapped: for a line that shows
+   * who took part (a thread's summary line) rather than a mark of how many.
+   */
+  spread?: boolean | undefined;
   /**
    * The accessible name, where the derived one ("3 agents: SWE, CTO, PM") is
    * not what the stack means where it stands ("Watching: …").
@@ -96,6 +102,7 @@ export function AvatarStack({
   members,
   max = 4,
   size = 'sm',
+  spread = false,
   label,
   decorative = false,
   className,
@@ -116,10 +123,15 @@ export function AvatarStack({
   return (
     <span
       {...rest}
-      className={cx('crewlet-avatar-stack', `crewlet-avatar-stack--${size}`, className)}
-      // The step's box, from the one table, for the chip: the badges set their
-      // own from their step class, and the chip stands as tall as they do.
-      style={{ '--crewlet-avatar-stack-size': `${AVATAR_SIZES[size]}px`, ...style } as CSSProperties}
+      className={cx(
+        'crewlet-avatar-stack',
+        typeof size === 'number' ? null : `crewlet-avatar-stack--${size}`,
+        spread && 'crewlet-avatar-stack--spread',
+        className,
+      )}
+      // The badges' box, from the one table or the px given, for the chip: the
+      // badges size themselves, and the chip stands as tall as they do.
+      style={{ '--crewlet-avatar-stack-size': `${typeof size === 'number' ? size : AVATAR_SIZES[size]}px`, ...style } as CSSProperties}
       role={decorative ? undefined : 'img'}
       aria-label={decorative ? undefined : (label ?? avatarStackLabel(members))}
       aria-hidden={decorative ? true : undefined}

@@ -17,6 +17,9 @@ export interface ThreadSummaryLabels {
   open: string;
 }
 
+/** The repliers' faces, in px: side by side, a step apart, in a 34px line. */
+export const THREAD_SUMMARY_FACE = 24;
+
 export const THREAD_SUMMARY_LABELS: ThreadSummaryLabels = {
   replies: (count) => (count === 1 ? '1 reply' : `${count.toLocaleString()} replies`),
   fresh: (count) => `${count.toLocaleString()} new`,
@@ -83,7 +86,7 @@ export function ThreadSummary({
         aria-expanded={open}
         onClick={onOpen}
       >
-        <AvatarStack members={participants} size="xs" max={3} decorative />
+        <AvatarStack members={participants} size={THREAD_SUMMARY_FACE} max={3} spread decorative />
         <span className="crewlet-thread-summary__count">{count}</span>
         {fresh ? (
           <Tag size="xs" variant="brand">

@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
 import { BotGlyph, KeyGlyph } from '@crewlethq/icons/glyphs';
-import { AVATAR_STATUSES, Avatar, AvatarStack, Card, NODE_HUES } from '@crewlethq/ui';
+import { AVATAR_STATUSES, Avatar, AvatarStack, Card, NODE_HUES, type AvatarStackMember } from '@crewlethq/ui';
 import samplePortrait from '../fixtures/sample-portrait.svg';
 
 const meta: Meta<typeof Avatar> = {
@@ -388,4 +388,27 @@ export const StackOnACard: Story = {
       </Card.Body>
     </Card>
   ),
+};
+
+/**
+ * A stack drawn SPREAD: side by side, a step apart, with no overlap and no
+ * cut-out, at a size in px. For a line that shows who took part, such as a
+ * thread's summary line (24px faces); the overlapped stack beside it is the
+ * default, a mark of how many.
+ */
+export const StackSpread: Story = {
+  render: () => {
+    const members: AvatarStackMember[] = [
+      { name: 'Senior Backend Engineer', character: 'gemlet', hue: 'cyan' },
+      { name: 'Designer', kind: 'human' },
+      { name: 'Product Manager', kind: 'human' },
+      { name: 'CTO', kind: 'human' },
+    ];
+    return (
+      <div style={{ display: 'grid', gap: 16, justifyItems: 'start' }}>
+        <AvatarStack members={members} size={24} max={3} spread />
+        <AvatarStack members={members} size={24} max={3} />
+      </div>
+    );
+  },
 };
