@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useRef, useState } from 'react';
-import { Button, Composer, IconButton, SendButton, Tag, Toolbar, formatMarkdown } from '@crewlethq/ui';
+import { Button, Composer, IconButton, Menu, SendButton, Tag, Toolbar, formatMarkdown } from '@crewlethq/ui';
 import {
   AtSignGlyph,
   BoldGlyph,
@@ -8,6 +8,7 @@ import {
   ItalicGlyph,
   LayoutDashboardGlyph,
   ListGlyph,
+  ListOrderedGlyph,
   PlusGlyph,
   StrikethroughGlyph,
 } from '@crewlethq/icons/glyphs';
@@ -177,18 +178,20 @@ export const PageRemoved: Story = { render: () => <Chat attached={false} /> };
  * A CONVERSATION'S MESSAGE BOX: the formatting row along the top (`toolbar`),
  * one line of words, and the tools at the footer's start (`tools`) with the
  * send button keeping the corner. Each formatting control applies
- * `formatMarkdown` to the field's selection.
+ * `formatMarkdown` to the field's selection. The row folds by its own width
+ * (`fold="container"`): bold, italic and strikethrough stay, and the rest move
+ * into a menu where the box is narrow, as in a side panel.
  */
-function RoomComposer() {
+function RoomComposer({ width = 560 }: { width?: number }) {
   const [text, setText] = useState('');
   const field = useRef<HTMLTextAreaElement | null>(null);
-  const apply = (format: 'bold' | 'italic' | 'strikethrough' | 'bulletList') => {
+  const apply = (format: 'bold' | 'italic' | 'strikethrough' | 'bulletList' | 'numberedList') => {
     const box = field.current;
     const selection = { start: box?.selectionStart ?? text.length, end: box?.selectionEnd ?? text.length };
     setText(formatMarkdown(text, selection, format).value);
   };
   return (
-    <div style={{ maxWidth: 560 }}>
+    <div style={{ maxWidth: width }}>
       <Composer
         ref={field}
         value={text}
@@ -199,18 +202,31 @@ function RoomComposer() {
         label="Message #engineering"
         placeholder="Message #engineering"
         toolbar={
-          <Toolbar label="Formatting">
-            <IconButton label="Bold" icon={<BoldGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('bold')} />
-            <IconButton label="Italic" icon={<ItalicGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('italic')} />
-            <IconButton label="Strikethrough" icon={<StrikethroughGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('strikethrough')} />
-            <IconButton label="Bulleted list" icon={<ListGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('bulletList')} />
+          <Toolbar label="Formatting" fold="container">
+            <IconButton label="Bold" icon={<BoldGlyph size="md" />} size="sm" variant="ghost" onClick={() => apply('bold')} />
+            <IconButton label="Italic" icon={<ItalicGlyph size="md" />} size="sm" variant="ghost" onClick={() => apply('italic')} />
+            <IconButton label="Strikethrough" icon={<StrikethroughGlyph size="md" />} size="sm" variant="ghost" onClick={() => apply('strikethrough')} />
+            <Toolbar.Separator />
+            <Toolbar.Wide>
+              <IconButton label="Numbered list" icon={<ListOrderedGlyph size="md" />} size="sm" variant="ghost" onClick={() => apply('numberedList')} />
+              <IconButton label="Bulleted list" icon={<ListGlyph size="md" />} size="sm" variant="ghost" onClick={() => apply('bulletList')} />
+            </Toolbar.Wide>
+            <Toolbar.Overflow>
+              <Menu
+                label="More formatting"
+                items={[
+                  { key: 'numbered', label: 'Numbered list', onSelect: () => apply('numberedList') },
+                  { key: 'bulleted', label: 'Bulleted list', onSelect: () => apply('bulletList') },
+                ]}
+              />
+            </Toolbar.Overflow>
           </Toolbar>
         }
         tools={
           <>
-            <IconButton label="Attach" icon={<PlusGlyph size="xs" />} size="sm" variant="ghost" />
-            <IconButton label="Emoji" icon={<FaceSlightlySmilingGlyph size="xs" />} size="sm" variant="ghost" />
-            <IconButton label="Mention someone" icon={<AtSignGlyph size="xs" />} size="sm" variant="ghost" />
+            <IconButton label="Attach" icon={<PlusGlyph size="md" />} size="sm" variant="ghost" />
+            <IconButton label="Emoji" icon={<FaceSlightlySmilingGlyph size="md" />} size="sm" variant="ghost" />
+            <IconButton label="Mention someone" icon={<AtSignGlyph size="md" />} size="sm" variant="ghost" />
           </>
         }
         actions={<SendButton mode="send" disabledReason={text.trim() === '' ? 'Write a message first' : undefined} onPress={() => setText('')} />}
@@ -220,3 +236,6 @@ function RoomComposer() {
 }
 
 export const WithToolsAndFormatting: Story = { render: () => <RoomComposer /> };
+
+/** The same box at a side panel's width: the formatting row folds into a menu rather than wrapping. */
+export const InANarrowPane: Story = { render: () => <RoomComposer width={300} /> };

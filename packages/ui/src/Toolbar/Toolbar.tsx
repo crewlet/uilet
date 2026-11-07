@@ -116,6 +116,17 @@ function stopHolding(stops: Stop[], active: Element | null): number {
 
 export type ToolbarMode = 'toolbar' | 'group';
 
+/**
+ * Where `Toolbar.Wide` folds into `Toolbar.Overflow`. `screen`: at the shell's
+ * breakpoint, as a page's toolbar folds with the shell. `container`: where the
+ * row itself is narrower than [TOOLBAR_FOLD_WIDTH], for a row inside a box
+ * whose width is not the window's (a composer in a side panel).
+ */
+export type ToolbarFold = 'screen' | 'container';
+
+/** The row width under which a `fold="container"` toolbar folds, as its stylesheet states it. */
+export const TOOLBAR_FOLD_WIDTH = '20rem';
+
 export interface ToolbarProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role'> {
   /**
    * Names the row. REQUIRED: a toolbar is announced by its name, and a page
@@ -130,10 +141,20 @@ export interface ToolbarProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role
   mode?: ToolbarMode | undefined;
   /** Sticks under the top of the scroller, so filters stay reachable in a long list. */
   sticky?: boolean | undefined;
+  /** Where `Toolbar.Wide` folds into `Toolbar.Overflow`; see `ToolbarFold`. */
+  fold?: ToolbarFold | undefined;
   children?: ReactNode;
 }
 
-export function Toolbar({ label, mode = 'toolbar', sticky = false, className, children, ...rest }: ToolbarProps) {
+export function Toolbar({
+  label,
+  mode = 'toolbar',
+  sticky = false,
+  fold = 'screen',
+  className,
+  children,
+  ...rest
+}: ToolbarProps) {
   const root = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState(0);
   const roving = mode === 'toolbar';
@@ -221,7 +242,12 @@ export function Toolbar({ label, mode = 'toolbar', sticky = false, className, ch
     <div
       {...rest}
       ref={root}
-      className={cx('crewlet-toolbar', sticky && 'crewlet-toolbar--sticky', className)}
+      className={cx(
+        'crewlet-toolbar',
+        sticky && 'crewlet-toolbar--sticky',
+        fold === 'container' && 'crewlet-toolbar--fold-container',
+        className,
+      )}
       role={roving ? 'toolbar' : 'group'}
       aria-label={label}
       aria-orientation={roving ? 'horizontal' : undefined}
@@ -252,9 +278,10 @@ export function ToolbarWide({ className, children, ...rest }: ToolbarSlotProps) 
 /**
  * What stands in for them: a Menu holding the same actions, drawn only below
  * the breakpoint. Two elements rather than one that measures itself, because a
- * row whose contents change as it is measured is a row that can oscillate, and
- * the only width that decides anything here is the one the stylesheet already
- * switches the shell at.
+ * row whose contents change as it is measured is a row that can oscillate. The
+ * width that decides is the shell's breakpoint, or with `fold="container"` the
+ * row's own, which its contents cannot move: the row takes its width from the
+ * box it stands in.
  */
 export function ToolbarOverflow({ className, children, ...rest }: ToolbarSlotProps) {
   return (
@@ -264,5 +291,14 @@ export function ToolbarOverflow({ className, children, ...rest }: ToolbarSlotPro
   );
 }
 
+/**
+ * A thin upright rule between groups of controls. Decorative: the controls
+ * each carry their own name, and a separator is not a stop the arrows land on.
+ */
+export function ToolbarSeparator({ className, ...rest }: HTMLAttributes<HTMLSpanElement>) {
+  return <span {...rest} aria-hidden="true" className={cx('crewlet-toolbar__separator', className)} />;
+}
+
 Toolbar.Wide = ToolbarWide;
 Toolbar.Overflow = ToolbarOverflow;
+Toolbar.Separator = ToolbarSeparator;

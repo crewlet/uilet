@@ -151,6 +151,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         'crewlet-composer',
         appearance === 'chat' && 'crewlet-composer--chat',
         inline && 'crewlet-composer--inline',
+        value === '' && 'is-empty',
         disabled && 'is-disabled',
         className,
       )}

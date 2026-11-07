@@ -209,3 +209,35 @@ test('a re-render that changes nothing writes no tabindex', async () => {
   // And the order itself still holds: one stop at zero.
   expect(screen.getAllByRole('button').map((button) => button.tabIndex)).toEqual([0, -1, -1]);
 });
+
+test('a container fold marks the row as its own query container, and a screen fold does not', () => {
+  render(
+    <>
+      <Toolbar label="Formatting" fold="container">
+        <button>Bold</button>
+      </Toolbar>
+      <Toolbar label="Organization builder">
+        <button>Undo</button>
+      </Toolbar>
+    </>,
+  );
+  expect(screen.getByRole('toolbar', { name: 'Formatting' }).classList.contains('crewlet-toolbar--fold-container')).toBe(true);
+  expect(screen.getByRole('toolbar', { name: 'Organization builder' }).classList.contains('crewlet-toolbar--fold-container')).toBe(false);
+});
+
+test('a separator is hidden from assistive technology and is never a stop', () => {
+  render(
+    <Toolbar label="Formatting">
+      <button>Bold</button>
+      <Toolbar.Separator data-testid="rule" />
+      <button>Link</button>
+    </Toolbar>,
+  );
+  const rule = screen.getByTestId('rule');
+  expect(rule.getAttribute('aria-hidden')).toBe('true');
+  expect(rule.hasAttribute('tabindex')).toBe(false);
+  const bold = screen.getByRole('button', { name: 'Bold' });
+  bold.focus();
+  fireEvent.keyDown(bold, { key: 'ArrowRight' });
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Link' }));
+});
