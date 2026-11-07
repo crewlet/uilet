@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AvatarStack, Button, Card, ChooserList, ColumnChooser, DataGrid, Menu, Tag, columnChoicesOf, type DataGridColumn } from '@crewlethq/ui';
 import { VendorMark, type Vendor } from '@crewlethq/icons';
 import { BugGlyph, InboxGlyph } from '@crewlethq/icons/glyphs';
@@ -272,6 +272,124 @@ export const Bands: Story = {
         ]}
       />
     </div>
+  ),
+};
+
+/* ---- The sticky stack: the heads a scroller keeps in view ---------------- */
+
+const OWNERS = ['Ada', 'Grace', 'Alan', undefined] as const;
+const STATES = ['To do', 'In progress', 'In review'] as const;
+const MANY: Task[] = Array.from({ length: 36 }, (_, at) => {
+  const assignee = OWNERS[at % 4];
+  return {
+    key: `ENG-${100 + at}`,
+    title: `${['Rotate', 'Audit', 'Document', 'Measure'][at % 4]} the ${['signing key', 'token grants', 'backup runbook', 'storage quotas', 'release checklist', 'search latency'][at % 6]}`,
+    status: STATES[at % 3]!,
+    ...(assignee ? { assignee } : {}),
+    updated: (at * 7) % 50,
+  };
+});
+
+/** A status drawn as a control raised over the row's own link, as an editable cell is. */
+const RAISED: DataGridColumn<Task>[] = COLUMNS.map((column) =>
+  column.key === 'status'
+    ? {
+        ...column,
+        cell: (t: Task) => (
+          <span style={{ position: 'relative', zIndex: 'var(--z-index-raised)' }}>
+            <Tag size="sm">{t.status}</Tag>
+          </span>
+        ),
+      }
+    : column,
+);
+
+const byOwner = (rows: Task[]) =>
+  OWNERS.map((owner) => ({ key: owner ?? 'none', label: owner ?? 'Unassigned', rows: rows.filter((t) => t.assignee === owner) }));
+
+/**
+ * A page's own scroller with an opaque sticky bar at its top, the bar's height
+ * published as `--crewlet-data-grid-sticky-top`, as an application does.
+ */
+function Scroller({ width, children }: { width?: number; children: ReactNode }) {
+  return (
+    <div style={{ height: 420, width, maxWidth: 960, overflow: 'auto', ['--crewlet-data-grid-sticky-top' as string]: 'var(--size-control-lg)' }}>
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 'var(--z-index-sticky)',
+          height: 'var(--size-control-lg)',
+          display: 'flex',
+          alignItems: 'center',
+          background: 'var(--color-surface-background)',
+          fontSize: 'var(--font-size-sm)',
+        }}
+      >
+        A sticky bar. Scroll the list under it.
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * A grouped list in a scroller. Scrolled, each band's head sticks under the
+ * column heads, flush, until its band has gone by, and no row paints over it.
+ */
+export const StickyBandHeads: Story = {
+  render: () => (
+    <Scroller>
+      <DataGrid columns={COLUMNS} rowKey={(t: Task) => t.key} bands={byOwner(MANY)} />
+    </Scroller>
+  ),
+};
+
+/**
+ * Grouped twice. A sub-band's head sticks under its parent's rather than over
+ * it, so both names stay in view, and it slides beneath the parent's as it
+ * leaves.
+ */
+export const StickyTwoLevelBands: Story = {
+  render: () => (
+    <Scroller>
+      <DataGrid
+        columns={COLUMNS}
+        rowKey={(t: Task) => t.key}
+        bands={STATES.map((state) => ({
+          key: state,
+          label: state,
+          rows: [],
+          bands: byOwner(MANY.filter((t) => t.status === state)).filter((band) => band.rows.length),
+        }))}
+      />
+    </Scroller>
+  ),
+};
+
+/**
+ * Grouped card rows, in a column too narrow for the columns. No column heads
+ * are drawn, so each band's head sticks right under the bar, with no gap for
+ * rows to show through.
+ */
+export const StickyBandsOnCardRows: Story = {
+  render: () => (
+    <Scroller width={360}>
+      <DataGrid columns={COLUMNS.map((c) => ({ ...c, drop: undefined, optional: false }))} rowKey={(t: Task) => t.key} bands={byOwner(MANY)} />
+    </Scroller>
+  ),
+};
+
+/**
+ * A cell holding a control raised with a z-index of its own (the status, over
+ * the row's link). The row keeps it to itself, so it still scrolls under the
+ * band heads and the column heads.
+ */
+export const StickyHeadsOverARaisedCell: Story = {
+  render: () => (
+    <Scroller>
+      <DataGrid columns={RAISED} rowKey={(t: Task) => t.key} rowHref={(t: Task) => `#/worklet/${t.key}`} bands={byOwner(MANY)} />
+    </Scroller>
   ),
 };
 
