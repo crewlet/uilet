@@ -7,8 +7,9 @@ export interface ActivityLineProps extends Omit<HTMLAttributes<HTMLDivElement>, 
   typing?: string | undefined;
   /**
    * The agents at work, drawn as one `WorkingLine`: their faces, one sentence
-   * naming them and, on demand, a line per agent. Empty or left out, nothing
-   * is drawn for them.
+   * naming them and, on demand, a line per agent. Empty, nothing is drawn and
+   * the line's region waits for the first to start; left out, the line has
+   * no working line at all (a line that only ever says who is typing).
    */
   agents?: readonly WorkingAgent[] | undefined;
   /** The working line's words, for a surface in another language. */
@@ -22,7 +23,8 @@ export interface ActivityLineProps extends Omit<HTMLAttributes<HTMLDivElement>, 
  *
  * KEPT APART. People typing are words and dots, with no face; agents at work
  * are faces, names under a sweeping band and dots. Both at once stand side by
- * side, and wrap to two lines where the column is too narrow for both.
+ * side, the people first, and wrap to two lines where the column is too
+ * narrow for both.
  *
  * EACH ANNOUNCED ONCE PER CHANGE. Typing is a polite status as it changes;
  * the working line's own region names who starts and stops, never a phrase.
@@ -31,7 +33,6 @@ export interface ActivityLineProps extends Omit<HTMLAttributes<HTMLDivElement>, 
 export function ActivityLine({ typing, agents, workingLabels, className, ...rest }: ActivityLineProps) {
   return (
     <div {...rest} className={cx('crewlet-activity-line', className)}>
-      <WorkingLine agents={agents ?? []} labels={workingLabels} className="crewlet-activity-line__working" />
       <span className="crewlet-activity-line__typing" role="status">
         {typing ? (
           <>
@@ -40,6 +41,9 @@ export function ActivityLine({ typing, agents, workingLabels, className, ...rest
           </>
         ) : null}
       </span>
+      {agents === undefined ? null : (
+        <WorkingLine agents={agents} labels={workingLabels} className="crewlet-activity-line__working" />
+      )}
     </div>
   );
 }

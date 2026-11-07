@@ -31,6 +31,8 @@ export interface WorkingLineLabels {
   others: (count: number) => string;
   /** The first two of three or more names, before `others`: "A, B". */
   series: (names: readonly string[]) => string;
+  /** Three or more agents, counted, where the line is too narrow for names: "6 agents". */
+  agents: (count: number) => string;
   /** Queued agents beside the ones at work: "1 queued". */
   queuedCount: (count: number) => string;
   /** Names a list: "A, B and C". */
@@ -46,6 +48,7 @@ export const WORKING_LINE_LABELS: WorkingLineLabels = {
   queuedOne: 'is queued',
   others: (count) => `and ${count} ${count === 1 ? 'other' : 'others'}`,
   series: (names) => names.join(', '),
+  agents: (count) => `${count} agents`,
   queuedCount: (count) => `${count} queued`,
   list: (names) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`),
   detail: 'Each agent at work',
@@ -66,6 +69,9 @@ export interface WorkingLineProps extends Omit<HTMLAttributes<HTMLDivElement>, '
   labels?: Partial<WorkingLineLabels> | undefined;
 }
 
+/** The faces' size, in px, on the line and in the per-agent lines. */
+const FACE = 20;
+
 /** Drops the ellipsis an engine phrase ends on: the line draws its own dots. */
 function phrase(status: string | undefined): string {
   return (status ?? '').trim().replace(/(?:\.{3}|…)$/u, '').trimEnd();
@@ -82,6 +88,8 @@ export interface WorkingSentence {
   names: string;
   /** "and 4 others" after three or more names; empty otherwise. Drawn whole where the names truncate. */
   others: string;
+  /** "6 agents", for three or more, drawn in place of the names where the line is narrow; empty otherwise. */
+  count: string;
   /** "is thinking", "are working", "are queued". */
   verb: string;
   /** "1 queued", beside agents at work; empty otherwise. */
@@ -105,10 +113,11 @@ export function workingSentence(agents: readonly WorkingAgent[], overrides?: Par
   const counted = lead.length > 2;
   const names = counted ? labels.series(lead.slice(0, 2).map((agent) => agent.name)) : labels.list(lead.map((agent) => agent.name));
   const others = counted ? labels.others(lead.length - 2) : '';
+  const count = counted ? labels.agents(lead.length) : '';
   const verb =
     lead.length === 1 ? agentPhrase(lead[0]!, labels) : active.length > 0 ? labels.working : labels.queued;
   const queued = active.length > 0 && waiting.length > 0 ? labels.queuedCount(waiting.length) : '';
-  return { names, others, verb, queued, everyone: !counted && queued === '', waiting: active.length === 0 };
+  return { names, others, count, verb, queued, everyone: !counted && queued === '', waiting: active.length === 0 };
 }
 
 /**
@@ -146,6 +155,10 @@ export function workingAnnouncement(agents: readonly WorkingAgent[], overrides?:
  * the verb. Queued agents are counted, still; a line of nothing but queued
  * agents does not move at all. Under reduced motion every part holds still
  * and the words carry the meaning.
+ *
+ * NARROW COLUMNS. Only the names give way, so the count of the rest, the verb
+ * and the dots always read whole; on a line under 21rem, three or more agents
+ * are counted ("6 agents are working") rather than named by a few letters.
  *
  * DETAIL ON DEMAND. With more than one agent, a chevron at the line's end
  * (its target the whole line) opens one compact line per agent, its face,
@@ -195,19 +208,24 @@ export function WorkingLine({
             className="crewlet-working-line__faces"
             members={ordered}
             max={max}
-            size="xs"
+            // 20px as a number, so the faces overlap by the stack's 6px rather
+            // than the 2px the xs step keeps for two initials: an agent's
+            // face is its character, and the line needs the room.
+            size={FACE}
             decorative={sentence.everyone}
             label={labels.list(ordered.map((agent) => agent.name))}
           />
           {/* The spaces between its pieces are text, for a screen reader; the flex gaps lay them out. */}
           <span className="crewlet-working-line__text">
-            {/* The names under the band: they truncate, and the count after them never does. */}
-            <span className="crewlet-working-line__who">
+            {/* The names under the band: they truncate, and the count after them never does.
+                Where the line is narrow, three or more are counted instead. */}
+            <span className={cx('crewlet-working-line__who', sentence.count && 'is-counted')}>
               <span className="crewlet-working-line__names">{sentence.names}</span>
               {sentence.others ? (
                 <>
                   {' '}
                   <span className="crewlet-working-line__others">{sentence.others}</span>
+                  <span className="crewlet-working-line__count">{sentence.count}</span>
                 </>
               ) : null}
             </span>{' '}
@@ -249,7 +267,7 @@ export function WorkingLine({
                   src={agent.src}
                   character={agent.character}
                   hue={agent.hue}
-                  size="xs"
+                  size={FACE}
                   decorative
                 />
                 <span className="crewlet-working-line__agent-name">{agent.name}</span>{' '}

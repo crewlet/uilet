@@ -31,7 +31,7 @@ test('says who is typing in a status, with the dots after the words, and stands 
 });
 
 test('draws the agents at work as one working line, whose region stays mounted while none is', () => {
-  const { container, rerender } = render(<ActivityLine />);
+  const { container, rerender } = render(<ActivityLine agents={[]} />);
   const line = container.querySelector('.crewlet-working-line')!;
   const region = line.querySelector('[role="status"]')!;
   expect(line.classList.contains('is-idle')).toBe(true);
@@ -42,12 +42,21 @@ test('draws the agents at work as one working line, whose region stays mounted w
   expect(region.textContent).toBe('Senior Backend Engineer and CTO are working.');
 });
 
+test('carries no working line where it is never handed agents', () => {
+  const { container } = render(<ActivityLine typing="Designer is typing" />);
+  expect(container.querySelector('.crewlet-working-line')).toBeNull();
+  expect(screen.getAllByRole('status')).toHaveLength(1);
+});
+
 test('keeps people typing apart from agents at work: words and dots, with no face', () => {
   const { container } = render(<ActivityLine agents={agents} typing="Designer is typing" />);
   const typing = container.querySelector('.crewlet-activity-line__typing')!;
   expect(typing.querySelector('.crewlet-avatar')).toBeNull();
   expect(typing.textContent).toBe('Designer is typing');
   expect(container.querySelector('.crewlet-working-line .crewlet-avatar-stack')).not.toBeNull();
+  // People first, in reading order as on screen.
+  const root = container.firstElementChild!;
+  expect(root.firstElementChild).toBe(typing);
 });
 
 test('keeps one line of height, and never grows wider than its column', () => {

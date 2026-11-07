@@ -39,7 +39,8 @@ describe('workingSentence', () => {
     expect(workingSentence([backend, app])).toMatchObject({ names: 'Backend Engineer and App Engineer', verb: 'are working', everyone: true });
     expect(workingSentence([backend, app]).others).toBe('');
     expect(workingSentence(crew.slice(0, 3))).toMatchObject({ names: 'Backend Engineer, App Engineer', others: 'and 1 other', everyone: false });
-    expect(workingSentence(crew)).toMatchObject({ names: 'Backend Engineer, App Engineer', others: 'and 4 others', verb: 'are working' });
+    expect(workingSentence(crew)).toMatchObject({ names: 'Backend Engineer, App Engineer', others: 'and 4 others', count: '6 agents', verb: 'are working' });
+    expect(workingSentence([backend, app]).count).toBe('');
   });
 
   test('agents at work lead and queued ones are counted; queued ones lead only when none has started', () => {
@@ -61,18 +62,23 @@ test('announces every name at work and queued, and never a phrase', () => {
   expect(workingAnnouncement([])).toBe('');
 });
 
-test('draws one line: the faces at the 20px step, then the sentence and the dots', () => {
+test('draws one line: the faces at 20px, then the sentence and the dots', () => {
   const { container } = render(<WorkingLine agents={crew} />);
   const summary = container.querySelector('.crewlet-working-line__summary')!;
   const stack = summary.querySelector('.crewlet-avatar-stack')!;
-  expect(stack.classList.contains('crewlet-avatar-stack--xs')).toBe(true);
+  // 20px faces at the stack's own 6px overlap, not the xs step's 2px.
+  expect(stack.classList.contains('crewlet-avatar-stack--xs')).toBe(false);
+  expect((stack as HTMLElement).style.getPropertyValue('--crewlet-avatar-stack-size')).toBe('20px');
   // Three faces and the count of the rest.
   expect(stack.querySelectorAll('.crewlet-avatar')).toHaveLength(3);
   expect(stack.querySelector('.crewlet-avatar-stack__more')!.textContent).toBe('+3');
   expect(summary.querySelector('.crewlet-working-line__names')!.textContent).toBe('Backend Engineer, App Engineer');
   // The count is its own piece, so a narrow column truncates the names and never the count.
   expect(summary.querySelector('.crewlet-working-line__others')!.textContent).toBe('and 4 others');
-  expect(summary.querySelector('.crewlet-working-line__who')!.textContent).toBe('Backend Engineer, App Engineer and 4 others');
+  // The counted form stands ready for a narrow line, where the stylesheet swaps it in.
+  const who = summary.querySelector('.crewlet-working-line__who')!;
+  expect(who.classList.contains('is-counted')).toBe(true);
+  expect(who.querySelector('.crewlet-working-line__count')!.textContent).toBe('6 agents');
   expect(summary.querySelector('.crewlet-working-line__verb')!.textContent).toBe('are working');
   expect(summary.querySelectorAll('.crewlet-bouncing-dots > i')).toHaveLength(3);
   expect(summary.querySelector('.crewlet-bouncing-dots')!.getAttribute('aria-hidden')).toBe('true');
@@ -160,6 +166,14 @@ test('draws a line of queued agents still: no dots, and the queued state for the
   expect(container.firstElementChild!.classList.contains('is-queued')).toBe(true);
   expect(container.querySelector('.crewlet-bouncing-dots')).toBeNull();
   expect(css).toMatch(/\.crewlet-working-line\.is-queued \.crewlet-working-line__who \{[^}]*animation: none;/);
+});
+
+test('counts three or more agents on a line under 21rem, and takes its column for that measure', () => {
+  expect(css).toMatch(/\.crewlet-working-line \{[^}]*container: crewlet-working-line \/ inline-size;[^}]*width: 100%;/);
+  expect(css).toMatch(/\.crewlet-working-line__count \{\s*display: none;/);
+  const narrow = /@container crewlet-working-line \(max-width: 21rem\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+  expect(narrow).toMatch(/\.is-counted > \.crewlet-working-line__names,\s*[^{]*\.is-counted > \.crewlet-working-line__others \{\s*display: none;/);
+  expect(narrow).toMatch(/\.is-counted > \.crewlet-working-line__count \{\s*display: block;/);
 });
 
 test('sweeps a band across the names, left to right, then rests', () => {

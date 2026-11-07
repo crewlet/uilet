@@ -66,8 +66,9 @@ export const AllQueued: Story = {
 };
 
 /**
- * A phone's message column: only the names give way, so the count of the
- * rest, the verb and the dots read whole.
+ * A phone's message column: under 21rem three or more agents are counted
+ * ("6 agents are working") rather than named by a few letters, and the verb
+ * and the dots read whole.
  */
 export const Narrow: Story = {
   args: { agents: CREW },
