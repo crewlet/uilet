@@ -1007,31 +1007,150 @@ describe('the dense list', () => {
     expect(document.querySelector('.crewlet-nav-group__toggle')).toBeNull();
   });
 
-  test('dense rows stand at the target floor, edge to edge, with every glyph and name on its line', () => {
+  test('dense rows stand on a 28px pitch with nothing between them, inset by the gutter, and are drawn at once', () => {
+    const uninstall = installSheets('SidebarNav/SidebarNav.css');
+    try {
+      render(<Rooms />);
+      const nav = screen.getByRole('navigation', { name: 'Rooms' });
+      const row = screen.getByRole('button', { name: 'general' });
+      expect(px(row, 'min-height')).toBe(28);
+      expect(getComputedStyle(row).fontWeight).toBe('400');
+      expect(px(row, 'font-size')).toBe(14);
+      expect(px(row, 'border-radius')).toBe(6);
+      // No gap between rows or runs: the pitch is the row.
+      expect(px(nav, 'gap')).toBe(0);
+      expect(px(row.closest('.crewlet-nav-group')!, 'gap')).toBe(0);
+      // The highlight is inset by the gutter.
+      expect(px(nav, 'padding-left')).toBe(8);
+      expect(px(nav, 'padding-right')).toBe(8);
+      expect(getComputedStyle(row).transitionProperty === 'none' || px(row, 'transition-duration') === 0).toBe(true);
+      // A face's width, so faces, counts and glyphs share one column.
+      expect(px(row.querySelector('.crewlet-nav-item__icon')!, 'min-width')).toBe(20);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test("the rows under a named group stand a step in from its heading, and a run with no name's do not", () => {
     const uninstall = installSheets('SidebarNav/SidebarNav.css');
     try {
       render(
-        <>
-          <Rooms />
-          <SidebarNav label="Sections">
-            <NavItem href="#/" label="Overview" icon={<svg />} />
-          </SidebarNav>
-        </>,
+        <SidebarNav label="Rooms" dense>
+          <NavGroup>
+            <NavItem label="Activity" icon={<svg />} />
+          </NavGroup>
+          <NavGroup label="Channels" collapsible>
+            <NavItem label="general" icon={<svg />} />
+          </NavGroup>
+        </SidebarNav>,
       );
-      const nav = screen.getByRole('navigation', { name: 'Rooms' });
-      const row = screen.getByRole('button', { name: 'general' });
-      expect(px(row, 'min-height')).toBe(24);
-      expect(getComputedStyle(row).fontWeight).toBe('400');
-      // The gutter halves, and the pad grows by the same step.
-      expect(px(nav, 'padding-left')).toBe(4);
-      expect(px(row, 'padding-left')).toBe(16);
-      const plain = screen.getByRole('navigation', { name: 'Sections' });
-      const overview = screen.getByRole('link', { name: 'Overview' });
-      expect(px(nav, 'padding-left') + px(row, 'padding-left')).toBe(
-        px(plain, 'padding-left') + px(overview, 'padding-left'),
-      );
-      // A face's width, so faces, counts and glyphs share one column.
-      expect(px(row.querySelector('.crewlet-nav-item__icon')!, 'min-width')).toBe(20);
+      const view = screen.getByRole('button', { name: 'Activity' });
+      const room = screen.getByRole('button', { name: 'general' });
+      const head = screen.getByRole('group', { name: 'Channels' }).querySelector('.crewlet-nav-group__head')!;
+      // The heading's glyph column is the plain rows'.
+      expect(px(head, 'padding-left')).toBe(px(view, 'padding-left'));
+      expect(px(room, 'padding-left')).toBe(px(view, 'padding-left') + 16);
+      expect(px(head, 'min-height')).toBe(28);
+      expect(px(head, 'margin-top')).toBe(10);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test("a heading's control shows under the pointer and with focus in the heading, and always where nothing hovers", () => {
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SidebarNav.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const hover = /@media \(hover: hover\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+    expect(hover).toMatch(/\.crewlet-sidebar-nav--dense \.crewlet-nav-group__action \{\s*opacity: 0;/);
+    expect(hover).toMatch(/\.crewlet-nav-group__head:is\(:hover, :focus-within\) \.crewlet-nav-group__action \{\s*opacity: 1;/);
+    // Hidden only inside the hover query, so a touch screen always shows it.
+    const outside = css.replace(/@media \(hover: hover\) \{[\s\S]*?\n\}/, '');
+    expect(outside).not.toMatch(/\.crewlet-nav-group__action \{[^}]*opacity: 0/);
+  });
+
+  test('a group with a glyph shows it at rest and the chevron under the pointer, focused, or folded', async () => {
+    const user = userEvent.setup();
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SidebarNav.css'), 'utf8');
+    render(
+      <SidebarNav label="Rooms" dense>
+        <NavGroup label="Starred" icon={<svg data-testid="star" />} collapsible>
+          <NavItem label="general" icon={<svg />} />
+        </NavGroup>
+      </SidebarNav>,
+    );
+    const group = screen.getByRole('group', { name: 'Starred' });
+    expect(group.classList.contains('crewlet-nav-group--iconic')).toBe(true);
+    const fold = within(group).getByRole('button', { name: 'Starred' });
+    // One slot holds both, hidden from assistive technology: the words name the button.
+    const slot = fold.querySelector('.crewlet-nav-group__slot')!;
+    expect(slot.getAttribute('aria-hidden')).toBe('true');
+    expect(within(slot as HTMLElement).getByTestId('star')).toBeDefined();
+    expect(slot.querySelector('.crewlet-nav-group__chevron')).not.toBeNull();
+    expect(css).toMatch(/\.crewlet-nav-group--iconic \.crewlet-nav-group__chevron \{\s*opacity: 0;/);
+    expect(css).toMatch(/\.crewlet-nav-group--iconic\.crewlet-nav-group--collapsed \.crewlet-nav-group__chevron,/);
+    await user.click(fold);
+    expect(group.classList.contains('crewlet-nav-group--collapsed')).toBe(true);
+  });
+
+  test('the arrow keys move through the rows and the headings, Home and End to the ends, and leave a modified press to the page', () => {
+    render(
+      <SidebarNav label="Rooms" dense>
+        <NavGroup>
+          <NavItem label="Activity" icon={<svg />} />
+        </NavGroup>
+        <NavGroup label="Channels" collapsible action={{ label: 'New room', icon: <svg />, onClick: () => {} }}>
+          <NavItem label="general" icon={<svg />} />
+          <NavItem label="design" icon={<svg />} />
+        </NavGroup>
+      </SidebarNav>,
+    );
+    const activity = screen.getByRole('button', { name: 'Activity' });
+    const heading = screen.getByRole('button', { name: 'Channels' });
+    const general = screen.getByRole('button', { name: 'general' });
+    const design = screen.getByRole('button', { name: 'design' });
+    activity.focus();
+    fireEvent.keyDown(activity, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(heading);
+    // The heading's control is a Tab stop, not an arrow stop.
+    fireEvent.keyDown(heading, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(general);
+    fireEvent.keyDown(general, { key: 'End' });
+    expect(document.activeElement).toBe(design);
+    fireEvent.keyDown(design, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(design);
+    fireEvent.keyDown(design, { key: 'Home' });
+    expect(document.activeElement).toBe(activity);
+    fireEvent.keyDown(activity, { key: 'ArrowDown', altKey: true });
+    expect(document.activeElement).toBe(activity);
+  });
+
+  test('a folded group is stepped over except for the rows it keeps', async () => {
+    const user = userEvent.setup();
+    render(<Rooms />);
+    await user.click(screen.getByRole('button', { name: 'Channels' }));
+    const heading = screen.getByRole('button', { name: 'Channels' });
+    heading.focus();
+    fireEvent.keyDown(heading, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'engineering' }));
+  });
+
+  test('a plain navigation leaves the arrow keys alone', () => {
+    render(
+      <SidebarNav label="Sections">
+        <NavItem href="#/a" label="A" />
+        <NavItem href="#/b" label="B" />
+      </SidebarNav>,
+    );
+    const a = screen.getByRole('link', { name: 'A' });
+    a.focus();
+    fireEvent.keyDown(a, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(a);
+  });
+
+  test('an unread row is two steps heavier than a dense row', () => {
+    const uninstall = installSheets('SidebarNav/SidebarNav.css');
+    try {
+      render(<Rooms />);
+      expect(getComputedStyle(screen.getByRole('button', { name: 'design, unread' })).fontWeight).toBe('600');
     } finally {
       uninstall();
     }
