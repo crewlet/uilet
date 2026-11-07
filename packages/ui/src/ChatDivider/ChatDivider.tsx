@@ -8,8 +8,14 @@ export type ChatDividerVariant =
    * first one they have not, with its word at the line's end.
    */
   | 'unread'
-  /** A quiet labelled rule, as a thread pane sets its reply count over the replies. */
-  | 'date';
+  /** A quiet labelled rule: the words in the middle, a hairline either side. */
+  | 'date'
+  /**
+   * A count at the start of the line on the faces' edge, a hairline running
+   * on from it: a thread's reply count between its root and its replies. Its
+   * rule is the hairline a thread's summary line draws under the pointer.
+   */
+  | 'count';
 
 export interface ChatDividerProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role' | 'children'> {
   variant: ChatDividerVariant;
