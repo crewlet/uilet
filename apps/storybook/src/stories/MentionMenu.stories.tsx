@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useId, useMemo, useRef, useState } from 'react';
 import { HashGlyph, LockGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
 import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
-import { Avatar, Composer, MentionMenu, Tag, mentionQuery, useListbox, type MentionOption } from '@crewlethq/ui';
+import { Avatar, Composer, MentionMenu, Tag, caretPoint, mentionQuery, useListbox, type AvatarSize, type MentionOption } from '@crewlethq/ui';
 
 /**
  * The suggestions a composer opens on "@" or "#". Type "@" or "#" in the box:
@@ -17,13 +17,14 @@ const meta: Meta<typeof MentionMenu> = {
 export default meta;
 type Story = StoryObj<typeof MentionMenu>;
 
-const PEOPLE: MentionOption[] = [
+function people(size: AvatarSize): MentionOption[] {
+  return [
   {
     id: 'pm',
     insert: '@pm',
     label: 'Product Manager',
     detail: 'Writing the October brief',
-    mark: <Avatar name="Product Manager" kind="agent" character={CREWLET_CHARACTERS[12]} size="sm" status="working" decorative />,
+    mark: <Avatar name="Product Manager" kind="agent" character={CREWLET_CHARACTERS[12]} size={size} status="working" decorative />,
     note: 'Working',
   },
   {
@@ -31,13 +32,16 @@ const PEOPLE: MentionOption[] = [
     insert: '@backend-engineer',
     label: 'Senior Backend Engineer',
     detail: 'Waiting on a decision',
-    mark: <Avatar name="Senior Backend Engineer" kind="agent" character={CREWLET_CHARACTERS[7]} size="sm" status="needs" decorative />,
+    mark: <Avatar name="Senior Backend Engineer" kind="agent" character={CREWLET_CHARACTERS[7]} size={size} status="needs" decorative />,
     note: 'Needs you',
   },
-  { id: 'ada', insert: '@ada', label: 'Ada Park', detail: 'ada', mark: <Avatar name="Ada Park" kind="human" size="sm" decorative /> },
-  { id: 'lee', insert: '@lee', label: 'Lee Park', detail: 'lee', mark: <Avatar name="Lee Park" kind="human" size="sm" decorative />, note: 'Not in this room' },
+  { id: 'ada', insert: '@ada', label: 'Ada Park', detail: 'ada', mark: <Avatar name="Ada Park" kind="human" size={size} decorative /> },
+  { id: 'lee', insert: '@lee', label: 'Lee Park', detail: 'lee', mark: <Avatar name="Lee Park" kind="human" size={size} decorative />, note: 'Not in this room' },
   { id: 'channel', insert: '@channel', label: '@channel', detail: 'Notify everyone in this room', mark: <UsersGlyph size="md" /> },
-];
+  ];
+}
+
+const PEOPLE = people('sm');
 
 const ROOMS: MentionOption[] = [
   { id: 'engineering', insert: '#engineering', label: 'engineering', detail: 'Shipping the October release', mark: <HashGlyph size="md" /> },
@@ -45,70 +49,83 @@ const ROOMS: MentionOption[] = [
   { id: 'leadership', insert: '#leadership', label: 'leadership', mark: <LockGlyph size="md" /> },
 ];
 
-export const InAComposer: Story = {
-  render: function InAComposer() {
-    const [value, setValue] = useState('Can ');
-    const [caret, setCaret] = useState(4);
-    const [closedAt, setClosedAt] = useState<number | null>(null);
-    const field = useRef<HTMLTextAreaElement | null>(null);
-    const query = mentionQuery(value, caret);
-    const trigger = query?.trigger;
-    const typed = query?.query.toLowerCase() ?? '';
-    const options = useMemo(() => {
-      if (!trigger) return [];
-      return (trigger === '@' ? PEOPLE : ROOMS).filter((option) => !typed || option.label.toLowerCase().includes(typed) || option.insert.includes(typed));
-    }, [trigger, typed]);
-    const open = query !== null && options.length > 0 && closedAt !== query.start;
-    const take = (index: number) => {
-      const option = options[index];
-      if (!option || !query) return;
-      const next = `${value.slice(0, query.start)}${option.insert} ${value.slice(caret)}`;
-      const at = query.start + option.insert.length + 1;
-      setValue(next);
-      setCaret(at);
-      requestAnimationFrame(() => field.current?.setSelectionRange(at, at));
-    };
-    const listbox = useListbox({ id: useId(), open, count: options.length, tabCommits: true, onCommit: take, onClose: () => setClosedAt(query?.start ?? null) });
-    return (
-      <div style={{ maxWidth: 640, paddingTop: 340 }}>
-        <div style={{ position: 'relative' }} ref={listbox.anchorRef}>
-          {open ? (
-            <MentionMenu
-              id={listbox.listId}
-              listRef={listbox.listRef}
-              label={query!.trigger === '@' ? 'People and agents' : 'Rooms'}
-              options={options}
-              active={listbox.active}
-              onPick={(_, index) => take(index)}
-              onHover={listbox.setActive}
-            />
-          ) : null}
-          <Composer
-            ref={field}
-            label="Message #engineering"
-            placeholder="Message #engineering"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-expanded={open}
-            aria-controls={open ? listbox.listId : undefined}
-            aria-activedescendant={open && listbox.active >= 0 ? listbox.optionId(listbox.active) : undefined}
-            value={value}
-            onChange={(next) => {
-              setValue(next);
-              setClosedAt(null);
-              setCaret(field.current?.selectionStart ?? next.length);
-            }}
-            onSelect={(event) => setCaret((event.target as HTMLTextAreaElement).selectionStart)}
-            onKeyDown={(event) => {
-              listbox.onKeyDown(event);
-            }}
-            onSubmit={() => setValue('')}
+function MentionComposer({ chat = false }: { chat?: boolean }) {
+  const [value, setValue] = useState('Can ');
+  const [caret, setCaret] = useState(4);
+  const [closedAt, setClosedAt] = useState<number | null>(null);
+  const field = useRef<HTMLTextAreaElement | null>(null);
+  const query = mentionQuery(value, caret);
+  const trigger = query?.trigger;
+  const typed = query?.query.toLowerCase() ?? '';
+  const options = useMemo(() => {
+    if (!trigger) return [];
+    return (trigger === '@' ? (chat ? CHAT_PEOPLE : PEOPLE) : ROOMS).filter((option) => !typed || option.label.toLowerCase().includes(typed) || option.insert.includes(typed));
+  }, [trigger, typed, chat]);
+  const open = query !== null && options.length > 0 && closedAt !== query.start;
+  const take = (index: number) => {
+    const option = options[index];
+    if (!option || !query) return;
+    const next = `${value.slice(0, query.start)}${option.insert} ${value.slice(caret)}`;
+    const at = query.start + option.insert.length + 1;
+    setValue(next);
+    setCaret(at);
+    requestAnimationFrame(() => field.current?.setSelectionRange(at, at));
+  };
+  const listbox = useListbox({ id: useId(), open, count: options.length, tabCommits: true, onCommit: take, onClose: () => setClosedAt(query?.start ?? null) });
+  return (
+    <div style={{ maxWidth: 640, paddingTop: 340 }}>
+      <div style={{ position: 'relative' }} ref={listbox.anchorRef}>
+        {open ? (
+          <MentionMenu
+            id={listbox.listId}
+            listRef={listbox.listRef}
+            label={query!.trigger === '@' ? 'People and agents' : 'Rooms'}
+            options={options}
+            active={listbox.active}
+            onPick={(_, index) => take(index)}
+            onHover={listbox.setActive}
+            appearance={chat ? 'chat' : 'default'}
+            anchor={chat && field.current && query ? caretPoint(field.current, query.start, field.current.offsetParent ?? undefined).left : undefined}
           />
-        </div>
+        ) : null}
+        <Composer
+          ref={field}
+          appearance={chat ? 'chat' : 'default'}
+          submitOn={chat ? 'enter' : undefined}
+          label="Message #engineering"
+          placeholder="Message #engineering"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-controls={open ? listbox.listId : undefined}
+          aria-activedescendant={open && listbox.active >= 0 ? listbox.optionId(listbox.active) : undefined}
+          value={value}
+          onChange={(next) => {
+            setValue(next);
+            setClosedAt(null);
+            setCaret(field.current?.selectionStart ?? next.length);
+          }}
+          onSelect={(event) => setCaret((event.target as HTMLTextAreaElement).selectionStart)}
+          onKeyDown={(event) => {
+            listbox.onKeyDown(event);
+          }}
+          onSubmit={() => setValue('')}
+        />
       </div>
-    );
-  },
-};
+    </div>
+  );
+}
+
+export const InAComposer: Story = { render: () => <MentionComposer /> };
+
+const CHAT_PEOPLE = people('xs');
+
+/**
+ * In a conversation's message box (`appearance="chat"` on both): a compact
+ * card with no heading and 32px rows, moved along so its face column stands
+ * under the "@" (`anchor`, measured with `caretPoint`). Type a few words, then "@".
+ */
+export const InAChatComposer: Story = { render: () => <MentionComposer chat /> };
 
 /** The list on its own, its third row highlighted. */
 export const List: Story = {

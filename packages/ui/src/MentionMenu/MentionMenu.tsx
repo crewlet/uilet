@@ -1,4 +1,4 @@
-import type { ReactNode, Ref } from 'react';
+import type { CSSProperties, ReactNode, Ref } from 'react';
 import { PersonRow } from '../PersonRow/index.js';
 import { cx } from '../utils/cx.js';
 
@@ -58,8 +58,24 @@ export interface MentionMenuProps {
   /** The foot. Left out, it carries the keyboard hints; `null` draws none. */
   footer?: ReactNode;
   labels?: Partial<MentionMenuLabels> | undefined;
+  /**
+   * `chat` is a conversation's message box's list: a compact card (the small
+   * corner, at most 480px wide) with no heading, and 32px rows whose face
+   * column fits an extra small `Avatar` (20px). `default` is today's list.
+   */
+  appearance?: MentionMenuAppearance | undefined;
+  /**
+   * The trigger character's distance in px from the left edge of the box the
+   * menu is placed in (`caretPoint`). Given, the card moves along so its face
+   * column stands under the trigger, and stays inside that box. Left out, the
+   * card starts at the box's left edge.
+   */
+  anchor?: number | undefined;
   className?: string | undefined;
 }
+
+/** The list's look: `default`, or `chat`, a conversation's message box's list. */
+export type MentionMenuAppearance = 'default' | 'chat';
 
 /**
  * The suggestions a composer opens on "@" or "#": people and agents with
@@ -76,7 +92,8 @@ export interface MentionMenuProps {
  *
  * DRAWN ABOVE THE COMPOSER, never over what is being typed: it is placed
  * against the nearest positioned box round the field, as wide as the field
- * and no wider than a list is read (`--crewlet-mention-menu-width`).
+ * and no wider than a list is read (`--crewlet-mention-menu-width`). With an
+ * `anchor` (from `caretPoint`) it moves along to stand under the trigger.
  *
  * ITS ROWS ARE `PersonRow`s, so a face, a name and its detail sit where every
  * other list of people in the product puts them.
@@ -92,6 +109,8 @@ export function MentionMenu({
   keyed = true,
   footer,
   labels: overrides,
+  appearance = 'default',
+  anchor,
   className,
 }: MentionMenuProps) {
   const labels = overrides ? { ...MENTION_MENU_LABELS, ...overrides } : MENTION_MENU_LABELS;
@@ -106,10 +125,21 @@ export function MentionMenu({
       <div className="crewlet-mention-menu__footer">{footer}</div>
     );
   return (
-    <div className={cx('crewlet-mention-menu', !keyed && 'crewlet-mention-menu--resting', className)}>
-      <div className="crewlet-mention-menu__label" aria-hidden="true">
-        {label}
-      </div>
+    <div
+      className={cx(
+        'crewlet-mention-menu',
+        appearance === 'chat' && 'crewlet-mention-menu--chat',
+        anchor !== undefined && 'crewlet-mention-menu--anchored',
+        !keyed && 'crewlet-mention-menu--resting',
+        className,
+      )}
+      style={anchor === undefined ? undefined : ({ '--crewlet-mention-menu-anchor': `${anchor}px` } as CSSProperties)}
+    >
+      {appearance === 'chat' ? null : (
+        <div className="crewlet-mention-menu__label" aria-hidden="true">
+          {label}
+        </div>
+      )}
       <ul ref={listRef} id={id} role="listbox" aria-label={label} className="crewlet-mention-menu__list">
         {options.map((option, index) => (
           <PersonRow
@@ -156,4 +186,58 @@ export function mentionQuery(text: string, caret: number): MentionQuery | null {
   if (!match) return null;
   const query = match[3] ?? '';
   return { trigger: match[2] as '@' | '#', query, start: before.length - query.length - 1 };
+}
+
+/** Where a character of a text field starts: px from a box's left and top edges, and the line's height. */
+export interface CaretPoint {
+  left: number;
+  top: number;
+  height: number;
+}
+
+/** The styles that decide where a field's text wraps, copied onto its mirror. */
+const MIRRORED = [
+  'boxSizing', 'width', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'borderBottomWidth',
+  'paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom', 'fontFamily', 'fontSize', 'fontStyle',
+  'fontWeight', 'fontVariant', 'fontStretch', 'letterSpacing', 'lineHeight', 'textIndent', 'textTransform',
+  'wordSpacing', 'tabSize', 'direction',
+] as const;
+
+/**
+ * Where character `index` of a text field starts, measured on a hidden mirror
+ * of the field that wraps its text the same way, less the field's scroll. In
+ * px from the field's border box, or from `relativeTo`'s when given (the box a
+ * `MentionMenu` is placed in, for its `anchor`).
+ */
+export function caretPoint(field: HTMLTextAreaElement | HTMLInputElement, index: number, relativeTo?: Element): CaretPoint {
+  const style = getComputedStyle(field);
+  const mirror = document.createElement('div');
+  const ink = mirror.style as unknown as Record<string, string>;
+  for (const name of MIRRORED) ink[name] = style[name];
+  Object.assign(mirror.style, {
+    position: 'absolute',
+    top: '0',
+    left: '-9999px',
+    visibility: 'hidden',
+    overflow: 'hidden',
+    whiteSpace: field instanceof HTMLTextAreaElement ? 'pre-wrap' : 'pre',
+    overflowWrap: 'break-word',
+  });
+  mirror.textContent = field.value.slice(0, Math.max(0, Math.min(index, field.value.length)));
+  const marker = document.createElement('span');
+  marker.textContent = field.value.slice(index) || '.';
+  mirror.append(marker);
+  document.body.append(mirror);
+  const height = Number.parseFloat(style.lineHeight) || marker.offsetHeight;
+  // An offset is from the mirror's padding box; the field's border comes first.
+  let left = Number.parseFloat(style.borderLeftWidth) + marker.offsetLeft - field.scrollLeft;
+  let top = Number.parseFloat(style.borderTopWidth) + marker.offsetTop - field.scrollTop;
+  mirror.remove();
+  if (relativeTo) {
+    const own = field.getBoundingClientRect();
+    const box = relativeTo.getBoundingClientRect();
+    left += own.left - box.left;
+    top += own.top - box.top;
+  }
+  return { left, top, height };
 }
