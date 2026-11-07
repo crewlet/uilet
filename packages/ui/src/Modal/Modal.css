@@ -538,6 +538,23 @@
 }
 
 /*
+ * A BODY ITS CONTENT FILLS (`fill`): a column that does not scroll, whose one
+ * child takes its whole height and scrolls itself. As a block scroller the
+ * body sized that child to its content, so a panel's pinned foot floated above
+ * a tall sheet's edge and hung below a short one, and its head scrolled away.
+ */
+.crewlet-modal__body--fill {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.crewlet-modal__body--fill > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/*
  * Paragraphs stack without the browser's own margins fighting the body
  * padding, which is what left dialogs uneven at the top and the bottom. Not in
  * a stacked body: there the gap between children is the stack's, and a margin
