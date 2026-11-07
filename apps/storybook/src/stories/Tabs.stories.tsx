@@ -92,6 +92,32 @@ export const Sections: Story = {
 };
 
 /**
+ * THE CHAT DENSITY (`density="chat"`): the tabs of a chat pane (a room's details, an
+ * activity filter), labels at the 13px step in the bold weight on a 36px row. Drawn
+ * above the same row without it.
+ */
+export const ChatDensity: Story = {
+  render: () => {
+    function Demo() {
+      const [value, setValue] = useState('about');
+      const items = [
+        { value: 'about', label: 'About' },
+        { value: 'members', label: 'Members', count: 7 },
+        { value: 'files', label: 'Files' },
+        { value: 'settings', label: 'Settings' },
+      ];
+      return (
+        <div style={{ width: 420, display: 'grid', gap: 24 }}>
+          <Tabs ariaLabel="Details" variant="underline" size="sm" density="chat" items={items} value={value} onValueChange={setValue} />
+          <Tabs ariaLabel="Details, default density" variant="underline" size="sm" items={items} value={value} onValueChange={setValue} />
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/**
  * THE CHIP REGISTER, BESIDE THE CONTROL IT SITS NEXT TO. A chip stands shorter
  * than a control by design: the well adds its 1px boundary and its 1px inset
  * above and below every one of them, so a row of chips at a full control step

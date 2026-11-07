@@ -25,7 +25,9 @@
       "medium": { "value": "500" },
       "semibold": { "value": "600" },
       "bold": { "value": "700" },
-      "extrabold": { "value": "800" }
+      "extrabold": { "value": "800" },
+      "black": { "value": "900", "comment": "The heaviest step Geist ships: its wght axis ends at 900." },
+      "unread": { "value": "{font.weight.black}", "comment": "A name with news in a long list read in passing (a room list): the heaviest step, beside names at the regular weight, so news is read by weight alone and at a glance. Named for its job, so the step can move without a rename." }
     },
     "lineHeight": {
       "tight": { "value": "1.2" },

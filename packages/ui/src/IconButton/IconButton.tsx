@@ -15,7 +15,12 @@ import { cx } from '../utils/cx.js';
 import { heldHint } from '../utils/heldHint.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
-export type IconButtonSize = 'sm' | 'md' | 'lg';
+export type IconButtonSize =
+  | 'sm'
+  | 'md'
+  | 'lg'
+  /** The md square with an 18px glyph, for the few controls in a pane or room header. */
+  | 'header';
 export type IconButtonVariant =
   /**
    * The accent square: a primary Button with no room for a label, for the one

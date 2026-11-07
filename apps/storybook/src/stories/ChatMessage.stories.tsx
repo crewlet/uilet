@@ -17,6 +17,7 @@ import {
   ChatMessage,
   ChatMessageFailure,
   ChatThread,
+  CodeBlock,
   EmojiPicker,
   Menu,
   MessageAction,
@@ -226,6 +227,24 @@ export const RichTextWords: Story = {
             <li>Search keeps its filters after a reload.</li>
           </ul>
         </Prose>
+      </Row>
+    </Transcript>
+  ),
+};
+
+/**
+ * A code block in a message's words: a hairline at the small corner, and a
+ * copy control in its corner that shows with the row's other tools.
+ */
+export const CodeInTheWords: Story = {
+  render: () => (
+    <Transcript>
+      <Row id="a" who={SWE} at="11:04">
+        Run this before the suite, it resets the fixtures:
+        <CodeBlock code={'npm run db:reset\nnpm test -- --run src/session'} copyPlacement="corner" />
+      </Row>
+      <Row id="b" who={PM} at="11:06">
+        Thanks, running it now.
       </Row>
     </Transcript>
   ),

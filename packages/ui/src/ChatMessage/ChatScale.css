@@ -32,10 +32,13 @@
   --crewlet-chat-day-pill: 24px;
   --crewlet-chat-day-gap: var(--spacing-5);
   --crewlet-chat-day-pin: var(--spacing-3);
-  /* The hover toolbar: a medium control, big enough to aim at while the
-     pointer is passing, inside its inset and its hairline, twice. */
+  /* The hover toolbar: 32px tools with 18px glyphs, touching, big enough to
+     aim at while the pointer is passing, inside its inset and its hairline,
+     twice. */
+  --crewlet-chat-tool: 32px;
+  --crewlet-chat-tool-glyph: var(--font-size-lg);
   --crewlet-chat-toolbar-inset: var(--spacing-1);
-  --crewlet-chat-toolbar: calc(var(--size-control-md) + (var(--crewlet-chat-toolbar-inset) + 1px) * 2);
+  --crewlet-chat-toolbar: calc(var(--crewlet-chat-tool) + (var(--crewlet-chat-toolbar-inset) + 1px) * 2);
   /* The ground the transcript is set on. A host that sets it on another fill
      names that fill here, and everything lifted off the rows (the toolbar,
      the day's pill, the open thread line) is filled with it. */
