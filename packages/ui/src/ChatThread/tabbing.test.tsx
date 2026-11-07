@@ -13,7 +13,14 @@ afterEach(cleanup);
 
 function Row({ n }: { n: number }) {
   return (
-    <ChatMessage id={`m-${n}`} label={`Message ${n}`} author={`Person ${n}`} time="09:00">
+    <ChatMessage
+      id={`m-${n}`}
+      label={`Message ${n}`}
+      author={`Person ${n}`}
+      time="09:00"
+      timeTitle="9:00 AM"
+      avatar={<span aria-hidden="true">P{n}</span>}
+    >
       <p>Words {n}</p>
       <button type="button">React {n}</button>
       <button type="button">Reply {n}</button>
