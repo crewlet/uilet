@@ -21,6 +21,11 @@
      that of every band that spans it (a band's head and foot, the foot). The
      cells' own step on a grid standing alone; the card's own in a card. */
   --crewlet-data-grid-edge: var(--spacing-3);
+  /* THE STICKY STACK: the column heads at the application's offset, then one
+     band head per level of grouping under them. Both heights are definite, so
+     each level sticks exactly under the one above it. */
+  --crewlet-data-grid-head-height: var(--size-row-md);
+  --crewlet-data-grid-band-head-height: calc(var(--spacing-2) * 2 + var(--font-size-xs) * var(--font-line-height-normal));
 
   display: grid;
   min-width: 0;
@@ -81,7 +86,7 @@
  */
 .crewlet-data-grid__head {
   align-items: center;
-  min-height: var(--size-row-md);
+  min-height: var(--crewlet-data-grid-head-height);
   border-bottom: 1px solid var(--color-border-hover);
   background: var(--color-surface-elevated);
   position: sticky;
@@ -289,6 +294,9 @@
   cursor: pointer;
   /* The containing block for the row's link. */
   position: relative;
+  /* A row keeps whatever it holds to itself: a cell's control raised with a
+     z-index of its own still paints under the sticky heads, never over them. */
+  isolation: isolate;
   transition: background var(--motion-duration-fast) var(--motion-easing-default);
 }
 
@@ -392,6 +400,8 @@ button.crewlet-data-grid__row-link {
   grid-template-columns: subgrid;
   grid-column: 1 / -1;
   border-bottom: 1px solid var(--color-border-default);
+  /* Under the sticky heads, as a row is. */
+  isolation: isolate;
 }
 
 .crewlet-data-grid__subrow:not(:last-child):has(+ .crewlet-data-grid__subrow) {
@@ -578,7 +588,10 @@ button.crewlet-data-grid__row-link {
  * every row, for a grid in a drawer or a side panel read beside something
  * else. The type stays; only the rows' height and their air give.
  */
-.crewlet-data-grid[data-density='compact'] .crewlet-data-grid__head,
+.crewlet-data-grid[data-density='compact'] {
+  --crewlet-data-grid-head-height: var(--size-row-sm);
+}
+
 .crewlet-data-grid[data-density='compact'] .crewlet-data-grid__row {
   min-height: var(--size-row-sm);
 }
@@ -622,16 +635,37 @@ button.crewlet-data-grid__row-link {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+  box-sizing: border-box;
+  height: var(--crewlet-data-grid-band-head-height);
   padding: var(--spacing-2) var(--crewlet-data-grid-edge);
   background: var(--color-surface-elevated);
   font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
   font-weight: var(--font-weight-semibold);
+  /* One line, so it never outgrows its height onto the rows under it. */
+  white-space: nowrap;
   position: sticky;
-  /* Under the column heads, which are a row tall and parked at the offset;
-     confined to its own band, so it leaves with the band. Above the rows
-     (positioned for the row link) and below the heads. */
-  top: calc(var(--crewlet-data-grid-sticky-top, var(--spacing-0)) + var(--size-row-md));
-  z-index: var(--z-index-raised);
+  /* Under the column heads and under the head of every band it is inside: its
+     level of grouping (`--crewlet-data-grid-band-depth`, which DataGrid.tsx
+     writes on a sub-band's head) counts them. Confined to its own band, so it
+     leaves with the band. */
+  top: calc(
+    var(--crewlet-data-grid-sticky-top, var(--spacing-0)) + var(--crewlet-data-grid-head-height) +
+      var(--crewlet-data-grid-band-head-height) * var(--crewlet-data-grid-band-depth, 0)
+  );
+  /* Above the rows (which isolate), below the column heads, and a level under
+     the head of the band it is inside, which it slides beneath as it leaves. */
+  z-index: calc(var(--z-index-sticky) - 1 - var(--crewlet-data-grid-band-depth, 0));
+}
+
+/* THE NAME GIVES WAY, the mark and the count keep their size: the name ends
+   in an ellipsis and carries its whole text as its title while it is cut. */
+.crewlet-data-grid__band-head > .crewlet-data-grid__band-cell > * {
+  flex: none;
+}
+
+.crewlet-data-grid__band-head > .crewlet-data-grid__band-cell > .crewlet-data-grid__truncate {
+  flex: 0 1 auto;
 }
 
 /* A SECOND AXIS IS A BAND INSIDE A BAND, inset and quieter, so it does not
@@ -800,6 +834,13 @@ button.crewlet-data-grid__row-link {
 
 :where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__head {
   display: none;
+}
+
+/* WITH NO COLUMN HEADS DRAWN, the band heads stick at the application's offset
+   itself, not a hidden head's height under it, where rows showed through the
+   gap. As specific as the compact rule and after it, so it wins there too. */
+.crewlet-data-grid[data-stacked] {
+  --crewlet-data-grid-head-height: 0px;
 }
 
 :where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__body,

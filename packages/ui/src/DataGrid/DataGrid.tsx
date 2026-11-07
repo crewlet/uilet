@@ -10,6 +10,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
+  type CSSProperties,
   type Ref,
 } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
@@ -1196,14 +1197,19 @@ export function DataGrid<T>({
     );
   }
 
-  function renderBand(band: DataGridBand<T>): ReactNode {
+  function renderBand(band: DataGridBand<T>, depth = 0): ReactNode {
     // THE LOADED COUNT IS THIS BAND'S OWN ROWS, its sub-bands' included.
     const loaded = bandRows(band).length;
     return (
       // A BAND IS ROWS OF THE TABLE: its head and its foot are rows of one
       // cell each across every column, and its own box is layout alone.
       <div key={band.key} className="crewlet-data-grid__band" role="none">
-        <div className="crewlet-data-grid__band-head" role="row">
+        <div
+          className="crewlet-data-grid__band-head"
+          role="row"
+          // Its level of grouping, so it sticks under the heads of the bands it is in.
+          style={depth ? ({ '--crewlet-data-grid-band-depth': depth } as CSSProperties) : undefined}
+        >
           <span className="crewlet-data-grid__band-cell" role="rowheader" aria-colspan={drawnColumns.length}>
             {band.mark}
             <span className="crewlet-data-grid__truncate" onMouseEnter={titleWhenCut}>
@@ -1216,7 +1222,7 @@ export function DataGrid<T>({
             </span>
           </span>
         </div>
-        {band.bands ? band.bands.map((sub) => renderBand(sub)) : sortRows(band.rows).map(renderRow)}
+        {band.bands ? band.bands.map((sub) => renderBand(sub, depth + 1)) : sortRows(band.rows).map(renderRow)}
         {band.footer && (
           <div className="crewlet-data-grid__band-foot" role="row">
             <span className="crewlet-data-grid__band-cell" role="cell" aria-colspan={drawnColumns.length}>

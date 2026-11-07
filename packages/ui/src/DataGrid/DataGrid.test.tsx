@@ -23,6 +23,7 @@ import {
   type DataGridHandle,
 } from './index.js';
 import { squeezed } from './DataGrid.js';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(cleanup);
 
@@ -375,6 +376,165 @@ describe('bands', () => {
     expect(counts).toEqual(['3 of 5', '1', '2', '0 of 3']);
     // A band with no rows on this page still draws its heading, not the empty state.
     expect(screen.getByText('Design')).toBeTruthy();
+  });
+});
+
+/*
+ * THE STICKY STACK: the column heads at the application's offset, then one
+ * band head per level of grouping, each flush under the one above it and
+ * painted over every row. jsdom lays nothing out and its sheet helper folds
+ * every var() fallback, so each head's offset and layer are worked out here
+ * from the declaration the sheet writes and the custom properties the cascade
+ * gives that element (its own, its ancestors', then the tokens).
+ */
+describe('the sticky stack', () => {
+  const tokens = new Map(
+    [
+      ...readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../tokens/dist/css/tokens.css'), 'utf8').matchAll(
+        /(--[\w-]+):\s*([^;]+);/g,
+      ),
+    ].map(([, name, value]) => [name!, value!.trim()]),
+  );
+  const declared = (selector: string, property: string): string => {
+    const body = new RegExp(`(?:^|\\n)${selector.replace(/[.[\]'=]/g, '\\$&')}\\s*\\{([^}]*)\\}`).exec(sheet())?.[1] ?? '';
+    const value = new RegExp(`(?:^|[;{\\s])${property}:\\s*([^;]+);`).exec(body)?.[1];
+    if (!value) throw new Error(`${selector} declares no ${property}`);
+    return value;
+  };
+  const custom = (element: Element, name: string): string | undefined => {
+    for (let at: Element | null = element; at; at = at.parentElement) {
+      const own = getComputedStyle(at).getPropertyValue(name).trim();
+      if (own) return own;
+    }
+    return tokens.get(name);
+  };
+  /** A declared length or depth, resolved at `element` and evaluated. */
+  const value = (element: Element, expression: string): number => {
+    let text = expression;
+    for (let pass = 0; /var\(/.test(text); pass++) {
+      if (pass > 20) throw new Error(`unresolved: ${text}`);
+      // The innermost var() first: one whose fallback holds no var() of its own.
+      text = text.replace(/var\((--[\w-]+)(?:,\s*((?:[^()]|\([^()]*\))*))?\)/g, (_, name: string, fallback?: string) => {
+        const resolved = custom(element, name) ?? fallback;
+        if (resolved === undefined) throw new Error(`${name} has no value at this element`);
+        return `(${resolved})`;
+      });
+    }
+    const arithmetic = text
+      .replace(/calc\(/g, '(')
+      .replace(/max\(/g, 'Math.max(')
+      .replace(/([\d.]+)rem/g, '($1*16)')
+      .replace(/([\d.]+)px/g, '$1');
+    if (!/^(?:[\d.\s+\-*/(),]|Math\.max)+$/.test(arithmetic)) throw new Error(`not arithmetic: ${arithmetic}`);
+    return Function(`return (${arithmetic});`)() as number;
+  };
+  const top = (head: Element) => value(head, declared('.crewlet-data-grid__band-head', 'top'));
+  const height = (head: Element) => value(head, declared('.crewlet-data-grid__band-head', 'height'));
+  const layer = (head: Element) => value(head, declared('.crewlet-data-grid__band-head', 'z-index'));
+
+  const twice = (density?: 'compact') => (
+    <div style={{ ['--crewlet-data-grid-sticky-top' as string]: '46px' }}>
+      <DataGrid
+        columns={COLUMNS}
+        rowKey={(r) => r.id}
+        density={density}
+        bands={[{ key: 'eng', label: 'Engineering', rows: [], bands: [{ key: 'ada', label: 'Ada', rows: [ROWS[0]!] }] }]}
+      />
+    </div>
+  );
+
+  test('a row keeps a positioned control of its own under the heads', () => {
+    const uninstall = installSheets('DataGrid/DataGrid.css');
+    try {
+      const { container } = render(
+        <DataGrid
+          rows={ROWS}
+          columns={[...COLUMNS, { key: 'raised', header: 'Raised', cell: () => <span style={{ position: 'relative', zIndex: 1 }}>Up</span> }]}
+          rowKey={(r) => r.id}
+        />,
+      );
+      // A row is its own stacking context, so no z-index inside it competes
+      // with a band head's or the column heads' layer.
+      for (const row of container.querySelectorAll('.crewlet-data-grid__row')) expect(getComputedStyle(row).isolation).toBe('isolate');
+    } finally {
+      uninstall();
+    }
+  });
+
+  test.each([undefined, 'compact'] as const)('each level of grouping sticks flush under the one above it (density %s)', (density) => {
+    const uninstall = installSheets('DataGrid/DataGrid.css');
+    try {
+      const { container } = render(twice(density));
+      const head = container.querySelector('.crewlet-data-grid__head')!;
+      const [band, sub] = [...container.querySelectorAll('.crewlet-data-grid__band-head')];
+      // Under the column heads, at the height they are drawn.
+      expect(top(band!)).toBe(46 + value(head, declared('.crewlet-data-grid__head', 'min-height')));
+      // The head's own box is the height the next level is offset by.
+      expect(getComputedStyle(band!).height).toBe(`${height(band!)}px`);
+      // A sub-band's head stands under its parent's, not over it.
+      expect(top(sub!)).toBe(top(band!) + height(band!));
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('a band head paints over the rows and under the column heads, a sub-band head under its parent', () => {
+    const uninstall = installSheets('DataGrid/DataGrid.css');
+    try {
+      const { container } = render(twice());
+      const [band, sub] = [...container.querySelectorAll('.crewlet-data-grid__band-head')];
+      const heads = value(container, declared('.crewlet-data-grid__head', 'z-index'));
+      expect(layer(band!)).toBeLessThan(heads);
+      expect(layer(sub!)).toBeLessThan(layer(band!));
+      // Rows isolate at the scroller's own level, under every head.
+      expect(layer(sub!)).toBeGreaterThan(0);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('a band head stays one line: a long name gives way, the mark and the count keep their size', () => {
+    const uninstall = installSheets('DataGrid/DataGrid.css');
+    try {
+      const { container } = render(
+        <DataGrid
+          columns={COLUMNS}
+          rowKey={(r) => r.id}
+          bands={[{ key: 'eng', label: 'A group name far longer than any narrow column holds', mark: <svg />, total: 1200, rows: [ROWS[0]!] }]}
+        />,
+      );
+      const head = container.querySelector<HTMLElement>('.crewlet-data-grid__band-head')!;
+      const [mark, name, count] = [...head.querySelectorAll<HTMLElement>('.crewlet-data-grid__band-cell > *')];
+      // The head draws one line, so its definite height always holds it.
+      expect(getComputedStyle(head).whiteSpace).toBe('nowrap');
+      // "1 of 1200" broke across two lines and spilled out of the head.
+      for (const kept of [mark!, count!]) expect(getComputedStyle(kept).flexShrink).toBe('0');
+      const label = getComputedStyle(name!);
+      expect([label.flexShrink, label.minWidth, label.overflow, label.textOverflow]).toEqual(['1', '0px', 'hidden', 'ellipsis']);
+      // Cut, the name's whole text is its title.
+      Object.defineProperties(name!, { scrollWidth: { value: 400 }, clientWidth: { value: 120 } });
+      fireEvent.mouseEnter(name!);
+      expect(name!.getAttribute('title')).toBe('A group name far longer than any narrow column holds');
+    } finally {
+      uninstall();
+    }
+  });
+
+  test("a stacked grid's band heads stick at the application's offset, with no column heads above them", () => {
+    const uninstall = installSheets('DataGrid/DataGrid.css');
+    try {
+      document.body.innerHTML =
+        '<div style="--crewlet-data-grid-sticky-top: 46px"><div class="crewlet-data-grid" data-density="compact" data-stacked>' +
+        '<div class="crewlet-data-grid__head"></div><div class="crewlet-data-grid__band"><div class="crewlet-data-grid__band-head"></div>' +
+        '<div class="crewlet-data-grid__band"><div class="crewlet-data-grid__band-head" style="--crewlet-data-grid-band-depth: 1"></div></div></div></div></div>';
+      const [band, sub] = [...document.querySelectorAll('.crewlet-data-grid__band-head')];
+      expect(getComputedStyle(document.querySelector('.crewlet-data-grid__head')!).display).toBe('none');
+      expect(top(band!)).toBe(46);
+      expect(top(sub!)).toBe(46 + height(band!));
+    } finally {
+      uninstall();
+      document.body.innerHTML = '';
+    }
   });
 });
 
