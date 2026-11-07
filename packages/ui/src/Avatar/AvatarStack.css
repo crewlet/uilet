@@ -80,6 +80,20 @@
   margin-inline-start: -2px;
 }
 
+/* SPREAD: side by side, a step apart, for a line that shows who took part
+   rather than a mark of how many. With nothing overlapping, no cut-out. */
+.crewlet-avatar-stack.crewlet-avatar-stack--spread {
+  gap: var(--spacing-1);
+}
+
+.crewlet-avatar-stack.crewlet-avatar-stack--spread > .crewlet-avatar-stack__member {
+  box-shadow: none;
+}
+
+.crewlet-avatar-stack.crewlet-avatar-stack--spread > .crewlet-avatar-stack__member + .crewlet-avatar-stack__member {
+  margin-inline-start: 0;
+}
+
 /*
  * THE COUNT OF THE REST. A PILL, where every face is a rounded square: it is
  * a number rather than somebody, and drawn in a face's outline it would read

@@ -27,7 +27,8 @@
   align-items: center;
   gap: var(--spacing-2);
   width: min(100%, 37.5rem);
-  height: var(--size-control-md);
+  /* The 24px faces with 5px of air above and below. */
+  height: calc(var(--size-control-md) + var(--spacing-1));
   box-sizing: border-box;
   margin-inline-start: calc((var(--crewlet-thread-summary-inset) + 1px) * -1);
   padding: 0 var(--crewlet-thread-summary-inset);

@@ -6,7 +6,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
-import { installSheets, userAction } from '../../../../apps/ui-tests/src/cascade.js';
+import { installSheets, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { ThreadSummary, type ThreadSummaryProps } from './index.js';
 
 afterEach(cleanup);
@@ -114,4 +114,26 @@ test('carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations).toEqual([]);
+});
+
+// 24px FACES, A STEP APART, IN A 34px LINE: the repliers read as people, not
+// as a blot. Mutation: draw the xs stack again, and the faces are 20px and
+// overlap.
+test('draws the repliers as 24px faces side by side, 4px apart, in a 34px line', () => {
+  const uninstall = installSheets('ChatMessage/ChatScale.css', 'Avatar/Avatar.css', 'Avatar/AvatarStack.css', 'ThreadSummary/ThreadSummary.css');
+  try {
+    const { container } = render(<Summary />);
+    const line = screen.getByRole('button');
+    expect(px(line, 'height')).toBe(34);
+    const stack = container.querySelector<HTMLElement>('.crewlet-avatar-stack')!;
+    expect(stack.classList.contains('crewlet-avatar-stack--spread')).toBe(true);
+    expect(px(stack, 'gap')).toBe(4);
+    // Three faces and the count of the rest.
+    const faces = [...stack.querySelectorAll<HTMLElement>('.crewlet-avatar-stack__member')];
+    expect(faces).toHaveLength(4);
+    expect(faces[0]!.style.getPropertyValue('--crewlet-avatar-size')).toBe('24px');
+    expect(px(faces[1]!, 'margin-inline-start')).toBe(0);
+  } finally {
+    uninstall();
+  }
 });

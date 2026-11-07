@@ -389,3 +389,26 @@ export const StackOnACard: Story = {
     </Card>
   ),
 };
+
+/**
+ * A stack drawn SPREAD: side by side, a step apart, with no overlap and no
+ * cut-out, at a size in px. For a line that shows who took part, such as a
+ * thread's summary line (24px faces); the overlapped stack beside it is the
+ * default, a mark of how many.
+ */
+export const StackSpread: Story = {
+  render: () => {
+    const members = [
+      { name: 'Senior Backend Engineer', character: 'gemlet', hue: 'cyan' as const },
+      { name: 'Designer', kind: 'human' as const },
+      { name: 'Product Manager', kind: 'human' as const },
+      { name: 'CTO', kind: 'human' as const },
+    ];
+    return (
+      <div style={{ display: 'grid', gap: 16, justifyItems: 'start' }}>
+        <AvatarStack members={members} size={24} max={3} spread />
+        <AvatarStack members={members} size={24} max={3} />
+      </div>
+    );
+  },
+};
