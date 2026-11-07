@@ -377,6 +377,14 @@ describe('the edge scale and the quiet fills', () => {
     assert.equal(tokens.get('--color-edge-hairline'), withAlpha(tokens.get('--color-text-primary'), 0.13));
   });
 
+  test("a box's edge at rest is the hairline in light and the medium step in dark, in every palette", () => {
+    for (const [state, values] of profiled()) {
+      const step = state.includes(' light') ? '--color-edge-hairline' : '--color-edge-medium';
+      assert.equal(values.get('--color-edge-box'), values.get(step), `${state} box edge`);
+    }
+    assert.equal(tokens.get('--color-edge-box'), tokens.get('--color-edge-medium'));
+  });
+
   test('every sheet draws the edge scale at full strength for a reader who asks for more contrast', () => {
     // One block per sheet, under the sheet's own three selectors, after the
     // palette blocks it shadows: a selector there ties the specificity of the
@@ -395,7 +403,7 @@ describe('the edge scale and the quiet fills', () => {
       const last = Math.max(...blocks.map((block, index) => (block.atRule !== '@media (prefers-contrast: more)' && block.declarations.has('--color-edge-hairline') ? index : -1)));
       for (const block of contrast) {
         assert.ok(blocks.indexOf(block) > last, `${name}: ${block.selector} comes after every palette block`);
-        for (const step of ['hairline', 'soft', 'medium']) {
+        for (const step of ['hairline', 'soft', 'medium', 'box']) {
           assert.equal(block.declarations.get(`--color-edge-${step}`), 'var(--color-border-control)', `${name}: ${block.selector} ${step}`);
         }
       }

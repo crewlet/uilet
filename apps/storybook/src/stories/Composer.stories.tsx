@@ -182,7 +182,7 @@ export const PageRemoved: Story = { render: () => <Chat attached={false} /> };
  * (`fold="container"`): bold, italic and strikethrough stay, and the rest move
  * into a menu where the box is narrow, as in a side panel.
  */
-function RoomComposer({ width = 560 }: { width?: number }) {
+function RoomComposer({ width = 560, chat = false, autoFocus = false }: { width?: number; chat?: boolean; autoFocus?: boolean }) {
   const [text, setText] = useState('');
   const field = useRef<HTMLTextAreaElement | null>(null);
   const apply = (format: 'bold' | 'italic' | 'strikethrough' | 'bulletList' | 'numberedList') => {
@@ -194,6 +194,8 @@ function RoomComposer({ width = 560 }: { width?: number }) {
     <div style={{ maxWidth: width }}>
       <Composer
         ref={field}
+        appearance={chat ? 'chat' : 'default'}
+        autoFocus={autoFocus}
         value={text}
         onChange={setText}
         onSubmit={() => setText('')}
@@ -239,3 +241,15 @@ export const WithToolsAndFormatting: Story = { render: () => <RoomComposer /> };
 
 /** The same box at a side panel's width: the formatting row folds into a menu rather than wrapping. */
 export const InANarrowPane: Story = { render: () => <RoomComposer width={300} /> };
+
+/**
+ * THE CHAT APPEARANCE (`appearance="chat"`): the box rests on the quiet box
+ * edge and the pointer passing over it changes nothing.
+ */
+export const ChatAppearance: Story = { render: () => <RoomComposer chat /> };
+
+/**
+ * Focused, the chat box's edge steps to the strong grey and its shadow lifts,
+ * with no accent ring. Reached by the keyboard, the step is two pixels thick.
+ */
+export const ChatAppearanceFocused: Story = { render: () => <RoomComposer chat autoFocus /> };
