@@ -579,6 +579,17 @@ describe('the document baseline', () => {
     assert.match(base, /@media \(prefers-reduced-motion: reduce\)/);
   });
 
+  test('under reduced motion it starts no transition an element did not declare', () => {
+    // The default transition-property is `all`: any duration above 0s turns
+    // `visibility` into a transition on every element, and a popover that
+    // opens and focuses in one frame is still hidden when focus is asked.
+    const css = base.replace(/\/\*[\s\S]*?\*\//g, '');
+    const block = /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?\})\s*\}/.exec(css)?.[1] ?? '';
+    const durations = [...block.matchAll(/transition-duration:\s*([^;!]+)/g)].map((m) => m[1].trim());
+    assert.ok(durations.length > 0, 'the rule states a transition duration');
+    assert.deepEqual(durations.filter((d) => d !== '0s'), []);
+  });
+
   test('its WebKit scrollbar is a 6px track with a 4px thumb in the scrollbar tokens', () => {
     const css = base.replace(/\/\*[\s\S]*?\*\//g, '');
     const body = (selector) => new RegExp(`\\n${selector}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
