@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { installHover, installSheets, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { CodeBlock, type CodeBlockProps } from './index.js';
 
 afterEach(cleanup);
@@ -495,8 +496,11 @@ describe('copy in the corner', () => {
       const release = userAction(block, 'hover');
       expect(getComputedStyle(corner).opacity).toBe('1');
       release();
-      screen.getByRole('button', { name: 'Copy code' }).focus();
+      const copy = screen.getByRole('button', { name: 'Copy code' });
+      tabTo(copy);
       expect(getComputedStyle(corner).opacity).toBe('1');
+      // Its ring is drawn inside it, where the block's clip cannot cut it.
+      expect(getComputedStyle(copy).outlineOffset).toBe('-2px');
       const pre = block.querySelector('pre')!;
       // The control (26px) and its 4px inset either side.
       expect(px(pre, 'padding-inline-end')).toBe(34);

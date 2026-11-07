@@ -243,6 +243,11 @@
   opacity: 1;
 }
 
+/* Its ring is drawn inside it: the block clips what stands past its edge. */
+.crewlet-codeblock__corner .crewlet-icon-btn:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
 @media (hover: none) {
   .crewlet-codeblock__corner {
     opacity: 1;
