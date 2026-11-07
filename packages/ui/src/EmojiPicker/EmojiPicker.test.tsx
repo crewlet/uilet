@@ -278,7 +278,7 @@ test('a tab pressed during a search clears it and shows its group', async () => 
 // a 36px field at 14px, and a grid of one height whatever it shows.
 // Mutation: put back the 8 columns, the square cells or the 24px field.
 test('draws nine 36 x 32 cells, 20px emoji, a 36px field and a grid of a fixed height', async () => {
-  const uninstall = installSheets('Input/Input.css', 'Toolbar/Toolbar.css', 'EmojiPicker/EmojiPicker.css');
+  const uninstall = installSheets('Popover/Popover.css', 'Input/Input.css', 'Toolbar/Toolbar.css', 'EmojiPicker/EmojiPicker.css');
   try {
     render(<Picker />);
     const { dialog, field } = await open();
@@ -295,6 +295,8 @@ test('draws nine 36 x 32 cells, 20px emoji, a 36px field and a grid of a fixed h
     const box = field.closest<HTMLElement>('.crewlet-input')!;
     expect(px(box, 'min-height')).toBe(36);
     expect(px(field, 'font-size')).toBe(14);
+    // The panel is not held to a popover's 360px cap, which would scroll the picker inside it.
+    expect(getComputedStyle(dialog).maxHeight).not.toMatch(/360px/);
     const tabs = dialog.querySelector<HTMLElement>('.crewlet-emoji-picker__tabs')!;
     expect(px(tabs, 'height')).toBe(38);
   } finally {

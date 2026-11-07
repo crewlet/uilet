@@ -22,6 +22,14 @@
   box-sizing: border-box;
 }
 
+/* The panel holds the picker at its own size, past a popover's default cap,
+   inside the viewport: only a viewport smaller than the picker scrolls it.
+   Two classes, so it holds in any bundle order. */
+.crewlet-popover.crewlet-emoji-picker {
+  max-width: calc(100vw - var(--spacing-4) * 2);
+  max-height: calc(100dvh - var(--spacing-4) * 2);
+}
+
 /* THE TABS: one per group, icon only, on a hairline; the group at the grid's
    top is underlined in the accent, and the underline moves in the fast step. */
 .crewlet-toolbar.crewlet-emoji-picker__tabs {
