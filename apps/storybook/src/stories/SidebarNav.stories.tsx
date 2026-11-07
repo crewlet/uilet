@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState, type CSSProperties } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   ActivityGlyph,
   CircleCheckGlyph,
@@ -426,6 +426,47 @@ export const DenseList: Story = {
           {person('Release Manager', { muted: true })}
         </NavGroup>
       </SidebarNav>
+    );
+  },
+};
+
+/**
+ * UNREAD PILLS (`unreadPills`): while a room with news lies wholly past an edge of the
+ * scroller holding the list, a pill floats at that edge. Pressed, the list scrolls the
+ * least that reveals the nearest such room and focus moves to its row. Muted rooms do not count.
+ */
+export const UnreadPills: Story = {
+  render: function UnreadPillsStory() {
+    const scroller = useRef<HTMLDivElement>(null);
+    const [at, setAt] = useState('general');
+    const news = new Set(['announcements', 'design', 'incidents', 'random', 'release', 'support', 'triage']);
+    const rooms = [
+      'announcements', 'backend', 'billing', 'design', 'docs', 'engineering', 'frontend', 'general',
+      'growth', 'hiring', 'incidents', 'infra', 'launch', 'legal', 'marketing', 'mobile', 'ops',
+      'random', 'release', 'research', 'sales', 'security', 'support', 'triage',
+    ];
+    // Opened part way down, so rooms with news lie past both edges.
+    useLayoutEffect(() => {
+      if (scroller.current) scroller.current.scrollTop = 220;
+    }, []);
+    return (
+      <div ref={scroller} style={{ height: 360, overflowY: 'auto' }}>
+        <SidebarNav label="Rooms" dense unreadPills>
+          <NavGroup label="Channels" icon={<HashGlyph size="sm" />} collapsible>
+            {rooms.map((name) => (
+              <NavItem
+                key={name}
+                label={name}
+                icon={<HashGlyph size="sm" />}
+                current={at === name}
+                unread={news.has(name) && at !== name}
+                muted={name === 'random'}
+                onClick={() => setAt(name)}
+              />
+            ))}
+          </NavGroup>
+        </SidebarNav>
+      </div>
     );
   },
 };
