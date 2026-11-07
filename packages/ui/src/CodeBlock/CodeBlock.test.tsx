@@ -14,8 +14,9 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { act, cleanup, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { installHover, installSheets, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { CodeBlock, type CodeBlockProps } from './index.js';
 
 afterEach(cleanup);
@@ -439,4 +440,78 @@ test("a block straight in a card gives up its edge, corner and ground", () => {
   expect(rule).toMatch(/border-radius:\s*var\(--radius-none\);/);
   expect(rule).toMatch(/background:\s*transparent;/);
   expect(sheet).not.toMatch(/\.crewlet-card__body > \.crewlet-codeblock/);
+});
+
+// THE COPY CONTROL IN THE CORNER, for a block set inside other words (a chat
+// message): no header, an icon button named for what it copies, shown while
+// the block is pointed at or holds focus.
+describe('copy in the corner', () => {
+  const writeText = vi.fn<(text: string) => Promise<void>>();
+  beforeEach(() => {
+    writeText.mockReset();
+    writeText.mockResolvedValue(undefined);
+    Object.defineProperty(window, 'isSecureContext', { configurable: true, value: true });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+  });
+
+  // Mutation: draw the header for `corner` too, and the block grows a strip.
+  test('draws no header and copies the code from a named button in the corner', async () => {
+    const { container } = render(<CodeBlock code={'npm ci\n'} language="sh" filename="setup.sh" copyPlacement="corner" />);
+    expect(container.querySelector('.crewlet-codeblock__header')).toBeNull();
+    expect(container.querySelector('.crewlet-codeblock')!.classList.contains('crewlet-codeblock--corner')).toBe(true);
+    const copy = screen.getByRole('button', { name: 'Copy code' });
+    await act(async () => {
+      fireEvent.click(copy);
+    });
+    expect(writeText).toHaveBeenCalledWith('npm ci\n');
+    // The outcome is said once, beside the control, never in its name.
+    expect(screen.getByRole('status').textContent).toBe('copied to the clipboard');
+    expect(copy.getAttribute('aria-label')).toBe('Copy code');
+  });
+
+  test('takes its name from copyLabel, and plain still draws no control', () => {
+    const { rerender } = render(<CodeBlock code="x" copyPlacement="corner" copyLabel="Copy the command" />);
+    expect(screen.getByRole('button', { name: 'Copy the command' })).toBeTruthy();
+    rerender(<CodeBlock code="x" copyPlacement="corner" plain />);
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  test('the header keeps the control by default', () => {
+    const { container } = render(<CodeBlock code="x" language="json" />);
+    expect(container.querySelector('.crewlet-codeblock__header .crewlet-codeblock__copy')).toBeTruthy();
+    expect(container.querySelector('.crewlet-codeblock__corner')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
+  });
+
+  // Mutation: drop the reveal rules, and the control never shows; drop the
+  // inset, and a long line runs under it.
+  test('is hidden at rest, shown under the pointer or with focus inside, and the code keeps clear of it', () => {
+    const uninstall = installSheets('CodeBlock/CodeBlock.css');
+    try {
+      const { container } = render(<CodeBlock code="x" copyPlacement="corner" />);
+      const block = container.querySelector<HTMLElement>('.crewlet-codeblock')!;
+      const corner = block.querySelector<HTMLElement>('.crewlet-codeblock__corner')!;
+      expect(getComputedStyle(corner).opacity).toBe('0');
+      const release = userAction(block, 'hover');
+      expect(getComputedStyle(corner).opacity).toBe('1');
+      release();
+      screen.getByRole('button', { name: 'Copy code' }).focus();
+      expect(getComputedStyle(corner).opacity).toBe('1');
+      const pre = block.querySelector('pre')!;
+      // The control (26px) and its 4px inset either side.
+      expect(px(pre, 'padding-inline-end')).toBe(34);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('is always shown on a touch screen', () => {
+    const uninstall = installHover('none', 'CodeBlock/CodeBlock.css');
+    try {
+      const { container } = render(<CodeBlock code="x" copyPlacement="corner" />);
+      expect(getComputedStyle(container.querySelector('.crewlet-codeblock__corner')!).opacity).toBe('1');
+    } finally {
+      uninstall();
+    }
+  });
 });

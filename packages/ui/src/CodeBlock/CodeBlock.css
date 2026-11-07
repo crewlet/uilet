@@ -214,3 +214,43 @@
   margin-inline-end: calc(var(--spacing-2) - var(--spacing-3));
   font-family: var(--font-family-sans);
 }
+
+/*
+ * THE COPY CONTROL IN THE CORNER (`copyPlacement="corner"`): no header, and an
+ * icon button in the top corner that fades in while the block is pointed at
+ * or holds focus. The code keeps clear of it, so it never covers a line's end.
+ * A touch screen has no hover, so it is always shown there.
+ */
+.crewlet-codeblock--corner {
+  position: relative;
+}
+
+.crewlet-codeblock--corner .crewlet-codeblock__pre {
+  padding-inline-end: calc(var(--size-control-sm) + var(--spacing-1) * 2);
+}
+
+.crewlet-codeblock__corner {
+  position: absolute;
+  top: var(--spacing-1);
+  inset-inline-end: var(--spacing-1);
+  font-family: var(--font-family-sans);
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-codeblock--corner:hover .crewlet-codeblock__corner,
+.crewlet-codeblock--corner:focus-within .crewlet-codeblock__corner {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .crewlet-codeblock__corner {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-codeblock__corner {
+    transition: none;
+  }
+}
