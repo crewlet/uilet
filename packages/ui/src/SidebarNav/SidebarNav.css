@@ -667,14 +667,51 @@
 }
 
 /*
- * A ROW WITH NEWS (`unread`): its name two steps heavier than a dense row's
- * regular (semibold) and in the primary ink, which is the whole of the signal:
- * one step read as a different face rather than as news. A muted row is never drawn unread (the component drops
- * the class), so the two rules never meet.
+ * A ROW WITH NEWS (`unread`): its name heavier and in the primary ink, which is the whole
+ * signal; in a dense list it takes the unread weight, the heaviest Geist ships, beside
+ * regular names. A muted row is never drawn unread (the component drops the class).
  */
 .crewlet-nav-item--unread > .crewlet-nav-item__head > .crewlet-nav-item__row {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-item--unread > .crewlet-nav-item__head > .crewlet-nav-item__row {
+  font-weight: var(--font-weight-unread);
+}
+
+/*
+ * A DENSE LIST'S BADGE is its own pill, sized for 14px names (18px, a 12px figure), on the
+ * accent's next step, which the on-accent ink clears with margin in every palette.
+ */
+.crewlet-sidebar-nav--dense .crewlet-nav-item__badge {
+  min-width: var(--size-badge-list);
+  height: var(--size-badge-list);
+  padding: 0 calc(var(--spacing-1) + var(--spacing-1) / 2);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-item__badge:not(.crewlet-nav-item__badge--quiet) {
+  background: var(--color-brand-accent-hover);
+  color: var(--color-text-on-accent);
+}
+
+/*
+ * THE DIVIDER (`NavDivider`): the kit's rule centred in a band between runs, the plain
+ * views and the first section, 24px with the list's gaps; the heading after it drops its margin.
+ */
+.crewlet-sidebar-nav .crewlet-nav-divider {
+  flex: none;
+  min-height: var(--spacing-4);
+  padding: 0 var(--spacing-1);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-divider {
+  min-height: var(--spacing-6);
+}
+
+.crewlet-nav-divider + .crewlet-nav-group > .crewlet-nav-group__head {
+  margin-top: 0;
 }
 
 /*

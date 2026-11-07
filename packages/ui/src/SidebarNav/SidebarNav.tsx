@@ -38,6 +38,7 @@
 
 import { createContext, useContext, useId, useState, type KeyboardEvent, type MouseEventHandler, type ReactNode } from 'react';
 import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
+import { Divider } from '../Divider/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { KeyChip } from '../KeyChip/index.js';
 import { cx } from '../utils/cx.js';
@@ -337,6 +338,15 @@ export function SidebarNav({ label, dense = false, className, children }: Sideba
       {children}
     </nav>
   );
+}
+
+export interface NavDividerProps {
+  className?: string | undefined;
+}
+
+/** The kit's rule as a band between runs of rows: the plain views above a list's first section. */
+export function NavDivider({ className }: NavDividerProps) {
+  return <Divider className={cx('crewlet-nav-divider', className)} />;
 }
 
 /**
@@ -679,3 +689,4 @@ export function NavItem({
 
 SidebarNav.Group = NavGroup;
 SidebarNav.Item = NavItem;
+SidebarNav.Divider = NavDivider;

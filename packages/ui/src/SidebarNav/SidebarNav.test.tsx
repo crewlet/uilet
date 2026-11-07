@@ -22,7 +22,7 @@ import {
   type Rgb,
 } from '@crewlethq/tokens/test/palette';
 import { channels, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
-import { NavGroup, NavItem, SidebarNav } from './index.js';
+import { NavDivider, NavGroup, NavItem, SidebarNav } from './index.js';
 
 afterEach(cleanup);
 
@@ -592,6 +592,32 @@ describe('the rail colour', () => {
     expect(failures).toEqual([]);
   });
 
+  test("a dense list's badge clears 4.5:1 with margin, 5:1, on every ground a row can have", () => {
+    const dense = pair('.crewlet-sidebar-nav--dense .crewlet-nav-item__badge:not(.crewlet-nav-item__badge--quiet)');
+    expect(dense.fill).toBe(token('color-brand-accent-hover'));
+    expect(dense.ink).toBe(token('color-text-on-accent'));
+    const ink = dense.ink;
+    const current = pair(CURRENT);
+    const failures: string[] = [];
+    for (const [state, values] of Object.entries(states)) {
+      if (state === 'base') continue;
+      const page = parseHex(values.get(token('color-surface-background')) ?? '');
+      if (page === null) throw new Error(`${state} has no opaque page colour`);
+      const rail = colour(values, RAIL, page);
+      for (const [on, tint] of [
+        ['a row', null],
+        ['a hovered row', token('color-surface-hover')],
+        ['the row the reader is on', current.fill],
+      ] as [string, string | null][]) {
+        const ground = tint === null ? rail : flatten(values.get(tint) ?? '', rail);
+        const fill = flatten(values.get(dense.fill ?? '') ?? '', ground);
+        const ratio = contrast(colour(values, ink, page), fill);
+        if (ratio < 5) failures.push(`${state}: the dense badge on ${on}: ${ratio.toFixed(2)}:1`);
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
   test('the focus ring clears 3:1 on every ground a row can have', () => {
     // It is drawn INSIDE the row's box (the rail is a clipping scroller), so
     // the row's own tint is a ground the ring lands on rather than one beside
@@ -1150,24 +1176,68 @@ describe('the dense list', () => {
     expect(document.activeElement).toBe(a);
   });
 
-  test('an unread row is two steps heavier than a dense row', () => {
+  test('an unread row takes the unread weight, the heaviest Geist ships, beside regular names', () => {
     const uninstall = installSheets('SidebarNav/SidebarNav.css');
     try {
       render(<Rooms />);
-      expect(getComputedStyle(screen.getByRole('button', { name: 'design, unread' })).fontWeight).toBe('600');
+      expect(getComputedStyle(screen.getByRole('button', { name: 'design, unread' })).fontWeight).toBe('900');
+      expect(getComputedStyle(screen.getByRole('button', { name: 'general' })).fontWeight).toBe('400');
+      // A muted row is never drawn unread.
+      expect(getComputedStyle(screen.getByRole('button', { name: 'random, muted' })).fontWeight).toBe('400');
+      const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SidebarNav.css'), 'utf8');
+      expect(sheet).toContain('font-weight: var(--font-weight-unread);');
     } finally {
       uninstall();
     }
   });
 
-  test("the badge is the chrome's one count badge, 16px", () => {
+  test("the badge is the list's own pill, 18px with a 12px semibold figure; the rail's stays 16px", () => {
     const uninstall = installSheets('SidebarNav/SidebarNav.css');
     try {
-      render(<Rooms />);
+      render(
+        <>
+          <Rooms />
+          <SidebarNav label="Sections">
+            <NavItem href="#/inbox" label="Inbox" badge={{ value: 5, label: 'unread' }} />
+          </SidebarNav>
+        </>,
+      );
       const badge = screen.getByRole('button', { name: 'launch, 2 mentions' }).querySelector('.crewlet-nav-item__badge')!;
-      expect(px(badge, 'height')).toBe(16);
-      expect(px(badge, 'min-width')).toBe(16);
-      expect(px(badge, 'font-size')).toBe(10);
+      expect(px(badge, 'height')).toBe(18);
+      expect(px(badge, 'min-width')).toBe(18);
+      expect(px(badge, 'font-size')).toBe(12);
+      expect(getComputedStyle(badge).fontWeight).toBe('600');
+      const rail = screen.getByRole('link', { name: 'Inbox, 5 unread' }).querySelector('.crewlet-nav-item__badge')!;
+      expect(px(rail, 'height')).toBe(16);
+      expect(px(rail, 'font-size')).toBe(10);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('a divider stands between the views and the first section: a separator in a 24px band, stepped over by the arrows', () => {
+    const uninstall = installSheets('SidebarNav/SidebarNav.css', 'Divider/Divider.css');
+    try {
+      render(
+        <SidebarNav label="Rooms" dense>
+          <NavGroup>
+            <NavItem label="Activity" icon={<svg />} />
+          </NavGroup>
+          <NavDivider />
+          <NavGroup label="Channels" collapsible>
+            <NavItem label="general" icon={<svg />} />
+          </NavGroup>
+        </SidebarNav>,
+      );
+      const divider = screen.getByRole('separator');
+      expect(px(divider, 'min-height')).toBe(24);
+      // The section after it starts at the band's edge.
+      const head = screen.getByRole('group', { name: 'Channels' }).querySelector('.crewlet-nav-group__head')!;
+      expect(px(head, 'margin-top')).toBe(0);
+      const activity = screen.getByRole('button', { name: 'Activity' });
+      activity.focus();
+      fireEvent.keyDown(activity, { key: 'ArrowDown' });
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Channels' }));
     } finally {
       uninstall();
     }
@@ -1175,7 +1245,15 @@ describe('the dense list', () => {
 
   test('the dense list has no accessibility violations, open or folded', async () => {
     const user = userEvent.setup();
-    const view = render(<Rooms />);
+    const view = render(
+      <>
+        <SidebarNav label="Views" dense>
+          <NavItem label="Activity" icon={<svg />} />
+          <NavDivider />
+        </SidebarNav>
+        <Rooms />
+      </>,
+    );
     const options = {
       runOnly: { type: 'tag' as const, values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
       rules: { 'color-contrast': { enabled: false } },

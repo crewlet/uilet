@@ -19,7 +19,7 @@ import {
   UsersGlyph,
 } from '@crewlethq/icons/glyphs';
 import { density } from '@crewlethq/tokens';
-import { Avatar, NavGroup, NavItem, SidebarNav, StatusDot } from '@crewlethq/ui';
+import { Avatar, NavDivider, NavGroup, NavItem, SidebarNav, StatusDot } from '@crewlethq/ui';
 
 const meta: Meta<typeof SidebarNav> = {
   title: 'UI/SidebarNav',
@@ -363,11 +363,13 @@ export const EveryRowState: Story = {
  * in the regular weight, and a pointed row drawn at once.
  *
  * The views above the sections and the sections' headings share one glyph
- * column; a section's rooms stand a step in under it. A section with a glyph
+ * column, with a `NavDivider` band between the views and the first section; a
+ * section's rooms stand a step in under it. A section with a glyph
  * shows it at rest and its chevron under the pointer, with focus in the
  * heading, or folded; its add control shows the same way (always, on a touch
- * screen). A room with news is `unread` (its name semibold, in the primary
- * ink); a muted one rests in the quiet ink and says so. The arrow keys move
+ * screen). A room with news is `unread` (its name in the unread weight, the
+ * heaviest Geist ships, in the primary ink), and its count badge is the list's
+ * own 18px pill; a muted one rests in the quiet ink and says so. The arrow keys move
  * through the rows and the headings, Home and End to the ends.
  */
 export const DenseList: Story = {
@@ -399,6 +401,7 @@ export const DenseList: Story = {
           <NavItem label="Activity" icon={<ActivityGlyph size="sm" />} current={at === 'Activity'} onClick={() => setAt('Activity')} />
           <NavItem label="Threads" icon={<MessageSquareGlyph size="sm" />} current={at === 'Threads'} onClick={() => setAt('Threads')} />
         </NavGroup>
+        <NavDivider />
         <NavGroup label="Starred" icon={<StarGlyph size="sm" />} collapsible>
           {room('engineering')}
           {room('launch', { unread: true, badge: { value: 2, label: 'mentions' } })}
