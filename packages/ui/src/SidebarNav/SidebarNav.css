@@ -742,3 +742,44 @@
 .crewlet-nav-group--locked .crewlet-nav-item__row:not([aria-current]):not(:hover) {
   color: var(--color-text-tertiary);
 }
+
+/*
+ * THE UNREAD PILLS (`unreadPills`): each hangs from a zero-height anchor held at its edge
+ * of the scroller's view, over the rows; the anchor's margin cancels the list's gap (none
+ * in a dense list), so mounting one moves no row.
+ */
+.crewlet-sidebar-nav__unseen {
+  position: sticky;
+  z-index: var(--z-index-raised);
+  height: 0;
+}
+
+.crewlet-sidebar-nav__unseen--above {
+  top: 0;
+  margin-bottom: calc(var(--spacing-1) * -1);
+}
+
+.crewlet-sidebar-nav__unseen--below {
+  bottom: 0;
+  margin-top: calc(var(--spacing-1) * -1);
+}
+
+.crewlet-sidebar-nav--dense > .crewlet-sidebar-nav__unseen {
+  margin: 0;
+}
+
+.crewlet-sidebar-nav__unseen-pill {
+  position: absolute;
+  left: 50%;
+  max-width: calc(100% - var(--spacing-6));
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-sm);
+}
+
+.crewlet-sidebar-nav__unseen--above > .crewlet-sidebar-nav__unseen-pill {
+  top: var(--spacing-2);
+}
+
+.crewlet-sidebar-nav__unseen--below > .crewlet-sidebar-nav__unseen-pill {
+  bottom: var(--spacing-2);
+}
