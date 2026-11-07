@@ -57,6 +57,8 @@ export interface SidePanelBaseProps {
   footer?: ReactNode;
   /** Whether the body drops its inset and its scrolling, for content that owns both. */
   flush?: boolean | undefined;
+  /** Whether the body takes its content's height, so the foot follows it. */
+  flow?: boolean | undefined;
   initialFocus?: SidePanelInitialFocus | undefined;
   /** Whether the heading draws the focus ring when it holds focus. */
   ringHeading?: boolean | undefined;
@@ -93,6 +95,7 @@ export function SidePanelBase({
   actions,
   footer,
   flush = false,
+  flow = false,
   initialFocus = 'heading',
   ringHeading = false,
   hideTitle = false,
@@ -233,7 +236,13 @@ export function SidePanelBase({
           </span>
         </div>
         {/* THE PANEL'S TITLE IS ITS LEVEL TWO, so a section inside it heads at three. */}
-        <div className={cx(part('body', alias), flush && 'crewlet-side-panel__body--flush')}>
+        <div
+          className={cx(
+            part('body', alias),
+            flush && 'crewlet-side-panel__body--flush',
+            flow && 'crewlet-side-panel__body--flow',
+          )}
+        >
           <HeadingLevelProvider level={3}>{children}</HeadingLevelProvider>
         </div>
         {footer ? <div className={part('foot', alias)}>{footer}</div> : null}

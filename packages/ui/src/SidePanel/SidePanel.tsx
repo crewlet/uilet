@@ -62,6 +62,14 @@ export interface SidePanelProps {
    */
   flush?: boolean | undefined;
   /**
+   * The body takes its content's height rather than the panel's free height,
+   * so the foot follows the content: a short thread keeps its reply box under
+   * its last reply instead of at the panel's bottom under an empty band. Once
+   * the content is taller than the panel the body shrinks to the room left and
+   * scrolls (or, flush, its content does), and the foot stays in reach.
+   */
+  flow?: boolean | undefined;
+  /**
    * The width, in px, in a `SidePanelFrame`. In the shell's aside the shell's
    * track sizes the panel (`AppShell` `asideWidth`), and this is ignored.
    */
@@ -124,6 +132,7 @@ export function SidePanel({
   actions,
   footer,
   flush,
+  flow,
   width,
   minWidth = SIDE_PANEL_MIN_WIDTH,
   maxWidth = SIDE_PANEL_MAX_WIDTH,
@@ -149,6 +158,7 @@ export function SidePanel({
       actions={actions}
       footer={footer}
       flush={flush}
+      flow={flow}
       width={width ?? (resizable ? defaultWidth : undefined)}
       minWidth={minWidth}
       maxWidth={maxWidth}
