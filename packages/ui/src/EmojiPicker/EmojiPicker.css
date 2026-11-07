@@ -1,6 +1,7 @@
 /*
  * A searchable grid of emoji in a popover: the field, then each group under
- * its quiet heading, eight to a row, in a scroller of its own.
+ * its quiet heading, eight to a row, in a scroller of its own, and a preview
+ * line under the grid that is always there, so the panel never changes size.
  */
 
 .crewlet-emoji-picker__body {
@@ -50,10 +51,51 @@
   background: var(--color-surface-hover);
 }
 
+/* The match Enter picks while searching: the accent's soft fill, which the
+   pointer's step does not take away. */
+.crewlet-emoji-picker__cell.is-chosen {
+  background: var(--color-brand-accent-soft);
+}
+
 .crewlet-emoji-picker__cell:focus-visible {
   background: var(--color-surface-hover);
   outline: 2px solid var(--color-focus);
   outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-emoji-picker__preview {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-control-md);
+  padding: var(--spacing-2) var(--spacing-1) 0;
+  border-top: 1px solid var(--color-edge-hairline);
+}
+
+.crewlet-emoji-picker__preview-emoji {
+  font-size: var(--font-size-xl);
+  line-height: 1;
+}
+
+.crewlet-emoji-picker__preview-words {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-emoji-picker__preview-name {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-emoji-picker__preview-code,
+.crewlet-emoji-picker__preview-idle {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
 }
 
 .crewlet-emoji-picker__none {
