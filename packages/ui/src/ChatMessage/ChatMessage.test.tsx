@@ -11,6 +11,7 @@ import { createRef, type ReactNode, type Ref } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { installHover, installMotion, installSheets, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { ChatThread } from '../ChatThread/index.js';
+import { Prose } from '../Prose/index.js';
 import { ChatMessage, ChatMessageFailure, type ChatMessageProps } from './index.js';
 
 afterEach(cleanup);
@@ -332,6 +333,39 @@ test('carries no axe violation, as a head row, a continuation and a failed row',
     resultTypes: ['violations'],
   });
   expect(result.violations).toEqual([]);
+});
+
+/** A computed line height in px: a length, a unitless ratio, or a `calc(a / b)` ratio, against the element's font size. */
+function lineOf(element: Element): number {
+  const style = getComputedStyle(element);
+  const size = Number.parseFloat(style.fontSize);
+  const value = style.lineHeight.trim();
+  if (value.endsWith('px')) return Number.parseFloat(value);
+  const quotient = /^calc\(\s*([\d.]+)\s*\/\s*([\d.]+)\s*\)$/.exec(value);
+  return size * (quotient ? Number(quotient[1]) / Number(quotient[2]) : Number(value));
+}
+
+// ONE TYPE SIZE IN A ROW: rich text in the words is set on the chat body
+// step, not on its own document step (13px on 1.7), whichever sheet loads
+// last. Mutation: drop the body's Prose rule and the words read 13px.
+test("rich text in a row's words takes the chat body step, 14px on a 22px line", () => {
+  const uninstall = installSheets(...SHEETS, 'Prose/Prose.css');
+  try {
+    render(
+      <Row>
+        <Prose as="div" measure="none">
+          Words
+        </Prose>
+      </Row>,
+    );
+    const words = screen.getByText('Words');
+    expect(getComputedStyle(words).fontSize).toBe('14px');
+    expect(lineOf(words)).toBeCloseTo(22, 3);
+    // The head line is the same 22px, so the name and the words share one rhythm.
+    expect(lineOf(screen.getByRole('article').querySelector('.crewlet-chat-message__head')!)).toBeCloseTo(22, 3);
+  } finally {
+    uninstall();
+  }
 });
 
 // HOME AND END go to the log's first and last row, and a chord is the host's.
