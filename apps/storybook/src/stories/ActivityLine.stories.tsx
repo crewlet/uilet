@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ActivityLine } from '@crewlethq/ui';
 
 /**
- * Who is typing and which agent is working, in one quiet line under a
+ * Who is typing and which agents are working, in one quiet line under a
  * composer. It keeps one line's height when it is empty, so the box above it
  * never moves.
  */
@@ -17,28 +17,26 @@ type Story = StoryObj<typeof ActivityLine>;
 
 export const Typing: Story = { args: { typing: 'Product Manager is typing' } };
 
-export const Working: Story = {
-  args: {
-    working: 'Senior Backend Engineer is writing a reply · Reading the diff',
-    workingLabel: 'Senior Backend Engineer is writing a reply',
-  },
-};
+const AGENTS = [
+  { id: 'swe', name: 'Senior Backend Engineer', character: 'gemlet' as const, hue: 'cyan' as const, status: 'is thinking it through...' },
+  { id: 'cto', name: 'CTO', character: 'crewlet' as const, hue: 'rose' as const, status: 'is crewleting...' },
+  { id: 'pm', name: 'Product Manager', character: 'peaklet' as const, hue: 'green' as const, status: 'is mulling it over...' },
+];
+
+/** The agents at work, as one `WorkingLine`: faces, one sentence and, on demand, a line per agent. */
+export const Working: Story = { args: { agents: AGENTS } };
 
 /**
  * The agent has not started on it yet: the request waits behind something it
- * is already doing, so the mark rests and the line is still.
+ * is already doing, so the line is still.
  */
 export const Queued: Story = {
-  args: { working: 'Product Manager is queued behind its current task', queued: true },
+  args: { agents: [{ ...AGENTS[2]!, queued: true, status: 'is queued behind its current task' }] },
 };
 
-/** Both at once; a narrow column truncates the working line rather than widening. */
+/** Both at once: people typing are words and dots, agents are faces; a narrow column wraps them. */
 export const Both: Story = {
-  args: {
-    typing: 'Designer and CTO are typing',
-    working: 'Senior Backend Engineer is writing a reply · Running the integration tests',
-    workingLabel: 'Senior Backend Engineer is writing a reply',
-  },
+  args: { typing: 'Designer is typing', agents: AGENTS.slice(0, 2) },
 };
 
 export const Empty: Story = { args: {} };
