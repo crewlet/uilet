@@ -1,5 +1,7 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { motion } from '@crewlethq/tokens';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { tokenMs } from '../utils/tokenMs.js';
 import { cx } from '../utils/cx.js';
 
 export type SkeletonVariant =
@@ -10,11 +12,12 @@ export type SkeletonVariant =
   | 'list'
   | 'table'
   | 'info-grid'
-  | 'pricing-card';
+  | 'pricing-card'
+  | 'chat';
 
 export interface SkeletonProps {
   variant?: SkeletonVariant;
-  /** Row count for `text`, `grid`, `list`, `table` and `info-grid`. */
+  /** Row count for `text`, `grid`, `list`, `table` and `info-grid`, and the message count for `chat`. */
   rows?: number;
   /**
    * How tall each line of the `text` variant is. A number of px, or a CSS
@@ -36,6 +39,12 @@ export interface SkeletonProps {
    * the element its caller puts `aria-busy` on.
    */
   label?: string;
+  /**
+   * Holds the placeholder and its label back for the first moments of a load
+   * (the slow and base steps, 450ms), so an answer that arrives quickly never
+   * flashes a placeholder on the way in.
+   */
+  held?: boolean;
   /** Applied to the root element of every variant. */
   className?: string;
   /** Applied to the root element of every variant. */
@@ -54,6 +63,21 @@ export interface SkeletonProps {
   marginTop?: number;
   marginBottom?: number;
 }
+
+// A transcript's rhythm: first rows with a face and a name, continued rows
+// under them, and lines of uneven length, so the placeholder reads as talk.
+const CHAT_SHAPES: ReadonlyArray<{ first: boolean; lines: readonly string[] }> = [
+  { first: true, lines: ['88%', '52%'] },
+  { first: false, lines: ['64%'] },
+  { first: true, lines: ['76%'] },
+  { first: true, lines: ['92%', '84%', '40%'] },
+  { first: false, lines: ['58%'] },
+  { first: true, lines: ['70%'] },
+];
+
+// The slow and base steps together: long enough that a quick answer lands
+// before anything is drawn, short enough that a slow one is still announced.
+const HOLD_MS = tokenMs(motion.duration.slow) + tokenMs(motion.duration.base);
 
 const range = (n: number) => Array.from({ length: Math.max(0, n) }, (_, i) => i);
 
@@ -231,6 +255,26 @@ const Placeholder = ({
         </div>
       );
 
+    case 'chat':
+      return (
+        <div className={rootClass()} style={sized} aria-hidden>
+          {range(rows).map((i) => {
+            const shape = CHAT_SHAPES[i % CHAT_SHAPES.length]!;
+            return (
+              <div key={i} className={cx('crewlet-skeleton__message', shape.first && 'crewlet-skeleton__message--first')}>
+                {shape.first ? <div className="crewlet-skeleton__avatar" /> : null}
+                <div className="crewlet-skeleton__message-words">
+                  {shape.first ? <div className={line('name')} /> : null}
+                  {shape.lines.map((width, n) => (
+                    <div key={n} className={line('words')} style={{ width }} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+
     default:
       return (
         <div className={cx('crewlet-skeleton', className)} style={sized} aria-hidden>
@@ -243,6 +287,10 @@ const Placeholder = ({
 /**
  * Loading placeholder.
  *
+ * `chat` is a transcript's: message rows on the conversation scale
+ * (`--crewlet-chat-*`), standing at the foot of the space it is given, where
+ * the newest messages will land.
+ *
  * ONLY WHERE CONTENT OF KNOWN SHAPE IS COMING. A spinner in place of a screen
  * tells a reader nothing about what to expect; a placeholder that matches the
  * shape of what will arrive tells them how much of it there is and stops the
@@ -253,13 +301,22 @@ const Placeholder = ({
  * it belongs on the region whose content has not arrived, which is the
  * caller's own element rather than this one.
  */
-export const Skeleton = ({ label, ...placeholder }: SkeletonProps) => (
-  <>
-    <Placeholder {...placeholder} />
-    {label === undefined ? null : (
-      <VisuallyHidden>
-        <span role="status">{label}</span>
-      </VisuallyHidden>
-    )}
-  </>
-);
+export const Skeleton = ({ label, held = false, ...placeholder }: SkeletonProps) => {
+  const [shown, setShown] = useState(!held);
+  useEffect(() => {
+    if (shown) return undefined;
+    const timer = setTimeout(() => setShown(true), HOLD_MS);
+    return () => clearTimeout(timer);
+  }, [shown]);
+  if (!shown) return null;
+  return (
+    <>
+      <Placeholder {...placeholder} />
+      {label === undefined ? null : (
+        <VisuallyHidden>
+          <span role="status">{label}</span>
+        </VisuallyHidden>
+      )}
+    </>
+  );
+};

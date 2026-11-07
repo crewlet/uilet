@@ -8,13 +8,14 @@ const meta: Meta<typeof Skeleton> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['box', 'text', 'card', 'grid', 'list', 'table', 'info-grid', 'pricing-card'],
+      options: ['box', 'text', 'card', 'grid', 'list', 'table', 'info-grid', 'pricing-card', 'chat'],
     },
     rows: { control: 'number' },
     rowHeight: { control: 'number' },
     columns: { control: 'number' },
     count: { control: 'number' },
     label: { control: 'text' },
+    held: { control: 'boolean' },
   },
 };
 
@@ -56,6 +57,20 @@ export const Announced: Story = {
   render: () => (
     <section aria-busy="true" aria-label="Seats">
       <Skeleton variant="list" rows={3} label="Loading seats" />
+    </section>
+  ),
+};
+
+/**
+ * A TRANSCRIPT LOADING: message rows on the conversation scale, standing at
+ * the foot of the space where the newest messages land, so the box under the
+ * list stays where it is when they arrive. `held` keeps it back for 450ms, so
+ * a room that answers quickly opens without a flash of placeholder.
+ */
+export const Chat: Story = {
+  render: () => (
+    <section aria-busy="true" aria-label="Messages" style={{ display: 'flex', flexDirection: 'column', height: 420 }}>
+      <Skeleton variant="chat" rows={6} label="Reading the room" held />
     </section>
   ),
 };
