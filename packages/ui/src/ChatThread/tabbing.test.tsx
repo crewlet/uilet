@@ -26,6 +26,7 @@ function mount() {
     <>
       <button type="button">Before</button>
       <ChatThread label="Conversation">
+        <button type="button">Older messages</button>
         <Row n={1} />
         <button type="button">Day pill</button>
         <Row n={2} />
@@ -51,6 +52,15 @@ function tabbedInto(to: HTMLElement, from: HTMLElement) {
   fireEvent.keyUp(to, { key: 'Tab' });
 }
 
+/** Lays the log and its rows out: the log 0 to 300, each row 100px tall from `top`, and named buttons 24px tall. */
+function layout(rows: Record<number, number>, buttons: Record<string, number> = {}) {
+  const box = (top: number, bottom: number) =>
+    ({ top, bottom, left: 0, right: 600, width: 600, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
+  screen.getByRole('log').getBoundingClientRect = () => box(0, 300);
+  for (const [n, top] of Object.entries(rows)) row(Number(n)).getBoundingClientRect = () => box(top, top + 100);
+  for (const [name, top] of Object.entries(buttons)) button(name).getBoundingClientRect = () => box(top, top + 24);
+}
+
 // Mutation: drop the log's Tab handling and Tab from a row's last control
 // walks into the next message's controls.
 test("Tab past a row's last control leaves for the next stop outside the messages", () => {
@@ -73,6 +83,7 @@ test('Tab from a row walks its own controls in order, then leaves', () => {
 
 test('a control between rows is a stop of its own', () => {
   mount();
+  layout({ 1: 0, 2: 120, 3: 240 }, { 'Day pill': 110 });
   button('Reply 1').focus();
   tab();
   expect(focused()).toBe(button('Day pill'));
@@ -80,6 +91,7 @@ test('a control between rows is a stop of its own', () => {
 
 test("Shift+Tab mirrors it: back through the row's controls to the row, then out past the log", () => {
   mount();
+  layout({ 1: 0, 2: 120, 3: 240 }, { 'Day pill': 110 });
   button('Reply 3').focus();
   tab(true);
   expect(focused()).toBe(button('React 3'));
@@ -102,24 +114,6 @@ test('Shift+Tab into the log from below lands on the row, not on its last contro
   tabbedInto(button('Reply 3'), button('After'));
   expect(focused()).toBe(row(3));
 });
-
-/** Lays the log and its rows out: the log 0 to 300, each row 100px tall from `top`. */
-function layout(rows: Record<number, number>) {
-  const box = (top: number, bottom: number) =>
-    ({
-      top,
-      bottom,
-      left: 0,
-      right: 600,
-      width: 600,
-      height: bottom - top,
-      x: 0,
-      y: top,
-      toJSON: () => ({}),
-    }) as DOMRect;
-  screen.getByRole('log').getBoundingClientRect = () => box(0, 300);
-  for (const [n, top] of Object.entries(rows)) row(Number(n)).getBoundingClientRect = () => box(top, top + 100);
-}
 
 test('the row last focused is where Tab lands again, while it is in view', () => {
   mount();
@@ -147,4 +141,14 @@ test('a click on a control inside a row is left where it lands', () => {
   react.focus();
   fireEvent.focusIn(react, { relatedTarget: button('After') });
   expect(focused()).toBe(react);
+});
+
+// Mutation: let an off-screen control in the log be a stop, and Shift+Tab out
+// of the newest row scrolls the whole history to its head.
+test('a control in the log scrolled out of view is passed over, not scrolled to', () => {
+  mount();
+  layout({ 1: 0, 2: 120, 3: 240 }, { 'Older messages': -900, 'Day pill': -20 });
+  row(1).focus();
+  tab(true);
+  expect(focused()).toBe(button('Before'));
 });

@@ -30,7 +30,18 @@ function rowOf(el: Element, log: HTMLElement): HTMLElement | null {
   return row && log.contains(row) ? row : null;
 }
 
-/** The next stop from `row` outward, skipping every control inside another row and the log itself. */
+/** Whether `el` stands in the log's view, so focusing it scrolls nothing. */
+function inView(el: HTMLElement, log: HTMLElement): boolean {
+  const view = log.getBoundingClientRect();
+  const box = el.getBoundingClientRect();
+  return box.bottom > view.top && box.top < view.bottom;
+}
+
+/**
+ * The next stop from `row` outward, skipping every control inside another
+ * row, the log itself, and a control in the log scrolled out of view (Older
+ * messages at the head of a long history), which focus would scroll to.
+ */
 function stopBeside(row: HTMLElement, log: HTMLElement, backward: boolean): HTMLElement | null {
   const all = tabbables(row.ownerDocument);
   const mine = new Set(tabbables(row));
@@ -38,20 +49,15 @@ function stopBeside(row: HTMLElement, log: HTMLElement, backward: boolean): HTML
   const candidates = backward
     ? all.filter((el) => !after(el) && !mine.has(el) && el !== row).reverse()
     : all.filter((el) => after(el) && !mine.has(el));
-  return candidates.find((el) => el !== log && !rowOf(el, log)) ?? null;
+  return candidates.find((el) => el !== log && !rowOf(el, log) && (!log.contains(el) || inView(el, log))) ?? null;
 }
 
 /** The row Tab lands on: the last one focused if it is still in view, else the newest in view. */
 function landing(log: HTMLElement, last: HTMLElement | null): HTMLElement | null {
   const rows = [...log.querySelectorAll<HTMLElement>(ROW)];
   if (rows.length === 0) return null;
-  const view = log.getBoundingClientRect();
-  const shown = (row: HTMLElement) => {
-    const box = row.getBoundingClientRect();
-    return box.bottom > view.top && box.top < view.bottom;
-  };
-  if (last && last.isConnected && log.contains(last) && shown(last)) return last;
-  return rows.filter(shown).at(-1) ?? rows.at(-1)!;
+  if (last && last.isConnected && log.contains(last) && inView(last, log)) return last;
+  return rows.filter((row) => inView(row, log)).at(-1) ?? rows.at(-1)!;
 }
 
 /** The handlers a log's root takes, for its scroller `log`. */
