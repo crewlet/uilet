@@ -59,23 +59,39 @@ test('draws the working line under it', () => {
   expect(screen.getByText('Senior Backend Engineer is writing a reply').parentElement!.classList.contains('crewlet-thread-summary-wrap')).toBe(true);
 });
 
-// "View thread" takes the time's place in the same cell under the pointer,
-// so the line keeps its width. Mutation: show both, or neither.
-test('swaps the last reply time for View thread under the pointer, and sets the count at the medium weight', () => {
+// QUIET AT REST: the time and the end are laid out but unseen, and shown by
+// opacity alone under the pointer, so nothing moves. Mutation: show them at
+// rest, or take them out of the layout.
+test('rests on faces and the count, and shows the last reply and View thread under the pointer', () => {
   const uninstall = installSheets('ChatMessage/ChatScale.css', 'ThreadSummary/ThreadSummary.css');
   try {
     render(<Summary />);
     const line = screen.getByRole('button');
     const last = line.querySelector<HTMLElement>('.crewlet-thread-summary__last')!;
-    const view = line.querySelector<HTMLElement>('.crewlet-thread-summary__view')!;
+    const end = line.querySelector<HTMLElement>('.crewlet-thread-summary__end')!;
     expect(getComputedStyle(line.querySelector('.crewlet-thread-summary__count')!).fontWeight).toBe('500');
-    expect(getComputedStyle(last).visibility).toBe('visible');
-    expect(getComputedStyle(view).visibility).toBe('hidden');
+    expect(getComputedStyle(last).opacity).toBe('0');
+    expect(getComputedStyle(end).opacity).toBe('0');
+    expect(getComputedStyle(last).display).not.toBe('none');
     const release = userAction(line, 'hover');
-    expect(getComputedStyle(last).visibility).toBe('hidden');
-    expect(getComputedStyle(view).visibility).toBe('visible');
+    expect(getComputedStyle(last).opacity).toBe('1');
+    expect(getComputedStyle(end).opacity).toBe('1');
+    expect(end.textContent).toBe('View thread');
     release();
-    expect(getComputedStyle(last).gridArea).toBe(getComputedStyle(view).gridArea);
+  } finally {
+    uninstall();
+  }
+});
+
+// The message's selected surface is a `:has()` rule, which jsdom does not
+// evaluate; the stories show it.
+test('while its thread is open the end says so at rest', () => {
+  const uninstall = installSheets('ChatMessage/ChatScale.css', 'ThreadSummary/ThreadSummary.css');
+  try {
+    const { container } = render(<ThreadSummary replies={2} participants={[]} last="12m ago" open onOpen={() => {}} />);
+    const end = container.querySelector<HTMLElement>('.crewlet-thread-summary__end')!;
+    expect(getComputedStyle(end).opacity).toBe('1');
+    expect(end.textContent).toBe('Thread open');
   } finally {
     uninstall();
   }

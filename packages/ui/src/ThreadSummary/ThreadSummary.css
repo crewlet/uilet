@@ -2,11 +2,13 @@
  * The line under a message that has replies, and the working line under it.
  */
 
+/* The column's width, so the line's own cap (below) is what bounds it. */
 .crewlet-thread-summary-wrap {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--spacing-1);
+  width: 100%;
   max-width: 100%;
 }
 
@@ -16,13 +18,15 @@
 }
 
 /* The faces sit on the content edge: the line's 1px edge and its inset are
-   taken back by the same amount outside it. */
+   taken back by the same amount outside it. It runs the content column's
+   width up to a reading cap, so the whole line is the target and its end
+   stands at one place down a room. */
 .crewlet-thread-summary {
   --crewlet-thread-summary-inset: var(--spacing-1);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  max-width: 100%;
+  width: min(100%, 37.5rem);
   height: var(--size-control-md);
   box-sizing: border-box;
   margin-inline-start: calc((var(--crewlet-thread-summary-inset) + 1px) * -1);
@@ -38,9 +42,9 @@
   cursor: pointer;
 }
 
-/* Lifted onto the transcript's own ground inside a hairline, under the
-   pointer or the keyboard, and while the thread is open. */
-.crewlet-thread-summary:is(:hover, :focus-visible, .is-open) {
+/* Set into the transcript's own ground inside a hairline, under the pointer
+   or the keyboard: a step back from the hovered row, not a raised button. */
+.crewlet-thread-summary:is(:hover, :focus-visible) {
   border-color: var(--color-edge-hairline);
   background: var(--crewlet-chat-ground);
 }
@@ -51,40 +55,60 @@
 }
 
 .crewlet-thread-summary__count {
+  flex: none;
   color: var(--color-brand-accent-ink);
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
 }
 
-/* "Last reply 1h ago" and "View thread" share one cell, so the line keeps
-   its width when one gives way to the other under the pointer. */
-.crewlet-thread-summary__tail {
-  display: inline-grid;
-  min-width: 0;
-  padding-inline-end: var(--spacing-1);
-  white-space: nowrap;
-}
-
-.crewlet-thread-summary__last,
-.crewlet-thread-summary__view {
-  grid-area: 1 / 1;
-}
-
+/* When the last reply came, laid out at rest and shown on the line's hover:
+   the part that gives way first where the column is narrow. */
 .crewlet-thread-summary__last {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--motion-duration-moderate) var(--motion-easing-default);
+}
+
+/* "View thread" and the chevron that says the line opens, at its end. */
+.crewlet-thread-summary__end {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-inline-start: auto;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  opacity: 0;
+}
+
+.crewlet-thread-summary__chevron {
   color: var(--color-text-tertiary);
 }
 
-.crewlet-thread-summary__view {
-  justify-self: end;
-  visibility: hidden;
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-regular);
+.crewlet-thread-summary:is(:hover, :focus-visible) .crewlet-thread-summary__last,
+.crewlet-thread-summary:is(:hover, :focus-visible, .is-open) .crewlet-thread-summary__end {
+  opacity: 1;
 }
 
-.crewlet-thread-summary:is(:hover, :focus-visible, .is-open) .crewlet-thread-summary__last {
+/* OPEN, the end says so and opens nothing new. */
+.crewlet-thread-summary.is-open .crewlet-thread-summary__chevron {
   visibility: hidden;
 }
 
-.crewlet-thread-summary:is(:hover, :focus-visible, .is-open) .crewlet-thread-summary__view {
-  visibility: visible;
+/* THE MESSAGE WHOSE THREAD IS OPEN beside the room wears the selected
+   surface, under the pointer too: the one sign of which conversation the
+   pane belongs to, gone when the pane closes. */
+.crewlet-chat-message:has(.crewlet-thread-summary.is-open),
+.crewlet-chat-message:has(.crewlet-thread-summary.is-open):hover {
+  background: var(--color-surface-selected);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-thread-summary__last {
+    transition: none;
+  }
 }
