@@ -42,9 +42,12 @@ export const TypicalUses: Story = {
     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-6)', padding: 'var(--spacing-10)' }}>
       <IconButton label="Add a reaction" icon={<FaceSlightlySmilingPlusGlyph />} size="sm" variant="ghost" tooltip />
       <Tooltip content="Quarterly planning for the platform team">
-        <Button variant="ghost" style={{ maxWidth: 140 }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Quarterly planning for the platform team</span>
-        </Button>
+        <span
+          tabIndex={0}
+          style={{ display: 'inline-block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle' }}
+        >
+          Quarterly planning for the platform team
+        </span>
       </Tooltip>
       <ShortcutTip label="Bold" keys={['Mod', 'B']}>
         <IconButton label="Bold" icon={<BoldGlyph />} size="sm" variant="ghost" title="" />
