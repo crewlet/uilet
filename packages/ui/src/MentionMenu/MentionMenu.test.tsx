@@ -9,7 +9,15 @@ import axe from 'axe-core';
 import { useId, useState } from 'react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { useListbox } from '../Listbox/index.js';
-import { MentionMenu, mentionQuery, type MentionOption } from './index.js';
+import { MentionMenu, caretPoint, mentionQuery, type MentionOption } from './index.js';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { radius } from '@crewlethq/tokens';
+import { installThemed } from '../../../../apps/ui-tests/src/cascade.js';
+
+// A path rather than `new URL(..., import.meta.url)`, which Vite rewrites.
+const here = dirname(fileURLToPath(import.meta.url));
 
 afterEach(cleanup);
 
@@ -167,4 +175,95 @@ test('before the arrows the active row rests: still the selected option, drawn q
   expect(screen.getAllByRole('option')[0]!.getAttribute('aria-selected')).toBe('true');
   rerender(<MentionMenu {...props} keyed />);
   expect(menu.classList.contains('crewlet-mention-menu--resting')).toBe(false);
+});
+
+describe('the chat appearance and the caret anchor', () => {
+  const menu = (props: Partial<Parameters<typeof MentionMenu>[0]> = {}) =>
+    render(
+      <div style={{ position: 'relative' }}>
+        <MentionMenu id="m" label="People and agents" options={OPTIONS} active={0} onPick={() => {}} onHover={() => {}} {...props} />
+      </div>,
+    ).container.querySelector<HTMLElement>('.crewlet-mention-menu')!;
+
+  // Mutation: draw the heading in chat and the label text shows above the rows.
+  test('a chat list draws no heading, and the list keeps its name', () => {
+    const card = menu({ appearance: 'chat' });
+    expect(card.classList.contains('crewlet-mention-menu--chat')).toBe(true);
+    expect(card.querySelector('.crewlet-mention-menu__label')).toBeNull();
+    expect(screen.getByRole('listbox', { name: 'People and agents' })).toBeTruthy();
+    cleanup();
+    expect(menu().querySelector('.crewlet-mention-menu__label')?.textContent).toBe('People and agents');
+  });
+
+  test('an anchor moves the card along to the trigger; without one it starts at the box edge', () => {
+    const card = menu({ anchor: 120 });
+    expect(card.classList.contains('crewlet-mention-menu--anchored')).toBe(true);
+    expect(card.style.getPropertyValue('--crewlet-mention-menu-anchor')).toBe('120px');
+    cleanup();
+    const plain = menu();
+    expect(plain.classList.contains('crewlet-mention-menu--anchored')).toBe(false);
+    expect(plain.style.getPropertyValue('--crewlet-mention-menu-anchor')).toBe('');
+  });
+
+  // The face column's middle stands under the trigger, clamped inside the box.
+  test('the anchored card puts its face column under the trigger, inside the box', () => {
+    const css = readFileSync(join(here, 'MentionMenu.css'), 'utf8');
+    const rule = /\.crewlet-mention-menu--anchored\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule.replace(/\s+/g, ' ')).toContain(
+      'clamp( 0px, calc(var(--crewlet-mention-menu-anchor) - var(--spacing-1) - var(--spacing-2) - var(--crewlet-mention-menu-face) / 2), calc(100% - min(100%, var(--crewlet-mention-menu-cap))) )',
+    );
+    const chat = /\.crewlet-mention-menu--chat\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(chat).toContain('--crewlet-mention-menu-face: 20px');
+    expect(chat).toContain('--crewlet-mention-menu-cap: var(--crewlet-mention-menu-width, 480px)');
+  });
+
+  test('chat rows are 32px tall at the transcript size, on the small corner', () => {
+    const uninstall = installThemed('light', 'ChatMessage/ChatScale.css', 'PersonRow/PersonRow.css', 'MentionMenu/MentionMenu.css');
+    try {
+      const card = menu({ appearance: 'chat' });
+      const row = getComputedStyle(card.querySelector('.crewlet-person-row')!);
+      expect(row.minHeight).toBe('32px');
+      expect(getComputedStyle(card).borderRadius).toBe(radius.sm);
+      expect(getComputedStyle(card).getPropertyValue('--crewlet-mention-menu-face').trim()).toBe('20px');
+    } finally {
+      uninstall();
+    }
+  });
+});
+
+describe('caretPoint', () => {
+  // jsdom lays nothing out, so the mirror's marker is given an offset and the
+  // field a scroll and a box: the point is the field's border, the marker's
+  // offset less the scroll, and the field's place in the box it is measured from.
+  test('is the marker offset in the mirror, less the scroll, plus the border and the field\'s place', () => {
+    const field = document.createElement('textarea');
+    field.value = 'Can @ad';
+    field.style.borderLeftWidth = '1px';
+    field.style.borderTopWidth = '1px';
+    field.style.borderStyle = 'solid';
+    field.style.lineHeight = '20px';
+    document.body.append(field);
+    const box = document.createElement('div');
+    document.body.append(box);
+    Object.defineProperty(field, 'scrollTop', { value: 5, configurable: true });
+    const seen: string[] = [];
+    const left = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetLeft')!;
+    const top = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetTop')!;
+    Object.defineProperty(HTMLElement.prototype, 'offsetLeft', { configurable: true, get(this: HTMLElement) { seen.push(this.parentElement?.textContent ?? ''); return 40; } });
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', { configurable: true, get: () => 30 });
+    field.getBoundingClientRect = () => ({ left: 110, top: 300 }) as DOMRect;
+    box.getBoundingClientRect = () => ({ left: 100, top: 200 }) as DOMRect;
+    try {
+      expect(caretPoint(field, 4)).toEqual({ left: 41, top: 26, height: 20 });
+      expect(caretPoint(field, 4, box)).toEqual({ left: 51, top: 126, height: 20 });
+      // The mirror holds the text before the caret, then the marker.
+      expect(seen[0]).toBe('Can @ad');
+      expect(document.body.contains(document.querySelector('[style*="-9999px"]'))).toBe(false);
+    } finally {
+      Object.defineProperty(HTMLElement.prototype, 'offsetLeft', left);
+      Object.defineProperty(HTMLElement.prototype, 'offsetTop', top);
+      field.remove();
+      box.remove();
+    }
+  });
 });

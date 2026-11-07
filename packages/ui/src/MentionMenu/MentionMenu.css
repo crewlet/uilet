@@ -10,12 +10,16 @@
  * it, so it never covers what is being typed.
  */
 .crewlet-mention-menu {
+  /* The widest the card is drawn, and its face column, which an anchor centres under the trigger. */
+  --crewlet-mention-menu-cap: var(--crewlet-mention-menu-width, 560px);
+  --crewlet-mention-menu-face: var(--size-control-sm);
+
   position: absolute;
   bottom: calc(100% + var(--spacing-1));
   left: 0;
   z-index: var(--z-index-dropdown);
   box-sizing: border-box;
-  width: min(100%, var(--crewlet-mention-menu-width, 560px));
+  width: min(100%, var(--crewlet-mention-menu-cap));
   overflow: hidden;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
@@ -69,4 +73,44 @@
   .crewlet-mention-menu__footer {
     display: none;
   }
+}
+
+/*
+ * ANCHORED UNDER THE TRIGGER (`anchor`): the card moves along until its face
+ * column's middle stands under the trigger character (the list's inset, the
+ * row's, and half the column), and no further than the box's right edge.
+ */
+.crewlet-mention-menu--anchored {
+  left: clamp(
+    0px,
+    calc(var(--crewlet-mention-menu-anchor) - var(--spacing-1) - var(--spacing-2) - var(--crewlet-mention-menu-face) / 2),
+    calc(100% - min(100%, var(--crewlet-mention-menu-cap)))
+  );
+}
+
+/*
+ * A CONVERSATION'S LIST (`appearance="chat"`): a compact card with the small
+ * corner and no heading, its rows 32px tall at the transcript's words, the
+ * face column fitted to an extra small face (20px).
+ */
+.crewlet-mention-menu--chat {
+  --crewlet-mention-menu-cap: var(--crewlet-mention-menu-width, 480px);
+  --crewlet-mention-menu-face: 20px;
+
+  border-radius: var(--radius-sm);
+}
+
+.crewlet-mention-menu--chat .crewlet-mention-menu__list {
+  padding-block-start: var(--spacing-1);
+}
+
+.crewlet-mention-menu--chat .crewlet-mention-menu__list > .crewlet-person-row {
+  --crewlet-person-row-radius: calc(var(--radius-sm) - var(--spacing-1));
+
+  min-height: 32px;
+  font-size: var(--crewlet-chat-text);
+}
+
+.crewlet-mention-menu--chat .crewlet-person-row__face {
+  min-width: var(--crewlet-mention-menu-face);
 }

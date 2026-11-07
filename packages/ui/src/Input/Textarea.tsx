@@ -11,6 +11,7 @@ import {
 import { announce } from '../Announcer/index.js';
 import { isComposing } from '../Layer/stack.js';
 import { cx } from '../utils/cx.js';
+import { copyTextStyles } from '../utils/fieldMirror.js';
 import { useFocusModality } from '../utils/focusModality.js';
 import { useFieldError } from './fieldContext.js';
 
@@ -59,35 +60,6 @@ export function foldLineBreaks(text: string): string {
   return text.replace(LINE_BREAKS, ' ');
 }
 
-/** The text styles a mirror copies so it wraps exactly as the field does. */
-const MIRRORED = [
-  'boxSizing',
-  'width',
-  'paddingTop',
-  'paddingRight',
-  'paddingBottom',
-  'paddingLeft',
-  'borderTopWidth',
-  'borderRightWidth',
-  'borderBottomWidth',
-  'borderLeftWidth',
-  'borderStyle',
-  'fontFamily',
-  'fontSize',
-  'fontStyle',
-  'fontVariant',
-  'fontWeight',
-  'letterSpacing',
-  'lineHeight',
-  'tabSize',
-  'textIndent',
-  'textTransform',
-  'whiteSpace',
-  'wordBreak',
-  'wordSpacing',
-  'overflowWrap',
-] as const;
-
 const mirrors = new WeakMap<Document, HTMLTextAreaElement>();
 
 /** One hidden, fixed field per document: out of the flow, so sizing it moves nothing. */
@@ -125,7 +97,7 @@ function contentHeight(el: HTMLTextAreaElement): string | null {
   const style = getComputedStyle(el);
   if (!style.width.endsWith('px')) return null;
   const mirror = mirrorIn(el.ownerDocument);
-  for (const key of MIRRORED) mirror.style[key] = style[key];
+  copyTextStyles(style, mirror);
   mirror.rows = el.rows;
   mirror.placeholder = el.placeholder;
   mirror.value = el.value;
