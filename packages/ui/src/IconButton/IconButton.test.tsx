@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, expect, test } from 'vitest';
-import { channels, installThemed, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installSheets, installThemed, px, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
 import { IconButton, IconButtonLink } from './index.js';
 
 afterEach(cleanup);
@@ -79,4 +79,29 @@ test('the primary square is the accent fill with the label ink on it', () => {
   expect(channels(getComputedStyle(button).backgroundColor)).toEqual(tokenColour(colours, 'color-brand-accent'));
   expect(channels(getComputedStyle(button).color)).toEqual(tokenColour(colours, 'color-text-on-accent'));
   uninstall();
+});
+
+test("a header's control is the md square with an 18px glyph, where the md square draws 14px", () => {
+  const uninstall = installSheets('IconButton/IconButton.css');
+  try {
+    render(
+      <>
+        <IconButton label="Search" size="header" icon={<svg className="crewlet-glyph" />} />
+        <IconButton label="Copy" size="md" icon={<svg className="crewlet-glyph" />} />
+        <IconButtonLink label="Details" href="#/details" size="header" icon={<svg className="crewlet-glyph" />} />
+      </>,
+    );
+    for (const control of [screen.getByRole('button', { name: 'Search' }), screen.getByRole('link', { name: 'Details' })]) {
+      expect(control.className).toContain('crewlet-icon-btn--header');
+      expect(px(control, 'width')).toBe(30);
+      expect(px(control, 'height')).toBe(30);
+      expect(px(control.querySelector('svg')!, 'width')).toBe(18);
+      expect(px(control.querySelector('svg')!, 'height')).toBe(18);
+    }
+    const md = screen.getByRole('button', { name: 'Copy' });
+    expect(px(md, 'width')).toBe(30);
+    expect(px(md.querySelector('svg')!, 'width')).toBe(14);
+  } finally {
+    uninstall();
+  }
 });

@@ -106,6 +106,11 @@ const SELECTED_EDGE_ALPHA = 0.6;
 // the system's own setting (see contrastBlocks).
 const EDGE_ALPHAS = { hairline: ['text', 'primary', 0.13], soft: ['border', 'control', 0.3], medium: ['border', 'control', 0.5] };
 
+// THE BOX EDGE, `color.edge.box`: a box a reader writes in, at rest on the
+// pane's own ground (a chat message box). The hairline in light, where the
+// box's shadow lifts it; the medium step in dark, where no shadow reads.
+const BOX_EDGE = { light: 'hairline', dark: 'medium' };
+
 // THE QUIET FILLS, `color.fill.*`: two steps of the primary text, for a
 // surface that wants a wash rather than a rung. `row` is a pointed row inside
 // a dense list, `soft` a pill or a quiet label at rest (a reaction, a seat's
@@ -338,6 +343,8 @@ function deriveTints(tokens, where, { contrast = 'standard', kindHues, mode } = 
     ]),
   );
   tokens.color.edge.strong = { value: control };
+  if (BOX_EDGE[mode] === undefined) throw new Error(`${where}: the mode is "${mode}", and the box edge is chosen for light or dark`);
+  tokens.color.edge.box = { value: tokens.color.edge[BOX_EDGE[mode]].value };
   tokens.color.fill = Object.fromEntries(
     Object.entries(FILL_ALPHAS).map(([step, alpha]) => [step, { value: withAlpha(fill('text', 'primary'), alpha) }]),
   );
@@ -815,7 +822,7 @@ ${contrastBlock([':root', ':root:not([data-theme="dark"])', ':root[data-theme="l
  * whichever palette block won.
  */
 const MORE_CONTRAST = '@media (prefers-contrast: more)';
-const CONTRAST_EDGES = [...Object.keys(EDGE_ALPHAS).map((step) => `--color-edge-${step}`), '--color-tooltip-edge'];
+const CONTRAST_EDGES = [...Object.keys(EDGE_ALPHAS).map((step) => `--color-edge-${step}`), '--color-edge-box', '--color-tooltip-edge'];
 
 function contrastBlock(selectors) {
   const declarations = CONTRAST_EDGES.map((name) => `    ${name}: var(--color-border-control);`).join('\n');

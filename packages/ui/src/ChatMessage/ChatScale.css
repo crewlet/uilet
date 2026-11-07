@@ -10,9 +10,11 @@
  * that imports one part (`@crewlethq/ui/ChatDay`) still gets the scale.
  */
 :root {
-  /* The words: names, bodies and the message box, on one line height. */
+  /* The words: names, bodies, their rich text and the message box, on the
+     chat step: 14px on a 22px line. The line is a ratio, so a surface that
+     sets another step keeps the proportion. */
   --crewlet-chat-text: var(--font-size-sm);
-  --crewlet-chat-line: var(--font-line-height-normal);
+  --crewlet-chat-line: calc(22 / 14);
   /* Times, counts, reactions and second lines: one step down. */
   --crewlet-chat-meta: var(--font-size-xs);
   /* The row's side inset, the face column, the gap after it, and the space

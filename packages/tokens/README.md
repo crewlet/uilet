@@ -94,6 +94,12 @@ A tooltip is a dark bubble in both modes. Its four colours are derived per palet
 | `--color-tooltip-meta` | its words mixed 0.72 into the bubble | A keycap or a second line inside it. |
 | `--color-tooltip-edge` | its words at 0.13; the control edge in a high-contrast theme or under `prefers-contrast: more` | Its hairline, and a keycap's edge inside it. |
 
+## Added: the box edge
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| `--color-edge-box` | the hairline in a light palette, the medium step in a dark one; the control edge in a high-contrast theme or under `prefers-contrast: more` | A box a reader writes in, at rest on the pane's own ground (a chat message box). In light its shadow lifts it; in dark, where no shadow reads, the edge carries it. |
+
 ## Changed in 0.82.0: the edge scale, the quiet fills, the count badge and the folded rail
 
 A dense surface (a conversation, a list of cards) drew the field's 3:1 edge round every reaction, preview, toolbar and face, so it read as a grid of frames. The edge scale is one grey at four strengths, chosen by what the edge does, and two quiet fills sit under the overlay steps. Every colour step is derived per palette by the build (a value of the palette's own colours, never `color-mix()`), so a theme repaints it without declaring it. Nothing is renamed or removed.
