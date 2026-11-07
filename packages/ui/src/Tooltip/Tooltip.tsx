@@ -15,7 +15,7 @@ import {
   type Ref,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { motion } from '@crewlethq/tokens';
+import { motion, spacing } from '@crewlethq/tokens';
 import {
   LAYER_GAP,
   LAYER_REPOSITION_EVENT,
@@ -93,21 +93,18 @@ function composeHandlers(first: unknown, second: unknown): unknown {
 }
 
 /*
- * The two delays, and why they are these values.
+ * OPENING waits the `fast` step (120ms): long enough that a pointer crossing a
+ * row of controls on its way elsewhere flashes nothing, short enough that one
+ * resting on a control is answered at once.
  *
- * OPENING waits `slow` (300ms). A tooltip that appears the moment a pointer
- * touches a control flashes a panel at every control the pointer crosses on
- * its way somewhere else, which is the single most common complaint about
- * them. It is the longest duration the motion scale carries, and it is the
- * pause that reads as "resting on" rather than "passing over".
- *
- * CLOSING waits `base` (150ms), and it is not decoration either: it is the
- * grace period the pointer needs to cross the gap from the trigger onto the
- * panel. WCAG 2.2 requires that content shown on hover be hoverable, and a
- * panel that vanished on `pointerleave` fails that outright.
+ * CLOSING waits `base` (150ms), the grace the pointer needs to cross the gap
+ * onto the panel: WCAG 2.2 asks that content shown on hover be hoverable.
  */
-const OPEN_DELAY = tokenMs(motion.duration.slow);
+const OPEN_DELAY = tokenMs(motion.duration.fast);
 const CLOSE_DELAY = tokenMs(motion.duration.base);
+
+/** The room between the trigger and the panel: one spacing step. */
+const TOOLTIP_GAP = Number.parseFloat(spacing['2']);
 
 /**
  * Tooltip: one short line about the control under the pointer.
@@ -256,7 +253,7 @@ export function Tooltip({
       setOpen(false);
       return;
     }
-    const spot = placePopup(local, { width: own.width, height: own.height }, bounds, LAYER_GAP, placement === 'top' ? 'above' : 'below');
+    const spot = placePopup(local, { width: own.width, height: own.height }, bounds, TOOLTIP_GAP, placement === 'top' ? 'above' : 'below');
     setPlace((was) =>
       was && was.left === spot.left && was.top === spot.top && was.side === spot.side ? was : spot,
     );

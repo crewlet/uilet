@@ -83,6 +83,17 @@ nearestContrastShade('#00baba', '#f6f7fb', WCAG_CONTRAST.aaLarge); // '#00a0a0',
 
 Show the ratio of the value it returns, measured with `contrast`, rather than the floor it was asked for.
 
+## Added: the tooltip's bubble
+
+A tooltip is a dark bubble in both modes. Its four colours are derived per palette and per mode by the build from the palette's own steps, so a theme repaints them without declaring them. The palette suite holds its words and its second ink to 4.5:1 on the bubble (7:1 in a high-contrast theme).
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| `--color-tooltip-surface` | light: `surface.inverse`; dark: `surface.elevated`, made opaque over the page | The bubble. |
+| `--color-tooltip-text` | light: `text.inverse`; dark: `text.primary` | Its words. |
+| `--color-tooltip-meta` | its words mixed 0.72 into the bubble | A keycap or a second line inside it. |
+| `--color-tooltip-edge` | its words at 0.13; the control edge in a high-contrast theme or under `prefers-contrast: more` | Its hairline, and a keycap's edge inside it. |
+
 ## Added: the box edge
 
 | Token | Value | What it is for |

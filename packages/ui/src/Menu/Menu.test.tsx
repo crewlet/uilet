@@ -848,3 +848,110 @@ test('a menu may grow to the room beside its anchor, not a fixed 360px', () => {
   const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Menu.css'), 'utf8');
   expect(sheet).toMatch(/max-height:\s*var\(--crewlet-menu-room,/);
 });
+
+describe('the active-descendant mode', () => {
+  const menu = () => screen.getByRole('menu');
+  const highlighted = () => {
+    const id = menu().getAttribute('aria-activedescendant');
+    return id ? document.getElementById(id) : null;
+  };
+
+  // Mutation: focus the first item on open, as the default does, and focus leaves the menu.
+  test('opens on a press with focus on the menu and nothing highlighted; ArrowDown highlights the first item', () => {
+    render(<Menu label="Actions for Software Engineer" items={entries()} activeDescendant />);
+    fireEvent.click(trigger());
+    expect(document.activeElement).toBe(menu());
+    expect(menu().hasAttribute('aria-activedescendant')).toBe(false);
+    press('ArrowDown');
+    expect(document.activeElement).toBe(menu());
+    expect(highlighted()).toBe(item('Edit'));
+    expect(item('Edit').classList.contains('is-active')).toBe(true);
+  });
+
+  test('the arrows wrap, Home and End jump, a letter finds, a disabled item is still reached', () => {
+    render(<Menu label="Actions for Software Engineer" items={entries()} activeDescendant />);
+    trigger().focus();
+    fireEvent.keyDown(trigger(), { key: 'ArrowUp' });
+    expect(highlighted()).toBe(item('Delete'));
+    press('ArrowDown');
+    expect(highlighted()).toBe(item('Edit'));
+    press('ArrowUp');
+    expect(highlighted()).toBe(item('Delete'));
+    press('Home');
+    expect(highlighted()).toBe(item('Edit'));
+    press('End');
+    expect(highlighted()).toBe(item('Delete'));
+    press('m');
+    expect(highlighted()).toBe(item('Move to'));
+    press('ArrowDown');
+    expect(highlighted()).toBe(item('Open seat'));
+    expect(document.activeElement).toBe(menu());
+  });
+
+  test('Enter runs the highlighted item after focus is back on the trigger; with nothing highlighted it runs nothing', () => {
+    const onEdit = vi.fn(() => expect(document.activeElement).toBe(trigger()));
+    render(<Menu label="Actions for Software Engineer" items={entries({ onEdit })} activeDescendant />);
+    fireEvent.click(trigger());
+    press('Enter');
+    expect(onEdit).not.toHaveBeenCalled();
+    expect(screen.getByRole('menu')).toBeTruthy();
+    press('ArrowDown');
+    press('Enter');
+    expect(onEdit).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  test('Space runs it too, and a disabled item does nothing and leaves the menu open', () => {
+    render(<Menu label="Actions for Software Engineer" items={entries()} activeDescendant />);
+    fireEvent.click(trigger());
+    press('m');
+    press('ArrowDown');
+    expect(highlighted()).toBe(item('Open seat'));
+    press(' ');
+    expect(screen.getByRole('menu')).toBeTruthy();
+  });
+
+  test('the pointer moves the highlight and never takes focus off the menu', () => {
+    render(<Menu label="Actions for Software Engineer" items={entries()} activeDescendant />);
+    fireEvent.click(trigger());
+    fireEvent.pointerMove(item('Move to'));
+    expect(highlighted()).toBe(item('Move to'));
+    const down = fireEvent.mouseDown(item('Move to'));
+    expect(down).toBe(false);
+    press('ArrowDown');
+    expect(highlighted()).toBe(item('Open seat'));
+  });
+
+  test('Escape closes it and returns focus to the trigger', () => {
+    render(<Menu label="Actions for Software Engineer" items={entries()} activeDescendant />);
+    fireEvent.click(trigger());
+    press('Escape');
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(trigger());
+  });
+
+  // The fill is the one cue: no ring on a row, the accent under the on-accent ink.
+  test('draws the highlighted row as the accent fill with no ring, and the panel draws none either', () => {
+    const css = menuCss().replace(/\s+/g, ' ');
+    expect(css).toContain('.crewlet-menu--descendant .crewlet-menu__item.is-active { background: var(--color-brand-accent); color: var(--color-text-on-accent); }');
+    expect(css).toContain('.crewlet-menu--descendant:focus-visible { outline: 2px solid transparent; }');
+    expect(css).not.toMatch(/\.crewlet-menu--descendant[^{]*is-active[^{]*\{[^}]*outline: 2px solid var/);
+  });
+
+  test('the open menu in this mode carries no accessibility violation', async () => {
+    const { container } = render(
+      <main>
+        <h1>Seats</h1>
+        <Menu label="Actions for Software Engineer" items={entries()} activeDescendant />
+      </main>,
+    );
+    fireEvent.click(trigger());
+    press('ArrowDown');
+    const results = await axe.run(container.ownerDocument.body, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(results.violations).toEqual([]);
+  });
+});
