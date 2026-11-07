@@ -1008,3 +1008,31 @@ test('the title is the dialog\'s top heading, and names it', () => {
   const dialog = screen.getByRole('dialog', { name: 'Connect Slack' });
   expect(within(dialog).getByRole('heading', { level: 1, name: 'Connect Slack' })).toBeTruthy();
 });
+
+test('fill hands the body to its one child, which fills it and scrolls itself', () => {
+  render(
+    <Modal open onClose={() => {}} variant="sheet" flush fill ariaLabel="Rooms">
+      <div data-testid="panel">Rooms</div>
+    </Modal>,
+  );
+  const body = screen.getByTestId('panel').parentElement!;
+  expect(body.classList.contains('crewlet-modal__body--fill')).toBe(true);
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Modal.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  // The body is a column that does not scroll, so a panel's pinned foot stays on the sheet's edge.
+  const column = /\.crewlet-modal__body--fill\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(column).toContain('display: flex');
+  expect(column).toContain('flex-direction: column');
+  expect(column).toContain('overflow: hidden');
+  const child = /\.crewlet-modal__body--fill > \*\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(child).toContain('flex: 1 1 auto');
+  expect(child).toContain('min-height: 0');
+});
+
+test('without fill a body scrolls its content as it always has', () => {
+  render(
+    <Modal open onClose={() => {}} variant="sheet" flush ariaLabel="Rooms">
+      <div data-testid="panel">Rooms</div>
+    </Modal>,
+  );
+  expect(screen.getByTestId('panel').parentElement!.classList.contains('crewlet-modal__body--fill')).toBe(false);
+});
