@@ -121,6 +121,17 @@ export const List: Story = {
   ),
 };
 
+/** As it opens, before the arrows: the first row is what Enter takes, drawn quietly. */
+export const Resting: Story = {
+  render: () => (
+    <div style={{ position: 'relative', maxWidth: 560, height: 360 }}>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 0 }}>
+        <MentionMenu id="mentions-resting" label="People and agents" options={PEOPLE} active={0} keyed={false} onPick={() => undefined} onHover={() => undefined} />
+      </div>
+    </div>
+  ),
+};
+
 /** Rooms on "#", each with its glyph in the face's column so every name starts on one edge. */
 export const Rooms: Story = {
   render: () => (
