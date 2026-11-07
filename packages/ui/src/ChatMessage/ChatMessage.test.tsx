@@ -10,7 +10,6 @@ import axe from 'axe-core';
 import { createRef, type ReactNode, type Ref } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { installHover, installMotion, installSheets, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
-import { installHover, installMotion, installSheets, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { ChatThread } from '../ChatThread/index.js';
 import { Prose } from '../Prose/index.js';
