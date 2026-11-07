@@ -49,16 +49,17 @@
   box-shadow: inset 2px 0 0 var(--color-feedback-warning);
 }
 
-/* The row a link or a search opened at: a wash of the accent that fades back
-   to whatever the row draws of its own (the mention wash included), so there
-   is no last keyframe to name it. */
+/* The row a link or a search opened at: a wash of the accent that arrives
+   over half a second, so the eye catches it as the view settles, holds, then
+   fades back to whatever the row draws of its own (the mention wash
+   included), so there is no first or last keyframe to name it. */
 .crewlet-chat-message.is-flash {
-  animation: crewlet-chat-message-flash calc(var(--motion-duration-moderate) * 8) var(--motion-easing-out);
+  animation: crewlet-chat-message-flash calc(var(--motion-duration-slow) * 10) var(--motion-easing-default);
 }
 
 @keyframes crewlet-chat-message-flash {
-  0%,
-  40% {
+  15%,
+  55% {
     background: var(--color-brand-accent-soft-strong);
   }
 }
