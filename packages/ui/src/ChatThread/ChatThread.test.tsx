@@ -556,6 +556,24 @@ test('turns the browser scroll anchoring off, and rings inside the region', () =
   uninstall();
 });
 
+test('brings a control focused from out of view in clear of its edge, ring and all', () => {
+  // The document's ring reaches 4px outside a control (2px wide, 2px off).
+  // Focus scrolls a control flush with the scroller's edge unless it pads
+  // itself, and the scroller's clip then cut the ring on that side.
+  // Mutation: drop the scroll padding and a row's avatar shows half a ring.
+  const uninstall = installSheets('ChatThread/ChatThread.css');
+  try {
+    render(<ChatThread label="Conversation">{items(3)}</ChatThread>);
+    const log = screen.getByRole('log');
+    const style = getComputedStyle(log);
+    for (const side of [style.scrollPaddingTop, style.scrollPaddingBottom]) {
+      expect(Number.parseFloat(side)).toBeGreaterThanOrEqual(4);
+    }
+  } finally {
+    uninstall();
+  }
+});
+
 test('is the containing block for what is positioned inside it, so nothing escapes its clip', () => {
   // A visually hidden phrase in a tag has no positioned ancestor of its own.
   // Placed against the thread rather than the scroller, it stood at its spot
