@@ -78,7 +78,7 @@ import { ChevronUpGlyph, ChevronsLeftGlyph, ChevronsRightGlyph, MenuGlyph } from
 import { IconButton } from '../IconButton/index.js';
 import { Kbd, ariaKeyshortcuts, isApplePlatform } from '../Kbd/index.js';
 import { Tooltip } from '../Tooltip/index.js';
-import { focusables, isComposing, layerCount, useModalLayer } from '../Layer/index.js';
+import { focusables, useEscapeWithin, useModalLayer } from '../Layer/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 import { returnFocus } from '../utils/focusModality.js';
@@ -769,9 +769,6 @@ function useLooseOverlay(
   const [opener] = useState<Element | null>(() => (typeof document === 'undefined' ? null : document.activeElement));
   const loose = useRef(active);
   loose.current = active;
-  const close = useRef(onClose);
-  close.current = onClose;
-
   // On the aside's open only, and only as a loose overlay: a column takes no
   // focus, and a modal overlay's layer moves it in itself.
   useEffect(() => {
@@ -790,23 +787,8 @@ function useLooseOverlay(
     };
   }, [region, opener]);
 
-  // HEARD AT THE DOCUMENT, AFTER EVERYTHING INSIDE, as `SidePanel` hears it:
-  // a control that answers Escape itself prevents the default, and a press
-  // from outside the panel's own element is not this surface's.
-  useEffect(() => {
-    const panel = region.current;
-    if (!active || !panel) return undefined;
-    const doc = panel.ownerDocument;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented || isComposing(event)) return;
-      if (!(event.target instanceof Node) || !panel.contains(event.target)) return;
-      if (layerCount() > 0 || !close.current) return;
-      event.preventDefault();
-      close.current();
-    };
-    doc.addEventListener('keydown', onKeyDown);
-    return () => doc.removeEventListener('keydown', onKeyDown);
-  }, [active, region]);
+  // ESCAPE FROM INSIDE, as `SidePanel` hears it, giving way to any open layer.
+  useEscapeWithin(region, onClose, active);
 }
 
 /**

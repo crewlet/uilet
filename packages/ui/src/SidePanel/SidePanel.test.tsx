@@ -12,6 +12,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { ArtifactPanel, ArtifactWorkspace } from '../ArtifactPanel/index.js';
 import { ChatThread } from '../ChatThread/index.js';
+import { Popover } from '../Popover/index.js';
 import { SidePanel, SidePanelFrame, type SidePanelShape } from './index.js';
 
 afterEach(cleanup);
@@ -109,6 +110,29 @@ test('Escape closes it from a field inside, unless something inside answered fir
   fireEvent.keyDown(screen.getByRole('textbox', { name: 'Search' }), { key: 'Escape' });
   expect(onClose).not.toHaveBeenCalled();
   fireEvent.keyDown(screen.getByRole('textbox', { name: 'Message' }), { key: 'Escape' });
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test('Escape closes a popup opened from inside first, even with focus left on its trigger', () => {
+  const onClose = vi.fn();
+  // THE PANEL MOUNTS BEFORE ANY LAYER, so its document listener is heard
+  // before the stack's; focus stays on the trigger, as it does where the
+  // popup's own field could not take it (a transition still hiding it).
+  render(
+    <SidePanel title="Thread" onClose={onClose}>
+      <Popover label="Insert an emoji" trigger={(_open, toggle) => <button onClick={toggle}>Emoji</button>}>
+        <input aria-label="Search emoji" />
+      </Popover>
+    </SidePanel>,
+  );
+  const trigger = screen.getByRole('button', { name: 'Emoji' });
+  fireEvent.click(trigger);
+  expect(screen.getByRole('dialog', { name: 'Insert an emoji' })).toBeTruthy();
+  trigger.focus();
+  fireEvent.keyDown(trigger, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: 'Insert an emoji' })).toBeNull();
+  expect(onClose).not.toHaveBeenCalled();
+  fireEvent.keyDown(trigger, { key: 'Escape' });
   expect(onClose).toHaveBeenCalledTimes(1);
 });
 

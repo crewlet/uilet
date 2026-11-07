@@ -11,7 +11,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -23,7 +22,7 @@ import { MaximizeGlyph, MinimizeGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 import { useAppShellAside } from '../AppShell/regions.js';
 import { ResizeHandle } from '../AppShell/ResizeHandle.js';
 import { IconButton } from '../IconButton/index.js';
-import { useModalLayer } from '../Layer/index.js';
+import { useEscapeWithin, useModalLayer } from '../Layer/index.js';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
 import { cx } from '../utils/cx.js';
 
@@ -149,27 +148,10 @@ export function SidePanelBase({
     };
   }, []);
 
-  // HEARD AT THE DOCUMENT, AFTER EVERYTHING INSIDE: a control in the panel
-  // that answers Escape itself (a field that clears, a picker that closes)
-  // prevents the default, and only a press nobody answered closes the panel.
-  // A press from a surface portalled out of the panel is that surface's, so
-  // only one from inside the panel's own element counts. The handler is read
-  // through a ref, so a new `onClose` each render does not re-register it.
-  const close = useRef(onClose);
-  close.current = onClose;
-  useEffect(() => {
-    const panel = root.current;
-    if (!panel) return undefined;
-    const doc = panel.ownerDocument;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing) return;
-      if (!(event.target instanceof Node) || !panel.contains(event.target)) return;
-      event.preventDefault();
-      close.current();
-    };
-    doc.addEventListener('keydown', onKeyDown);
-    return () => doc.removeEventListener('keydown', onKeyDown);
-  }, []);
+  // ESCAPE FROM ANYWHERE INSIDE closes it, unless a control inside answered
+  // it first (a field that clears) or a layer is open (a picker opened from
+  // the panel closes first). A press from a portalled surface is that surface's.
+  useEscapeWithin(root, onClose);
 
   // THE PANEL SIZES ITSELF only where nothing else does: the shell's aside is
   // a grid track, and an expanded panel takes the whole frame.
