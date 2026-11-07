@@ -15,6 +15,7 @@ import { Button } from '../Button/index.js';
 import { REDUCED_MOTION_QUERY, useMediaMatch } from '../MediaMatch/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { useLogTabbing } from './tabbing.js';
 
 /** How close to the end, in pixels, a reader scrolling down is taken back to it. */
 export const CHAT_THREAD_FOLLOW_WITHIN = 48;
@@ -336,16 +337,29 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
     [jump, place, toEnd],
   );
 
+  const tabbing = useLogTabbing(scroller);
   const fresh = detachedAt === null ? 0 : Math.max(0, count - detachedAt);
   return (
-    <div {...rest} className={cx('crewlet-chat-thread', restAt === 'end' && 'crewlet-chat-thread--rest-end', className)}>
+    <div
+      {...rest}
+      className={cx('crewlet-chat-thread', restAt === 'end' && 'crewlet-chat-thread--rest-end', className)}
+      onKeyDownCapture={(event) => {
+        rest.onKeyDownCapture?.(event);
+        tabbing.onKeyDownCapture(event);
+      }}
+      onFocusCapture={(event) => {
+        rest.onFocusCapture?.(event);
+        tabbing.onFocusCapture(event);
+      }}
+    >
       <div
         ref={scroller}
         role="log"
         aria-live="off"
         aria-label={label}
         aria-busy={busy || undefined}
-        // Focusable, so a keyboard reader can scroll the conversation.
+        // Focusable, so a keyboard reader can scroll the conversation. Tab
+        // arriving here moves on to a message row (tabbing.ts).
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
         tabIndex={0}
         className="crewlet-chat-thread__scroller"
