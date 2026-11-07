@@ -436,6 +436,14 @@ describe('the edge scale and the quiet fills', () => {
     assert.equal(font.size.badge, '10px');
   });
 
+  test("a long list's count badge is an 18px pill for a 12px figure, and its news is the heaviest weight Geist ships", () => {
+    assert.equal(tokens.get('--size-badge-list'), 'calc(18px * var(--density, 1))');
+    assert.equal(size.badgeList, '18px');
+    assert.equal(tokens.get('--font-weight-black'), '900');
+    assert.equal(tokens.get('--font-weight-unread'), 'var(--font-weight-black)');
+    assert.equal(font.weight.unread, '900');
+  });
+
   test("the artifact kind grounds are calm tints of the kind's own hue, never slabs of it, in every palette", () => {
     // Opaque, at a small step of the hue's lightness from the card's neutral
     // and a SHARE of its chroma: the card, tinted. The grounds of 0.83.0 took
