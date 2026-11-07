@@ -386,16 +386,16 @@ function depthIn(view: HTMLElement, element: Element): number {
 }
 
 /**
- * The item at the top of the view, as the browser's own anchoring picks one:
- * the first item in view, in document order, taken whole where the view holds
- * all of it, and otherwise looked into for the first of its parts in view, a
- * few levels down. So a day that runs past the view is looked into for its
- * first row, and a row that lands inside the day above it moves the view. A
- * pinned or positioned part (a day's sticky pill) never moves with the
- * content, so it is stepped over, and so is a part the host marks
- * `overflow-anchor: none`, the platform's own way out: a head that older items
- * land under, or a windowed list's spacer, whose top stays put while the rows
- * inside it are drawn.
+ * The part at the top of the view: the first item in view, in document order,
+ * looked into for the first of its own parts in view, a few levels down,
+ * whether the view holds all of it or not. A group is never the anchor while
+ * a part of it is in view: older rows land at the start of the day that holds
+ * them, and a day short enough to fit the view kept its top while they pushed
+ * the reader's rows down. A pinned or positioned part (a day's sticky pill)
+ * never moves with the content, so it is stepped over, and so is a part the
+ * host marks `overflow-anchor: none`, the platform's own way out: a head that
+ * older items land under, or a windowed list's spacer, whose top stays put
+ * while the rows inside it are drawn.
  */
 function anchorIn(view: HTMLElement, content: HTMLElement | null): Anchor | null {
   const top = view.getBoundingClientRect().top;
@@ -404,7 +404,6 @@ function anchorIn(view: HTMLElement, content: HTMLElement | null): Anchor | null
   let parent: Element | null = content;
   for (let depth = 0; parent && depth < ANCHOR_DEPTH; depth++) {
     let next: Element | null = null;
-    let whole = false;
     for (const child of Array.from(parent.children)) {
       const box = child.getBoundingClientRect();
       if (box.height === 0 || box.bottom <= top || box.top >= bottom) continue;
@@ -412,12 +411,11 @@ function anchorIn(view: HTMLElement, content: HTMLElement | null): Anchor | null
       if (style.position === 'sticky' || style.position === 'fixed' || style.position === 'absolute') continue;
       if (style.overflowAnchor === 'none') continue;
       next = child;
-      whole = box.top >= top && box.bottom <= bottom;
       break;
     }
     if (!next) break;
     found = next;
-    parent = whole ? null : next;
+    parent = next;
   }
   return found ? { element: found, at: depthIn(view, found) } : null;
 }
