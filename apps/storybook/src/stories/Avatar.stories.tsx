@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
 import { BotGlyph, KeyGlyph } from '@crewlethq/icons/glyphs';
-import { AVATAR_STATUSES, Avatar, AvatarStack, Card, NODE_HUES } from '@crewlethq/ui';
+import { AVATAR_STATUSES, Avatar, AvatarStack, Card, NODE_HUES, type AvatarStackMember } from '@crewlethq/ui';
 import samplePortrait from '../fixtures/sample-portrait.svg';
 
 const meta: Meta<typeof Avatar> = {
@@ -398,11 +398,11 @@ export const StackOnACard: Story = {
  */
 export const StackSpread: Story = {
   render: () => {
-    const members = [
-      { name: 'Senior Backend Engineer', character: 'gemlet', hue: 'cyan' as const },
-      { name: 'Designer', kind: 'human' as const },
-      { name: 'Product Manager', kind: 'human' as const },
-      { name: 'CTO', kind: 'human' as const },
+    const members: AvatarStackMember[] = [
+      { name: 'Senior Backend Engineer', character: 'gemlet', hue: 'cyan' },
+      { name: 'Designer', kind: 'human' },
+      { name: 'Product Manager', kind: 'human' },
+      { name: 'CTO', kind: 'human' },
     ];
     return (
       <div style={{ display: 'grid', gap: 16, justifyItems: 'start' }}>
