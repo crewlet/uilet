@@ -667,14 +667,51 @@
 }
 
 /*
- * A ROW WITH NEWS (`unread`): its name two steps heavier than a dense row's
- * regular (semibold) and in the primary ink, which is the whole of the signal:
- * one step read as a different face rather than as news. A muted row is never drawn unread (the component drops
- * the class), so the two rules never meet.
+ * A ROW WITH NEWS (`unread`): its name heavier and in the primary ink, which is the whole
+ * signal; in a dense list it takes the unread weight, the heaviest Geist ships, beside
+ * regular names. A muted row is never drawn unread (the component drops the class).
  */
 .crewlet-nav-item--unread > .crewlet-nav-item__head > .crewlet-nav-item__row {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-item--unread > .crewlet-nav-item__head > .crewlet-nav-item__row {
+  font-weight: var(--font-weight-unread);
+}
+
+/*
+ * A DENSE LIST'S BADGE is its own pill, sized for 14px names (18px, a 12px figure), on the
+ * accent's next step, which the on-accent ink clears with margin in every palette.
+ */
+.crewlet-sidebar-nav--dense .crewlet-nav-item__badge {
+  min-width: var(--size-badge-list);
+  height: var(--size-badge-list);
+  padding: 0 calc(var(--spacing-1) + var(--spacing-1) / 2);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-item__badge:not(.crewlet-nav-item__badge--quiet) {
+  background: var(--color-brand-accent-hover);
+  color: var(--color-text-on-accent);
+}
+
+/*
+ * THE DIVIDER (`NavDivider`): the kit's rule centred in a band between runs, the plain
+ * views and the first section, 24px with the list's gaps; the heading after it drops its margin.
+ */
+.crewlet-sidebar-nav .crewlet-nav-divider {
+  flex: none;
+  min-height: var(--spacing-4);
+  padding: 0 var(--spacing-1);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-divider {
+  min-height: var(--spacing-6);
+}
+
+.crewlet-nav-divider + .crewlet-nav-group > .crewlet-nav-group__head {
+  margin-top: 0;
 }
 
 /*
@@ -704,4 +741,45 @@
  */
 .crewlet-nav-group--locked .crewlet-nav-item__row:not([aria-current]):not(:hover) {
   color: var(--color-text-tertiary);
+}
+
+/*
+ * THE UNREAD PILLS (`unreadPills`): each hangs from a zero-height anchor held at its edge
+ * of the scroller's view, over the rows; the anchor's margin cancels the list's gap (none
+ * in a dense list), so mounting one moves no row.
+ */
+.crewlet-sidebar-nav__unseen {
+  position: sticky;
+  z-index: var(--z-index-raised);
+  height: 0;
+}
+
+.crewlet-sidebar-nav__unseen--above {
+  top: 0;
+  margin-bottom: calc(var(--spacing-1) * -1);
+}
+
+.crewlet-sidebar-nav__unseen--below {
+  bottom: 0;
+  margin-top: calc(var(--spacing-1) * -1);
+}
+
+.crewlet-sidebar-nav--dense > .crewlet-sidebar-nav__unseen {
+  margin: 0;
+}
+
+.crewlet-sidebar-nav__unseen-pill {
+  position: absolute;
+  left: 50%;
+  max-width: calc(100% - var(--spacing-6));
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-sm);
+}
+
+.crewlet-sidebar-nav__unseen--above > .crewlet-sidebar-nav__unseen-pill {
+  top: var(--spacing-2);
+}
+
+.crewlet-sidebar-nav__unseen--below > .crewlet-sidebar-nav__unseen-pill {
+  bottom: var(--spacing-2);
 }

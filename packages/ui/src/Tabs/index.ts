@@ -4,6 +4,7 @@ import './Tabs.css';
 export { TabPanel, Tabs, tabId } from './Tabs.js';
 export type {
   TabPanelProps,
+  TabsDensity,
   TabsFoldProps,
   TabsItem,
   TabsMarker,

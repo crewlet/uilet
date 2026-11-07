@@ -233,27 +233,47 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .crewlet-composer {
-    transition: none;
-  }
-}
-
 /*
  * A CONVERSATION'S MESSAGE BOX (`appearance="chat"`), on the transcript's own
  * scale (ChatMessage/ChatScale.css): the large corner on the transcript's
- * ground with the row wash laid over it, a step lighter than the list, and a
- * small shadow, so the box sits just above the messages, inside the edge
- * scale's strong step, the edge a field draws. The words are set at the
- * transcript's size on one line to start. The footer belongs to the field
- * rather than standing as a strip under it: no rule and no ground of its own.
+ * ground with the row wash laid over it and a small shadow, inside the quiet
+ * box edge. The words are set at the transcript's size on one line to start.
+ * The footer belongs to the field: no rule and no ground of its own.
  */
 .crewlet-composer--chat {
-  border-color: var(--color-edge-strong);
+  border-color: var(--color-edge-box);
   background:
     linear-gradient(var(--color-fill-row), var(--color-fill-row)),
     var(--crewlet-chat-ground);
   box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--crewlet-chat-feedback) var(--crewlet-chat-ease),
+    box-shadow var(--crewlet-chat-feedback) var(--crewlet-chat-ease);
+}
+
+/* The pointer passing over it changes nothing; focus is the one change. */
+.crewlet-composer--chat:not(.is-disabled):hover {
+  border-color: var(--color-edge-box);
+}
+
+/*
+ * FOCUS STEPS THE EDGE to the strong step (3:1 or more on the page and on the
+ * box) and lifts the shadow, with no accent ring. The keyboard also gets the
+ * edge two pixels thick, as an outline so forced colours keep it.
+ */
+.crewlet-composer--chat:has(.crewlet-composer__field:focus-visible) {
+  border-color: var(--color-edge-strong);
+  box-shadow: var(--shadow-sm);
+  outline-width: 2px;
+  outline-style: solid;
+  outline-color: var(--color-edge-strong);
+  outline-offset: -1px;
+}
+
+/* A pointer gets the step alone; the transparent outline shows only in forced colours. */
+:where(:root[data-crewlet-focus='pointer']) .crewlet-composer--chat:has(.crewlet-composer__field:focus-visible) {
+  outline-width: 1px;
+  outline-color: transparent;
 }
 
 /* One line to start, a line's height per line after it, and at most
@@ -314,4 +334,11 @@
 
 .crewlet-composer--chat .crewlet-composer__tools {
   gap: var(--spacing-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-composer,
+  .crewlet-composer--chat {
+    transition: none;
+  }
 }
