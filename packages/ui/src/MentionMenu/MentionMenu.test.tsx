@@ -157,3 +157,14 @@ test('an open menu carries no axe violation', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+test('before the arrows the active row rests: still the selected option, drawn quietly', () => {
+  const props = { id: 'people', label: 'People and agents', options: OPTIONS, active: 0, onPick: () => {}, onHover: () => {} };
+  const { container, rerender } = render(<MentionMenu {...props} keyed={false} />);
+  const menu = container.querySelector('.crewlet-mention-menu')!;
+  expect(menu.classList.contains('crewlet-mention-menu--resting')).toBe(true);
+  // The field's active descendant is still a selected option for a screen reader.
+  expect(screen.getAllByRole('option')[0]!.getAttribute('aria-selected')).toBe('true');
+  rerender(<MentionMenu {...props} keyed />);
+  expect(menu.classList.contains('crewlet-mention-menu--resting')).toBe(false);
+});

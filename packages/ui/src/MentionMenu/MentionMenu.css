@@ -41,6 +41,13 @@
   list-style: none;
 }
 
+/* RESTING, before the arrows: the active row takes the hover fill alone, a
+   quiet "Enter takes this", and the accent tint and bar wait for the keys. */
+.crewlet-mention-menu--resting .crewlet-person-row.is-selected {
+  background: var(--color-surface-hover);
+  box-shadow: none;
+}
+
 /* The panel's corner less its inset, so each row's curve runs parallel. */
 .crewlet-mention-menu__list > .crewlet-person-row {
   --crewlet-person-row-radius: calc(var(--radius-lg) - var(--spacing-1));

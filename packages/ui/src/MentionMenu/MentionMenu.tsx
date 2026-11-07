@@ -48,6 +48,13 @@ export interface MentionMenuProps {
    * in view as the arrows move and a press outside the list closes it.
    */
   listRef?: Ref<HTMLUListElement> | undefined;
+  /**
+   * Whether the reader has taken the list over with the arrow keys. Until then
+   * the active row is drawn quietly, as what Enter or Tab would take, and the
+   * strong highlight arrives with the first arrow press, which commits to that
+   * row rather than moving past it. True by default.
+   */
+  keyed?: boolean | undefined;
   /** The foot. Left out, it carries the keyboard hints; `null` draws none. */
   footer?: ReactNode;
   labels?: Partial<MentionMenuLabels> | undefined;
@@ -74,7 +81,19 @@ export interface MentionMenuProps {
  * ITS ROWS ARE `PersonRow`s, so a face, a name and its detail sit where every
  * other list of people in the product puts them.
  */
-export function MentionMenu({ id, label, options, active, onPick, onHover, listRef, footer, labels: overrides, className }: MentionMenuProps) {
+export function MentionMenu({
+  id,
+  label,
+  options,
+  active,
+  onPick,
+  onHover,
+  listRef,
+  keyed = true,
+  footer,
+  labels: overrides,
+  className,
+}: MentionMenuProps) {
   const labels = overrides ? { ...MENTION_MENU_LABELS, ...overrides } : MENTION_MENU_LABELS;
   const foot =
     footer === undefined ? (
@@ -87,7 +106,7 @@ export function MentionMenu({ id, label, options, active, onPick, onHover, listR
       <div className="crewlet-mention-menu__footer">{footer}</div>
     );
   return (
-    <div className={cx('crewlet-mention-menu', className)}>
+    <div className={cx('crewlet-mention-menu', !keyed && 'crewlet-mention-menu--resting', className)}>
       <div className="crewlet-mention-menu__label" aria-hidden="true">
         {label}
       </div>
