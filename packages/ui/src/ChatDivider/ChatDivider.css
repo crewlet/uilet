@@ -26,6 +26,30 @@
   white-space: nowrap;
 }
 
+/* A count at the start, on the faces' edge, and a hairline running on. */
+.crewlet-chat-divider--count {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin: var(--spacing-1) 0;
+  padding: 0 var(--crewlet-chat-pad-x);
+  color: var(--color-text-tertiary);
+  font-size: var(--crewlet-chat-meta);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-chat-divider--count::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-edge-hairline);
+}
+
+.crewlet-chat-divider--count .crewlet-chat-divider__label {
+  white-space: nowrap;
+}
+
 /*
  * THE NEW LINE TAKES NO HEIGHT. A hairline across the whole list in the
  * danger hue, laid on the boundary between the last read message and the
@@ -59,7 +83,7 @@
   background: var(--crewlet-chat-ground);
   color: var(--color-feedback-danger-ink);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-normal);
 }
 
@@ -70,7 +94,8 @@
 @media (forced-colors: active) {
   .crewlet-chat-divider--unread::before,
   .crewlet-chat-divider--date::before,
-  .crewlet-chat-divider--date::after {
+  .crewlet-chat-divider--date::after,
+  .crewlet-chat-divider--count::after {
     border-top: 1px solid CanvasText;
   }
 }

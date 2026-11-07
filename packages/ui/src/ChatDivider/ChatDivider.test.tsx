@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { afterEach, expect, test } from 'vitest';
 import { ChatDivider } from './index.js';
 
@@ -38,4 +39,19 @@ test('the New line takes no height and stops under the pinned pill when brought 
   // The line is drawn in the danger hue and its word in the danger ink.
   expect(css).toMatch(/\.crewlet-chat-divider--unread::before \{[^}]*background:\s*var\(--color-feedback-danger\);/);
   expect(css).toMatch(/\.crewlet-chat-divider--unread \.crewlet-chat-divider__label \{[^}]*color:\s*var\(--color-feedback-danger-ink\);/);
+});
+
+test('a count stands at the start on the faces\' edge, its hairline running on after it', () => {
+  const uninstall = installSheets('ChatMessage/ChatScale.css', 'ChatDivider/ChatDivider.css');
+  try {
+    render(<ChatDivider variant="count" label="24 replies" />);
+    const line = screen.getByRole('separator', { name: '24 replies' });
+    expect(line.getAttribute('data-divider')).toBe('count');
+    expect(line.classList.contains('crewlet-chat-divider--count')).toBe(true);
+    // A row whose words lead: the rule is its pseudo-element, drawn after them.
+    expect(getComputedStyle(line).display).toBe('flex');
+    expect(line.firstElementChild!.textContent).toBe('24 replies');
+  } finally {
+    uninstall();
+  }
 });

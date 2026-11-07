@@ -96,6 +96,28 @@ test('Enter in the field picks the first match', async () => {
   expect(screen.queryByRole('dialog')).toBeNull();
 });
 
+// WHAT ENTER WILL PICK IS SHOWN, and the preview names whatever is pointed at
+// or chosen. Mutation: mark nothing while searching, and the first match has
+// no is-chosen class; drop the preview, and its name is not found.
+test('while searching, the match Enter picks is marked and previewed, and a pointed emoji is previewed', async () => {
+  render(<Picker onPick={() => {}} />);
+  const { field } = await open();
+  const preview = () => document.querySelector('.crewlet-emoji-picker__preview')!;
+  expect(preview().textContent).toBe('Pick an emoji');
+  fireEvent.change(field, { target: { value: 'part' } });
+  const party = screen.getByRole('button', { name: 'party' });
+  expect(party.classList.contains('is-chosen')).toBe(true);
+  expect(preview().textContent).toContain('party');
+  expect(preview().textContent).toContain(':tada:');
+  fireEvent.change(field, { target: { value: '' } });
+  const eyes = screen.getByRole('button', { name: 'eyes' });
+  expect(eyes.classList.contains('is-chosen')).toBe(false);
+  fireEvent.pointerEnter(eyes);
+  expect(preview().textContent).toContain('eyes');
+  fireEvent.pointerLeave(eyes);
+  expect(preview().textContent).toBe('Pick an emoji');
+});
+
 // THE GRID IS ONE TAB STOP THE ARROWS WALK BY ITS ROWS. Mutation: walk the
 // flat list for ArrowDown, and a short row sends the reader to the wrong
 // column; leave every cell tabbable, and Tab crosses forty emoji.

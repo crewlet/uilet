@@ -18,21 +18,34 @@
  */
 
 .crewlet-dock-column {
+  position: relative;
   display: flex;
-  justify-content: flex-end;
   width: 0;
   min-width: 0;
   min-height: 0;
-  overflow: clip;
   transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);
-}
-
-.crewlet-dock-column[data-side='end'] {
-  justify-content: flex-start;
 }
 
 .crewlet-dock-column[data-open] {
   width: var(--crewlet-dock-column-width);
+}
+
+/*
+ * THE CLIP, inside the column so a handle can stand across the column's edge.
+ * Clipped rather than hidden, so it is never a scroll container a focus or a
+ * scrollIntoView could scroll.
+ */
+.crewlet-dock-column__clip {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+  min-height: 0;
+  overflow: clip;
+}
+
+.crewlet-dock-column[data-side='end'] > .crewlet-dock-column__clip {
+  justify-content: flex-start;
 }
 
 .crewlet-dock-column__panel {
@@ -46,12 +59,29 @@
 }
 
 /* The hairline on the panel's edge that faces the content. */
-.crewlet-dock-column--divider[data-side='start'] > .crewlet-dock-column__panel {
+.crewlet-dock-column--divider[data-side='start'] .crewlet-dock-column__panel {
   border-inline-end: 1px solid var(--color-border-default);
 }
 
-.crewlet-dock-column--divider[data-side='end'] > .crewlet-dock-column__panel {
+.crewlet-dock-column--divider[data-side='end'] .crewlet-dock-column__panel {
   border-inline-start: 1px solid var(--color-border-default);
+}
+
+/*
+ * THE HANDLE STRADDLES THE EDGE that faces the content, half over the panel
+ * and half over the content, so its hairline is the line it grips.
+ */
+.crewlet-dock-column[data-side='start'] > .crewlet-dock-column__handle {
+  right: calc(var(--crewlet-resize-handle-width) / -2);
+}
+
+.crewlet-dock-column[data-side='end'] > .crewlet-dock-column__handle {
+  left: calc(var(--crewlet-resize-handle-width) / -2);
+}
+
+/* SIZED BY HAND, the column follows at once: an eased width trails the pointer. */
+.crewlet-dock-column:has(> .crewlet-dock-column__handle:is([data-dragging], :focus-visible)) {
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

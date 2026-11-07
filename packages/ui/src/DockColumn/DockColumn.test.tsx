@@ -3,7 +3,7 @@
  * leaves, and the motion its stylesheet gives it.
  */
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -12,7 +12,7 @@ import { StrictMode, useRef } from 'react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
 import { Tooltip } from '../Tooltip/index.js';
-import { DockColumn } from './index.js';
+import { DockColumn, type DockColumnSide } from './index.js';
 
 const restorers: (() => void)[] = [];
 
@@ -287,11 +287,13 @@ describe('the stylesheet', () => {
     return at === -1 ? '' : css.slice(at, css.indexOf('}', at));
   };
 
-  test('the column eases its width on the slow step with the emphasized curve, and clips', () => {
+  test('the column eases its width on the slow step with the emphasized curve, and its clip clips', () => {
     const base = rule('.crewlet-dock-column');
     expect(base).toContain('transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);');
     expect(base).toContain('width: 0;');
-    expect(base).toContain('overflow: clip;');
+    // The column itself does not clip, so a handle can stand across its edge.
+    expect(base).not.toContain('overflow');
+    expect(rule('.crewlet-dock-column__clip')).toContain('overflow: clip;');
     expect(rule('.crewlet-dock-column[data-open]')).toContain('width: var(--crewlet-dock-column-width);');
   });
 
@@ -305,15 +307,17 @@ describe('the stylesheet', () => {
     expect(rule('.crewlet-dock-column__panel')).toContain('flex: none;');
     // Before the content it is held to the column's end, so it slides in from
     // the start edge; after the content, the other way round.
-    expect(rule('.crewlet-dock-column')).toContain('justify-content: flex-end;');
-    expect(rule(".crewlet-dock-column[data-side='end']")).toContain('justify-content: flex-start;');
+    expect(rule('.crewlet-dock-column__clip')).toContain('justify-content: flex-end;');
+    expect(rule(".crewlet-dock-column[data-side='end'] > .crewlet-dock-column__clip")).toContain(
+      'justify-content: flex-start;',
+    );
   });
 
   test('the hairline stands on the edge that faces the content', () => {
-    expect(rule(".crewlet-dock-column--divider[data-side='start'] > .crewlet-dock-column__panel")).toContain(
+    expect(rule(".crewlet-dock-column--divider[data-side='start'] .crewlet-dock-column__panel")).toContain(
       'border-inline-end: 1px solid var(--color-border-default);',
     );
-    expect(rule(".crewlet-dock-column--divider[data-side='end'] > .crewlet-dock-column__panel")).toContain(
+    expect(rule(".crewlet-dock-column--divider[data-side='end'] .crewlet-dock-column__panel")).toContain(
       'border-inline-start: 1px solid var(--color-border-default);',
     );
   });
@@ -327,5 +331,84 @@ describe('the stylesheet', () => {
     );
     expect(column().classList.contains('crewlet-dock-column--divider')).toBe(false);
     expect(column().getAttribute('data-side')).toBe('end');
+  });
+});
+
+describe('sized by the reader', () => {
+  function Sized({
+    open = true,
+    side = 'start',
+    onValueChange = () => {},
+  }: {
+    open?: boolean;
+    side?: DockColumnSide;
+    onValueChange?: (px: number) => void;
+  }) {
+    return (
+      <DockColumn
+        open={open}
+        width={280}
+        side={side}
+        data-testid="dock"
+        resize={{ label: 'Resize the Rooms panel', min: 220, max: 440, onValueChange, defaultValue: 280 }}
+      >
+        <nav aria-label="Rooms">
+          <a href="#/general">general</a>
+        </nav>
+      </DockColumn>
+    );
+  }
+
+  test('a separator on the edge that faces the content says the width and moves it by key', () => {
+    reduced(false);
+    const moves: number[] = [];
+    render(<Sized onValueChange={(px) => moves.push(px)} />);
+    const handle = screen.getByRole('separator', { name: 'Resize the Rooms panel' });
+    expect(handle.getAttribute('aria-valuenow')).toBe('280');
+    expect(handle.getAttribute('aria-valuemin')).toBe('220');
+    expect(handle.getAttribute('aria-valuemax')).toBe('440');
+    // Before the content the handle is on the column's right edge, so Right widens it.
+    expect(handle.classList.contains('crewlet-resize-handle--right')).toBe(true);
+    handle.focus();
+    fireEvent.keyDown(handle, { key: 'ArrowRight' });
+    fireEvent.keyDown(handle, { key: 'End' });
+    expect(moves).toEqual([296, 440]);
+    // It is the column's child, outside the clip, so the clip cannot cut it.
+    expect(handle.parentElement).toBe(column());
+  });
+
+  test('after the content the handle is on the left edge', () => {
+    reduced(false);
+    render(<Sized side="end" />);
+    expect(screen.getByRole('separator').classList.contains('crewlet-resize-handle--left')).toBe(true);
+  });
+
+  test('a column the reader cannot size, or one that is shut, has no handle', () => {
+    reduced(false);
+    const { unmount } = render(<Rooms open />);
+    expect(screen.queryByRole('separator')).toBeNull();
+    unmount();
+    render(<Sized open={false} />);
+    expect(screen.queryByRole('separator')).toBeNull();
+  });
+
+  test('the handle straddles the edge, and the column follows a drag or a key at once', () => {
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'DockColumn.css'), 'utf8');
+    expect(css).toMatch(
+      /\.crewlet-dock-column\[data-side='start'\] > \.crewlet-dock-column__handle \{\s*right: calc\(var\(--crewlet-resize-handle-width\) \/ -2\);/,
+    );
+    expect(css).toMatch(
+      /\.crewlet-dock-column\[data-side='end'\] > \.crewlet-dock-column__handle \{\s*left: calc\(var\(--crewlet-resize-handle-width\) \/ -2\);/,
+    );
+    expect(css).toMatch(
+      /\.crewlet-dock-column:has\(> \.crewlet-dock-column__handle:is\(\[data-dragging\], :focus-visible\)\) \{\s*transition: none;/,
+    );
+  });
+
+  test('it has no accessibility violations with its handle', async () => {
+    reduced(false);
+    const view = render(<Sized />);
+    const results = await axe.run(view.container, { resultTypes: ['violations'] });
+    expect(results.violations.map((v) => v.id)).toEqual([]);
   });
 });

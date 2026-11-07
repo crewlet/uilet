@@ -59,6 +59,87 @@ export function foldLineBreaks(text: string): string {
   return text.replace(LINE_BREAKS, ' ');
 }
 
+/** The text styles a mirror copies so it wraps exactly as the field does. */
+const MIRRORED = [
+  'boxSizing',
+  'width',
+  'paddingTop',
+  'paddingRight',
+  'paddingBottom',
+  'paddingLeft',
+  'borderTopWidth',
+  'borderRightWidth',
+  'borderBottomWidth',
+  'borderLeftWidth',
+  'borderStyle',
+  'fontFamily',
+  'fontSize',
+  'fontStyle',
+  'fontVariant',
+  'fontWeight',
+  'letterSpacing',
+  'lineHeight',
+  'tabSize',
+  'textIndent',
+  'textTransform',
+  'whiteSpace',
+  'wordBreak',
+  'wordSpacing',
+  'overflowWrap',
+] as const;
+
+const mirrors = new WeakMap<Document, HTMLTextAreaElement>();
+
+/** One hidden, fixed field per document: out of the flow, so sizing it moves nothing. */
+function mirrorIn(doc: Document): HTMLTextAreaElement {
+  let mirror = mirrors.get(doc);
+  if (!mirror || !mirror.isConnected) {
+    mirror = doc.createElement('textarea');
+    mirror.setAttribute('aria-hidden', 'true');
+    mirror.tabIndex = -1;
+    Object.assign(mirror.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      visibility: 'hidden',
+      pointerEvents: 'none',
+      overflow: 'hidden',
+      height: 'auto',
+      minHeight: '0',
+      maxHeight: 'none',
+      zIndex: '-1',
+    });
+    doc.body.appendChild(mirror);
+    mirrors.set(doc, mirror);
+  }
+  return mirror;
+}
+
+/**
+ * The height that shows all of a field's text, as a CSS length, or null for
+ * a field that is not laid out. Read from a mirror given the field's width,
+ * rows and text styles, with the border added back for `border-box`.
+ */
+function contentHeight(el: HTMLTextAreaElement): string | null {
+  if (!el.isConnected) return null;
+  const style = getComputedStyle(el);
+  if (!style.width.endsWith('px')) return null;
+  const mirror = mirrorIn(el.ownerDocument);
+  for (const key of MIRRORED) mirror.style[key] = style[key];
+  mirror.rows = el.rows;
+  mirror.placeholder = el.placeholder;
+  mirror.value = el.value;
+  const content = mirror.scrollHeight;
+  // Emptied once read, so a draft's words never stay in a hidden field.
+  mirror.value = '';
+  mirror.placeholder = '';
+  const border =
+    style.boxSizing === 'border-box'
+      ? Number.parseFloat(style.borderTopWidth || '0') + Number.parseFloat(style.borderBottomWidth || '0')
+      : 0;
+  return `${content + (Number.isFinite(border) ? border : 0)}px`;
+}
+
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
   {
     error: errorProp,
@@ -101,19 +182,17 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
    * on a growing field, enough to keep a scrollbar the rule above has hidden.
    * The border is added back from the computed style rather than assumed,
    * since a caller's own class can change it.
+   *
+   * Measured on a hidden mirror, never by collapsing the field: collapsing it
+   * relaid the page on every keystroke.
    */
   useEffect(() => {
     if (!autoResize) return;
     const el = localRef.current;
     if (!el) return;
     const measure = () => {
-      el.style.height = 'auto';
-      const style = getComputedStyle(el);
-      const border =
-        style.boxSizing === 'border-box'
-          ? Number.parseFloat(style.borderTopWidth || '0') + Number.parseFloat(style.borderBottomWidth || '0')
-          : 0;
-      el.style.height = `${el.scrollHeight + (Number.isFinite(border) ? border : 0)}px`;
+      const height = contentHeight(el);
+      if (height !== null && el.style.height !== height) el.style.height = height;
     };
     measure();
     el.addEventListener('input', measure);

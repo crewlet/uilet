@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ChevronRightGlyph } from '@crewlethq/icons/glyphs';
 import { AvatarStack, type AvatarStackMember } from '../Avatar/index.js';
 import { Tag } from '../Tag/index.js';
 import { cx } from '../utils/cx.js';
@@ -10,7 +11,7 @@ export interface ThreadSummaryLabels {
   fresh: (count: number) => string;
   /** When the last reply came, given the caller's words for it: "Last reply 12m ago". */
   last: (when: string) => string;
-  /** Shown in place of the last reply's time under the pointer. */
+  /** At the line's end under the pointer, beside the chevron that says it opens. */
   view: string;
   /** Shown in its place while the thread is open beside the room. */
   open: string;
@@ -44,13 +45,16 @@ export interface ThreadSummaryProps {
 
 /**
  * The line under a message that has replies: the repliers' faces, "4
- * replies" at the medium weight in the accent's ink, how many are new, and
- * when the last one came. It opens the thread.
+ * replies" at the medium weight in the accent's ink, and how many are new.
+ * It opens the thread, from anywhere on the line.
  *
- * UNDER THE POINTER OR THE KEYBOARD it is lifted onto the transcript's own
- * ground inside a hairline, and "View thread" takes the place of the last
- * reply's time in the same cell, so the line keeps its width. Its faces sit
- * on the content edge: the line's inset and edge are taken back outside it.
+ * QUIET AT REST, so a room of threads stays calm: faces and the count. UNDER
+ * THE POINTER OR THE KEYBOARD it is set into the transcript's own ground inside
+ * a hairline, when the last reply came fades in, and "View thread" with a
+ * chevron stands at its end. Every part is always laid out, so nothing moves.
+ * While the thread is open beside the room, the message it hangs off wears the
+ * selected surface and the line's end says so. Its faces sit on the content
+ * edge: the line's inset and edge are taken back outside it.
  */
 export function ThreadSummary({
   replies,
@@ -86,9 +90,12 @@ export function ThreadSummary({
             {fresh}
           </Tag>
         ) : null}
-        <span className="crewlet-thread-summary__tail" aria-hidden="true">
-          <span className="crewlet-thread-summary__last">{when}</span>
+        <span className="crewlet-thread-summary__last" aria-hidden="true">
+          {when}
+        </span>
+        <span className="crewlet-thread-summary__end" aria-hidden="true">
           <span className="crewlet-thread-summary__view">{open ? labels.open : labels.view}</span>
+          <ChevronRightGlyph size="sm" className="crewlet-thread-summary__chevron" />
         </span>
       </button>
       {working}

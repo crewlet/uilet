@@ -174,6 +174,12 @@ export interface ModalProps extends FrameAttributes {
   stackBody?: boolean | undefined;
   /** Drops the body's padding, for content that owns its own edges. */
   flush?: boolean | undefined;
+  /**
+   * The body's one child fills it and does its own scrolling: a panel with a
+   * pinned head, a scroller and a pinned foot. The body itself no longer
+   * scrolls, so the head and the foot stay on the sheet's edges at every height.
+   */
+  fill?: boolean | undefined;
   className?: string | undefined;
   /** Names a surface that draws no title. Ignored when `title` is given. */
   ariaLabel?: string | undefined;
@@ -288,6 +294,7 @@ function ModalFrame({
   showCloseButton = true,
   stackBody = false,
   flush = false,
+  fill = false,
   className,
   ariaLabel,
   describedBy,
@@ -423,6 +430,7 @@ function ModalFrame({
             'crewlet-modal__body',
             stackBody ? 'crewlet-modal__body--stacked' : undefined,
             flush ? 'crewlet-modal__body--flush' : undefined,
+            fill ? 'crewlet-modal__body--fill' : undefined,
             sheet ? 'crewlet-modal__body--sheet' : undefined,
           )}
         >

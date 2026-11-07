@@ -4,6 +4,7 @@ import { Input } from '../Input/index.js';
 import { isComposing } from '../Layer/index.js';
 import { Popover, type PopoverAlign, type PopoverSide } from '../Popover/index.js';
 import { Tooltip } from '../Tooltip/index.js';
+import { cx } from '../utils/cx.js';
 import { EMOJI_GROUPS, searchEmoji, type EmojiEntry, type EmojiGroup } from './emoji.js';
 
 /** How many emoji stand in a row of the grid; the arrow keys walk the same rows. */
@@ -16,12 +17,15 @@ export interface EmojiPickerLabels {
   results: string;
   /** Said when nothing matches. */
   none: (query: string) => string;
+  /** The preview line while no emoji is pointed at or chosen. */
+  idle: string;
 }
 
 export const EMOJI_PICKER_LABELS: EmojiPickerLabels = {
   search: 'Search emoji',
   results: 'Results',
   none: (query) => `No emoji match “${query}”.`,
+  idle: 'Pick an emoji',
 };
 
 export interface EmojiPickerProps {
@@ -77,8 +81,12 @@ function layout(groups: readonly EmojiGroup[]) {
  * A searchable grid of emoji in a popover, for starting a reaction or
  * putting an emoji in a message.
  *
+ * WHAT ENTER WILL PICK IS SHOWN. While a search has matches, the one Enter
+ * picks is marked in the grid, and the line under the grid previews whatever
+ * is pointed at or chosen, large and by name, so the cells need no hints.
+ *
  * THE KEYS. The search field has focus when the panel opens: typing filters
- * by name, Enter picks the first match, and ArrowDown goes into the grid. The
+ * by name, Enter picks the marked match, and ArrowDown goes into the grid. The
  * grid is one tab stop; the arrows walk it by its rows, across groups, Home
  * and End go to its first and last emoji, ArrowUp from the top row returns to
  * the field, and Enter or Space picks. Escape closes the panel and returns
@@ -103,6 +111,8 @@ export function EmojiPicker({
   const [query, setQuery] = useState('');
   // The grid's one tab stop, as a flat index.
   const [at, setAt] = useState(0);
+  // The emoji under the pointer, which the preview shows over the chosen one.
+  const [pointed, setPointed] = useState<EmojiEntry | null>(null);
   const field = useRef<HTMLInputElement | null>(null);
   const grid = useRef<HTMLDivElement | null>(null);
 
@@ -112,6 +122,9 @@ export function EmojiPicker({
     [found, groups, labels.results],
   );
   const stop = Math.min(at, Math.max(0, cells.length - 1));
+  // The match Enter in the field picks: marked only while searching.
+  const chosen = found && found.length > 0 ? cells[stop] : undefined;
+  const shown = pointed ?? chosen?.entry ?? null;
 
   const focusCell = (index: number) => {
     setAt(index);
@@ -123,9 +136,9 @@ export function EmojiPicker({
     if (event.key === 'ArrowDown' && cells.length > 0) {
       event.preventDefault();
       focusCell(0);
-    } else if (event.key === 'Enter' && found && found[0]) {
+    } else if (event.key === 'Enter' && chosen) {
       event.preventDefault();
-      onPick(found[0].emoji);
+      onPick(chosen.entry.emoji);
       close();
     }
   }
@@ -173,6 +186,7 @@ export function EmojiPicker({
         if (!open) {
           setQuery('');
           setAt(0);
+          setPointed(null);
         }
         onOpenChange?.(open);
       }}
@@ -208,12 +222,13 @@ export function EmojiPicker({
                       <button
                         key={cell.entry.emoji}
                         type="button"
-                        className="crewlet-emoji-picker__cell"
+                        className={cx('crewlet-emoji-picker__cell', cell === chosen && 'is-chosen')}
                         aria-label={cell.entry.name}
-                        title={cell.entry.name}
                         data-emoji-index={cell.index}
                         tabIndex={cell.index === stop ? 0 : -1}
                         onFocus={() => setAt(cell.index)}
+                        onPointerEnter={() => setPointed(cell.entry)}
+                        onPointerLeave={() => setPointed((now) => (now === cell.entry ? null : now))}
                         onKeyDown={(event) => onCellKeys(event, cell)}
                         onClick={() => {
                           onPick(cell.entry.emoji);
@@ -232,6 +247,22 @@ export function EmojiPicker({
                 {labels.none(query.trim())}
               </p>
             ) : null}
+          </div>
+          {/* Seen, not read: every cell is already named for a screen reader. */}
+          <div className="crewlet-emoji-picker__preview" aria-hidden="true">
+            {shown ? (
+              <>
+                <span className="crewlet-emoji-picker__preview-emoji">{shown.emoji}</span>
+                <span className="crewlet-emoji-picker__preview-words">
+                  <span className="crewlet-emoji-picker__preview-name">{shown.name}</span>
+                  {shown.shortcode ? (
+                    <span className="crewlet-emoji-picker__preview-code">{shown.shortcode}</span>
+                  ) : null}
+                </span>
+              </>
+            ) : (
+              <span className="crewlet-emoji-picker__preview-idle">{labels.idle}</span>
+            )}
           </div>
         </div>
       )}

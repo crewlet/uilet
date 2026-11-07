@@ -34,7 +34,9 @@
   flex: none;
   justify-content: center;
   height: var(--crewlet-chat-day-pill);
-  margin-top: calc(var(--crewlet-chat-day-gap) - var(--crewlet-chat-day-pill) / 2);
+  /* MORE AIR ABOVE A DAY THAN UNDER ITS RULE, so the date is read with the
+     messages it introduces rather than the ones it ends. */
+  margin-top: calc(var(--crewlet-chat-day-gap) * 2 - var(--crewlet-chat-day-pill) / 2);
   pointer-events: none;
   /* A host that raises the pin (a banner arriving) moves the pinned pill
      down with it rather than jumping it. */
@@ -65,7 +67,8 @@
 /*
  * THE PILL floats over the rows: the transcript's own ground, ringed with the
  * hairline and a small shadow, so it reads as lifted off the messages it
- * passes over. The ring is a shadow, which forced colors drops, so a
+ * passes over. The rule recedes and the date does not: its words are the
+ * primary ink at the semibold weight. The ring is a shadow, which forced colors drops, so a
  * transparent outline stands in for it there.
  */
 .crewlet-chat-day__pill {
@@ -83,10 +86,10 @@
   box-shadow:
     0 0 0 1px var(--color-edge-hairline),
     var(--shadow-xs);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   font: inherit;
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   line-height: 1;
   white-space: nowrap;
   pointer-events: auto;

@@ -1,12 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { ThinkingIndicator, ThreadSummary } from '@crewlethq/ui';
+import { Avatar, ChatDivider, ChatMessage, ThinkingIndicator, ThreadSummary } from '@crewlethq/ui';
 
 /**
  * The line under a message with replies: the repliers' faces, "4 replies" at
- * the medium weight in the accent's ink, how many are new, and when the last
- * reply came. Under the pointer it is lifted onto the transcript's ground in
- * a hairline and says View thread in the time's place.
+ * the medium weight in the accent's ink, and how many are new. Under the
+ * pointer it is set into the transcript's ground in a hairline, when the last
+ * reply came fades in, and View thread with a chevron stands at its end. While
+ * open, the message it hangs off wears the selected surface.
  */
 const meta: Meta<typeof ThreadSummary> = {
   title: 'UI/ThreadSummary',
@@ -50,3 +51,31 @@ export const WithNewReplies: Story = { render: () => <Toggling unread={2} /> };
 
 /** An agent writing a reply in the thread, under the line. */
 export const WithAgentWorking: Story = { render: () => <Toggling unread={1} working /> };
+
+/** Under its message, open: the message wears the selected surface, the line says so. */
+export const OpenUnderItsMessage: Story = {
+  render: () => (
+    <div style={{ maxWidth: 720 }}>
+      <ChatMessage
+        id="m-1"
+        label="Designer, 9:41 AM"
+        avatar={<Avatar name="Designer" kind="human" size="md" />}
+        author="Designer"
+        time="9:41 AM"
+        timeTitle="Thursday, October 30 at 9:41 AM"
+        footer={<ThreadSummary replies={4} participants={participants} last="12m ago" open onOpen={() => {}} />}
+      >
+        The release checklist is in the doc; reply here with anything that blocks it.
+      </ChatMessage>
+    </div>
+  ),
+};
+
+/** The reply count between a thread's root and its replies, on the faces' edge. */
+export const CountDivider: Story = {
+  render: () => (
+    <div style={{ maxWidth: 400 }}>
+      <ChatDivider variant="count" label="4 replies" />
+    </div>
+  ),
+};

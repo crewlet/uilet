@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, ChoiceList, ConfirmModal, Checkbox, FormField, Input, Modal } from '@crewlethq/ui';
+import { Button, ChoiceList, ConfirmModal, Checkbox, FormField, Input, Modal, SidebarNav } from '@crewlethq/ui';
 import { FolderInputGlyph, PencilGlyph, SearchGlyph } from '@crewlethq/icons/glyphs';
 
 /**
@@ -376,6 +376,46 @@ export const StartSheet: Story = {
               ))}
             </ul>
           </nav>
+        </Modal>
+      </>
+    );
+  },
+};
+
+/**
+ * A sheet FILLED BY A PANEL (`fill`): a find field pinned at the top, a list
+ * that scrolls by itself, and a foot pinned to the sheet's bottom edge at any
+ * window height. Without `fill` the body is the scroller, so the panel took its
+ * content's height: the foot floated above a tall sheet's edge and hung below a
+ * short one, and the find field scrolled away with the list.
+ */
+export const SheetFilledByAPanel: Story = {
+  render: function SheetFilledByAPanelStory() {
+    const [open, setOpen] = useState(false);
+    const rooms = Array.from({ length: 40 }, (_, i) => `room-${String(i + 1).padStart(2, '0')}`);
+    return (
+      <>
+        <Button onClick={() => setOpen(true)}>Rooms</Button>
+        <Modal open={open} variant="sheet" side="start" flush fill ariaLabel="Rooms" showCloseButton={false} onClose={() => setOpen(false)}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: 'var(--spacing-3)', borderBottom: '1px solid var(--color-border-default)' }}>
+              <Input aria-label="Find a room" placeholder="Find a room" leading={<SearchGlyph size="sm" />} />
+            </div>
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+              <SidebarNav label="Rooms" dense>
+                <SidebarNav.Group label="Rooms">
+                  {rooms.map((name) => (
+                    <SidebarNav.Item key={name} label={name} href={`#${name}`} onClick={(event) => event.preventDefault()} />
+                  ))}
+                </SidebarNav.Group>
+              </SidebarNav>
+            </div>
+            <div style={{ padding: 'var(--spacing-2) var(--spacing-3)', borderTop: '1px solid var(--color-border-default)' }}>
+              <Button size="small" variant="ghost" onClick={() => setOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
         </Modal>
       </>
     );

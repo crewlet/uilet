@@ -15,6 +15,7 @@ import {
   PlusGlyph,
   ServerGlyph,
   SquareTerminalGlyph,
+  StarGlyph,
   UsersGlyph,
 } from '@crewlethq/icons/glyphs';
 import { density } from '@crewlethq/tokens';
@@ -357,15 +358,17 @@ export const EveryRowState: Story = {
 
 /**
  * A LONG LIST READ IN PASSING (`dense`), as the Rooms panel beside a
- * conversation draws it: rows at the 24px target floor, the gutter halved so
- * the open room's highlight is a long bar, every glyph and name still on the
- * line a navigation row puts it on, faces and glyphs in one 20px column, and
- * names in the regular weight.
+ * conversation draws it: rows on a 28px pitch with nothing between them, the
+ * highlight inset by the gutter, faces and glyphs in one 20px column, names
+ * in the regular weight, and a pointed row drawn at once.
  *
- * A room with news is `unread` (its name a step heavier, in the primary ink);
- * a muted one rests in the quiet ink and says so. Each section folds from its
- * heading, and a folded section still shows the open room and the rooms with
- * news: fold Channels to see it.
+ * The views above the sections and the sections' headings share one glyph
+ * column; a section's rooms stand a step in under it. A section with a glyph
+ * shows it at rest and its chevron under the pointer, with focus in the
+ * heading, or folded; its add control shows the same way (always, on a touch
+ * screen). A room with news is `unread` (its name semibold, in the primary
+ * ink); a muted one rests in the quiet ink and says so. The arrow keys move
+ * through the rows and the headings, Home and End to the ends.
  */
 export const DenseList: Story = {
   render: function DenseListStory() {
@@ -392,12 +395,17 @@ export const DenseList: Story = {
     );
     return (
       <SidebarNav label="Rooms" dense>
-        <NavGroup label="Starred" collapsible>
+        <NavGroup>
+          <NavItem label="Activity" icon={<ActivityGlyph size="sm" />} current={at === 'Activity'} onClick={() => setAt('Activity')} />
+          <NavItem label="Threads" icon={<MessageSquareGlyph size="sm" />} current={at === 'Threads'} onClick={() => setAt('Threads')} />
+        </NavGroup>
+        <NavGroup label="Starred" icon={<StarGlyph size="sm" />} collapsible>
           {room('engineering')}
           {room('launch', { unread: true, badge: { value: 2, label: 'mentions' } })}
         </NavGroup>
         <NavGroup
           label="Channels"
+          icon={<HashGlyph size="sm" />}
           collapsible
           action={{ label: 'New room', icon: <PlusGlyph size="sm" />, onClick: () => {} }}
         >
@@ -407,7 +415,12 @@ export const DenseList: Story = {
           {room('leadership', { icon: <LockGlyph size="sm" /> })}
           {room('a room whose name is longer than the panel is wide')}
         </NavGroup>
-        <NavGroup label="Direct messages" collapsible>
+        <NavGroup
+          label="Direct messages"
+          icon={<UsersGlyph size="sm" />}
+          collapsible
+          action={{ label: 'New message', icon: <PlusGlyph size="sm" />, onClick: () => {} }}
+        >
           {person('Senior Backend Engineer', { unread: true, badge: { value: 1, label: 'unread for you' } })}
           {person('Designer')}
           {person('Release Manager', { muted: true })}
