@@ -41,6 +41,16 @@
 }
 
 /*
+ * SSH IS DRAWN IN THE BRAND MARK'S VIOLET (VendorMark.tsx): the token where a
+ * consumer ships the tokens, and the mark's own value where it does not, as
+ * the Crewlet figure reads it. The drawing fills in the current colour, so
+ * this sets that colour and nothing else.
+ */
+.crewlet-vendor-mark--ssh {
+  color: var(--color-brand-mark, #7c56ff);
+}
+
+/*
  * Forced colours drop filters and repaint everything from the user's own
  * palette, so the muted mark would come back at full strength and read as
  * connected. Opacity survives, and carries the distinction on its own.

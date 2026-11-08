@@ -64,6 +64,51 @@ describe('the vendor list', () => {
   });
 });
 
+describe('the SSH mark', () => {
+  const brandPaint = async () => /<g\s+fill="([^"]+)"/.exec(await readFile(resolve(PACKAGE, 'svg/crewlet-icon.svg'), 'utf8'))?.[1];
+
+  it("is Crewlet's own drawing in the brand mark's violet, read from the token with the mark's own value behind it", async () => {
+    /*
+     * SSH is a protocol, so no vendor publishes a mark for it: the drawing is
+     * Crewlet's, and so is its colour. It fills in the current colour and the
+     * stylesheet sets that colour to --color-brand-mark, which the tokens'
+     * palette suite holds to 3:1 on every theme's grounds. The fallback is the
+     * brand mark's own paint, so a consumer without the tokens draws the same
+     * violet, and a change to the brand mark that left this behind fails here.
+     */
+    const source = await readFile(resolve(PACKAGE, 'svg/vendor/ssh.svg'), 'utf8');
+    assert.equal(attribute(/<svg\b[^>]*>/.exec(source)[0], 'fill'), 'currentColor');
+    assert.doesNotMatch(source, /(fill|stroke)="#/);
+    const sheet = await readFile(resolve(PACKAGE, 'src/VendorMark.css'), 'utf8');
+    const rule = /\.crewlet-vendor-mark--ssh\s*\{([^}]*)\}/.exec(sheet)?.[1] ?? '';
+    const ink = /^\s*color:\s*var\(\s*(--[\w-]+)\s*,\s*(#[0-9a-f]{6})\s*\);\s*$/i.exec(rule);
+    assert.ok(ink, 'no rule sets the SSH mark to a token with a fallback');
+    assert.equal(ink[1], '--color-brand-mark');
+    assert.equal(ink[2], await brandPaint());
+  });
+
+  it('is named SSH once it has a title, and draws its own key rather than the brand mark', () => {
+    const markup = render(VendorMark, { vendor: 'ssh', title: 'SSH' });
+    assert.equal(attribute(markup, 'role'), 'img');
+    assert.equal(attribute(markup, 'aria-label'), 'SSH');
+    assert.equal(attribute(markup, 'aria-hidden'), null);
+    assert.match(attribute(markup, 'class') ?? '', /(^| )crewlet-vendor-mark--ssh( |$)/);
+    const paths = (svg) => [...svg.matchAll(/\sd="([^"]+)"/g)].map((match) => match[1]);
+    assert.notDeepEqual(paths(markup), paths(render(CrewletIcon, {})));
+    assert.match(attribute(render(VendorMark, { vendor: 'ssh', muted: true }), 'class'), /--muted/);
+  });
+
+  it('frames the key in the square its own extent fits, centred', async () => {
+    // Drawn on the glyph grid and outlined, then framed like Crewlet's mark,
+    // so the key draws the slot's full width as the marks beside it do.
+    const source = await readFile(resolve(PACKAGE, 'svg/vendor/ssh.svg'), 'utf8');
+    const [x, y, width, height] = attribute(/<svg\b[^>]*>/.exec(source)[0], 'viewBox').split(/\s+/).map(Number);
+    assert.equal(width, height, 'the frame is square');
+    assert.equal(x + width / 2, 12, 'the key is not centred across the glyph grid');
+    assert.equal(y + height / 2, 12, 'the key is not centred down the glyph grid');
+  });
+});
+
 describe('a vendor mark', () => {
   it('draws every vendor, decorative and unfocusable by default', () => {
     for (const vendor of VENDORS) {
@@ -107,8 +152,11 @@ describe('a vendor mark', () => {
     const monochrome = ['digitalocean', 'expo', 'github', 'notion', 'opencode'];
     // Monochrome is the current text colour AND no colour of the mark's own
     // beneath it: Crewlet's drawing is rooted in currentColor, as every
-    // illustration is, and paints its brand violet on the group inside.
+    // illustration is, and paints its brand violet on the group inside. SSH's
+    // drawing fills in the current colour too, and its stylesheet sets that
+    // colour to the brand mark's violet, which the SSH suite below holds.
     const inherited = VENDORS.filter((vendor) => {
+      if (vendor === 'ssh') return false;
       const markup = render(VendorMark, { vendor });
       return attribute(markup, 'fill') === 'currentColor' && !/fill="#/.test(markup);
     });
