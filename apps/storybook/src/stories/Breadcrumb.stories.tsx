@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
-import { Breadcrumb, Switcher } from '@crewlethq/ui';
+import { useRef, useState } from 'react';
+import { Breadcrumb, Button, Switcher } from '@crewlethq/ui';
 import { ActivityGlyph, SquareKanbanGlyph } from '@crewlethq/icons/glyphs';
 
 /**
@@ -113,4 +113,38 @@ function SwitcherInTrail() {
 /** The page's subject as a switcher's button: the heading is the control. */
 export const WithASwitcher: Story = {
   render: () => <SwitcherInTrail />,
+};
+
+function FocusTargetDemo() {
+  const page = useRef<HTMLDivElement>(null);
+  const [cards, setCards] = useState(['Launch plan', 'Pricing review']);
+  return (
+    <div ref={page} style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 'var(--spacing-3)' }}>
+      <Breadcrumb crumbs={[{ label: 'Inbox', href: '#inbox' }, { label: 'Saved' }]} />
+      {cards.map((card) => (
+        <div key={card} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+          <span>{card}</span>
+          <Button
+            size="small"
+            variant="secondary"
+            onClick={() => {
+              setCards((was) => was.filter((c) => c !== card));
+              // The pressed button goes with its card, so focus moves to the page's heading.
+              requestAnimationFrame(() => page.current?.querySelector<HTMLElement>('h1')?.focus());
+            }}
+          >
+            Remove
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Removing a card takes its button away, and focus moves to the page's
+ * heading as a reading position, with no ring, rather than to the page body.
+ */
+export const HeadingAsAFocusTarget: Story = {
+  render: () => <FocusTargetDemo />,
 };

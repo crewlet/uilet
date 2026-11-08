@@ -169,6 +169,13 @@ a.crewlet-breadcrumb__crumb:focus-visible {
   line-height: inherit;
 }
 
+/* A READING POSITION, focused by script only (see Breadcrumb.tsx): no ring,
+   since a ring says a reader can act on it. The outline stays, transparent,
+   so forced colours still paints one. */
+.crewlet-breadcrumb__here:focus-visible {
+  outline-color: transparent;
+}
+
 /*
  * AND IT NEVER COLLAPSES TO NOTHING: a floor of a few characters keeps an
  * ellipsised stub, which is what tells a reader the trail has a last part at
