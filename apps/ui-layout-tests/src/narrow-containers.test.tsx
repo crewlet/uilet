@@ -118,19 +118,39 @@ async function mount(node: ReactNode, width: number): Promise<HTMLElement> {
   return host;
 }
 
-/** What runs past `box`'s right edge outside a scroller of its own, for the failure message. */
+const REPLACED = new Set(['IMG', 'VIDEO', 'CANVAS', 'IFRAME', 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON']);
+const label = (el: Element) => `${el.tagName.toLowerCase()}.${[...el.classList].join('.')}`;
+
+/** True when `el`, or an ancestor below `box`, scrolls or clips its own overflow. */
+function ownScroller(el: Element | null, box: Element): boolean {
+  for (let up = el; up && up !== box; up = up.parentElement) {
+    if (getComputedStyle(up).overflowX !== 'visible') return true;
+  }
+  return false;
+}
+
+/**
+ * What a reader would have to scroll sideways to see: a glyph, or a box that
+ * is not a run of text, past `box`'s padding edge and outside a scroller of
+ * its own. A run of text is measured by its glyphs, since a browser leaves a
+ * cloned inline end padding out of line breaking: a broken chip's ground may
+ * reach a few pixels past the words it holds.
+ */
 function overflowing(box: Element): string[] {
-  const right = box.getBoundingClientRect().left + box.clientLeft + box.clientWidth;
+  const right = box.getBoundingClientRect().left + box.clientLeft + box.clientWidth + 0.5;
   const found: string[] = [];
   for (const el of box.querySelectorAll('*')) {
-    if (el.getBoundingClientRect().right <= right + 0.5) continue;
-    let own = false;
-    for (let up = el.parentElement; up && up !== box; up = up.parentElement) {
-      if (getComputedStyle(up).overflowX !== 'visible') own = true;
-    }
-    if (!own) found.push(`${el.tagName.toLowerCase()}.${[...el.classList].join('.')}`);
+    const run = getComputedStyle(el).display === 'inline' && !(el instanceof SVGElement) && !REPLACED.has(el.tagName);
+    if (!run && el.getBoundingClientRect().right > right && !ownScroller(el.parentElement, box)) found.push(label(el));
   }
-  return found.slice(-3);
+  const texts = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+  for (let text = texts.nextNode(); text; text = texts.nextNode()) {
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    const past = [...range.getClientRects()].some((rect) => rect.width > 0 && rect.right > right);
+    if (past && !ownScroller(text.parentElement, box)) found.push(`text in ${label(text.parentElement!)}`);
+  }
+  return found;
 }
 
 async function expectNoSidewaysScroll(node: ReactNode, width: number, selector: string, portal: boolean) {
@@ -144,9 +164,10 @@ async function expectNoSidewaysScroll(node: ReactNode, width: number, selector: 
       width + 0.5,
     );
   }
-  expect(box!.scrollWidth, `${selector} at ${width}px: ${overflowing(box!).join(', ')}`).toBeLessThanOrEqual(
-    box!.clientWidth,
-  );
+  expect(overflowing(box!), `${selector} at ${width}px`).toEqual([]);
+  // And the container never scrolls sideways itself: it fits, or it clips.
+  const clips = ['hidden', 'clip'].includes(getComputedStyle(box!).overflowX);
+  expect(clips || box!.scrollWidth <= box!.clientWidth, `${selector} scrolls sideways at ${width}px`).toBe(true);
 }
 
 const CONTAINERS: { name: string; selector: string; portal?: boolean; render: (width: number) => ReactNode }[] = [
@@ -254,5 +275,5 @@ test('a wide table and a wide code block scroll inside their own box', async () 
   // sideways is the table's or the code block's own box, never what holds them.
   expect(scrollers.length).toBeGreaterThan(0);
   for (const el of scrollers) expect(el.closest('.crewlet-table, .crewlet-codeblock'), el.className).not.toBeNull();
-  expect(at.scrollWidth).toBeLessThanOrEqual(at.clientWidth);
+  expect(overflowing(at)).toEqual([]);
 });
