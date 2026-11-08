@@ -6,6 +6,63 @@
  * component a screen reached for.
  */
 
+/*
+ * A SEGMENTED CONTROL IS ONE OF THE CONTROLS IN ITS ROW: its well is the
+ * control step tall at its size and wears the family's edge (see Select.css),
+ * where pill Tabs keep the 28px tab step that reads as navigation (Tabs.css).
+ *
+ * THE INSET MOVES INTO THE OPTION, so the well is its boundary round options
+ * that stand on the target floor: each option's chip is drawn 1px inside it
+ * (`::before`), the same picture as a chip in a 1px inset, and the press
+ * still lands on a 24px target. A well round a 24px chip stood 28px beside
+ * 26px controls. At the compact density the step floors at the target, and
+ * the well stands its boundary taller than the controls beside it.
+ *
+ * Four classes, so this wins over the pill sizes in any bundle order.
+ */
+.crewlet-tabs.crewlet-tabs--pill.crewlet-segmented {
+  --crewlet-tabs-gap: 0px;
+  padding: 0;
+  border-color: var(--color-border-field);
+}
+
+.crewlet-tabs.crewlet-tabs--pill.crewlet-segmented .crewlet-segmented__option {
+  position: relative;
+  isolation: isolate;
+  min-height: max(var(--size-target-min), calc(var(--size-control-md) - 2px));
+  /* Concentric with the chip a pixel inside it, so the ring follows its curve. */
+  border-radius: calc(var(--radius-chip) + var(--crewlet-tabs-pill-inset));
+}
+
+.crewlet-tabs.crewlet-tabs--pill.crewlet-segmented.crewlet-tabs--sm .crewlet-segmented__option {
+  min-height: max(var(--size-target-min), calc(var(--size-control-sm) - 2px));
+}
+
+.crewlet-tabs.crewlet-tabs--pill.crewlet-segmented .crewlet-segmented__option::before {
+  content: '';
+  position: absolute;
+  inset: var(--crewlet-tabs-pill-inset);
+  z-index: -1;
+  border-radius: var(--radius-chip);
+  pointer-events: none;
+}
+
+.crewlet-tabs.crewlet-tabs--pill.crewlet-segmented .crewlet-segmented__option.is-active {
+  background: none;
+  box-shadow: none;
+}
+
+.crewlet-tabs.crewlet-tabs--pill.crewlet-segmented .crewlet-segmented__option.is-active::before {
+  background: var(--color-surface-subtle);
+  box-shadow: var(--shadow-xs), 0 0 0 1px var(--color-border-default);
+}
+
+/* The ring over the chip's edge and the sliver round it, as before the inset
+   moved: the option's edge is a pixel outside the chip. */
+.crewlet-tabs.crewlet-tabs--pill.crewlet-segmented .crewlet-segmented__option:focus-visible {
+  outline-offset: calc(-1 * var(--crewlet-tabs-pill-inset));
+}
+
 .crewlet-segmented__text {
   display: inline-flex;
   flex-direction: column;

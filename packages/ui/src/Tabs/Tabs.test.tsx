@@ -16,7 +16,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRef } from 'react';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { installSheets, pseudoElement, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { DENSITIES, installSheetsAtDensity } from '../../../../apps/ui-tests/src/density.js';
 import { afterEach, expect, test, vi } from 'vitest';
 import { SegmentedControl } from '../SegmentedControl/index.js';
@@ -434,10 +434,9 @@ test('the register each chip size draws, at the setting it was drawn for', () =>
     cleanup();
     render(railFoot('md'));
     const medium = screen.getAllByRole('radio')[0]!;
-    // The design's chip: 24px, six under the 30px control step, so the well
-    // with its 1px boundary and 1px inset stands at the 28px tab step, with
-    // 10px inside each end.
-    expect(length(medium, 'min-height')).toBe(24);
+    // The option is the 30px control step less the well's 1px boundary above
+    // and below, with its chip drawn a pixel inside it, and 10px inside each end.
+    expect(length(medium, 'min-height')).toBe(28);
     expect([length(medium, 'padding-left'), length(medium, 'padding-right')]).toEqual([10, 10]);
     expect(length(medium, 'font-size')).toBe(12);
     expect(length(medium.querySelector('.crewlet-tabs__icon')!, 'font-size')).toBe(14);
@@ -513,11 +512,15 @@ test('a chip standing on the floor centres what it draws', () => {
 test('a chip takes the corner that nests in its well, from the token', () => {
   // 7px is --radius-chip: the well's 8px less its 1px boundary and 1px inset
   // is a 6px concentric curve, and a chip a pixel rounder than that reads as
-  // sitting IN the well rather than as a second well inside it.
-  const remove = drawAt(1);
+  // sitting IN the well rather than as a second well inside it. A segmented
+  // option draws its chip a pixel inside itself, and takes the curve round it.
+  // Through `installSheets`, which stands in for the `::before`.
+  const remove = installSheets(...SHEETS);
   try {
     render(railFoot('sm'));
-    expect(length(screen.getAllByRole('radio')[0]!, 'border-radius')).toBe(7);
+    const option = screen.getAllByRole('radio')[0]!;
+    expect(length(pseudoElement(option, 'before'), 'border-radius')).toBe(7);
+    expect(length(option, 'border-radius')).toBe(8);
   } finally {
     remove();
   }

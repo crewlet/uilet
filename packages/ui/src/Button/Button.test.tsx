@@ -288,11 +288,11 @@ describe('the register', () => {
     }
   });
 
-  test('secondary is the card inside the strong hairline, and ghost is no ground and no boundary, in both palettes', () => {
+  test("secondary is the card inside the control family's edge, and ghost is no ground and no boundary, in both palettes", () => {
     /*
      * A button stands on the very card it is filled with, so its boundary is
-     * the whole of it: the STRONG hairline, the step a reader takes for a
-     * control's edge, where the default one is the panel's own divider.
+     * the whole of it: the field's edge, which every bordered control in a row
+     * wears (Input.test.tsx), where the default one is the panel's own divider.
      * Danger holds the same weight until it is pointed at. Ghost draws
      * nothing until it is pointed at, in the secondary ink.
      */
@@ -311,7 +311,7 @@ describe('the register', () => {
         const where = `${theme}: ${name}`;
         expect(channels(style.backgroundColor), where).toEqual(parseHex(palette.surface.subtle));
         expect(style.borderTopStyle, where).toBe('solid');
-        expect(channels(style.borderTopColor), where).toEqual(parseHex(palette.border.strong));
+        expect(channels(style.borderTopColor), where).toEqual(parseHex(palette.border.field));
       }
       const ghost = getComputedStyle(screen.getByRole('button', { name: 'Reassign' }));
       expect(transparent(ghost.backgroundColor), `${theme}: ghost ground ${ghost.backgroundColor}`).toBe(true);
