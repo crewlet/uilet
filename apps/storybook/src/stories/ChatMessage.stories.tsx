@@ -15,6 +15,7 @@ import {
   AddReaction,
   Avatar,
   ChatMessage,
+  InlineCode,
   ChatMessageFailure,
   ChatThread,
   CodeBlock,
@@ -178,7 +179,7 @@ const thread = (
 function Transcript({ children }: { children: ReactNode }) {
   return (
     <>
-      <ChatThread label="Messages in #engineering" jump={false}>
+      <ChatThread label="Messages in #engineering" jump={false} flush>
         {children}
       </ChatThread>
       <div style={{ padding: '0 var(--spacing-5) var(--spacing-2)' }}>
@@ -211,7 +212,10 @@ export const Continuation: Story = {
 /**
  * Rich text in the words: a `Prose` block a host renders markdown into. It
  * takes the chat body step (14px on a 22px line), so the name, the plain
- * words and the rich text in a row are one size on one rhythm.
+ * words and the rich text in a row are one size on one rhythm. Blocks are a
+ * blank line (8px) apart, list items touch and each level indents 28px, a
+ * quote keeps the words' own ink behind a rounded bar, and code in a line
+ * stays inside the line.
  */
 export const RichTextWords: Story = {
   render: () => (
@@ -224,10 +228,19 @@ export const RichTextWords: Story = {
           <p>
             Rich text from a renderer, at the same size: <strong>two fixes</strong> landed in the release branch.
           </p>
-          <ul style={{ margin: 0 }}>
-            <li>Token rotation no longer drops a session.</li>
+          <ul>
+            <li>
+              Token rotation no longer drops a session.
+              <ul>
+                <li>
+                  The refresh runs before <InlineCode>expiresAt</InlineCode>, not after it.
+                </li>
+              </ul>
+            </li>
             <li>Search keeps its filters after a reload.</li>
           </ul>
+          <blockquote>Ship it once the smoke tests pass on both phones.</blockquote>
+          <p>Anything missing from the list?</p>
         </Prose>
       </Row>
     </Transcript>

@@ -58,10 +58,15 @@
   overflow-anchor: none;
 }
 
-/* The New line on the day's rule covers the rule, as one line. */
+/* The New line on the day's rule covers the rule, as one line: the rule
+   gives way to it, so no grey runs on past the label at its end. */
 .crewlet-chat-day__rule > .crewlet-chat-divider--unread {
   position: absolute;
   inset: 0;
+}
+
+.crewlet-chat-day__rule:has(> .crewlet-chat-divider--unread) {
+  background: transparent;
 }
 
 /*
@@ -77,7 +82,7 @@
   gap: var(--spacing-1);
   height: var(--crewlet-chat-day-pill);
   box-sizing: border-box;
-  padding: 0 var(--spacing-3);
+  padding: 0 var(--spacing-4);
   border: 0;
   border-radius: var(--radius-pill);
   outline: 1px solid transparent;
@@ -88,7 +93,7 @@
     var(--shadow-xs);
   color: var(--color-text-primary);
   font: inherit;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-compact);
   font-weight: var(--font-weight-semibold);
   line-height: 1;
   white-space: nowrap;

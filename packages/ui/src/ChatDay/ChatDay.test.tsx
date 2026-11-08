@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { Menu } from '../Menu/index.js';
 import { ChatDay, ChatDayPill } from './index.js';
 
@@ -140,4 +141,26 @@ test("the New line on a day's rule pulses when the day asks", () => {
     </ChatDay>,
   );
   expect(container.querySelector('.crewlet-chat-divider--unread.is-pulsing')).not.toBeNull();
+});
+
+// THE PILL AND THE NEW LINE ON THE COMPACT STEP: a 28px pill, 16px in at its
+// start, its date at 13px semibold; the New label at the same 13px. Mutation:
+// put the pill back on 24px and the 12px step and every assertion fails.
+test('the day pill is 28px tall with a 16px start inset, and the pill and the New label read 13px', () => {
+  const uninstall = installSheets('ChatMessage/ChatScale.css', 'ChatDivider/ChatDivider.css', 'ChatDay/ChatDay.css');
+  try {
+    render(
+      <ChatDay label="Today" unread="New">
+        <p>Row</p>
+      </ChatDay>,
+    );
+    const pill = document.querySelector('.crewlet-chat-day__pill')!;
+    expect(px(pill, 'height')).toBe(28);
+    expect(px(pill, 'padding-left')).toBe(16);
+    expect(px(pill, 'font-size')).toBe(13);
+    const label = document.querySelector('.crewlet-chat-divider--unread .crewlet-chat-divider__label')!;
+    expect(px(label, 'font-size')).toBe(13);
+  } finally {
+    uninstall();
+  }
 });

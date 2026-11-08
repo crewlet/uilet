@@ -228,6 +228,53 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* ONE BLOCK RHYTHM IN THE WORDS. Blocks are a blank line apart, list items
+   touch, and each list level indents by the list step, so a message with a
+   list still reads as one compact unit. Three classes deep, so a host's own
+   document rhythm on the same prose (a page's paragraph gap) stays out. */
+.crewlet-chat-message .crewlet-chat-message__body .crewlet-prose :where(p, ul, ol, li, blockquote, pre) {
+  margin: 0;
+}
+
+.crewlet-chat-message .crewlet-chat-message__body .crewlet-prose > * + * {
+  margin-top: var(--crewlet-chat-block-gap);
+}
+
+.crewlet-chat-message .crewlet-chat-message__body .crewlet-prose :is(ul, ol) {
+  padding-inline-start: var(--crewlet-chat-list-indent);
+}
+
+/* A quote is the words in their own ink behind a rounded bar, so it reads as
+   quoted rather than dimmed. */
+.crewlet-chat-message .crewlet-chat-message__body .crewlet-prose blockquote {
+  position: relative;
+  padding-inline-start: var(--spacing-4);
+  border: 0;
+  color: var(--color-text-primary);
+}
+
+.crewlet-chat-message .crewlet-chat-message__body .crewlet-prose blockquote::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: var(--spacing-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+}
+
+/* Code in a line keeps to the line: a hairline chip on the row's fill step,
+   one meta step on its own 18px line, so a mixed line never grows. */
+.crewlet-chat-message__body .crewlet-inline-code {
+  padding: 1px 3px 0;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-edge-hairline);
+  background: var(--color-fill-row);
+  font-size: var(--crewlet-chat-meta);
+  line-height: var(--font-line-height-normal);
+}
+
 /* Previews, reactions and the thread line: one stack, one gap. A footer
    whose pieces all drew nothing takes no room: its gap made every row 6px
    taller than its words. */
@@ -256,6 +303,7 @@
 .crewlet-chat-message__body .crewlet-codeblock {
   border-color: var(--color-edge-hairline);
   border-radius: var(--radius-xs);
+  background: var(--color-fill-row);
 }
 
 .crewlet-chat-message__body .crewlet-codeblock__pre {
