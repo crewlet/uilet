@@ -12,6 +12,7 @@ import {
   useState,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
+  type KeyboardEvent,
   type LiHTMLAttributes,
   type MouseEvent,
   type ReactElement,
@@ -53,12 +54,52 @@ const InboxDensity = createContext<InboxListDensity>('default');
  * between them to read one at a time. It promises no columns, so it draws
  * none, and its rows are as tall as their words rather than one fixed height.
  */
-export function InboxList({ label, density = 'default', className, children, ...rest }: InboxListProps) {
+/** The rows' own controls, in reading order, skipping a row that is leaving. */
+const ROW_CONTROLS = '.crewlet-inbox-row:not(.crewlet-inbox-row--leaving) > .crewlet-inbox-row__body > .crewlet-inbox-row__control';
+
+/**
+ * THE ARROW KEYS WALK THE ROWS. From a row's control, Up and Down move focus
+ * to the row before or after it, and Home and End to the first and the last;
+ * every row stays a Tab stop as well, and a key pressed anywhere else in the
+ * list (a task's link, a row's actions) is left alone.
+ */
+function walkRows(event: KeyboardEvent<HTMLElement>) {
+  if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || !target.matches('.crewlet-inbox-row__control')) return;
+  const rows = [...event.currentTarget.querySelectorAll<HTMLElement>(ROW_CONTROLS)].filter(
+    (row) => !row.closest('[hidden]'),
+  );
+  const at = rows.indexOf(target);
+  if (at < 0) return;
+  const next =
+    event.key === 'ArrowDown'
+      ? rows[at + 1]
+      : event.key === 'ArrowUp'
+        ? rows[at - 1]
+        : event.key === 'Home'
+          ? rows[0]
+          : event.key === 'End'
+            ? rows[rows.length - 1]
+            : undefined;
+  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault();
+  next?.focus();
+}
+
+export function InboxList({ label, density = 'default', className, children, onKeyDown, ...rest }: InboxListProps) {
   return (
+    // The keys are heard from the rows' own buttons as they bubble: the list
+    // takes no focus and no press of its own.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <nav
       {...rest}
       aria-label={label}
       className={cx('crewlet-inbox-list', density === 'chat' && 'crewlet-inbox-list--chat', className)}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        walkRows(event);
+      }}
     >
       <InboxDensity.Provider value={density}>{children}</InboxDensity.Provider>
     </nav>
