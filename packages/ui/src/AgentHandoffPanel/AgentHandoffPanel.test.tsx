@@ -1,7 +1,8 @@
 /**
  * Handing work to an agent: the brief first and its starters while it is
  * empty, what goes with it, the task as filed, and one commit that says why it
- * is held and is pressed by Command+Enter from anywhere in the panel.
+ * is held, pressed by Enter in the brief (Shift+Enter writes a line) and by
+ * Command+Enter from anywhere in the panel.
  */
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -102,6 +103,22 @@ test('Command+Enter sends from the brief and from any other field in the panel, 
   // ANSWERED IN THE PANEL: a page-wide shortcut behind it sees a handled press.
   expect(page.mock.calls.every(([e]) => (e as KeyboardEvent).defaultPrevented)).toBe(true);
   window.removeEventListener('keydown', page);
+});
+
+test('Enter in the brief sends, Shift+Enter writes a line, and an empty brief sends nothing', () => {
+  const onSend = vi.fn();
+  render(<Harness send={{ label: 'Ask SRE Lead', onSend }} />);
+  const brief = screen.getByRole('textbox', { name: 'What should the doc cover?' });
+  fireEvent.keyDown(brief, { key: 'Enter' });
+  expect(onSend).not.toHaveBeenCalled();
+  fireEvent.change(brief, { target: { value: 'A guide' } });
+  expect(fireEvent.keyDown(brief, { key: 'Enter', shiftKey: true })).toBe(true);
+  expect(onSend).not.toHaveBeenCalled();
+  fireEvent.keyDown(brief, { key: 'Enter' });
+  expect(onSend).toHaveBeenCalledTimes(1);
+  // Plain Enter in another field of the panel is that field's own.
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Agent' }), { key: 'Enter' });
+  expect(onSend).toHaveBeenCalledTimes(1);
 });
 
 test("the send's media is a picture beside its words, hidden from its name", () => {

@@ -91,7 +91,7 @@ function DraftOverComposer() {
       <Composer
         appearance="chat"
         label="Message #design"
-        submitOn="enter"
+        sendHint={false}
         value={value}
         onChange={setValue}
         placeholder="Message #design (type @pm)"

@@ -206,14 +206,6 @@
   border-radius: var(--crewlet-composer-nested-radius);
 }
 
-.crewlet-composer__hint {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  font-size: var(--font-size-2xs);
-  color: var(--color-text-tertiary);
-}
-
 .crewlet-composer__counter {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-2xs);

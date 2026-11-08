@@ -1,20 +1,11 @@
 import { forwardRef, useId, type KeyboardEvent, type ReactNode, type TextareaHTMLAttributes } from 'react';
-import { Kbd } from '../Kbd/index.js';
 import { Textarea } from '../Input/index.js';
-import { isComposing } from '../Layer/index.js';
+import { SendKeysHint, useSendOnEnter, type SendKeysLabels } from '../SendKeys/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /** The share of `maxLength` at which the counter appears. */
 export const COMPOSER_COUNTER_AT = 0.8;
-
-/**
- * Which key sends. `mod-enter` (Command+Enter, Control+Enter elsewhere) is for
- * a brief or a reply that is often several lines, where Enter writes a line;
- * `enter` is for a question, which is one line far more often than not, as
- * every chat surface sends it: Enter sends and Shift+Enter writes a line.
- */
-export type ComposerSubmitKey = 'mod-enter' | 'enter';
 
 /** The box's look: `default`, a form's field, or `chat`, a conversation's message box. */
 export type ComposerAppearance = 'default' | 'chat';
@@ -24,12 +15,21 @@ export interface ComposerProps
   value: string;
   onChange: (value: string) => void;
   /**
-   * Called on the send key (`submitOn`). Never while the composer is
-   * disabled, and never on an Enter that ends an input method's composition.
+   * Called on the send key: Enter, or Command+Enter (Control+Enter
+   * elsewhere), while Shift+Enter writes a line (`isSendPress` is the rule).
+   * Never while the composer is disabled or holds only blank space, never
+   * mid composition, and never on a touch keyboard's Return.
    */
   onSubmit?: (() => void) | undefined;
-  /** Which key sends. `mod-enter` by default; see `ComposerSubmitKey`. */
-  submitOn?: ComposerSubmitKey | undefined;
+  /**
+   * Draws the send hint in the footer, "Enter to send, Shift+Enter for a new
+   * line". True by default; a box whose send button and placement already say
+   * it (a chat box, a question to the assistant) turns it off. The field's
+   * description names the keys either way.
+   */
+  sendHint?: boolean | undefined;
+  /** The send hint's words, for a box whose Enter saves rather than sends. */
+  sendLabels?: SendKeysLabels | undefined;
   /** Names the field for a screen reader, since it carries no visible label. */
   label: string;
   /**
@@ -87,11 +87,13 @@ export interface ComposerProps
  * actions, in one box that takes the focus ring as a whole. A formatting row
  * (`toolbar`) may stand along the box's top, above the words it acts on.
  *
- * THE FOOTER IS DRAWN ONLY WITH SOMETHING IN IT. With no shortcut, counter or
- * actions there is no strip at all, and one holding only the shortcut's hint
- * goes on a phone, where the hint is not drawn, rather than stand there empty.
- * A composer that sends on Enter draws no hint: Enter is what every chat field
- * already does, and the send button beside the field says the rest.
+ * ENTER SENDS AND SHIFT+ENTER WRITES A LINE, as in every message box in the
+ * system (`useSendOnEnter`); on a touch keyboard Return writes a line and the
+ * send button sends.
+ *
+ * THE FOOTER IS DRAWN ONLY WITH SOMETHING IN IT. With no hint, counter or
+ * actions there is no strip at all, and one holding only the hint goes on a
+ * phone, where the hint is not drawn, rather than stand there empty.
  *
  * THE COUNTER IS DRAWN ONLY NEAR THE LIMIT, from [COMPOSER_COUNTER_AT] of
  * `maxLength`: a count under every short reply is noise, and a field that
@@ -105,7 +107,8 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     value,
     onChange,
     onSubmit,
-    submitOn = 'mod-enter',
+    sendHint = true,
+    sendLabels,
     label,
     appearance = 'default',
     actions,
@@ -121,6 +124,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     className,
     rows,
     onKeyDown,
+    role,
     'aria-describedby': describedBy,
     ...rest
   },
@@ -131,18 +135,13 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
   const inline = present(trailing);
   const near = maxLength !== undefined && value.length >= maxLength * COMPOSER_COUNTER_AT;
   const hasActions = present(actions) || present(tools);
-  const hint = onSubmit !== undefined && submitOn === 'mod-enter';
+  // A disabled composer names no send keys: there is no send for them to make.
+  const send = useSendOnEnter({ onSend: disabled ? undefined : onSubmit, canSend: value.trim() !== '', labels: sendLabels });
+  const hint = sendHint && send.describedBy !== undefined;
 
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     onKeyDown?.(event);
-    if (event.defaultPrevented || !onSubmit || disabled || event.key !== 'Enter') return;
-    // An input method's Enter picks a word; it never sends what is half typed.
-    if (isComposing(event)) return;
-    const mod = event.metaKey || event.ctrlKey;
-    const sends = submitOn === 'enter' ? !event.shiftKey || mod : mod;
-    if (!sends) return;
-    event.preventDefault();
-    onSubmit();
+    send.onKeyDown(event);
   };
 
   return (
@@ -167,7 +166,11 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
           ref={ref}
           className="crewlet-composer__field"
           aria-label={label}
-          aria-describedby={disabledReason === undefined ? describedBy : cx(describedBy, reasonId)}
+          role={role}
+          // Said outright for the textbox a textarea is; a combobox (a field
+          // with a mention list) takes no such attribute.
+          aria-multiline={role === undefined || role === 'textbox' ? true : undefined}
+          aria-describedby={cx(describedBy, send.describedBy, disabledReason === undefined ? undefined : reasonId) || undefined}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={keyDown}
@@ -180,15 +183,12 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         />
         {inline ? <div className="crewlet-composer__trailing">{trailing}</div> : null}
       </div>
+      {send.description}
       {disabledReason === undefined ? null : <VisuallyHidden id={reasonId}>{disabledReason}</VisuallyHidden>}
       {hint || near || hasActions ? (
         <div className="crewlet-composer__footer" data-hint-only={(!near && !hasActions) || undefined}>
           {present(tools) ? <div className="crewlet-composer__tools">{tools}</div> : null}
-          {hint ? (
-            <span className="crewlet-composer__hint">
-              <Kbd keys={['Mod', 'Enter']} subtle /> to send
-            </span>
-          ) : null}
+          {hint ? <SendKeysHint className="crewlet-composer__hint" labels={sendLabels} aria-hidden /> : null}
           {near ? (
             <span className="crewlet-composer__counter" aria-live="polite">
               {`${value.length.toLocaleString()} / ${maxLength.toLocaleString()}`}

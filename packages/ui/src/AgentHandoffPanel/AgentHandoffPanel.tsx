@@ -151,9 +151,10 @@ export function AgentHandoffPanel({
     if (!held) send.onSend();
   };
 
-  // COMMAND+ENTER FROM ANY FIELD IN THE PANEL sends, a picker or a checkbox
-  // as well as the brief (whose own handler answers it first), and the press
-  // is answered here, at the document and before the window, so a page-wide
+  // ENTER IN THE BRIEF SENDS, as in every message box (the Composer's rule),
+  // and COMMAND+ENTER FROM ANY FIELD IN THE PANEL sends too: a picker or a
+  // checkbox as well as the brief (whose own handler answers it first). That
+  // press is answered here, at the document and before the window, so a page-wide
   // shortcut behind the panel sees it handled. Heard at the document for the
   // reason ArtifactPanel hears Escape there: a surface portalled out of the
   // panel (a picker's list) is not inside it, and only a press from inside

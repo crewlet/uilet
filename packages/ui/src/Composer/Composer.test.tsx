@@ -1,9 +1,9 @@
 /**
  * A message written in place: the field is named without a visible label,
- * Command+Enter submits (or Enter, for a chat composer, never mid
- * composition), the counter appears only near the limit, a disabled composer
- * says why and fades once, and what is attached is a named group before the
- * field.
+ * Enter sends and Shift+Enter writes a line (never mid composition, never a
+ * touch keyboard's Return), the counter appears only near the limit, a
+ * disabled composer says why and fades once, and what is attached is a named
+ * group before the field.
  */
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -15,6 +15,7 @@ import { shadow, themes } from '@crewlethq/tokens';
 import { contrast, flatten, parseHex } from '@crewlethq/tokens/test/palette';
 import { FOCUS_MODALITY_ATTRIBUTE } from '../utils/focusModality.js';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
+import { installPointer } from '../../../../apps/ui-tests/src/pointer.js';
 import { IconButton } from '../IconButton/index.js';
 import { SendButton } from '../SendButton/index.js';
 import { Tag } from '../Tag/index.js';
@@ -44,22 +45,87 @@ test('the field is named by its label and edits its value', () => {
   expect(field.value).toBe('Greedy, but exact under five');
 });
 
-test('Command+Enter and Control+Enter submit; Enter alone adds a line', () => {
+test('Enter sends, Shift+Enter writes a line, and Command+Enter and Control+Enter still send', () => {
   const onSubmit = vi.fn();
-  render(<Harness onSubmit={onSubmit} />);
+  render(<Harness initial="Ship it" onSubmit={onSubmit} />);
   const field = screen.getByRole('textbox');
-  fireEvent.keyDown(field, { key: 'Enter' });
+  expect(fireEvent.keyDown(field, { key: 'Enter', shiftKey: true })).toBe(true);
   expect(onSubmit).not.toHaveBeenCalled();
+  expect(fireEvent.keyDown(field, { key: 'Enter' })).toBe(false);
+  expect(onSubmit).toHaveBeenCalledTimes(1);
   fireEvent.keyDown(field, { key: 'Enter', metaKey: true });
   fireEvent.keyDown(field, { key: 'Enter', ctrlKey: true });
-  expect(onSubmit).toHaveBeenCalledTimes(2);
+  expect(onSubmit).toHaveBeenCalledTimes(3);
 });
 
-test('the shortcut hint is drawn only when there is something to submit', () => {
+test('an empty or blank box sends nothing on Enter and writes no line', () => {
+  const onSubmit = vi.fn();
+  render(<Harness initial="  " onSubmit={onSubmit} />);
+  const field = screen.getByRole('textbox');
+  expect(fireEvent.keyDown(field, { key: 'Enter' })).toBe(false);
+  fireEvent.keyDown(field, { key: 'Enter', metaKey: true });
+  expect(onSubmit).not.toHaveBeenCalled();
+});
+
+test('an Enter the caller claims (an open list picking its row) never sends', () => {
+  const onSubmit = vi.fn();
+  render(
+    <Composer
+      label="Message"
+      value="@ad"
+      onChange={() => {}}
+      onSubmit={onSubmit}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') event.preventDefault();
+      }}
+    />,
+  );
+  fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+  expect(onSubmit).not.toHaveBeenCalled();
+});
+
+test('on a touch keyboard Return writes a line, the send button sends, and no hint is drawn', () => {
+  const restore = installPointer('touch');
+  try {
+    const onSubmit = vi.fn();
+    const { container } = render(<Harness initial="Ship it" onSubmit={onSubmit} />);
+    const field = screen.getByRole('textbox');
+    expect(fireEvent.keyDown(field, { key: 'Enter' })).toBe(true);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(container.querySelector('.crewlet-composer__hint')).toBeNull();
+    expect(field.hasAttribute('aria-describedby')).toBe(false);
+  } finally {
+    restore();
+  }
+});
+
+test('the send hint is drawn only when there is something to send, and says the keys', () => {
   const { container, rerender } = render(<Harness />);
   expect(container.querySelector('.crewlet-composer__hint')).toBeNull();
   rerender(<Harness onSubmit={() => {}} />);
-  expect(container.querySelector('.crewlet-composer__hint')!.textContent).toMatch(/to send$/);
+  expect(container.querySelector('.crewlet-composer__hint')!.textContent).toMatch(/to send, .*for a new line$/);
+});
+
+test('the field is multiline and its description names the send keys, hint drawn or not', () => {
+  const { rerender } = render(<Composer label="Reply" value="" onChange={() => {}} onSubmit={() => {}} />);
+  const described = () => {
+    const field = screen.getByRole('textbox', { name: 'Reply' });
+    expect(field.getAttribute('aria-multiline')).toBe('true');
+    return field
+      .getAttribute('aria-describedby')!
+      .split(' ')
+      .map((id) => document.getElementById(id)!.textContent)
+      .join(' | ');
+  };
+  expect(described()).toBe('Enter to send, Shift plus Enter for a new line');
+  rerender(<Composer label="Reply" value="" onChange={() => {}} onSubmit={() => {}} sendHint={false} />);
+  expect(document.querySelector('.crewlet-composer__hint')).toBeNull();
+  expect(described()).toBe('Enter to send, Shift plus Enter for a new line');
+  rerender(
+    <Composer label="Reply" value="" onChange={() => {}} onSubmit={() => {}} sendLabels={{ send: 'to save' }} aria-describedby="outside" />,
+  );
+  expect(screen.getByRole('textbox').getAttribute('aria-describedby')!.startsWith('outside ')).toBe(true);
+  expect(document.querySelector('.crewlet-composer__hint')!.textContent).toMatch(/to save, /);
 });
 
 test('the counter appears only near the limit', () => {
@@ -104,7 +170,7 @@ test("a chat composer's tools stand at the footer's start and its formatting row
       value=""
       onChange={() => {}}
       onSubmit={() => {}}
-      submitOn="enter"
+      sendHint={false}
       label="Message #engineering"
       toolbar={
         <div role="toolbar" aria-label="Formatting">
@@ -131,7 +197,7 @@ test('a chat composer is drawn on the transcript\'s scale, its footer with no ru
   const uninstall = installThemed('dark', 'ChatMessage/ChatScale.css', 'Composer/Composer.css');
   try {
     const { container } = render(
-      <Composer appearance="chat" value="" onChange={() => {}} label="Message" submitOn="enter" tools={<button type="button" aria-expanded="true">Emoji</button>} />,
+      <Composer appearance="chat" value="" onChange={() => {}} label="Message" tools={<button type="button" aria-expanded="true">Emoji</button>} />,
     );
     const box = container.querySelector('.crewlet-composer')!;
     expect(box.className).toContain('crewlet-composer--chat');
@@ -149,7 +215,7 @@ test('a chat composer is drawn on the transcript\'s scale, its footer with no ru
 
 test('tools alone draw the footer', () => {
   const { container } = render(
-    <Composer value="" onChange={() => {}} label="Message" submitOn="enter" tools={<button type="button">Attach</button>} />,
+    <Composer value="" onChange={() => {}} label="Message" tools={<button type="button">Attach</button>} />,
   );
   const footer = container.querySelector('.crewlet-composer__footer')!;
   expect(footer).not.toBeNull();
@@ -188,7 +254,7 @@ function Chat({
       value={value}
       onChange={setValue}
       onSubmit={onSubmit}
-      submitOn="enter"
+      sendHint={false}
       disabledReason={disabledReason}
       attachmentsLabel="Attached to this question"
       attachments={
@@ -201,9 +267,9 @@ function Chat({
   );
 }
 
-test('a chat composer sends on Enter, writes a line on Shift+Enter, and draws no shortcut hint', () => {
+test('a chat composer sends on Enter, writes a line on Shift+Enter, and draws no hint when told not to', () => {
   const onSubmit = vi.fn();
-  const { container } = render(<Chat onSubmit={onSubmit} />);
+  const { container } = render(<Chat onSubmit={onSubmit} initial="Which budget runs out first?" />);
   const field = screen.getByRole('textbox', { name: 'Ask a follow-up' });
   fireEvent.keyDown(field, { key: 'Enter', shiftKey: true });
   expect(onSubmit).not.toHaveBeenCalled();
@@ -216,7 +282,7 @@ test('a chat composer sends on Enter, writes a line on Shift+Enter, and draws no
 
 test('an Enter that ends an input method composition never sends', () => {
   const onSubmit = vi.fn();
-  render(<Chat onSubmit={onSubmit} />);
+  render(<Chat onSubmit={onSubmit} initial="こんにちは" />);
   const field = screen.getByRole('textbox');
   fireEvent.keyDown(field, { key: 'Enter', isComposing: true });
   // Safari clears the flag on the Enter that ends a composition and marks it with key code 229.
@@ -265,7 +331,7 @@ test('a disabled composer fades once: the box at 0.6, the field and its button i
       label="Ask"
       value=""
       onChange={() => {}}
-      submitOn="enter"
+     
       disabledReason="Offline"
       trailing={<SendButton mode="send" onPress={() => {}} disabledReason="Offline" />}
     />,
@@ -311,7 +377,7 @@ test('a chat composer carries no axe violation, enabled and disabled', async () 
 test('a chat composer says when it is empty, which is when its formatting row rests', () => {
   function Box() {
     const [value, setValue] = useState('');
-    return <Composer appearance="chat" value={value} onChange={setValue} label="Message" submitOn="enter" />;
+    return <Composer appearance="chat" value={value} onChange={setValue} label="Message" />;
   }
   const { container } = render(<Box />);
   const box = container.querySelector('.crewlet-composer')!;
@@ -327,7 +393,7 @@ test('a chat composer says when it is empty, which is when its formatting row re
  * an outline in the same grey rather than an accent ring.
  */
 function chatBox() {
-  const { container } = render(<Composer appearance="chat" value="" onChange={() => {}} label="Message" submitOn="enter" />);
+  const { container } = render(<Composer appearance="chat" value="" onChange={() => {}} label="Message" />);
   return { box: container.querySelector<HTMLElement>('.crewlet-composer')!, field: screen.getByRole('textbox', { name: 'Message' }) };
 }
 
@@ -420,7 +486,7 @@ test("a chat box's tools are 28px squares at the small corner with 18px glyphs, 
         value=""
         onChange={() => {}}
         label="Message"
-        submitOn="enter"
+       
         toolbar={<IconButton label="Bold" size="sm" variant="ghost" icon={glyph} />}
         tools={<IconButton label="Emoji" size="sm" variant="ghost" icon={glyph} />}
         actions={<SendButton mode="send" onPress={() => {}} />}
