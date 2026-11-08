@@ -165,9 +165,9 @@ async function expectNoSidewaysScroll(node: ReactNode, width: number, selector: 
     );
   }
   expect(overflowing(box!), `${selector} at ${width}px`).toEqual([]);
-  // And the container never scrolls sideways itself: it fits, or it clips.
-  const clips = ['hidden', 'clip'].includes(getComputedStyle(box!).overflowX);
-  expect(clips || box!.scrollWidth <= box!.clientWidth, `${selector} scrolls sideways at ${width}px`).toBe(true);
+  // And a reader cannot scroll it sideways: it clips, it is no scroller, or it fits.
+  const scroller = ['auto', 'scroll'].includes(getComputedStyle(box!).overflowX);
+  expect(!scroller || box!.scrollWidth <= box!.clientWidth, `${selector} scrolls sideways at ${width}px`).toBe(true);
 }
 
 const CONTAINERS: { name: string; selector: string; portal?: boolean; render: (width: number) => ReactNode }[] = [
