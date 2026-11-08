@@ -105,13 +105,10 @@ test('Command+Enter sends from the brief and from any other field in the panel, 
   window.removeEventListener('keydown', page);
 });
 
-test('Enter in the brief sends, Shift+Enter writes a line, and an empty brief sends nothing', () => {
+test('Enter in the brief sends and Shift+Enter writes a line', () => {
   const onSend = vi.fn();
-  render(<Harness send={{ label: 'Ask SRE Lead', onSend }} />);
+  render(<Harness initial="A guide" send={{ label: 'Ask SRE Lead', onSend }} />);
   const brief = screen.getByRole('textbox', { name: 'What should the doc cover?' });
-  fireEvent.keyDown(brief, { key: 'Enter' });
-  expect(onSend).not.toHaveBeenCalled();
-  fireEvent.change(brief, { target: { value: 'A guide' } });
   expect(fireEvent.keyDown(brief, { key: 'Enter', shiftKey: true })).toBe(true);
   expect(onSend).not.toHaveBeenCalled();
   fireEvent.keyDown(brief, { key: 'Enter' });
@@ -119,6 +116,20 @@ test('Enter in the brief sends, Shift+Enter writes a line, and an empty brief se
   // Plain Enter in another field of the panel is that field's own.
   fireEvent.keyDown(screen.getByRole('textbox', { name: 'Agent' }), { key: 'Enter' });
   expect(onSend).toHaveBeenCalledTimes(1);
+});
+
+test('the send decides, not the brief: an empty brief sends unless the send is held', () => {
+  const onSend = vi.fn();
+  const { rerender } = render(<Harness send={{ label: 'Ask SRE Lead', onSend }} />);
+  const brief = () => screen.getByRole('textbox', { name: 'What should the doc cover?' });
+  fireEvent.keyDown(brief(), { key: 'Enter', metaKey: true });
+  fireEvent.keyDown(brief(), { key: 'Enter' });
+  expect(onSend).toHaveBeenCalledTimes(2);
+  rerender(<Harness send={{ label: 'Ask SRE Lead', onSend, disabledReason: 'Say what the doc should cover.' }} />);
+  // Held, the press is still the brief's: nothing is sent and no line is written.
+  expect(fireEvent.keyDown(brief(), { key: 'Enter' })).toBe(false);
+  fireEvent.keyDown(brief(), { key: 'Enter', metaKey: true });
+  expect(onSend).toHaveBeenCalledTimes(2);
 });
 
 test("the send's media is a picture beside its words, hidden from its name", () => {

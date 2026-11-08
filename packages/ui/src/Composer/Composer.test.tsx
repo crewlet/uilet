@@ -67,6 +67,16 @@ test('an empty or blank box sends nothing on Enter and writes no line', () => {
   expect(onSubmit).not.toHaveBeenCalled();
 });
 
+test('a caller whose send carries more than the words says when it can send', () => {
+  const onSubmit = vi.fn();
+  const { rerender } = render(<Composer label="Brief" value="" onChange={() => {}} onSubmit={onSubmit} canSubmit />);
+  fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+  expect(onSubmit).toHaveBeenCalledTimes(1);
+  rerender(<Composer label="Brief" value="Ship it" onChange={() => {}} onSubmit={onSubmit} canSubmit={false} />);
+  expect(fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' })).toBe(false);
+  expect(onSubmit).toHaveBeenCalledTimes(1);
+});
+
 test('an Enter the caller claims (an open list picking its row) never sends', () => {
   const onSubmit = vi.fn();
   render(
