@@ -28,10 +28,11 @@ export interface InlineCodeProps extends HTMLAttributes<HTMLElement> {
   /** One line, cut with an ellipsis, for a chip inside a dense row. */
   truncate?: boolean | undefined;
   /**
-   * Never broken across lines: a short token a reader reads as one (a cron
+   * Kept on one line: a short token a reader reads as one (a cron
    * expression, an event type, a version). The chip moves to the next line
-   * whole rather than splitting. Leave it off for a URL or a path, which has
-   * to wrap or it tears the sentence around it apart.
+   * whole rather than splitting, and breaks only in a box no line of which
+   * can hold it. Leave it off for a URL or a path, which has to wrap or it
+   * tears the sentence around it apart.
    */
   whole?: boolean | undefined;
 }

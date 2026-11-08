@@ -44,16 +44,19 @@ test('inherit gives up the chip, so a callout keeps one ink', () => {
   expect(container.firstElementChild?.className).toContain('crewlet-inline-code--inherit');
 });
 
-test('a whole chip is never broken across lines', () => {
-  // A cron expression or an event type split over two lines names nothing.
+test('a whole chip moves to the next line whole, and breaks only where no line holds it', () => {
+  // A cron expression or an event type split over two lines names nothing;
+  // held with `nowrap`, one wider than a nested list item ran past its box.
   const { container } = render(<InlineCode whole>*/20 * * * *</InlineCode>);
   expect(container.firstElementChild?.className).toContain('crewlet-inline-code--whole');
   const here = dirname(fileURLToPath(import.meta.url));
   const css = readFileSync(join(here, 'InlineCode.css'), 'utf8');
   const at = css.indexOf('.crewlet-inline-code--whole {');
   const rule = css.slice(at, css.indexOf('}', at));
-  expect(rule).toContain('white-space: nowrap');
-  expect(rule).toContain('overflow-wrap: normal');
+  expect(rule).toContain('display: inline-block');
+  expect(rule).toContain('max-width: 100%');
+  expect(rule).not.toContain('nowrap');
+  expect(rule).not.toContain('overflow-wrap: normal');
 });
 
 test('no presentation prop reaches the DOM', () => {

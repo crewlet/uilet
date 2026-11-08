@@ -31,7 +31,8 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  /* It scrolls down, never sideways: what it holds wraps to its width. */
+  overflow: hidden auto;
   overflow-anchor: none;
   overscroll-behavior: contain;
   /* A control focused from out of view (Tab onto a row scrolled off the top)

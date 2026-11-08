@@ -1,4 +1,4 @@
-import { Children, type ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, type ReactNode } from 'react';
 import { safeHref } from '../Markdown/grammar.js';
 import { cx } from '../utils/cx.js';
 
@@ -59,6 +59,17 @@ function splitHead(children: ReactNode): { head: ReactNode; rest: ReactNode[] } 
     if (address) return { head: address[0], rest: [first.slice(address[0].length), ...parts.slice(1)] };
     const at = first.search(/\s/);
     if (at > 0) return { head: first.slice(0, at), rest: [first.slice(at), ...parts.slice(1)] };
+  }
+  // Words a renderer wrapped in an element (a span, an emphasis) split inside
+  // it, or the whole phrase would be the head and could not wrap.
+  if (isValidElement<{ children?: ReactNode }>(first) && typeof first.type === 'string') {
+    const inner = splitHead(first.props.children);
+    if (inner.rest.length > 0) {
+      return {
+        head: cloneElement(first, { key: 'head' }, inner.head),
+        rest: [cloneElement(first, { key: 'rest' }, ...inner.rest), ...parts.slice(1)],
+      };
+    }
   }
   return { head: first ?? null, rest: parts.slice(1) };
 }

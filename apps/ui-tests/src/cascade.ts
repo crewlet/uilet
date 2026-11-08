@@ -229,9 +229,27 @@ function resolveOwn(css: string, { answered = false }: { answered?: boolean } = 
  */
 export function installCss(css: string): () => void {
   const style = document.createElement("style");
-  style.textContent = oneSelectorPerRule(css, (selector) => standInPseudoElement(standInUserAction(selector)));
+  style.textContent = expandOverflow(
+    oneSelectorPerRule(css, (selector) => standInPseudoElement(standInUserAction(selector))),
+  );
   document.head.append(style);
   return () => style.remove();
+}
+
+/**
+ * Nor does jsdom expand the `overflow` SHORTHAND into its longhands, so
+ * `overflow: clip` never overrode an earlier `overflow-x`, and a suite
+ * reading `overflowY` saw nothing. Each one is followed by the longhands it
+ * sets, as a browser reads it.
+ */
+export function expandOverflow(css: string): string {
+  return css.replace(
+    /(^|[\s;{])overflow:\s*([a-z-]+)(?:\s+([a-z-]+))?\s*(!important)?\s*;/g,
+    (all, _lead, x: string, y: string | undefined, important: string | undefined) => {
+      const flag = important ? " !important" : "";
+      return `${all} overflow-x: ${x}${flag}; overflow-y: ${y ?? x}${flag};`;
+    },
+  );
 }
 
 /**

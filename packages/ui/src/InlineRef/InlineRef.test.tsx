@@ -91,10 +91,29 @@ test("the mark never parts from the first word, and a phrase wraps after it", ()
   expect(token.querySelector(".crewlet-inline-ref__head .crewlet-inline-ref__text")?.textContent).toBe(
     "gophrase/backend#14",
   );
-  // The rules that make it so: the head never breaks, and a token never does.
+  // The rules that make it so: the head and a token are each one atomic box,
+  // no wider than the line, that breaks inside only where no line holds it.
   const sheet = css("InlineRef.css");
-  expect(rule(sheet, ".crewlet-inline-ref__head")).toContain("white-space: nowrap");
-  expect(rule(sheet, ".crewlet-inline-ref")).toContain("white-space: nowrap");
+  expect(sheet).toContain(".crewlet-inline-ref:not(.crewlet-inline-ref--wrap),\n.crewlet-inline-ref--wrap > .crewlet-inline-ref__head {");
+  const atomic = rule(sheet, ".crewlet-inline-ref--wrap > .crewlet-inline-ref__head");
+  expect(atomic).toContain("display: inline-block");
+  expect(atomic).toContain("max-width: 100%");
+  expect(atomic).toContain("overflow-wrap: anywhere");
+  // Held with `nowrap`, a reference longer than its box ran past it.
+  expect(sheet).not.toMatch(/white-space:\s*nowrap/);
+});
+
+test("words a renderer wrapped in an element still split after the first one", () => {
+  // A labelled link's words arrive as rendered nodes, and the whole phrase
+  // was the head, one run wider than the panel holding it.
+  const { container } = render(
+    <InlineRef href="https://example.com/d/route-cache" mark={<svg />} wrap>
+      <span>the restart loop dashboard</span>
+    </InlineRef>,
+  );
+  expect(container.querySelector(".crewlet-inline-ref__head .crewlet-inline-ref__text")?.textContent).toBe("the");
+  expect(container.querySelector(".crewlet-inline-ref__rest")?.textContent).toBe(" restart loop dashboard");
+  expect(container.querySelector("a")?.textContent).toBe("the restart loop dashboard (opens in a new tab)");
 });
 
 test("a copy carries the words alone: the mark, the face and what only a screen reader hears are left out", () => {

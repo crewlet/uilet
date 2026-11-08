@@ -64,12 +64,14 @@
 }
 
 /*
- * A short token read as one: it moves to the next line whole rather than
- * splitting, which `overflow-wrap: anywhere` would otherwise allow.
+ * A short token read as one: an atomic box that moves to the next line whole,
+ * and breaks inside only where no line can hold it (a nested list, a cell).
+ * `line-height: normal` gives the box the running chip's own height.
  */
 .crewlet-inline-code--whole {
-  overflow-wrap: normal;
-  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  line-height: normal;
 }
 
 .crewlet-inline-code--truncate {
