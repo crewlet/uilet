@@ -498,3 +498,28 @@ test('a leading control stands before the title, read and reached, unlike the de
   expect(button.compareDocumentPosition(screen.getByTestId('mark')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(button.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
+
+test('a panel asked to fill takes its box, not its resting width, and keeps no width of its own or grip', () => {
+  const remove = installSheets('SidePanel/SidePanel.css');
+  try {
+    const { container } = render(
+      <SidePanel title="Thread" fill width={420} resizable onWidthChange={() => {}} onClose={() => {}}>
+        Replies
+      </SidePanel>,
+    );
+    const panel = container.querySelector<HTMLElement>('.crewlet-side-panel')!;
+    expect(panel.classList.contains('crewlet-side-panel--fill')).toBe(true);
+    // No inline width that would beat the fill, and no edge to drag.
+    expect(panel.style.getPropertyValue('--crewlet-side-panel-width')).toBe('');
+    expect(screen.queryByRole('separator')).toBeNull();
+    const style = getComputedStyle(panel);
+    expect(style.width).toBe('auto');
+    expect(style.flexGrow).toBe('1');
+    expect(style.flexShrink).toBe('1');
+    expect(style.minHeight).toBe('0px');
+    // Still a named region outside the shell, with Escape and Close its own.
+    expect(screen.getByRole('complementary', { name: 'Thread' })).toBe(panel);
+  } finally {
+    remove();
+  }
+});

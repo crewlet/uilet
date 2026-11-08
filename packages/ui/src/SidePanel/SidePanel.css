@@ -52,11 +52,14 @@
   background: var(--color-surface-background);
 }
 
-/* IN THE SHELL'S ASIDE the panel fills the aside's sheet, which draws the
-   edge, the corner and the ground, and whose track is the width. */
+/* FILLING: in the shell's aside, or as a list's detail (`fill`), the panel
+   fills the box its host gives it, width and height, and its body scrolls
+   inside; the host draws the edge, the corner and the ground. */
 .crewlet-side-panel--fill {
   flex: 1 1 auto;
+  align-self: stretch;
   width: auto;
+  min-width: 0;
   border-left: 0;
   background: transparent;
 }

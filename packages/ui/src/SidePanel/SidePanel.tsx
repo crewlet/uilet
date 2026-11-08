@@ -47,6 +47,15 @@ export interface SidePanelProps {
    * out of sight). Unlike `icon`, it is read and reached.
    */
   leading?: ReactNode;
+  /**
+   * The panel fills the box it is placed in, its width and its height, with
+   * its body scrolling inside, rather than resting at its own width: for a
+   * panel shown as a list's detail (`ListDetail`), whose host draws the edge
+   * and the ground. Its own rule, so no host restyles the panel to size it;
+   * a host's rule in a sheet loaded before the kit's would lose to this one.
+   * Inside the shell's aside a panel fills on its own.
+   */
+  fill?: boolean | undefined;
   /** Draw the title for assistive technology only, where the icon says it. */
   hideTitle?: boolean | undefined;
   /**
@@ -140,6 +149,7 @@ export function SidePanel({
   subtitle,
   icon,
   leading,
+  fill,
   hideTitle,
   density,
   onClose,
@@ -166,6 +176,7 @@ export function SidePanel({
       subtitle={subtitle}
       icon={icon}
       leading={leading}
+      fill={fill}
       hideTitle={hideTitle}
       density={density}
       onClose={onClose}

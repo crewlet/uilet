@@ -57,6 +57,8 @@ export interface SidePanelBaseProps {
   subtitle?: ReactNode;
   /** A control before the title, such as `ListDetail.Back`. */
   leading?: ReactNode;
+  /** Fills the box it is placed in, whose host draws the edge and the ground. */
+  fill?: boolean | undefined;
   icon?: ReactNode;
   onClose: () => void;
   closeLabel: string;
@@ -98,6 +100,7 @@ export function SidePanelBase({
   title,
   subtitle,
   leading,
+  fill = false,
   icon,
   onClose,
   closeLabel,
@@ -142,6 +145,8 @@ export function SidePanelBase({
    * other shape a complementary region. Anywhere else it is a region.
    */
   const inShell = useAppShellAside() !== null;
+  // FILLING: in the shell's aside, or wherever the host asks (a list's detail).
+  const filling = inShell || fill;
   const frame = useContext(SidePanelFrameContext);
   const shape = frame?.shape ?? null;
   const modal = !inShell && shape === 'sheet';
@@ -171,11 +176,11 @@ export function SidePanelBase({
 
   // THE PANEL SIZES ITSELF only where nothing else does: the shell's aside is
   // a grid track, and an expanded panel takes the whole frame.
-  const sized = !inShell && !expanded && width !== undefined;
+  const sized = !filling && !expanded && width !== undefined;
   // A grip only where the panel stands beside the content: over it, as a
   // drawer or a sheet, there is no edge between the two to move.
   const grip =
-    resizable && !inShell && !expanded && (shape === null || shape === 'column') && width !== undefined && onWidthChange;
+    resizable && !filling && !expanded && (shape === null || shape === 'column') && width !== undefined && onWidthChange;
 
   const headingNode = (
     <h2
@@ -199,7 +204,7 @@ export function SidePanelBase({
         id={panelId}
         className={cx(
           'crewlet-side-panel',
-          inShell && 'crewlet-side-panel--fill',
+          filling && 'crewlet-side-panel--fill',
           chat && 'crewlet-side-panel--chat',
           alias,
           className,
