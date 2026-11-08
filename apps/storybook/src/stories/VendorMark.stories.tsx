@@ -11,7 +11,8 @@ import { themeScope } from '../themeScope';
  * hold on either ground, Mattermost's, Scaleway's and Sentry's take the text
  * colour on the dark ground, as each vendor publishes them for one, and
  * GitHub's, Notion's, OpenCode's, Expo's and DigitalOcean's are the current
- * text colour and invert with the theme.
+ * text colour and invert with the theme. SSH's key is Crewlet's own drawing,
+ * in the brand mark's violet on every theme.
  * The muted state is the answer to "available, not connected", and it drains
  * the mark's own colour rather than inventing a second palette for somebody
  * else's brand.
@@ -153,6 +154,50 @@ export const CodingCLIs: StoryObj = {
           </div>
         </div>
       ))}
+    </div>
+  ),
+};
+
+/**
+ * SSH, BESIDE THE MARKS IT SITS AMONG. The SSH Connection integration is
+ * built into Crewlet, and SSH is a protocol, so no vendor publishes a mark for
+ * it: its own is a key whose bow holds a shell prompt, in the brand mark's
+ * violet. Shown in the 48px tile beside Crewlet's own services and the
+ * infrastructure marks a catalogue lists with it, at 16 to 32px beside its
+ * name, and muted. The story follows the toolbar's theme and palette, so every
+ * named theme can be checked in light and dark; the ui-tests suite measures
+ * the violet against every one of their grounds.
+ */
+export const Ssh: StoryObj = {
+  render: () => (
+    <div style={{ ...panel, margin: 'var(--spacing-5)' }}>
+      <p style={caption}>20px in a 48px box, beside its neighbours</p>
+      <div style={row}>
+        {(['ssh', 'crewlet', 'github', 'cloudflare', 'aws', 'digitalocean'] as const).map((vendor) => (
+          <span key={vendor} style={{ display: 'grid', justifyItems: 'center', gap: 'var(--spacing-1)' }}>
+            <span style={tile}>
+              <VendorMark vendor={vendor} size={20} />
+            </span>
+            <span style={caption}>{vendor}</span>
+          </span>
+        ))}
+      </div>
+      <p style={caption}>16, 20, 24, 32, beside its name</p>
+      <div style={row}>
+        {[16, 20, 24, 32].map((size) => (
+          <span key={size} style={label}>
+            <VendorMark vendor="ssh" size={size} />
+            SSH
+          </span>
+        ))}
+      </div>
+      <p style={caption}>muted</p>
+      <div style={row}>
+        <span style={label}>
+          <VendorMark vendor="ssh" size={20} muted />
+          SSH
+        </span>
+      </div>
     </div>
   ),
 };

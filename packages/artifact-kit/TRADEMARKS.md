@@ -32,6 +32,8 @@ They are here for nominative use: naming the application a feature connects to, 
 
 Crewlet claims no rights in these marks. They are excluded from the MIT License's grant for the same reason the Crewlet marks are: that license covers copyright, and a trademark is not copyright.
 
+One file there is not a third-party mark: `ssh.svg` is Crewlet's own drawing for its SSH connection (SSH is a protocol, and no vendor publishes a mark for it). It is licensed under the MIT License like the rest of the package's artwork.
+
 ## The glyph set
 
 The Lucide drawings in `packages/icons/glyphs/` are Lucide's, under the ISC License, and those Lucide derives from Feather are under Feather's MIT License as well. Both licenses grant copyright permissions and say nothing about names, so the drawings may be used and redistributed, while "Lucide" and "Feather" stay the names of those projects: nothing this repository publishes is called by either, and neither project endorses it. `packages/icons/glyphs/LICENSE` carries both texts and ships in the package.

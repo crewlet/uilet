@@ -73,7 +73,7 @@ import { VendorMark } from '@crewlethq/icons';
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `vendor` | `Vendor`: `'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'crewlet' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'github' \| 'gitlab' \| 'google-cloud' \| 'linear' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'opencode' \| 'postgresql' \| 'scaleway' \| 'sentry' \| 'slack' \| 'stripe' \| 'telegram'` | required | Which mark. |
+| `vendor` | `Vendor`: `'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'crewlet' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'github' \| 'gitlab' \| 'google-cloud' \| 'linear' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'opencode' \| 'postgresql' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `muted` | boolean | `false` | Drains the colour, for an application that is available but not connected. |
@@ -96,11 +96,13 @@ Mattermost's blue mark, Scaleway's purple one and Sentry's violet one are each d
 
 **`crewlet` is Crewlet's own mark**, for the services built into it (Worklet, Doclet) where a catalogue lists them beside the third-party apps they stand in for. It is drawn from the brand mark the package already carries (`svg/crewlet-icon.svg`, `CrewletIcon`), not a second copy, and takes the same `size` and `muted` as any other vendor.
 
-A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is drawn to fit the square `size` and centred in it, at the aspect ratio the vendor draws. Every drawing fills its viewBox edge to edge, so the marks in a catalogue stand at one weight: GitLab's is cropped to its logo (its press-kit file framed the logo in twice its own width, and drew at half the size of every mark beside it), and Crewlet's is the brand mark framed in the square its own extent fits rather than in the wide file's artwork margins, so it draws the slot's full width.
+**`ssh` is Crewlet's own drawing**, for the SSH Connection integration built into it. SSH is a protocol rather than an application, so no vendor publishes a mark for it, and the brand mark there would read as one more built-in service. The mark is a key whose bow is a rounded square holding a shell prompt, drawn on the glyph grid at the glyphs' weight (a 1.75 stroke with round caps and joins) and outlined into one filled path, as every other mark here is a fill. It draws in the brand mark's violet, `var(--color-brand-mark, #7c56ff)`, the same colour in every palette; the tokens' palette suite holds it to 3:1 on every theme's grounds, so it needs no reversed drawing for a dark one. Draw it with "SSH" beside it.
+
+A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is drawn to fit the square `size` and centred in it, at the aspect ratio the vendor draws. Every drawing fills its viewBox edge to edge, so the marks in a catalogue stand at one weight: GitLab's is cropped to its logo (its press-kit file framed the logo in twice its own width, and drew at half the size of every mark beside it), Crewlet's is the brand mark framed in the square its own extent fits rather than in the wide file's artwork margins, so it draws the slot's full width, and SSH's key is framed the same way.
 
 The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRADEMARKS.md), which ships in the package. The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram, Microsoft Teams, Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are Simple Icons' renderings, whose path data is CC0 1.0. The Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are taken from simple-icons 16.35.0, each path unchanged and in the hex that release records for its brand (Scaleway's purple, #4F0599, sourced there to Scaleway's own design system, Ultraviolet).
 
-`VENDORS` lists every vendor the package draws, AWS's generic cloud among them.
+`VENDORS` lists every vendor the package draws, AWS's generic cloud and the SSH key among them.
 
 ## Product marks
 

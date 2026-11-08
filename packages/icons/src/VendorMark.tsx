@@ -46,6 +46,19 @@
  * copy, so the mark on a catalogue tile is the mark everywhere else, and it
  * takes the same size and the same muted state as every vendor beside it.
  *
+ * SSH IS CREWLET'S OWN DRAWING TOO, for the SSH Connection integration built
+ * into it. SSH is a protocol rather than an app, so no vendor publishes a mark
+ * for it, and drawing the brand mark there would read as one more built-in
+ * service. Its mark is a key whose bow is a rounded square holding a shell
+ * prompt, drawn on the glyph grid at the glyphs' weight (a 1.75 stroke with
+ * round caps and joins) and outlined into one filled path, as every other mark
+ * here is a fill. It is framed in the square its own extent fits, so it draws
+ * the slot's full width. Its colour is the brand mark's violet, read from
+ * --color-brand-mark with the mark's own value behind it, as the Crewlet
+ * figure reads it (VendorMark.css): that token clears 3:1 on every theme's
+ * grounds, which the tokens' palette suite holds, so unlike Mattermost's it
+ * needs no reversed drawing for a dark one.
+ *
  * OpenCode publishes its mark twice, near-black on a light ground and
  * near-white on a dark one, so it is drawn in the current text colour, its
  * inner square a quarter of that ink, as GitHub's is: one fixed pair of hexes
@@ -97,7 +110,7 @@ import CrewletIcon from './generated/CrewletIcon.js';
 import CloudGlyph from './generated/glyphs/CloudGlyph.js';
 import * as marks from './generated/vendors/index.js';
 
-/** The apps this package draws on a catalogue tile, Crewlet's own services among them. */
+/** The apps this package draws on a catalogue tile, Crewlet's own services and SSH among them. */
 export const VENDORS = [
   'atlassian',
   'aws',
@@ -122,6 +135,7 @@ export const VENDORS = [
   'scaleway',
   'sentry',
   'slack',
+  'ssh',
   'stripe',
   'telegram',
 ] as const;
@@ -165,6 +179,7 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   scaleway: marks.Scaleway,
   sentry: marks.Sentry,
   slack: marks.Slack,
+  ssh: marks.Ssh,
   stripe: marks.Stripe,
   telegram: marks.Telegram,
 };
