@@ -88,6 +88,14 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
    * own in `end`, since a conversation's rows set their own spacing.
    */
   rest?: ChatThreadRest | undefined;
+  /**
+   * The items run edge to edge, with no inset or gap of their own, for a log
+   * whose items carry their own (`ChatMessage` rows, `ChatDay`s): its rows'
+   * hover surface reaches both edges and their faces line up with a composer
+   * under the log on the same side inset. Only a short step stays above the
+   * first item and under the last.
+   */
+  flush?: boolean | undefined;
   /** The thread's blocks, one child per item, oldest first. */
   children?: ReactNode;
   labels?: Partial<ChatThreadLabels> | undefined;
@@ -140,6 +148,7 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
     onFollowChange,
     jump = true,
     rest: restAt = 'start',
+    flush = false,
     children,
     labels: overrides,
     className,
@@ -342,7 +351,12 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
   return (
     <div
       {...rest}
-      className={cx('crewlet-chat-thread', restAt === 'end' && 'crewlet-chat-thread--rest-end', className)}
+      className={cx(
+        'crewlet-chat-thread',
+        restAt === 'end' && 'crewlet-chat-thread--rest-end',
+        flush && 'crewlet-chat-thread--flush',
+        className,
+      )}
       onKeyDownCapture={(event) => {
         rest.onKeyDownCapture?.(event);
         tabbing.onKeyDownCapture(event);

@@ -645,3 +645,35 @@ test('a short transcript rests on its foot with rest="end", and under its top by
     uninstall();
   }
 });
+
+// A FLUSH LOG keeps no side inset and no gap of its own, so rows that carry
+// their own insets run edge to edge and a reply follows the one before it with
+// no seam; a short step stays above the first item and under the last.
+// Mutation: drop the flush rule and the items keep their 16px inset and 12px
+// gap.
+test('a flush log keeps no side inset or gap of its own, only a step above and below', () => {
+  const uninstall = installSheets('ChatThread/ChatThread.css');
+  try {
+    const { container, rerender } = render(
+      <ChatThread label="Thread">
+        <p>One</p>
+      </ChatThread>,
+    );
+    const items = () => getComputedStyle(container.querySelector('.crewlet-chat-thread__items')!);
+    expect(items().paddingLeft).toBe('16px');
+    expect(items().getPropertyValue('gap')).toBe('12px');
+    rerender(
+      <ChatThread label="Thread" flush>
+        <p>One</p>
+      </ChatThread>,
+    );
+    expect(container.querySelector('.crewlet-chat-thread')!.className).toContain('crewlet-chat-thread--flush');
+    expect(items().paddingLeft).toBe('0px');
+    expect(items().paddingRight).toBe('0px');
+    expect(items().paddingTop).toBe('12px');
+    expect(items().paddingBottom).toBe('8px');
+    expect(items().getPropertyValue('gap')).toBe('0px');
+  } finally {
+    uninstall();
+  }
+});

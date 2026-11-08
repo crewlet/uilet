@@ -2,7 +2,10 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { LayoutDashboardGlyph } from '@crewlethq/icons/glyphs';
 import {
+  Avatar,
   Button,
+  ChatDivider,
+  ChatMessage,
   ChatThread,
   MessageBubble,
   Prose,
@@ -54,6 +57,34 @@ function exchange(index: number): ReactNode[] {
     </Prose>,
   ];
 }
+
+const face = (name: string) => <Avatar name={name} kind="human" size={36} decorative />;
+
+/**
+ * A FLUSH LOG (`flush`) of conversation rows, as a thread pane draws them:
+ * the rows carry their own insets, so the root's face, the count divider and
+ * every reply's face share one edge, the replies follow one another with no
+ * gap, and each row's hover surface reaches both edges of the pane.
+ */
+export const FlushRows: Story = {
+  render: () => (
+    <ChatThread label="Thread" flush style={{ '--crewlet-chat-pad-x': 'var(--spacing-4)' } as never}>
+      <ChatMessage id="root" author="Product Manager" avatar={face('Product Manager')} label="Product Manager, 11:02" time="11:02" timeTitle="Thursday, October 30, 11:02 AM">
+        Thread for the Friday release checklist. Reply with what is left on your side.
+      </ChatMessage>
+      <ChatDivider variant="count" label="3 replies" />
+      <ChatMessage id="r1" author="Designer" avatar={face('Designer')} label="Designer, 11:04" time="11:04" timeTitle="Thursday, October 30, 11:04 AM">
+        The booking screen still needs the narrow layout pass.
+      </ChatMessage>
+      <ChatMessage id="r2" author="Designer" avatar={face('Designer')} label="Designer, 11:04" time="11:04" timeTitle="Thursday, October 30, 11:04 AM" continuation>
+        I will have it done by tonight.
+      </ChatMessage>
+      <ChatMessage id="r3" author="Backend Engineer" avatar={face('Backend Engineer')} label="Backend Engineer, 11:06" time="11:06" timeTitle="Thursday, October 30, 11:06 AM">
+        Migration ran cleanly on staging.
+      </ChatMessage>
+    </ChatThread>
+  ),
+};
 
 export const ShortThread: Story = {
   render: () => <ChatThread label="Conversation">{[0, 1].flatMap(exchange)}</ChatThread>,

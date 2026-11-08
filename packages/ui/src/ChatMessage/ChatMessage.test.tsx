@@ -8,8 +8,9 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { createRef, type ReactNode, type Ref } from 'react';
+import { InlineCode } from '../InlineCode/index.js';
 import { afterEach, expect, test, vi } from 'vitest';
-import { installHover, installMotion, installSheets, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
+import { installCss, installHover, installMotion, installSheets, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { ChatThread } from '../ChatThread/index.js';
 import { Prose } from '../Prose/index.js';
@@ -487,5 +488,52 @@ test('a row the keys move to is scrolled into view first, then focused and measu
     expect(first!.classList.contains('has-actions-inside')).toBe(false);
   } finally {
     Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+  }
+});
+
+// ONE BLOCK RHYTHM IN THE WORDS, whatever document rhythm the host gives the
+// same prose: blocks a blank line (8px) apart, list items touching, each list
+// level 28px in, a quote in the words' own ink 16px in, and code in a line
+// on its own 18px line inside a hairline. Mutation: drop the chat rules and
+// the host's 12px paragraph gap, 4px item gap and 20px indent come back.
+test("rich text in a row's words keeps one block rhythm over the host's document rhythm", () => {
+  const uninstall = installSheets(...SHEETS, 'Prose/Prose.css', 'InlineCode/InlineCode.css');
+  const host = installCss(
+    '.crewlet-prose.md > * + * { margin-top: 12px; }\n' +
+      '.crewlet-prose.md ul { padding-inline-start: 20px; }\n' +
+      '.crewlet-prose.md li + li { margin-top: 4px; }\n' +
+      '.crewlet-prose.md blockquote { padding-inline-start: 12px; color: rgb(1, 2, 3); }',
+  );
+  try {
+    render(
+      <Row>
+        <Prose as="div" measure="none" className="md">
+          <p>First</p>
+          <ul>
+            <li>One</li>
+            <li>Two</li>
+          </ul>
+          <blockquote>Quoted</blockquote>
+          <p>
+            Run <InlineCode>npm ci</InlineCode>
+          </p>
+        </Prose>
+      </Row>,
+    );
+    const list = screen.getByText('One').closest('ul')!;
+    expect(getComputedStyle(list).marginTop).toBe('8px');
+    expect(getComputedStyle(list).getPropertyValue('padding-inline-start')).toBe('28px');
+    expect(getComputedStyle(screen.getByText('Two')).marginTop).toBe('0px');
+    const quote = screen.getByText('Quoted');
+    expect(getComputedStyle(quote).marginTop).toBe('8px');
+    expect(getComputedStyle(quote).getPropertyValue('padding-inline-start')).toBe('16px');
+    expect(getComputedStyle(quote).color).not.toBe('rgb(1, 2, 3)');
+    const code = screen.getByText('npm ci');
+    expect(getComputedStyle(code).getPropertyValue('border-top-style')).toBe('solid');
+    expect(getComputedStyle(code).lineHeight).toBe('1.5');
+    expect(getComputedStyle(code).fontSize).toBe('12px');
+  } finally {
+    host();
+    uninstall();
   }
 });

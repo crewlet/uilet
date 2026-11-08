@@ -65,10 +65,11 @@
   scroll-margin-top: calc(var(--crewlet-chat-day-pin) + var(--crewlet-chat-day-pill) + var(--spacing-3));
 }
 
+/* The line ends where its label does, so nothing of it runs past "New". */
 .crewlet-chat-divider--unread::before {
   content: '';
   position: absolute;
-  inset-inline: 0;
+  inset-inline: 0 var(--crewlet-chat-pad-x);
   top: 0;
   height: 1px;
   background: var(--color-feedback-danger);
@@ -82,7 +83,7 @@
   transform: translateY(-50%);
   background: var(--crewlet-chat-ground);
   color: var(--color-feedback-danger-ink);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-compact);
   font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-normal);
 }

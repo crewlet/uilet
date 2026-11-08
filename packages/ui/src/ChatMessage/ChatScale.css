@@ -26,10 +26,20 @@
   --crewlet-chat-stack: 6px;
   /* One width for every link preview, so a stack of them shares both edges. */
   --crewlet-chat-card: 440px;
+  /* Rich text in the words: a blank line between blocks (paragraphs, lists,
+     quotes, code) is one small step, list items touch, and each list level
+     indents its words by the side inset and the face gap. */
+  --crewlet-chat-block-gap: var(--spacing-2);
+  --crewlet-chat-list-indent: calc(var(--spacing-5) + var(--spacing-2));
+  /* The message box's tools: a 28px square at the small corner with the
+     toolbar's glyph, so the box's band and foot are one tool tall plus a
+     small inset. */
+  --crewlet-chat-compose-tool: 28px;
+  --crewlet-chat-compose-glyph: var(--font-size-lg);
   /* A day: the pill's height, the room above and below its rule, and how far
      under the list's top edge the pill pins. A host with a bar floating over
      the list's top (an unread banner) moves the pin down past it. */
-  --crewlet-chat-day-pill: 24px;
+  --crewlet-chat-day-pill: 28px;
   --crewlet-chat-day-gap: var(--spacing-5);
   --crewlet-chat-day-pin: var(--spacing-3);
   /* The hover toolbar: 32px tools with 18px glyphs, touching, big enough to

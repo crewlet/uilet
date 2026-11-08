@@ -10,11 +10,12 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { installAtWidth, installMotion, installThemed, userAction } from '../../../../apps/ui-tests/src/cascade.js';
+import { installAtWidth, installMotion, installSheets, installThemed, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { shadow, themes } from '@crewlethq/tokens';
 import { contrast, flatten, parseHex } from '@crewlethq/tokens/test/palette';
 import { FOCUS_MODALITY_ATTRIBUTE } from '../utils/focusModality.js';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
+import { IconButton } from '../IconButton/index.js';
 import { SendButton } from '../SendButton/index.js';
 import { Tag } from '../Tag/index.js';
 import { COMPOSER_COUNTER_AT, Composer } from './index.js';
@@ -404,3 +405,43 @@ function probe(colour: string): string {
   el.remove();
   return value;
 }
+
+// EVERY TOOL OF A CHAT BOX ON THE CHAT TOOL STEP: 28px squares at the small
+// corner with the toolbar's 18px glyph, in a band and a foot of one tool plus
+// a small inset, the first glyph on the words' 12px inset. Mutation: drop the
+// chat tool rules and the tools fall back to 26px squares with 12px glyphs.
+test("a chat box's tools are 28px squares at the small corner with 18px glyphs, Send keeping its own glyph", () => {
+  const uninstall = installSheets('IconButton/IconButton.css', 'ChatMessage/ChatScale.css', 'Composer/Composer.css');
+  try {
+    const glyph = <svg className="crewlet-glyph" aria-hidden="true" />;
+    const { container } = render(
+      <Composer
+        appearance="chat"
+        value=""
+        onChange={() => {}}
+        label="Message"
+        submitOn="enter"
+        toolbar={<IconButton label="Bold" size="sm" variant="ghost" icon={glyph} />}
+        tools={<IconButton label="Emoji" size="sm" variant="ghost" icon={glyph} />}
+        actions={<SendButton mode="send" onPress={() => {}} />}
+      />,
+    );
+    const bold = screen.getByRole('button', { name: 'Bold' });
+    const emoji = screen.getByRole('button', { name: 'Emoji' });
+    for (const tool of [bold, emoji]) {
+      expect(px(tool, 'width')).toBe(28);
+      expect(px(tool, 'height')).toBe(28);
+      expect(getComputedStyle(tool).borderRadius).toBe('4px');
+      expect(px(tool.querySelector('.crewlet-glyph')!, 'width')).toBe(18);
+    }
+    const send = container.querySelector('.crewlet-send-button')!;
+    expect(px(send, 'width')).toBe(28);
+    expect(px(send.querySelector('.crewlet-send-button__glyph')!, 'width')).toBe(14);
+    // The band: 6 over the tool and 4 under it, 7 at the start (12 less half of 28 - 18).
+    const band = container.querySelector('.crewlet-composer__toolbar')!;
+    expect(getComputedStyle(band).getPropertyValue('padding-block')).toMatch(/^calc\(12px \/ 2\) 4px$|^6px 4px$/);
+    expect(px(band, 'padding-inline-start')).toBe(7);
+  } finally {
+    uninstall();
+  }
+});

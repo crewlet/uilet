@@ -298,11 +298,12 @@
   white-space: nowrap;
 }
 
-/* THE FORMATTING ROW AS A BAND the height of the footer, its glyphs on the
-   footer's inset from the box's edge, the controls a step apart, as the
-   footer's tools are. */
+/* THE FORMATTING ROW AS A BAND the height of the footer: one chat tool with
+   a small inset over it and a step under it, its first glyph on the words'
+   12px inset, the controls a step apart, as the footer's tools are. */
 .crewlet-composer--chat .crewlet-composer__toolbar {
-  padding-block-start: calc(var(--spacing-1) + (var(--size-control-md) - var(--size-control-sm)) / 2);
+  padding-block: calc(var(--spacing-3) / 2) var(--spacing-1);
+  padding-inline-start: calc(var(--spacing-3) - (var(--crewlet-chat-compose-tool) - var(--crewlet-chat-compose-glyph)) / 2);
 }
 
 .crewlet-composer--chat .crewlet-composer__toolbar .crewlet-toolbar {
@@ -310,12 +311,36 @@
   padding: 0;
 }
 
+/* The foot mirrors the band: a step over its tools and the small inset under
+   them, the first glyph and Send each on the words' 12px inset. */
 .crewlet-composer--chat .crewlet-composer__footer {
   gap: var(--spacing-1);
-  padding: var(--spacing-1);
-  padding-inline-start: var(--spacing-3);
+  padding: var(--spacing-1) calc(var(--spacing-3) - (var(--crewlet-chat-compose-tool) - var(--crewlet-chat-compose-glyph)) / 2)
+    calc(var(--spacing-3) / 2) var(--spacing-3);
   border-top: 0;
   background: transparent;
+}
+
+.crewlet-composer--chat .crewlet-composer__footer .crewlet-composer__tools {
+  margin-inline-start: calc(-1 * (var(--crewlet-chat-compose-tool) - var(--crewlet-chat-compose-glyph)) / 2);
+}
+
+/* EVERY TOOL OF THE BOX ON THE CHAT TOOL STEP: 28px at the small corner with
+   the toolbar's glyph, Send included (its own glyph keeps its size). The
+   corner is set at a low weight, so a host's own shape for one tool (a round
+   add) and the foot's last control's nested corner still hold. */
+.crewlet-composer--chat :is(.crewlet-composer__toolbar, .crewlet-composer__footer) .crewlet-icon-btn {
+  width: var(--crewlet-chat-compose-tool);
+  height: var(--crewlet-chat-compose-tool);
+}
+
+.crewlet-composer--chat :where(.crewlet-composer__toolbar, .crewlet-composer__footer) .crewlet-icon-btn {
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-composer--chat :is(.crewlet-composer__toolbar, .crewlet-composer__footer) .crewlet-icon-btn:not(.crewlet-send-button) .crewlet-glyph {
+  width: var(--crewlet-chat-compose-glyph);
+  height: var(--crewlet-chat-compose-glyph);
 }
 
 /* A tool whose menu or picker is open reads as held down. */
