@@ -38,7 +38,7 @@ import { Button } from '../Button/index.js';
 import { Callout } from '../Callout/index.js';
 import { FormField, Input } from '../Input/index.js';
 import { Modal } from '../Modal/index.js';
-import { SegmentedControl, type SegmentedOption } from '../SegmentedControl/index.js';
+import { SegmentedControl, type SegmentedOption, type SegmentedSize } from '../SegmentedControl/index.js';
 
 /** The value that stands for a window of the reader's own. An option may not use it. */
 export const TIME_RANGE_CUSTOM = 'custom';
@@ -137,6 +137,8 @@ export interface TimeRangePickerProps<V extends string> {
   custom?: TimeRangeCustom | undefined;
   /** Names the group. */
   label?: string | undefined;
+  /** The control step, as the segments beside it in a toolbar row take it. */
+  size?: SegmentedSize | undefined;
   labels?: Partial<TimeRangePickerLabels> | undefined;
   className?: string | undefined;
 }
@@ -196,6 +198,7 @@ export function TimeRangePicker<V extends string>({
   custom,
   label = 'Time range',
   labels,
+  size = 'md',
   className,
 }: TimeRangePickerProps<V>) {
   const words = { ...TIME_RANGE_PICKER_LABELS, ...labels };
@@ -214,6 +217,7 @@ export function TimeRangePicker<V extends string>({
         activate="manual"
         label={label}
         value={value}
+        size={size}
         className={className}
         onValueChange={(next) => (next === TIME_RANGE_CUSTOM ? setEditing(true) : onChange(next as V))}
         options={segments}
