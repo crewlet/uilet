@@ -17,10 +17,17 @@ export interface ComposerProps
   /**
    * Called on the send key: Enter, or Command+Enter (Control+Enter
    * elsewhere), while Shift+Enter writes a line (`isSendPress` is the rule).
-   * Never while the composer is disabled or holds only blank space, never
-   * mid composition, and never on a touch keyboard's Return.
+   * Never while the composer is disabled or `canSubmit` is false, never mid
+   * composition, and never on a touch keyboard's Return.
    */
   onSubmit?: (() => void) | undefined;
+  /**
+   * Whether a send would be taken now; when it is not, the send key does
+   * nothing and writes no line. By default, whether the field holds more than
+   * blank space. A box whose send carries more than its words (an agent's
+   * brief, which may be left empty) passes its own answer.
+   */
+  canSubmit?: boolean | undefined;
   /**
    * Draws the send hint in the footer, "Enter to send, Shift+Enter for a new
    * line". True by default; a box whose send button and placement already say
@@ -107,6 +114,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     value,
     onChange,
     onSubmit,
+    canSubmit,
     sendHint = true,
     sendLabels,
     label,
@@ -136,7 +144,11 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
   const near = maxLength !== undefined && value.length >= maxLength * COMPOSER_COUNTER_AT;
   const hasActions = present(actions) || present(tools);
   // A disabled composer names no send keys: there is no send for them to make.
-  const send = useSendOnEnter({ onSend: disabled ? undefined : onSubmit, canSend: value.trim() !== '', labels: sendLabels });
+  const send = useSendOnEnter({
+    onSend: disabled ? undefined : onSubmit,
+    canSend: canSubmit ?? value.trim() !== '',
+    labels: sendLabels,
+  });
   const hint = sendHint && send.describedBy !== undefined;
 
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {

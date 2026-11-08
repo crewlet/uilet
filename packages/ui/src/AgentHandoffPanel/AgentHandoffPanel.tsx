@@ -225,6 +225,8 @@ export function AgentHandoffPanel({
             value={brief}
             onChange={onBriefChange}
             onSubmit={press}
+            // The send decides, not the brief: a hand-off may go with none.
+            canSubmit={!held}
             placeholder={briefPlaceholder}
             maxLength={briefMaxLength}
             rows={4}
