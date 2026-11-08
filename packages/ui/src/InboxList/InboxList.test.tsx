@@ -781,3 +781,42 @@ test('chat density sets rows full bleed with a hairline between them, and a grou
     uninstall();
   }
 });
+
+test('the arrow keys walk the rows, and Home and End go to the ends', () => {
+  render(
+    <InboxList label="Activity">
+      <InboxGroup label="Today">
+        <InboxRow title="One" onClick={() => {}}>
+          First
+        </InboxRow>
+        <InboxRow title="Two" onClick={() => {}} actions={<button type="button">Mark as read</button>}>
+          Second
+        </InboxRow>
+      </InboxGroup>
+      <InboxGroup label="Yesterday">
+        <InboxRow title="Three" onClick={() => {}}>
+          Third
+        </InboxRow>
+      </InboxGroup>
+    </InboxList>,
+  );
+  const [one, two, three] = ['One First', 'Two Second', 'Three Third'].map((name) => screen.getByRole('button', { name }));
+  one!.focus();
+  fireEvent.keyDown(one!, { key: 'ArrowDown' });
+  expect(document.activeElement).toBe(two);
+  fireEvent.keyDown(two!, { key: 'ArrowDown' });
+  expect(document.activeElement).toBe(three);
+  fireEvent.keyDown(three!, { key: 'ArrowDown' });
+  expect(document.activeElement).toBe(three);
+  fireEvent.keyDown(three!, { key: 'Home' });
+  expect(document.activeElement).toBe(one);
+  fireEvent.keyDown(one!, { key: 'End' });
+  expect(document.activeElement).toBe(three);
+  fireEvent.keyDown(three!, { key: 'ArrowUp' });
+  expect(document.activeElement).toBe(two);
+  // A row's own action is left to itself.
+  const action = screen.getByRole('button', { name: 'Mark as read' });
+  action.focus();
+  fireEvent.keyDown(action, { key: 'ArrowDown' });
+  expect(document.activeElement).toBe(action);
+});
