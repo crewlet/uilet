@@ -15,6 +15,9 @@
   /* A question and its answers read best at about seventy characters a line. */
   --crewlet-reading-pane-measure: 640px;
 
+  /* EVERY GRID HERE IS ONE minmax(0, 1fr) TRACK, never an implicit `auto`
+     one: an auto track is as wide as its widest child's longest unbreakable
+     line, so one code line would carry every block beside it past the measure. */
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: calc(var(--spacing-4) + var(--spacing-1) / 2);
@@ -101,6 +104,7 @@
 
 .crewlet-reading-pane__lead {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-2);
   min-width: 0;
   font-size: var(--font-size-sm);
@@ -115,6 +119,7 @@
 
 .crewlet-reading-pane__quote {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-2);
   min-width: 0;
   margin: 0;
@@ -140,6 +145,7 @@
 
 .crewlet-reading-pane__reasoning {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-1);
   min-width: 0;
   padding: var(--spacing-3) calc(var(--spacing-3) + var(--spacing-1) / 2);
@@ -160,6 +166,7 @@
 
 .crewlet-reading-pane__reasoning-body {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-2);
   min-width: 0;
   overflow-wrap: anywhere;
