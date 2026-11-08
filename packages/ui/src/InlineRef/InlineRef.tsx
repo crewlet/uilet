@@ -45,6 +45,13 @@ export interface InlineRefProps {
   wrap?: boolean | undefined;
   /** Read after the words of a link that leaves the application. */
   newTabLabel?: string | undefined;
+  /**
+   * Punctuation that opens and closes around the reference in its sentence
+   * ("(" and ")."), drawn with it so it never stays on a line the reference
+   * left (`peelPunctuation`). It is not part of a link's words.
+   */
+  open?: string | undefined;
+  close?: string | undefined;
   className?: string | undefined;
 }
 
@@ -113,6 +120,8 @@ export function InlineRef({
   code = false,
   wrap = false,
   newTabLabel = 'opens in a new tab',
+  open = '',
+  close = '',
   className,
 }: InlineRefProps) {
   const target = href === undefined ? null : safeHref(href);
@@ -126,9 +135,19 @@ export function InlineRef({
     target !== null && 'crewlet-inline-ref--link',
     className,
   );
+  // A wrapping reference holds its punctuation inside its head, an atomic box;
+  // a closing mark after its words needs no holding, since no line breaks there.
+  const held = (mark: string) =>
+    mark ? (
+      <span className="crewlet-inline-ref__punct" aria-hidden={target !== null ? 'true' : undefined}>
+        {mark}
+      </span>
+    ) : null;
+  const closeInHead = wrap && rest.length === 0;
   const body = (
     <>
       <span className="crewlet-inline-ref__head">
+        {wrap ? held(open) : null}
         {!hasMark ? null : (
           <span
             className={cx('crewlet-inline-ref__mark', `crewlet-inline-ref__mark--${markShape}`)}
@@ -144,6 +163,7 @@ export function InlineRef({
          */}
         {kind === undefined ? null : <span className="crewlet-inline-ref__said">{`${kind}: `}</span>}
         <span className="crewlet-inline-ref__text">{head}</span>
+        {closeInHead ? held(close) : null}
       </span>
       {rest.length === 0 ? null : <span className="crewlet-inline-ref__text crewlet-inline-ref__rest">{rest}</span>}
       {/*
@@ -154,21 +174,38 @@ export function InlineRef({
       {external ? <span className="crewlet-inline-ref__said">{` (${newTabLabel})`}</span> : null}
     </>
   );
-  if (target === null) {
-    return (
+  const ref =
+    target === null ? (
       <span className={classes} title={title}>
         {body}
       </span>
+    ) : (
+      <a
+        className={classes}
+        href={target}
+        title={title}
+        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      >
+        {body}
+      </a>
+    );
+  if (wrap) {
+    if (closeInHead || !close) return ref;
+    return (
+      <>
+        {ref}
+        {close}
+      </>
     );
   }
-  return (
-    <a
-      className={classes}
-      href={target}
-      title={title}
-      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-    >
-      {body}
-    </a>
+  // One atomic box with its punctuation, outside the link, no wider than the line.
+  return open || close ? (
+    <span className="crewlet-inline-ref-bound">
+      {open}
+      {ref}
+      {close}
+    </span>
+  ) : (
+    ref
   );
 }

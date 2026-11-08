@@ -22,6 +22,19 @@
   overflow-wrap: anywhere;
 }
 
+/* A reference and the punctuation around it are one atomic box, so a line
+   never breaks between "(" and the reference (peelPunctuation). */
+.crewlet-inline-ref-bound {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+/* Punctuation inside a wrapping reference's head takes no link underline. */
+.crewlet-inline-ref__punct {
+  display: inline-block;
+}
+
 /* What follows the head breaks wherever it must, so an address's path (one
    unbroken word) wraps inside any box rather than running past it. */
 .crewlet-inline-ref__rest {

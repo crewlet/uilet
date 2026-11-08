@@ -92,7 +92,9 @@
   font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-tight);
   letter-spacing: var(--font-letter-spacing-snug);
-  text-wrap: balance;
+  /* It fills its first line, and only keeps a last word from standing alone:
+     balanced, a question's lines were evened out of the width it had. */
+  text-wrap: pretty;
   overflow-wrap: anywhere;
   color: var(--color-text-primary);
 }

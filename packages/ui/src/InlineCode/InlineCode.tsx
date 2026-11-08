@@ -35,6 +35,13 @@ export interface InlineCodeProps extends HTMLAttributes<HTMLElement> {
    * tears the sentence around it apart.
    */
   whole?: boolean | undefined;
+  /**
+   * Punctuation that opens and closes around the chip in its sentence ("("
+   * and ")."), kept on the chip's line where the chip moves whole
+   * (`peelPunctuation`). Drawn outside the chip's ground.
+   */
+  open?: string | undefined;
+  close?: string | undefined;
 }
 
 /**
@@ -72,12 +79,14 @@ export function InlineCode({
   tone = 'default',
   truncate = false,
   whole = false,
+  open = '',
+  close = '',
   className,
   children,
   ...rest
 }: InlineCodeProps) {
   const runs = variant === 'reference' ? referenceRuns(children) : null;
-  return (
+  const chip = (
     <code
       {...rest}
       className={cx(
@@ -99,5 +108,23 @@ export function InlineCode({
         </>
       )}
     </code>
+  );
+  if (!open && !close) return chip;
+  // A chip that moves whole is an atomic box: its punctuation joins it in one.
+  if (whole || truncate) {
+    return (
+      <span className="crewlet-inline-code-bound">
+        {open}
+        {chip}
+        {close}
+      </span>
+    );
+  }
+  return (
+    <>
+      {open}
+      {chip}
+      {close}
+    </>
   );
 }

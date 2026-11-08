@@ -208,3 +208,48 @@ test("an address wraps after its host: the mark keeps the host, and the path bre
   expect(container.querySelector(".crewlet-inline-ref__rest")?.textContent).toBe("/a/very/long/path/to/a/report-2026-11-06");
   expect(rule(css("InlineRef.css"), ".crewlet-inline-ref__rest")).toContain("overflow-wrap: anywhere");
 });
+
+test("punctuation handed to a reference is held with it, and is not part of a link's words", () => {
+  const { container } = render(
+    <p>
+      Approve merging{" "}
+      <InlineRef href="#/worklet/ENG-42" code open="(" close=")">
+        ENG-42
+      </InlineRef>{" "}
+      into main?
+    </p>,
+  );
+  // A reference that does not wrap is one atomic box with its punctuation, outside the link.
+  const bound = container.querySelector(".crewlet-inline-ref-bound")!;
+  expect(bound.textContent).toBe("(ENG-42)");
+  expect(bound.querySelector("a")?.textContent).toBe("ENG-42");
+  expect(rule(css("InlineRef.css"), ".crewlet-inline-ref-bound")).toContain("display: inline-block");
+});
+
+test("a wrapping reference holds an opening mark in its head, and a closing one after its words", () => {
+  const { container } = render(
+    <p>
+      The notes{" "}
+      <InlineRef href="https://example.com/notes" mark={<svg />} wrap open="(" close=").">
+        the restart notes
+      </InlineRef>
+    </p>,
+  );
+  const head = container.querySelector(".crewlet-inline-ref__head")!;
+  const opening = head.querySelector(".crewlet-inline-ref__punct")!;
+  expect(opening.textContent).toBe("(");
+  // Not part of the link's name: its words are.
+  expect(opening.getAttribute("aria-hidden")).toBe("true");
+  // After the words, outside the link: a line never breaks before a closing mark.
+  expect(container.querySelector("a")?.nextSibling?.textContent).toBe(").");
+  // A head that is the whole reference holds its closing mark too.
+  const lone = render(
+    <InlineRef href="https://example.com/notes" mark={<svg />} wrap open="(" close=")">
+      notes
+    </InlineRef>,
+  ).container;
+  expect([...lone.querySelectorAll(".crewlet-inline-ref__head .crewlet-inline-ref__punct")].map((p) => p.textContent)).toEqual([
+    "(",
+    ")",
+  ]);
+});

@@ -236,3 +236,29 @@ export const InAChoice: Story = {
     />
   ),
 };
+
+/**
+ * Punctuation around a reference stays on its line: the caller hands what
+ * opens and closes around it (`peelPunctuation`) to `open` and `close`, so a
+ * line never ends on "(" while the reference moves on, at any of these widths.
+ */
+export const PunctuationAroundIt: Story = {
+  render: () => (
+    <>
+      {[220, 260, 300].map((width) => (
+        <div key={width} style={{ maxWidth: width, marginBlockEnd: 'var(--spacing-4)' }}>
+          <p>
+            {`${width}px.`} Approve merging backend#51{' '}
+            <InlineRef kind="Task" mark={<SquareKanbanGlyph />} href="#/worklet/ENG-42" code open="(" close=")">
+              ENG-42
+            </InlineRef>{' '}
+            into main? The notes are at{' '}
+            <InlineRef href="https://status.example.com/incidents/2026-11-07" mark={<GlobeGlyph />} wrap open="(" close=").">
+              https://status.example.com/incidents/2026-11-07
+            </InlineRef>
+          </p>
+        </div>
+      ))}
+    </>
+  ),
+};

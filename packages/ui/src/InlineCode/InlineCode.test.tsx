@@ -128,3 +128,24 @@ test('only a reference shaped ${NAME} is cut, and only in the reference variant'
   const plain = render(<InlineCode>{'${SLACK_BOT_TOKEN}'}</InlineCode>);
   expect(runs(plain.container.querySelector('code')!)).toEqual(['${SLACK_BOT_TOKEN}']);
 });
+
+test('a whole chip and its punctuation are one box, and a running chip just has it beside it', () => {
+  const whole = render(
+    <InlineCode whole open="(" close=").">
+      make deploy
+    </InlineCode>,
+  ).container;
+  const bound = whole.querySelector('.crewlet-inline-code-bound')!;
+  expect(bound.textContent).toBe('(make deploy).');
+  // Outside the chip's ground.
+  expect(bound.querySelector('code')?.textContent).toBe('make deploy');
+  const running = render(
+    <p>
+      <InlineCode open="(" close=")">
+        /srv/releases/worker.tar
+      </InlineCode>
+    </p>,
+  ).container;
+  expect(running.querySelector('.crewlet-inline-code-bound')).toBeNull();
+  expect(running.querySelector('p')?.textContent).toBe('(/srv/releases/worker.tar)');
+});

@@ -1,4 +1,6 @@
 export { cx } from './cx.js';
+export { peelPunctuation } from './punctuation.js';
+export type { PeeledPunctuation } from './punctuation.js';
 export { SECRET_INPUT_PROPS } from './secretInput.js';
 export { attachRef, composeRefs, useComposedRef } from './composedRef.js';
 export { tokenMs } from './tokenMs.js';
