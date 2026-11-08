@@ -58,7 +58,7 @@
     "clean": "rm -rf dist src/index.ts src/themes.ts src/palettes.ts"
   },
   "devDependencies": {
-    "style-dictionary": "^5.6.0"
+    "style-dictionary": "^5.8.0"
   },
   "publishConfig": {
     "access": "public",
