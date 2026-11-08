@@ -91,11 +91,68 @@ test('where it reaches the sheet, the detail scrolls with its inset inside and i
   expect(foldedBleeding).toContain('scrollbar-gutter: stable;');
 });
 
-// A DIRECTORY'S LINES RUN TO THE HAIRLINE: they draw their own inset, so the
-// list's own end inset stood their states 60px off the line beside them.
-test('a list pane holding a directory gives its end inset back, and only that one', () => {
-  expect(rule('.crewlet-list-detail__list:has(> .crewlet-directory)')).toContain('padding-right: 0;');
+// NAVIGATION ROWS RUN TO THE HAIRLINE: a directory's lines and an inbox's rows
+// draw their own inset and fills, so the list's own end inset stood their
+// states off the line beside them. Matched at any depth: an inbox a host had
+// wrapped in a box of its own kept the gutter, and every row stopped 32px short.
+test('a list pane holding a directory or an inbox, however wrapped, gives its end inset back', () => {
+  expect(rule('.crewlet-list-detail__list:has(.crewlet-directory, .crewlet-inbox-list)')).toContain('padding-right: 0;');
   expect(rule('.crewlet-list-detail__list')).toContain('padding-right: var(--crewlet-list-detail-gutter);');
+});
+
+test('with nothing chosen there is no detail pane, and the list is the whole width', () => {
+  const { container, rerender } = render(<ListDetail list="list" showing="detail" />);
+  const root = container.firstElementChild!;
+  expect(container.querySelector('.crewlet-list-detail__detail')).toBeNull();
+  expect(root.classList.contains('crewlet-list-detail--alone')).toBe(true);
+  // A phone shows the list: there is nothing else to show.
+  expect(root.classList.contains('crewlet-list-detail--showing-list')).toBe(true);
+  rerender(<ListDetail list="list">{null}</ListDetail>);
+  expect(container.querySelector('.crewlet-list-detail__detail')).toBeNull();
+  rerender(<ListDetail list="list">detail</ListDetail>);
+  expect(container.querySelector('.crewlet-list-detail__detail')!.textContent).toBe('detail');
+  expect(container.firstElementChild!.classList.contains('crewlet-list-detail--alone')).toBe(false);
+  const flat = css.replace(/\s+/g, ' ');
+  expect(rule('.crewlet-list-detail--alone.crewlet-list-detail--half .crewlet-list-detail__panes', flat)).toContain(
+    'grid-template-columns: minmax(0, 1fr);',
+  );
+  const alone = rule('} .crewlet-list-detail--alone .crewlet-list-detail__list', flat);
+  expect(alone).toContain('padding-right: 0;');
+  expect(alone).toContain('border-right: 0;');
+});
+
+test('a half split shares the width evenly, and still folds to one pane', () => {
+  const { container } = render(
+    <ListDetail list="list" listWidth="half" flush>
+      detail
+    </ListDetail>,
+  );
+  const root = container.firstElementChild!;
+  expect(root.classList.contains('crewlet-list-detail--half')).toBe(true);
+  expect(root.classList.contains('crewlet-list-detail--flush')).toBe(true);
+  expect(rule('} .crewlet-list-detail--half .crewlet-list-detail__panes', css.replace(/\s+/g, ' '))).toContain(
+    'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);',
+  );
+  // The fold's selector outranks the half split's, so a narrow half split is one pane.
+  const folds = (css.match(/@container crewlet-list-detail \(width < 640px\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '').replace(/\s+/g, ' ');
+  expect(rule('.crewlet-list-detail .crewlet-list-detail__panes', folds)).toContain('grid-template-columns: minmax(0, 1fr);');
+  // Flush: the panes meet at the hairline.
+  expect(rule('.crewlet-list-detail--flush .crewlet-list-detail__panes')).toContain('gap: 0;');
+  expect(rule('.crewlet-list-detail--flush .crewlet-list-detail__list')).toContain('padding-right: 0;');
+});
+
+test('the way back is a named button drawn only while the panes are folded', () => {
+  let pressed = 0;
+  const { getByRole } = render(
+    <ListDetail list="list" showing="detail">
+      <ListDetail.Back label="Back to Activity" onClick={() => (pressed += 1)} />
+    </ListDetail>,
+  );
+  getByRole('button', { name: 'Back to Activity' }).click();
+  expect(pressed).toBe(1);
+  expect(rule('.crewlet-list-detail__back')).toContain('display: none;');
+  const folds = (css.match(/@container crewlet-list-detail \(width < 640px\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '').replace(/\s+/g, ' ');
+  expect(rule('.crewlet-list-detail__back', folds)).toContain('display: inline-flex;');
 });
 
 test("standing in a fill screen's column, it reaches past the column's end pad to the sheet's edge", () => {

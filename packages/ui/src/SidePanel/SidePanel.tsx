@@ -41,6 +41,12 @@ export interface SidePanelProps {
   subtitle?: ReactNode;
   /** A mark before the title: the product mark, the glyph of the control that opened it. */
   icon?: ReactNode;
+  /**
+   * A control before the title and its mark: the way back where the panel is
+   * a list's detail (`ListDetail.Back`, drawn only while the list is folded
+   * out of sight). Unlike `icon`, it is read and reached.
+   */
+  leading?: ReactNode;
   /** Draw the title for assistive technology only, where the icon says it. */
   hideTitle?: boolean | undefined;
   /**
@@ -133,6 +139,7 @@ export function SidePanel({
   title,
   subtitle,
   icon,
+  leading,
   hideTitle,
   density,
   onClose,
@@ -158,6 +165,7 @@ export function SidePanel({
       title={title}
       subtitle={subtitle}
       icon={icon}
+      leading={leading}
       hideTitle={hideTitle}
       density={density}
       onClose={onClose}

@@ -1,8 +1,10 @@
 import {
   Children,
   cloneElement,
+  createContext,
   isValidElement,
   useCallback,
+  useContext,
   useEffect,
   useId,
   useLayoutEffect,
@@ -24,10 +26,24 @@ import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/heading
 import { Eyebrow } from '../Eyebrow/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
+/** How an inbox is set: `default` (rounded rows, an eyebrow per group) or `chat`. */
+export type InboxListDensity = 'default' | 'chat';
+
 export interface InboxListProps extends HTMLAttributes<HTMLElement> {
   /** Names the list as a landmark: "Inbox". */
   label: string;
+  /**
+   * `chat` sets the rows at a conversation's scale (ChatScale.css): a 36px
+   * face, the name and the words on the chat step, the conversation's side
+   * inset, 16px above and below each row and a hairline between rows. Rows
+   * run full bleed, the open one a flat wash, and a group's label reads as a
+   * day ("Monday, November 17") rather than an eyebrow. For a list of messages,
+   * such as a person's activity or their direct conversations.
+   */
+  density?: InboxListDensity | undefined;
 }
+
+const InboxDensity = createContext<InboxListDensity>('default');
 
 /**
  * The column of an inbox: what reached a person, grouped, one row each, read
@@ -37,10 +53,14 @@ export interface InboxListProps extends HTMLAttributes<HTMLElement> {
  * between them to read one at a time. It promises no columns, so it draws
  * none, and its rows are as tall as their words rather than one fixed height.
  */
-export function InboxList({ label, className, children, ...rest }: InboxListProps) {
+export function InboxList({ label, density = 'default', className, children, ...rest }: InboxListProps) {
   return (
-    <nav {...rest} aria-label={label} className={cx('crewlet-inbox-list', className)}>
-      {children}
+    <nav
+      {...rest}
+      aria-label={label}
+      className={cx('crewlet-inbox-list', density === 'chat' && 'crewlet-inbox-list--chat', className)}
+    >
+      <InboxDensity.Provider value={density}>{children}</InboxDensity.Provider>
     </nav>
   );
 }
@@ -242,7 +262,12 @@ function useLeavingRows(children: ReactNode): ReactNode[] {
 /**
  * A labelled run of rows. The label is a heading set in the micro-label
  * register, so a reader navigating by heading lands on each group and a
- * reader scanning sees where one ends.
+ * reader scanning sees where one ends. In a `chat` list it is set as a day,
+ * in the words' own case.
+ *
+ * THE GROUP IS WHERE ROWS LIVE: it draws the list element (`ul`) an
+ * `InboxRow` is an item of. A row placed straight in the `InboxList` is an
+ * item of no list, and says so once in development.
  */
 export function InboxGroup({
   label,
@@ -259,6 +284,9 @@ export function InboxGroup({
   ...rest
 }: InboxGroupProps) {
   const rows = useLeavingRows(children);
+  const density = useContext(InboxDensity);
+  const word = (words: ReactNode) =>
+    density === 'chat' ? <span className="crewlet-inbox-list__day">{words}</span> : <Eyebrow>{words}</Eyebrow>;
   const level = useHeadingLevel();
   const Heading = headingTag(headingLevel ?? level);
   const labelId = useId();
@@ -310,14 +338,14 @@ export function InboxGroup({
             onClick={toggle}
           >
             <ChevronDownGlyph aria-hidden size="sm" className="crewlet-inbox-list__chevron" />
-            <Eyebrow>{label}</Eyebrow>
+            {word(label)}
             {counted}
           </button>
           {arrival}
         </Heading>
       ) : (
         <Heading id={labelId} className="crewlet-inbox-list__label">
-          <Eyebrow>{label}</Eyebrow>
+          {word(label)}
           {counted}
           {arrival}
         </Heading>
@@ -330,6 +358,12 @@ export function InboxGroup({
 }
 
 export type InboxRowTone = 'default' | 'danger';
+
+/** How many lines a row's words take before they stop. */
+export type InboxRowLines = 2 | 3 | 'all';
+
+/** A row outside a list element is reported once a page, not once a row. */
+let toldOutsideList = false;
 
 export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'onClick' | 'title'> {
   /** Who the row is from: a seat's or a person's name. */
@@ -358,8 +392,30 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
    * with the name's line beside its top.
    */
   leading?: ReactNode;
-  /** What the row says, in up to three lines. */
+  /** What the row says, in up to three lines (`lines`). */
   children?: ReactNode;
+  /**
+   * How many lines the words take before they stop with an ellipsis: 3 (the
+   * default), 2 for a row read beside an open detail, or `all` for a row that
+   * is read in full where it stands, such as a message in a list of them.
+   */
+  lines?: InboxRowLines | undefined;
+  /**
+   * After the words, in the quiet ink: why the row reached the reader and
+   * where ("Mention in #engineering"), on a line of its own that wraps rather
+   * than cuts. Part of the row's name.
+   */
+  context?: ReactNode;
+  /** A small glyph before the context, hidden from a screen reader: the kind of row. */
+  contextIcon?: ReactNode;
+  /**
+   * The row's quick actions (a `MessageActions` tray): floated over the end
+   * of its first line, over the time, while the row is hovered or holds
+   * focus. Never a reflow: the row keeps its height and its words their
+   * place. Outside the row's control, so each action is a control of its own,
+   * reached by Tab after the row.
+   */
+  actions?: ReactNode;
   /** Drawn after the words in the quiet ink, inside the same three lines: a comment's own text. */
   excerpt?: ReactNode;
   /**
@@ -450,6 +506,10 @@ export function InboxRow({
   meta,
   leading,
   excerpt,
+  lines = 3,
+  context,
+  contextIcon,
+  actions,
   aside,
   selected = false,
   unread = false,
@@ -479,6 +539,17 @@ export function InboxRow({
    */
   const self = useRef<HTMLLIElement | null>(null);
   const presence = usePresence(!leaving, self, INBOX_ROW_LEAVE);
+  // AN ITEM OF NO LIST is read as no list at all: a screen reader announces
+  // neither the count nor the position. Said once, in development.
+  useEffect(() => {
+    if (toldOutsideList || !developing()) return;
+    const parent = self.current?.parentElement;
+    if (!parent || parent.tagName === 'UL' || parent.tagName === 'OL') return;
+    toldOutsideList = true;
+    console.warn(
+      '[crewlet] InboxRow was drawn outside a list element. Place rows in an InboxGroup, which draws the list they are items of (give it hideLabel where a heading would repeat the screen).',
+    );
+  }, []);
   const gone = !presence.present;
   useLayoutEffect(() => {
     if (presence.leaving) releaseFocus(self.current);
@@ -509,6 +580,8 @@ export function InboxRow({
   const hasStatus = status !== undefined && status !== null;
   const hasMeta = meta !== undefined;
   const hasOutcome = outcome !== undefined && outcome !== null;
+  const hasContext = context !== undefined && context !== null;
+  const hasActions = actions !== undefined && actions !== null && actions !== false;
   const labelledBy = [
     leading === undefined ? null : part('leading'),
     part('title'),
@@ -516,6 +589,7 @@ export function InboxRow({
     where === undefined ? null : part('where'),
     hasStatus || hasMeta ? part('end') : null,
     part('text'),
+    hasContext ? part('context') : null,
     hasOutcome ? part('outcome') : null,
     unread ? part('unread') : null,
     done ? part('done') : null,
@@ -564,7 +638,7 @@ export function InboxRow({
             </span>{' '}
           </>
         )}
-        <span id={part('text')} className="crewlet-inbox-row__text">
+        <span id={part('text')} className={cx('crewlet-inbox-row__text', `crewlet-inbox-row__text--lines-${lines}`)}>
           {children}
           {excerpt === undefined ? null : (
             <>
@@ -573,16 +647,32 @@ export function InboxRow({
             </>
           )}
         </span>
+        {hasContext ? (
+          <>
+            {' '}
+            <span id={part('context')} className="crewlet-inbox-row__line crewlet-inbox-row__context">
+              {contextIcon === undefined ? null : (
+                <span aria-hidden className="crewlet-inbox-row__line-icon">
+                  {contextIcon}
+                </span>
+              )}
+              <span className="crewlet-inbox-row__line-text">{context}</span>
+            </span>
+          </>
+        ) : null}
         {hasOutcome ? (
           <>
             {' '}
-            <span id={part('outcome')} className={cx('crewlet-inbox-row__outcome', `crewlet-inbox-row__outcome--${outcomeTone}`)}>
+            <span
+              id={part('outcome')}
+              className={cx('crewlet-inbox-row__line', 'crewlet-inbox-row__outcome', `crewlet-inbox-row__outcome--${outcomeTone}`)}
+            >
               {outcomeIcon === undefined ? null : (
-                <span aria-hidden className="crewlet-inbox-row__outcome-icon">
+                <span aria-hidden className="crewlet-inbox-row__line-icon crewlet-inbox-row__outcome-icon">
                   {outcomeIcon}
                 </span>
               )}
-              <span className="crewlet-inbox-row__outcome-text">{outcome}</span>
+              <span className="crewlet-inbox-row__line-text crewlet-inbox-row__outcome-text">{outcome}</span>
             </span>
           </>
         ) : null}
@@ -631,6 +721,7 @@ export function InboxRow({
       className={cx(
         'crewlet-inbox-row',
         selected && 'crewlet-inbox-row--selected',
+        hasActions && 'crewlet-inbox-row--actions',
         arrived && 'crewlet-inbox-row--arrived',
         presence.leaving && 'crewlet-inbox-row--leaving',
         className,
@@ -643,6 +734,7 @@ export function InboxRow({
           <div className="crewlet-inbox-row__aside">{aside}</div>
         )}
       </div>
+      {hasActions ? <div className="crewlet-inbox-row__actions">{actions}</div> : null}
     </li>
   );
 }

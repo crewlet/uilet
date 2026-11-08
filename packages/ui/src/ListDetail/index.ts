@@ -1,4 +1,4 @@
 import './ListDetail.css';
 
-export { ListDetail } from './ListDetail.js';
-export type { ListDetailPane, ListDetailProps } from './ListDetail.js';
+export { ListDetail, ListDetailBack } from './ListDetail.js';
+export type { ListDetailBackProps, ListDetailListWidth, ListDetailPane, ListDetailProps } from './ListDetail.js';

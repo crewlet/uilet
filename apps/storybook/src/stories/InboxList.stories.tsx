@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { expect } from 'storybook/test';
 import {
   Avatar,
   Button,
@@ -10,11 +11,13 @@ import {
   InboxToggle,
   Link,
   ListDetail,
+  MessageAction,
+  MessageActions,
   ReadingPane,
   ReadingPaneTitle,
   Tag,
 } from '@crewlethq/ui';
-import { CheckGlyph, MessageSquareGlyph } from '@crewlethq/icons/glyphs';
+import { ArrowUpRightGlyph, AtSignGlyph, CheckGlyph, MessageSquareGlyph, MessagesSquareGlyph, FaceSlightlySmilingGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * The inbox's column. Each row names who it is from, says in up to three
@@ -395,4 +398,122 @@ export const AnsweringMovesOn: Story = {
       </div>
     );
   },
+};
+
+/* ---- Chat density: a list of messages, read full width, then beside one -- */
+
+interface Said {
+  key: string;
+  who: string;
+  when: string;
+  words: string;
+  why: 'Mention' | 'Reply' | 'Reaction';
+  where: string;
+  unread?: boolean;
+}
+
+const SAID: Array<{ day: string; items: Said[] }> = [
+  {
+    day: 'Today',
+    items: [
+      { key: 's1', who: 'Casey Morgan', when: '10:42', words: 'Can you review the index change before the migration? It touches the harvest slots too.', why: 'Mention', where: '#engineering', unread: true },
+      {
+        key: 's2',
+        who: 'Avery Quinn',
+        when: '09:15',
+        words:
+          'Here is the full write-up of the staging incident. The export started timing out for the largest gardens once the bookings table passed two million rows, and the planner estimated one row per garden where the real figure is closer to four hundred. We added a composite index, raised the statistics target and paged the export at 200 rows. The largest garden now exports in 1.8 seconds, down from a timeout at 30.',
+        why: 'Reply',
+        where: '#engineering thread',
+      },
+    ],
+  },
+  {
+    day: 'Monday, November 17',
+    items: [{ key: 's3', who: 'Jordan Reyes', when: 'Nov 17', words: 'Lunch is on the studio today. Thanks everyone for a calm launch week.', why: 'Reaction', where: '#general' }],
+  },
+];
+
+const WHY_GLYPH = { Mention: <AtSignGlyph size="sm" />, Reply: <MessagesSquareGlyph size="sm" />, Reaction: <FaceSlightlySmilingGlyph size="sm" /> };
+
+function SaidList({ open, onOpen }: { open: string; onOpen: (key: string) => void }) {
+  return (
+    <InboxList label="Activity" density="chat">
+      {SAID.map((day) => (
+        <InboxGroup key={day.day} label={day.day}>
+          {day.items.map((item) => (
+            <InboxRow
+              key={item.key}
+              title={item.who}
+              meta={item.when}
+              leading={<Avatar name={item.who} size={36} />}
+              lines={open ? 2 : 'all'}
+              context={`${item.why} in ${item.where}`}
+              contextIcon={WHY_GLYPH[item.why]}
+              unread={item.unread}
+              selected={open === item.key}
+              onClick={() => onOpen(item.key)}
+              actions={
+                <MessageActions label="Activity actions">
+                  <MessageAction label="Mark as read" icon={<CheckGlyph />} />
+                  <MessageAction label="Open in room" icon={<ArrowUpRightGlyph />} />
+                </MessageActions>
+              }
+            >
+              {item.words}
+            </InboxRow>
+          ))}
+        </InboxGroup>
+      ))}
+    </InboxList>
+  );
+}
+
+function SaidDetail({ item, onClose }: { item: Said; onClose: () => void }) {
+  return (
+    <ReadingPane>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <ListDetail.Back label="Back to Activity" onClick={onClose} />
+        <ReadingPaneTitle>{item.where}</ReadingPaneTitle>
+      </div>
+      <p style={{ margin: 0 }}>{item.words}</p>
+    </ReadingPane>
+  );
+}
+
+function SaidScreen({ initial = '', width }: { initial?: string; width?: number }) {
+  const [open, setOpen] = useState(initial);
+  const item = SAID.flatMap((day) => day.items).find((each) => each.key === open);
+  return (
+    <div style={{ height: 560, width }}>
+      <ListDetail list={<SaidList open={open} onOpen={setOpen} />} showing={item ? 'detail' : 'list'} listWidth="half" flush>
+        {item ? <SaidDetail item={item} onClose={() => setOpen('')} /> : null}
+      </ListDetail>
+    </div>
+  );
+}
+
+/**
+ * CHAT DENSITY, NOTHING OPEN: a list of messages at the transcript's scale,
+ * read at full width and in full, each with why it is here under it. Hover a
+ * row for its quick actions, floated over its time.
+ */
+export const ChatDensity: Story = {
+  render: () => <SaidScreen />,
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('.crewlet-list-detail')!;
+    const row = canvasElement.querySelector<HTMLElement>('.crewlet-inbox-row')!;
+    await expect(canvasElement.querySelector('.crewlet-list-detail__detail')).toBeNull();
+    await expect(Math.round(row.getBoundingClientRect().width)).toBe(Math.round(root.getBoundingClientRect().width));
+  },
+};
+
+/** One open: the list keeps half the width, its words clamped to two lines, beside the item. */
+export const ChatDensityOpen: Story = {
+  render: () => <SaidScreen initial="s2" />,
+};
+
+/** On a phone the open item is the whole screen, with the way back at its start. */
+export const ChatDensityPhone: Story = {
+  render: () => <SaidScreen initial="s2" width={390} />,
 };

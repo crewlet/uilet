@@ -55,6 +55,8 @@ export interface SidePanelBaseProps {
   title: string;
   /** A second line after the title, on its baseline: what the panel is about. */
   subtitle?: ReactNode;
+  /** A control before the title, such as `ListDetail.Back`. */
+  leading?: ReactNode;
   icon?: ReactNode;
   onClose: () => void;
   closeLabel: string;
@@ -95,6 +97,7 @@ export function SidePanelBase({
   alias,
   title,
   subtitle,
+  leading,
   icon,
   onClose,
   closeLabel,
@@ -227,6 +230,7 @@ export function SidePanelBase({
             scrolled && 'crewlet-side-panel__head--scrolled',
           )}
         >
+          {leading ?? null}
           {icon ? (
             <span className={part('icon', alias)} aria-hidden>
               {icon}
