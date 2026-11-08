@@ -64,6 +64,7 @@ export default tseslint.config(
       'packages/artifact-kit/src/**/*.{ts,tsx}',
       'apps/storybook/src/**/*.{ts,tsx}',
       'apps/ui-tests/src/**/*.{ts,tsx}',
+      'apps/ui-layout-tests/src/**/*.{ts,tsx}',
     ],
     extends: [jsxA11y.flatConfigs.recommended],
     plugins: { 'react-hooks': reactHooks },

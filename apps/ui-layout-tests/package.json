@@ -1,0 +1,28 @@
+{
+  "name": "@crewlethq/ui-layout-tests",
+  "private": true,
+  "type": "module",
+  "description": "The real-browser layout suite for @crewlethq/ui: what only a layout engine can answer, such as whether a panel scrolls sideways. A private workspace, so no test tooling reaches a published tarball.",
+  "scripts": {
+    "test": "vitest run",
+    "dev": "vitest",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf coverage"
+  },
+  "dependencies": {
+    "@crewlethq/icons": "0.2.0",
+    "@crewlethq/tokens": "0.2.0",
+    "@crewlethq/ui": "0.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/browser-playwright": "^5.0.3",
+    "playwright": "^1.65.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "vitest": "^5.0.3"
+  }
+}

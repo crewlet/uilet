@@ -51,7 +51,8 @@ npm run lint && npm run typecheck
 .
 ├── apps/
 │   ├── storybook/             # @crewlethq/storybook (private)
-│   └── ui-tests/              # @crewlethq/ui-tests (private): the jsdom suite for @crewlethq/ui
+│   ├── ui-tests/              # @crewlethq/ui-tests (private): the jsdom suite for @crewlethq/ui
+│   └── ui-layout-tests/       # @crewlethq/ui-layout-tests (private): the real-browser layout suite
 ├── packages/
 │   ├── tokens/                # @crewlethq/tokens
 │   ├── icons/                 # @crewlethq/icons

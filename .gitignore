@@ -6,6 +6,7 @@ dist
 .turbo
 coverage
 storybook-static
+.vitest
 *.log
 *.tsbuildinfo
 

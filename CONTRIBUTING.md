@@ -24,6 +24,7 @@ A pull request runs the same commands CI runs, and a change is ready when all of
 ```bash
 node scripts/release.mjs check   # manifests, workspace pins, lockfile sources, toolchain pins
 npm ci --ignore-scripts
+npx playwright install chromium --only-shell   # once: the layout suite's headless browser
 npm run build
 npm run lint                     # ESLint, plus the CSS custom property check in packages/ui
 npm run typecheck
