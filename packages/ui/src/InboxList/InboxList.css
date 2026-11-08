@@ -378,10 +378,11 @@
 }
 
 /*
- * What came of the row: a glyph in the tone's ink, then words in the
- * secondary ink, on one line that wraps rather than cuts.
+ * A line under the words: what came of the row (`outcome`), or why it
+ * reached the reader (`context`). A glyph, then words in the secondary ink,
+ * on one line that wraps rather than cuts.
  */
-.crewlet-inbox-row__outcome {
+.crewlet-inbox-row__line {
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-1);
@@ -393,7 +394,7 @@
   overflow-wrap: anywhere;
 }
 
-.crewlet-inbox-row__outcome-icon {
+.crewlet-inbox-row__line-icon {
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -421,11 +422,11 @@
   color: var(--color-brand-accent);
 }
 
-.crewlet-inbox-row__outcome-text {
+.crewlet-inbox-row__line-text {
   min-width: 0;
 }
 
-.crewlet-inbox-row__outcome-text strong {
+.crewlet-inbox-row__line-text strong {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
@@ -449,6 +450,142 @@
 /* A row with no leading slot: the words start at the control's own pad, and so does the task. */
 .crewlet-inbox-row:not(:has(.crewlet-inbox-row__leading)) .crewlet-inbox-row__aside {
   padding-inline-start: var(--spacing-2);
+}
+
+/*
+ * HOW MANY LINES THE WORDS TAKE: three by default, two beside an open detail,
+ * all of them for a row read in full where it stands.
+ */
+.crewlet-inbox-row__text--lines-2 {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.crewlet-inbox-row__text--lines-all {
+  display: block;
+  -webkit-line-clamp: none;
+  line-clamp: none;
+  overflow: visible;
+}
+
+/*
+ * THE QUICK ACTIONS FLOAT, never reflow: lifted over the end of the first
+ * line (the time) while the row is hovered or holds focus, and taking no room
+ * otherwise. Shown by opacity rather than display, so Tab still reaches them
+ * from the row and focus brings them up.
+ */
+.crewlet-inbox-row--actions {
+  position: relative;
+}
+
+.crewlet-inbox-row__actions {
+  position: absolute;
+  top: var(--crewlet-inbox-row-actions-top, 0px);
+  inset-inline-end: var(--spacing-2);
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.crewlet-inbox-row:hover > .crewlet-inbox-row__actions,
+.crewlet-inbox-row:focus-within > .crewlet-inbox-row__actions,
+.crewlet-inbox-row__actions:has([aria-expanded='true']) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---- Chat density -------------------------------------------------------- */
+
+/*
+ * A LIST OF MESSAGES, at a conversation's scale (ChatScale.css): the face,
+ * the name and the words at the transcript's sizes, the conversation's side
+ * inset, 16px above and below each row and a hairline between rows. A row runs
+ * the list's full width and the open one is a flat wash, so the column reads
+ * as a list of messages rather than a stack of cards.
+ */
+.crewlet-inbox-list--chat,
+.crewlet-inbox-list--chat .crewlet-inbox-list__group,
+.crewlet-inbox-list--chat .crewlet-inbox-list__rows {
+  gap: 0;
+}
+
+.crewlet-inbox-list--chat {
+  font-size: var(--crewlet-chat-text);
+  line-height: var(--crewlet-chat-line);
+}
+
+/* A group's label is a day: the words' own case, a step down, on the page's
+   ground, set on the row's inset so it starts over the faces. */
+.crewlet-inbox-list--chat .crewlet-inbox-list__label {
+  padding: var(--spacing-4) var(--crewlet-chat-pad-x) var(--spacing-2);
+  font-size: var(--crewlet-chat-meta);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-inbox-list__day {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row,
+.crewlet-inbox-list--chat .crewlet-inbox-row__control {
+  border-radius: 0;
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row {
+  border-bottom: 1px solid var(--color-border-default);
+  /* The tray sits on the name's line: its middle on the line's middle. */
+  --crewlet-inbox-row-actions-top: calc(var(--spacing-4) + var(--crewlet-chat-line) * var(--crewlet-chat-text) / 2 - var(--crewlet-chat-toolbar) / 2);
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row__actions {
+  inset-inline-end: var(--spacing-3);
+}
+
+/* The face hangs from the row's top pad, beside the name's line and the one
+   under it; the words start the face and the gap in, as in a transcript. */
+.crewlet-inbox-list--chat .crewlet-inbox-row__control,
+.crewlet-inbox-list--chat .crewlet-inbox-row__control--leading,
+.crewlet-inbox-list--chat .crewlet-inbox-row__control:only-child {
+  gap: var(--crewlet-chat-gap);
+  padding: var(--spacing-4) var(--crewlet-chat-pad-x);
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row__control--leading > .crewlet-inbox-row__main {
+  padding-top: 0;
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row__leading {
+  align-items: flex-start;
+  min-width: var(--crewlet-chat-avatar);
+  min-height: var(--crewlet-chat-avatar);
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row__main {
+  gap: 2px;
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row__head {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row__meta {
+  font-size: var(--crewlet-chat-meta);
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row__text {
+  line-height: var(--crewlet-chat-line);
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row__line {
+  padding-top: var(--spacing-1);
+  font-size: var(--crewlet-chat-meta);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-inbox-list--chat .crewlet-inbox-row__aside {
+  padding-inline: calc(var(--crewlet-chat-pad-x) + var(--crewlet-chat-avatar) + var(--crewlet-chat-gap)) var(--crewlet-chat-pad-x);
 }
 
 /* ---- The end of the list ---------------------------------------------- */

@@ -198,3 +198,18 @@ export const InAFillScreen: Story = {
     }
   },
 };
+
+/** Nothing chosen: no detail pane, and the list takes the whole width with no hairline. */
+export const NothingChosen: Story = {
+  render: (args) => (
+    <div style={{ height: 320 }}>
+      <ListDetail list={args.list} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('.crewlet-list-detail__detail')).toBeNull();
+    const root = canvasElement.querySelector<HTMLElement>('.crewlet-list-detail')!;
+    const list = canvasElement.querySelector<HTMLElement>('.crewlet-list-detail__list')!;
+    await expect(Math.round(list.getBoundingClientRect().width)).toBe(Math.round(root.getBoundingClientRect().width));
+  },
+};

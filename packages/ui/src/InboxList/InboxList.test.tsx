@@ -616,15 +616,17 @@ test('where it happened has its own unclamped line, read after the qualifier', (
   try {
     render(
       <InboxList label="Activity">
-        <InboxRow
-          title="Bartholomew Achterberg-Oyelaran"
-          qualifier="replied to a thread"
-          where="in #release-coordination-autumn-study-streaks-web-ios-android"
-          meta="4m"
-          onClick={() => {}}
-        >
-          The build is green again.
-        </InboxRow>
+        <InboxGroup label="Activity" hideLabel>
+          <InboxRow
+            title="Bartholomew Achterberg-Oyelaran"
+            qualifier="replied to a thread"
+            where="in #release-coordination-autumn-study-streaks-web-ios-android"
+            meta="4m"
+            onClick={() => {}}
+          >
+            The build is green again.
+          </InboxRow>
+        </InboxGroup>
       </InboxList>,
     );
     const row = screen.getByRole('button', {
@@ -635,6 +637,146 @@ test('where it happened has its own unclamped line, read after the qualifier', (
     const style = getComputedStyle(where);
     expect(style.display).toBe('block');
     expect(style.overflowWrap).toBe('anywhere');
+  } finally {
+    uninstall();
+  }
+});
+
+/*
+ * A ROW IS AN ITEM OF A LIST. Placed straight in the InboxList, a row was an
+ * `li` inside a `nav`, which a screen reader reads as no list at all.
+ */
+test('a row outside a list element says so once in development, and a grouped row never does', () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    render(
+      <InboxList label="Activity">
+        <InboxGroup label="Today" hideLabel>
+          <InboxRow title="Casey" meta="2m" onClick={() => {}}>
+            In a list
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>,
+    );
+    const outside = () => warn.mock.calls.filter(([words]) => String(words).includes('outside a list element'));
+    expect(outside()).toHaveLength(0);
+    cleanup();
+    render(
+      <InboxList label="Activity">
+        <InboxRow title="Casey" meta="2m" onClick={() => {}}>
+          In no list
+        </InboxRow>
+        <InboxRow title="Jordan" meta="3m" onClick={() => {}}>
+          Nor this one
+        </InboxRow>
+      </InboxList>,
+    );
+    expect(outside()).toHaveLength(1);
+  } finally {
+    warn.mockRestore();
+  }
+});
+
+test('the words take three lines by default, two beside a detail, or all of them', () => {
+  const uninstall = installSheets('InboxList/InboxList.css');
+  try {
+    const { container } = render(
+      <InboxList label="Activity">
+        <InboxGroup label="Today" hideLabel>
+          <InboxRow title="A" onClick={() => {}}>
+            Three
+          </InboxRow>
+          <InboxRow title="B" lines={2} onClick={() => {}}>
+            Two
+          </InboxRow>
+          <InboxRow title="C" lines="all" onClick={() => {}}>
+            All
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>,
+    );
+    const [three, two, all] = [...container.querySelectorAll('.crewlet-inbox-row__text')].map((el) => getComputedStyle(el));
+    expect(three!.getPropertyValue('-webkit-line-clamp')).toBe('3');
+    expect(two!.getPropertyValue('-webkit-line-clamp')).toBe('2');
+    expect(all!.getPropertyValue('-webkit-line-clamp')).toBe('none');
+    expect(all!.display).toBe('block');
+    expect(all!.overflow).toBe('visible');
+  } finally {
+    uninstall();
+  }
+});
+
+test('the context line is part of the row’s name, after the words, with its glyph hidden', () => {
+  render(
+    <InboxList label="Activity">
+      <InboxGroup label="Today" hideLabel>
+        <InboxRow title="Casey Morgan" meta="2m" context="Mention in #engineering" contextIcon={<svg data-testid="at" />} onClick={() => {}}>
+          Can you review the index change?
+        </InboxRow>
+      </InboxGroup>
+    </InboxList>,
+  );
+  const row = screen.getByRole('button', { name: 'Casey Morgan 2m Can you review the index change? Mention in #engineering' });
+  const glyph = within(row).getByTestId('at').parentElement!;
+  expect(glyph.getAttribute('aria-hidden')).toBe('true');
+});
+
+test('quick actions float outside the row’s control, shown on hover or focus and never reflowing', () => {
+  const uninstall = installSheets('InboxList/InboxList.css');
+  try {
+    const { container } = render(
+      <InboxList label="Activity" density="chat">
+        <InboxGroup label="Today" hideLabel>
+          <InboxRow title="Casey Morgan" meta="2m" actions={<button type="button">Mark as read</button>} onClick={() => {}}>
+            Can you review the index change?
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>,
+    );
+    const action = screen.getByRole('button', { name: 'Mark as read' });
+    const control = container.querySelector('.crewlet-inbox-row__control')!;
+    expect(control.contains(action)).toBe(false);
+    const tray = action.parentElement!;
+    expect(tray.classList.contains('crewlet-inbox-row__actions')).toBe(true);
+    expect(tray.parentElement!.classList.contains('crewlet-inbox-row--actions')).toBe(true);
+    const style = getComputedStyle(tray);
+    expect(style.position).toBe('absolute');
+    expect(style.opacity).toBe('0');
+    expect(style.display).not.toBe('none');
+    expect(getComputedStyle(tray.parentElement!).position).toBe('relative');
+  } finally {
+    uninstall();
+  }
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'InboxList.css'), 'utf8').replace(/\s+/g, ' ');
+  expect(css).toContain('.crewlet-inbox-row:hover > .crewlet-inbox-row__actions, .crewlet-inbox-row:focus-within > .crewlet-inbox-row__actions');
+});
+
+test('chat density sets rows full bleed with a hairline between them, and a group as a day', () => {
+  const uninstall = installSheets('InboxList/InboxList.css');
+  try {
+    const { container } = render(
+      <InboxList label="Activity" density="chat">
+        <InboxGroup label="Monday, November 17">
+          <InboxRow title="Casey Morgan" meta="2m" leading={<span />} selected onClick={() => {}}>
+            Can you review the index change?
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>,
+    );
+    expect(container.querySelector('.crewlet-inbox-list--chat')).not.toBeNull();
+    expect(screen.getByRole('heading', { name: 'Monday, November 17' }).querySelector('.crewlet-eyebrow')).toBeNull();
+    const row = container.querySelector('.crewlet-inbox-row')!;
+    const control = container.querySelector('.crewlet-inbox-row__control')!;
+    expect(px(row, 'border-top-left-radius')).toBe(0);
+    const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'InboxList.css'), 'utf8').replace(/\s+/g, ' ');
+    expect(sheet).toMatch(/\.crewlet-inbox-list--chat \.crewlet-inbox-row \{ border-bottom: 1px solid var\(--color-border-default\);/);
+    // jsdom resolves no custom property, and the chat scale's are not tokens:
+    // the row's pads are read from the sheet, at 16px above and below.
+    expect(control.classList.contains('crewlet-inbox-row__control--leading')).toBe(true);
+    expect(sheet).toContain(
+      '.crewlet-inbox-list--chat .crewlet-inbox-row__control, .crewlet-inbox-list--chat .crewlet-inbox-row__control--leading, .crewlet-inbox-list--chat .crewlet-inbox-row__control:only-child { gap: var(--crewlet-chat-gap); padding: var(--spacing-4) var(--crewlet-chat-pad-x); }',
+    );
+    expect(px(container.querySelector('.crewlet-inbox-row__main')!, 'padding-top')).toBe(0);
   } finally {
     uninstall();
   }

@@ -89,8 +89,47 @@
    list pane holding one gives its end inset back, and the lines run to the
    hairline as the rail's run to its edge. Folded to one pane, the pane takes
    the screen's inset again (below). */
-.crewlet-list-detail__list:has(> .crewlet-directory) {
+/* AND SO DOES AN INBOX, however the host wraps it: an InboxList's rows draw
+   their own inset and fills just as a directory's lines do. Matched as a
+   child only, a list a host wrapped in a box of its own kept the gutter, and
+   every row's fill stopped 32px short of the hairline. */
+.crewlet-list-detail__list:has(.crewlet-directory, .crewlet-inbox-list) {
   padding-right: 0;
+}
+
+/* NOTHING CHOSEN: the list is the whole width, with no hairline after it. */
+.crewlet-list-detail--alone .crewlet-list-detail__panes,
+.crewlet-list-detail--alone.crewlet-list-detail--half .crewlet-list-detail__panes {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.crewlet-list-detail--alone .crewlet-list-detail__list {
+  padding-right: 0;
+  border-right: 0;
+}
+
+/* HALF: the list and the detail share the width evenly. */
+.crewlet-list-detail--half .crewlet-list-detail__panes {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* FLUSH: the panes meet at the hairline, and each insets its own content. */
+.crewlet-list-detail--flush .crewlet-list-detail__panes {
+  gap: 0;
+}
+
+.crewlet-list-detail--flush .crewlet-list-detail__list {
+  padding-right: 0;
+}
+
+.crewlet-list-detail--flush .crewlet-list-detail__detail {
+  gap: 0;
+}
+
+/* The way back to the list is drawn only while the panes are folded (below). */
+.crewlet-list-detail__back {
+  display: none;
+  flex: none;
 }
 
 .crewlet-list-detail__detail {
@@ -106,7 +145,8 @@
    both fit, so the pane `showing` names takes the whole width and keeps its
    own scroller, which is what lets it sit in a screen that fills the window. */
 @container crewlet-list-detail (width < 640px) {
-  .crewlet-list-detail__panes {
+  /* Two classes, so a half split folds as well. */
+  .crewlet-list-detail .crewlet-list-detail__panes {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -127,6 +167,10 @@
   .crewlet-list-detail--showing-list .crewlet-list-detail__detail,
   .crewlet-list-detail--showing-detail .crewlet-list-detail__list {
     display: none;
+  }
+
+  .crewlet-list-detail__back {
+    display: inline-flex;
   }
 }
 

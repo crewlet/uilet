@@ -10,6 +10,7 @@ import {
   Card,
   ColorSwatch,
   FormField,
+  InboxGroup,
   InboxList,
   InboxRow,
   InlineRef,
@@ -384,9 +385,11 @@ export const AddressesAndPlaces: Story = {
           </InlineRef>
         </p>
         <InboxList label="Activity">
-          <InboxRow title="Bartholomew Achterberg-Oyelaran" qualifier="replied to a thread" where="in #release-coordination-autumn-study-streaks" meta="4m" onClick={() => {}}>
-            The build is green again.
-          </InboxRow>
+          <InboxGroup label="Activity" hideLabel>
+            <InboxRow title="Bartholomew Achterberg-Oyelaran" qualifier="replied to a thread" where="in #release-coordination-autumn-study-streaks" meta="4m" onClick={() => {}}>
+              The build is green again.
+            </InboxRow>
+          </InboxGroup>
         </InboxList>
       </div>
     </BothThemes>
