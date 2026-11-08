@@ -467,3 +467,31 @@ test('a chat head draws its rule only while the panel body is scrolled, and a fl
   });
   expect(head('Thread').classList.contains('crewlet-side-panel__head--scrolled')).toBe(false);
 });
+
+test('a leading control stands before the title, read and reached, unlike the decorative mark', () => {
+  let back = 0;
+  render(
+    <SidePanel
+      title="Thread"
+      icon={<svg data-testid="mark" />}
+      leading={
+        <button type="button" onClick={() => (back += 1)}>
+          Back to Activity
+        </button>
+      }
+      onClose={() => {}}
+    >
+      Replies
+    </SidePanel>,
+  );
+  const button = screen.getByRole('button', { name: 'Back to Activity' });
+  button.click();
+  expect(back).toBe(1);
+  expect(button.closest('[aria-hidden]')).toBeNull();
+  const head = button.parentElement!;
+  const heading = screen.getByRole('heading', { name: 'Thread' });
+  expect(head.contains(heading)).toBe(true);
+  // Before the mark and the title, in reading order.
+  expect(button.compareDocumentPosition(screen.getByTestId('mark')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(button.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
