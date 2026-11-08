@@ -8,6 +8,11 @@
  * whose final crumb links to the page it is on teaches a reader that the
  * control does nothing.
  *
+ * THE HEADING IS WHERE A PAGE SENDS FOCUS when the control holding it goes
+ * away (a removed card, a closed view). It is a reading position, not a
+ * control: focusable by script only (`tabIndex={-1}`), never a tab stop, and
+ * drawn with no ring.
+ *
  * A PAGE WHOSE SUBJECT CAN BE SWITCHED draws its control as that heading's
  * words (`current`): a switcher's button names the project the page is about
  * and opens the list of the others, so the reader changes the subject where
@@ -133,6 +138,7 @@ export function Breadcrumb({ crumbs, current, label = 'Breadcrumb', className, s
               <h1
                 className={cx('crewlet-breadcrumb__here', current !== undefined && 'crewlet-breadcrumb__here--control', face)}
                 aria-current="page"
+                tabIndex={-1}
               >
                 {current !== undefined ? current : words}
               </h1>

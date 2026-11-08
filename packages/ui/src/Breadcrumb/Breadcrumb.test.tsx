@@ -40,6 +40,18 @@ test('ancestors lead back out and the page is the heading, with no link to itsel
   expect(trail().querySelectorAll('svg.crewlet-breadcrumb__separator[aria-hidden="true"]')).toHaveLength(2);
 });
 
+// A PAGE SENDS FOCUS TO ITS HEADING when the control holding it goes away.
+// Mutation: drop the heading's tabIndex, or give it a visible ring.
+test('the heading takes focus from a script as a reading position, never from Tab', () => {
+  render(<Breadcrumb crumbs={crumbs} />);
+  const h1 = screen.getByRole('heading', { level: 1 });
+  expect(h1.tabIndex).toBe(-1);
+  h1.focus();
+  expect(document.activeElement).toBe(h1);
+  const ring = /\.crewlet-breadcrumb__here:focus-visible\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(ring).toMatch(/outline-color:\s*transparent/);
+});
+
 test('an ancestor with no page of its own is words, not a link', () => {
   render(<Breadcrumb crumbs={[{ label: 'Worklet', icon: <svg /> }, { label: 'All projects' }]} />);
   expect(screen.queryByRole('link')).toBeNull();
