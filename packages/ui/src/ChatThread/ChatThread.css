@@ -76,6 +76,18 @@
 }
 
 /*
+ * A FLUSH LOG (`flush`): its items carry their own insets, so the list keeps
+ * none at the sides and no gap between items. A conversation's rows then run
+ * edge to edge, their faces on the same side inset as the composer under the
+ * log, and a reply follows the one before it with no seam. A short step stays
+ * above the first item and under the last.
+ */
+.crewlet-chat-thread--flush .crewlet-chat-thread__items {
+  gap: 0;
+  padding: var(--spacing-3) 0 var(--spacing-2);
+}
+
+/*
  * The pill, centred in a row of its own under the log. IN FLOW, NOT FLOATING:
  * laid over the scroller it covered the last lines of whatever was being read,
  * a table's rows or an answer's text. Here the log gives up the row while the
