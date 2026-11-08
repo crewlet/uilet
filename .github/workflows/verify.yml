@@ -44,6 +44,12 @@ jobs:
           npm install --package-lock-only --ignore-scripts
           git diff --exit-code -- package-lock.json
 
+      # The headless browser the layout suite (@crewlethq/ui-layout-tests)
+      # measures in, at the revision the locked test runner names, with the
+      # system libraries it needs. Test tooling only: nothing published uses it.
+      - name: Install the layout suite's headless browser
+        run: npx --no playwright install --with-deps --only-shell chromium
+
       # One Turborepo run so independent tasks overlap. The jsdom suite's
       # tests run in the ui-tests job.
       - name: Build, lint, typecheck and test every workspace but the jsdom suite

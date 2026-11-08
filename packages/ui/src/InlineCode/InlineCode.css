@@ -27,11 +27,9 @@
   /* A URL IS ONE UNBREAKABLE WORD to a line breaker. Without this the chip is
      pushed whole onto its own line and the sentence around it is torn up. */
   overflow-wrap: anywhere;
-  /* AND EACH LINE OF IT IS A WHOLE CHIP: its own inset and its own rounded
-     ends. Sliced, the line a URL broke onto began flush on a square edge, 4px
-     left of the line above it, and the line it broke from ended on one. */
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
+  /* SLICED where it breaks, not cloned: a browser leaves a cloned inset out of
+     line breaking, so each broken line ran up to the inset past its box. */
+  box-decoration-break: slice;
 }
 
 /*
@@ -64,12 +62,14 @@
 }
 
 /*
- * A short token read as one: it moves to the next line whole rather than
- * splitting, which `overflow-wrap: anywhere` would otherwise allow.
+ * A short token read as one: an atomic box that moves to the next line whole,
+ * and breaks inside only where no line can hold it (a nested list, a cell).
+ * `line-height: normal` gives the box the running chip's own height.
  */
 .crewlet-inline-code--whole {
-  overflow-wrap: normal;
-  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  line-height: normal;
 }
 
 .crewlet-inline-code--truncate {

@@ -85,3 +85,9 @@ updates:
         patterns:
           - "react"
           - "react-dom"
+      # The layout suite's browser provider pins the test runner's exact
+      # version as its peer, so a bump to one alone does not install.
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"

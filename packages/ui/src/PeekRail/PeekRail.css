@@ -63,6 +63,8 @@
   container: crewlet-peek-rail / size;
   flex: 1 1 auto;
   min-height: 0;
+  /* It scrolls down, never sideways: what it holds wraps to its width. */
+  overflow-x: hidden;
   overflow-y: auto;
   padding: 0 var(--spacing-4) var(--spacing-6);
 }

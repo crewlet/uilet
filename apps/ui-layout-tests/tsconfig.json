@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "types": ["node", "vite/client"]
+  },
+  "include": ["src", "vitest.config.ts", "../ui-tests/sources.ts", "../../packages/ui/src/css.d.ts"]
+}

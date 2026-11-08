@@ -17,6 +17,7 @@ import {
   answerForcedColors,
   answerMotion,
   answerWidth,
+  expandOverflow,
   inset,
   installCss,
   installMotion,
@@ -44,6 +45,15 @@ test('a sheet put in this way is cascaded, tokens resolved', () => {
   // --spacing-4, arrived as its own number rather than as the unresolved
   // var() every other suite in this package would have seen.
   expect(px(document.body.firstElementChild!, 'padding-left')).toBe(16);
+});
+
+test('the overflow shorthand sets both longhands, so a later shorthand overrides an earlier longhand', () => {
+  expect(expandOverflow('.a { overflow: hidden auto; }')).toBe('.a { overflow: hidden auto; overflow-x: hidden; overflow-y: auto; }');
+  expect(expandOverflow('.a{overflow: clip;}')).toBe('.a{overflow: clip; overflow-x: clip; overflow-y: clip;}');
+  expect(expandOverflow('.a { overflow-wrap: anywhere; overflow-x: auto; }')).toBe('.a { overflow-wrap: anywhere; overflow-x: auto; }');
+  remove = installCss('.a { overflow-x: hidden; overflow-y: auto; }\n.a.b { overflow: clip; }');
+  document.body.innerHTML = '<div class="a b"></div>';
+  expect(getComputedStyle(document.body.firstElementChild!).overflowX).toBe('clip');
 });
 
 test('a modifier beats the base rule it shares a specificity with', () => {
