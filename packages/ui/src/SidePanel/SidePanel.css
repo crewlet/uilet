@@ -98,6 +98,8 @@
 
 .crewlet-side-panel--chat > .crewlet-side-panel__head {
   border-bottom-color: transparent;
+  /* Its controls end on the conversation's 12px edge, not the panel's 8px. */
+  padding-inline-end: var(--spacing-3);
 }
 
 .crewlet-side-panel--chat > .crewlet-side-panel__head--scrolled {

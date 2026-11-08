@@ -423,6 +423,9 @@ test("the chat density draws a chat pane's head: the title at 18px in the bold w
     expect(chat.closest('.crewlet-side-panel')?.classList.contains('crewlet-side-panel--chat')).toBe(true);
     expect(px(chat, 'font-size')).toBe(18);
     expect(getComputedStyle(chat).fontWeight).toBe('700');
+    // Its controls end 12px from the edge. Mutation: drop the inset and they sit 8px in.
+    const head = chat.closest('.crewlet-side-panel')!.querySelector('.crewlet-side-panel__head')!;
+    expect(getComputedStyle(head).getPropertyValue('padding-inline-end')).toBe('12px');
     // Without it the head is as it was: the title at the 14px step.
     const plain = screen.getByRole('heading', { name: 'Details' });
     expect(plain.closest('.crewlet-side-panel')?.classList.contains('crewlet-side-panel--chat')).toBe(false);
