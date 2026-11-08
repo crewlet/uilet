@@ -12,11 +12,13 @@ import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import type { ReactNode } from 'react';
 import {
+  ChangeList,
   ChatThread,
   CodeBlock,
   InlineCode,
   InlineRef,
   ListDetail,
+  MentionChip,
   Modal,
   ObjectHeader,
   PeekRail,
@@ -84,6 +86,10 @@ function Hostile() {
         </InlineRef>
         .
       </p>
+      <p>
+        Asked <MentionChip>{`${WHOLE}-on-call-${WHOLE}`}</MentionChip> to look.
+      </p>
+      <ChangeList rows={[{ kind: 'changed', label: 'Mount path', from: PATH, to: `${PATH}.restored` }]} />
       <Table
         caption="Restarts"
         headers={['Host', 'Service', 'Volume', 'Mount path', 'Last restart', 'Exit code', 'Restarts', 'Owner']}
@@ -107,9 +113,10 @@ afterEach(() => {
 /** Renders `node` into a host `width` px wide, and waits for fonts and layout. */
 async function mount(node: ReactNode, width: number): Promise<HTMLElement> {
   host = document.createElement('div');
-  // One column exactly `width` wide, as a pane's slot is: a container that
-  // grew to its content would hide the overflow this suite looks for.
-  host.style.cssText = `display: grid; grid-template-columns: minmax(0, 1fr); width: ${width}px; height: 640px;`;
+  // One column exactly `width` wide that scrolls, as the pane or the page
+  // around a container does: a container that grew to its content would hide
+  // the overflow this suite looks for, and what it spills lands here.
+  host.style.cssText = `display: grid; grid-template-columns: minmax(0, 1fr); width: ${width}px; height: 640px; overflow: auto;`;
   document.body.append(host);
   root = createRoot(host);
   flushSync(() => root!.render(node));
@@ -153,6 +160,19 @@ function overflowing(box: Element): string[] {
   return found;
 }
 
+const scrolls = (el: Element) => ['auto', 'scroll'].includes(getComputedStyle(el).overflowX);
+
+/**
+ * What a reader would scroll to see past `box`: the box, if it scrolls, and
+ * the nearest scroller around it, up to the document. A box that clips holds
+ * its own overflow, and what one that does not scroll spills reaches that one.
+ */
+function readerScrollers(box: Element): Element[] {
+  let around = box.parentElement;
+  while (around && !scrolls(around)) around = around.parentElement;
+  return [...(scrolls(box) ? [box] : []), around ?? document.scrollingElement!];
+}
+
 async function expectNoSidewaysScroll(node: ReactNode, width: number, selector: string, portal: boolean) {
   const at = await mount(node, width);
   const box = at.querySelector(selector) ?? document.querySelector(selector);
@@ -165,9 +185,11 @@ async function expectNoSidewaysScroll(node: ReactNode, width: number, selector: 
     );
   }
   expect(overflowing(box!), `${selector} at ${width}px`).toEqual([]);
-  // And a reader cannot scroll it sideways: it clips, it is no scroller, or it fits.
-  const scroller = ['auto', 'scroll'].includes(getComputedStyle(box!).overflowX);
-  expect(!scroller || box!.scrollWidth <= box!.clientWidth, `${selector} scrolls sideways at ${width}px`).toBe(true);
+  for (const scroller of readerScrollers(box!)) {
+    expect(scroller.scrollWidth, `${label(scroller)} scrolls sideways around ${selector} at ${width}px`).toBeLessThanOrEqual(
+      scroller.clientWidth,
+    );
+  }
 }
 
 const CONTAINERS: { name: string; selector: string; portal?: boolean; render: (width: number) => ReactNode }[] = [
@@ -227,7 +249,8 @@ for (const viewport of [
 ]) {
   describe(`at a ${viewport.width}px viewport`, () => {
     for (const container of CONTAINERS) {
-      for (const width of [320, 360, 390, 420]) {
+      // A slot is never wider than the window it is in.
+      for (const width of [320, 360, 390, 420].filter((slot) => slot <= viewport.width)) {
         test(`${container.name} at ${width}px holds long paths, commands, links and wide blocks without scrolling sideways`, async () => {
           await page.viewport(viewport.width, viewport.height);
           await expectNoSidewaysScroll(container.render(width), width, container.selector, container.portal === true);
@@ -276,4 +299,5 @@ test('a wide table and a wide code block scroll inside their own box', async () 
   expect(scrollers.length).toBeGreaterThan(0);
   for (const el of scrollers) expect(el.closest('.crewlet-table, .crewlet-codeblock'), el.className).not.toBeNull();
   expect(overflowing(at)).toEqual([]);
+  expect(at.scrollWidth).toBeLessThanOrEqual(at.clientWidth);
 });

@@ -12,8 +12,6 @@
   color: var(--color-feedback-info-ink);
   font: inherit;
   font-weight: var(--font-weight-regular);
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
 }
 
 .crewlet-mention-chip--self,

@@ -144,8 +144,6 @@
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
   text-decoration: none;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
 }
 
 /* A value taken away: struck through on the removed tint, in its ink. */
