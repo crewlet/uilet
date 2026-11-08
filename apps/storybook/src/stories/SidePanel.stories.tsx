@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useRef, useState } from 'react';
+import { expect } from 'storybook/test';
 import { BotGlyph, LayoutDashboardGlyph, PencilGlyph, RotateCcwClockGlyph } from '@crewlethq/icons/glyphs';
 import {
   Button,
   ChatThread,
   IconButton,
+  ListDetail,
   MessageBubble,
   Prose,
   SegmentedControl,
@@ -291,5 +293,46 @@ export const ChatHead: Story = {
         </SidePanelFrame>
       </div>
     );
+  },
+};
+
+/**
+ * AS A LIST'S DETAIL (`fill`): the panel takes the detail's width and height
+ * rather than its resting width, and its body scrolls inside, so its foot
+ * stays in reach however long the content.
+ */
+export const FillsAListDetail: Story = {
+  render: function Render() {
+    return (
+      <div style={{ height: 420, width: 1000, display: 'grid' }}>
+        <ListDetail
+          listWidth="half"
+          flush
+          list={<Text>The list beside the detail.</Text>}
+          showing="detail"
+        >
+          <SidePanel
+            title="Thread"
+            subtitle={<a href="#engineering">#engineering</a>}
+            density="chat"
+            fill
+            footer={<Textarea aria-label="Reply" placeholder="Reply" />}
+            onClose={() => {}}
+          >
+            <Stack gap={3}>
+              {Array.from({ length: 30 }, (_, i) => (
+                <Text key={i}>Reply {i + 1} in the thread.</Text>
+              ))}
+            </Stack>
+          </SidePanel>
+        </ListDetail>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const detail = canvasElement.querySelector<HTMLElement>('.crewlet-list-detail__detail')!.getBoundingClientRect();
+    const panel = canvasElement.querySelector<HTMLElement>('.crewlet-side-panel')!.getBoundingClientRect();
+    await expect(Math.abs(panel.width - detail.width)).toBeLessThan(1);
+    await expect(Math.abs(panel.height - detail.height)).toBeLessThan(1);
   },
 };
