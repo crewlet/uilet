@@ -1,14 +1,26 @@
 /**
  * HOW A SENTENCE AND A TITLE BREAK, measured: a reference never parts from
- * the punctuation around it, a reading pane's title fills its first line, and
- * a new item in a reading pane opens at its head.
+ * the punctuation around it, a reading pane's title fills its first line, a
+ * new item in a reading pane opens at its head, and no block in a reading
+ * pane carries the blocks beside it past the column.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import type { ReactNode } from 'react';
-import { InlineCode, InlineRef, ReadingPane, ReadingPaneTitle, Text, peelPunctuation } from '@crewlethq/ui';
+import {
+  InlineCode,
+  InlineRef,
+  ReadingPane,
+  ReadingPaneLead,
+  ReadingPaneQuote,
+  ReadingPaneReasoning,
+  ReadingPaneSection,
+  ReadingPaneTitle,
+  Text,
+  peelPunctuation,
+} from '@crewlethq/ui';
 
 let root: Root | null = null;
 let host: HTMLElement | null = null;
@@ -204,3 +216,47 @@ test('a new item in a reading pane opens at its head, wherever the last one was 
   expect(title.top).toBeGreaterThanOrEqual(view.top);
   expect(title.bottom).toBeLessThanOrEqual(view.bottom);
 });
+
+/** One line no break opportunity splits, as a rendered Markdown fence draws it. */
+const UNBROKEN = `rsync --archive --delete ${'/srv/releases/2026-11-08/build-artifacts/'.repeat(10)}`;
+
+/** Every slot a reading pane holds rendered Markdown in, each with an unbreakable block among its paragraphs. */
+const SLOTS: { name: string; slot: (body: ReactNode) => ReactNode }[] = [
+  { name: 'the lead', slot: (body) => <ReadingPaneLead>{body}</ReadingPaneLead> },
+  { name: 'a quote', slot: (body) => <ReadingPaneQuote>{body}</ReadingPaneQuote> },
+  { name: 'the reasoning', slot: (body) => <ReadingPaneReasoning title="Why">{body}</ReadingPaneReasoning> },
+  { name: 'a section', slot: (body) => <ReadingPaneSection label="What happened next">{body}</ReadingPaneSection> },
+];
+
+for (const { name, slot } of SLOTS) {
+  test(`a line that does not wrap in ${name} never carries the blocks beside it past the column`, async () => {
+    for (const viewport of [1440, 2560]) {
+      await page.viewport(viewport, 900);
+      const at = await mount(
+        <div style={{ width: viewport }}>
+          <ReadingPane>
+            <ReadingPaneTitle>May the site reliability engineer run a command on the production server?</ReadingPaneTitle>
+            {slot(
+              <>
+                <p data-block>The command runs once, as the operating user, and nothing else runs with it.</p>
+                <pre data-unbroken style={{ margin: 0 }}>
+                  <code>{UNBROKEN}</code>
+                </pre>
+                <p data-block>The reason the agent gave follows, in its own words.</p>
+              </>,
+            )}
+          </ReadingPane>
+        </div>,
+      );
+      const column = at.querySelector('.crewlet-reading-pane__column')!;
+      const style = getComputedStyle(column);
+      const inner = column.getBoundingClientRect().right - parseFloat(style.paddingRight);
+      expect(column.getBoundingClientRect().width, `the column holds its measure at ${viewport}px`).toBeLessThanOrEqual(640);
+      for (const block of at.querySelectorAll('[data-block], [data-unbroken]')) {
+        expect(block.getBoundingClientRect().right, `a block's right edge at ${viewport}px`).toBeLessThanOrEqual(inner + 0.5);
+      }
+      flushSync(() => root?.unmount());
+      host?.remove();
+    }
+  });
+}
