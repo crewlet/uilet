@@ -211,3 +211,34 @@ test('the entrance is the kit\'s motion, and nothing moves under reduced motion'
   const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '';
   expect(reduced).toMatch(/\.crewlet-reading-pane__column--entering\s*\{\s*animation: none;/);
 });
+
+test('a new item reads from its head: the box that scrolls the pane goes back to its top', () => {
+  // jsdom lays nothing out, so the scroller's offset and the pane's place in
+  // it are stated: the reader had scrolled 480px into the last item.
+  const Scrolled = ({ item }: { item: string }) => (
+    <div data-testid="scroller" style={{ overflowY: 'auto' }}>
+      <Pane item={item} />
+    </div>
+  );
+  const { rerender } = render(<Scrolled item="1" />);
+  const scroller = screen.getByTestId('scroller');
+  let offset = 480;
+  Object.defineProperty(scroller, 'scrollTop', {
+    configurable: true,
+    get: () => offset,
+    set: (value: number) => {
+      offset = value;
+    },
+  });
+  scroller.getBoundingClientRect = () => ({ top: 64 }) as DOMRect;
+  const pane = scroller.querySelector('.crewlet-reading-pane')!;
+  pane.getBoundingClientRect = () => ({ top: 64 - offset }) as DOMRect;
+  // The same item, drawn again: the reader's place stays.
+  rerender(<Scrolled item="1" />);
+  expect(offset).toBe(480);
+  // A new one: its head is at the top again, whatever moved focus or did not.
+  screen.getByRole('button', { name: 'In the list' }).focus();
+  rerender(<Scrolled item="2" />);
+  expect(offset).toBe(0);
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'In the list' }));
+});

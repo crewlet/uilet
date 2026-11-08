@@ -125,3 +125,23 @@ export const InsideAMessage: Story = {
     </div>
   ),
 };
+
+/**
+ * A whole chip and the punctuation around it move together: handed to `open`
+ * and `close` (`peelPunctuation`), the parenthesis never stays behind on the
+ * line the chip left, and it is drawn outside the chip's ground.
+ */
+export const WholeInParentheses: Story = {
+  render: () => (
+    <>
+      {[200, 240, 280].map((width) => (
+        <Text as="p" key={width} style={{ maxWidth: width }}>
+          {`${width}px.`} Then deploy the worker again{' '}
+          <InlineCode whole open="(" close=").">
+            make deploy-worker
+          </InlineCode>
+        </Text>
+      ))}
+    </>
+  ),
+};

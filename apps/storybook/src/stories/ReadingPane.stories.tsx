@@ -155,3 +155,31 @@ export const AnAnswerOnItsWay: Story = {
     </ReadingPane>
   ),
 };
+
+/**
+ * A new item reads from its head. Scroll this item down and press Next: the
+ * box that scrolls the pane goes back to its top with the new `contentKey`, so
+ * the next question is what the reader sees, not the middle of its context.
+ */
+export const ANewItemReadsFromItsHead: Story = {
+  render: function Render() {
+    const [item, setItem] = useState(1);
+    return (
+      <div style={{ display: 'grid', gap: 'var(--spacing-2)' }}>
+        <Button size="small" onClick={() => setItem((n) => n + 1)}>
+          Next
+        </Button>
+        <div style={{ height: 320, overflowY: 'auto', border: '1px solid var(--color-border-default)' }}>
+          <ReadingPane contentKey={item}>
+            <ReadingPaneTitle>{`Is host ${item} stable after the restart?`}</ReadingPaneTitle>
+            {Array.from({ length: 12 }, (_, line) => (
+              <Text as="p" key={line}>
+                The worker restarted cleanly and has held for a day; the volume is mounted where it should be.
+              </Text>
+            ))}
+          </ReadingPane>
+        </div>
+      </div>
+    );
+  },
+};

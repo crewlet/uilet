@@ -47,10 +47,32 @@ export interface ReadingPaneProps extends HTMLAttributes<HTMLElement> {
    * was last in the pane (focus came into it, or a press landed in it): the
    * control they answered with went with the old item. A reader in the list
    * beside the pane, or nowhere (a live update), keeps their place.
+   *
+   * The new item reads from its head: whatever scrolls the pane (its own
+   * scroller, or the page) goes back to the pane's top if it had scrolled
+   * past it, whoever changed the item.
    */
   contentKey?: string | number | undefined;
   /** Where focus goes after a change of `contentKey`, in place of the title. */
   focusTarget?: (() => HTMLElement | null | undefined) | undefined;
+}
+
+/** The box that scrolls `el` up and down: itself, its nearest ancestor that does, or the page. */
+function scrollerOf(el: Element): Element | null {
+  for (let at: Element | null = el; at; at = at.parentElement) {
+    const y = getComputedStyle(at).overflowY;
+    if (y === 'auto' || y === 'scroll') return at;
+  }
+  return el.ownerDocument.scrollingElement;
+}
+
+/** Scrolls back to `pane`'s top where its scroller has scrolled past it. */
+function showHead(pane: Element) {
+  const scroller = scrollerOf(pane);
+  if (!scroller) return;
+  const page = scroller === pane.ownerDocument.scrollingElement;
+  const above = pane.getBoundingClientRect().top - (page ? 0 : scroller.getBoundingClientRect().top);
+  if (above < 0) scroller.scrollTop = Math.max(0, scroller.scrollTop + above);
 }
 
 /** The keyframes a new item plays in by, on the column: the one motion a suite fakes. */
@@ -129,6 +151,7 @@ export function ReadingPane({ headingLevel, contentKey, focusTarget, className, 
   useLayoutEffect(() => {
     if (contentKey === settled.current) return;
     settled.current = contentKey;
+    if (pane.current) showHead(pane.current);
     if (!owned.current) return;
     const target = focusTarget?.() ?? column.current?.querySelector<HTMLElement>('.crewlet-reading-pane__title');
     returnFocus(target, { preventScroll: true });

@@ -48,7 +48,9 @@
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--font-letter-spacing-tight);
   line-height: var(--font-line-height-snug);
-  text-wrap: balance;
+  /* A note is as wide as its column: its heading fills a line rather than
+     evening two out of it. */
+  text-wrap: pretty;
 }
 
 /* Prose inside takes the note's ink, links included. */
