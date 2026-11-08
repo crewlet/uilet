@@ -15,7 +15,8 @@ import {
 
 /**
  * A message written in place: a field that grows with its text and a footer
- * with the send shortcut, a counter near the limit, and the actions.
+ * with the send keys (Enter to send, Shift+Enter for a new line), a counter
+ * near the limit, and the actions.
  */
 const meta: Meta<typeof Composer> = {
   title: 'UI/Composer',
@@ -100,7 +101,7 @@ function Chat({ initial = '', running = false, disabledReason, attached = true, 
         placeholder="Ask a follow-up"
         value={text}
         onChange={setText}
-        submitOn="enter"
+        sendHint={false}
         maxLength={max}
         disabledReason={disabledReason}
         onSubmit={() => {
@@ -198,7 +199,7 @@ function RoomComposer({ width = 560, chat = false }: { width?: number; chat?: bo
         value={text}
         onChange={setText}
         onSubmit={() => setText('')}
-        submitOn="enter"
+        sendHint={false}
         rows={1}
         label="Message #engineering"
         placeholder="Message #engineering"

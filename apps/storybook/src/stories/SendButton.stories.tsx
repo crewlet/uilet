@@ -72,7 +72,7 @@ function InComposer() {
             setRunning(false);
           }
         }}
-        submitOn="enter"
+        sendHint={false}
         placeholder="Ask about agents, tasks or spend"
         trailing={
           <SendButton

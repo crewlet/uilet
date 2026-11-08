@@ -92,16 +92,22 @@ test('a post sends the trimmed draft with its reply target, and clears once it l
   expect(screen.queryByText(/Replying to/)).toBeNull();
 });
 
-test('a refused post keeps the draft, and Mod+Enter sends', async () => {
+test('a refused post keeps the draft; Enter sends, Shift+Enter does not, and Mod+Enter still does', async () => {
   const onSubmit = vi.fn().mockResolvedValue(false);
   render(<CommentThread comments={[]} onSubmit={onSubmit} />);
   const field = screen.getByRole('textbox');
   fireEvent.change(field, { target: { value: 'Draft' } });
+  fireEvent.keyDown(field, { key: 'Enter', shiftKey: true });
+  expect(onSubmit).not.toHaveBeenCalled();
   await act(async () => {
-    fireEvent.keyDown(field, { key: 'Enter', metaKey: true });
+    fireEvent.keyDown(field, { key: 'Enter' });
   });
   expect(onSubmit).toHaveBeenCalledWith('Draft', null);
   expect((field as HTMLTextAreaElement).value).toBe('Draft');
+  await act(async () => {
+    fireEvent.keyDown(field, { key: 'Enter', metaKey: true });
+  });
+  expect(onSubmit).toHaveBeenCalledTimes(2);
 });
 
 test('a standing reason replaces the hint and blocks the post', () => {

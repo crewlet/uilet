@@ -45,7 +45,7 @@ export const InAComposer: Story = {
         label="Ask Crewlet"
         value={value}
         onChange={setValue}
-        submitOn="enter"
+        sendHint={false}
         attachments={files.map((name) => (
           <AttachmentChip key={name} name={name} preview={THUMB} onRemove={() => setFiles(files.filter((f) => f !== name))} />
         ))}

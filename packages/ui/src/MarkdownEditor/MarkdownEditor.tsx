@@ -132,7 +132,10 @@ export interface MarkdownEditorProps {
   actions?: ((editor: MarkdownEditorApi) => ReactNode) | undefined;
   /** The strip under the field: a word count, a size against a limit. */
   footer?: ReactNode;
-  /** Command+Enter (Control+Enter elsewhere), the shortcut every composer in the system saves on. */
+  /**
+   * Command+Enter (Control+Enter elsewhere): a long-form editor saves on it,
+   * since its Enter writes a line. A message box sends on Enter instead (`Composer`).
+   */
   onSubmit?: (() => void) | undefined;
   disabled?: boolean | undefined;
   /** Draws the field as refused, for a body over its limit. */

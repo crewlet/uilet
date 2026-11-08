@@ -1,0 +1,12 @@
+/*
+ * The send hint: a quiet line of small type beside or under a message box,
+ * its two chords drawn as subtle keycaps.
+ */
+.crewlet-send-keys {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+}

@@ -91,7 +91,7 @@ function MentionComposer({ chat = false }: { chat?: boolean }) {
         <Composer
           ref={field}
           appearance={chat ? 'chat' : 'default'}
-          submitOn={chat ? 'enter' : undefined}
+          sendHint={!chat}
           label="Message #engineering"
           placeholder="Message #engineering"
           role="combobox"
