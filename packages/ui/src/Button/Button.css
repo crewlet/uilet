@@ -234,8 +234,12 @@ a.crewlet-btn--accent.crewlet-btn--accent:is(:link, :visited, :hover, :active, :
  * with: every panel's actions sit on a card, and there the fill is no edge at
  * all and the boundary is the whole of the button. The default hairline is
  * the one that finds a CARD on the sheet, and a button drawn with it was a
- * card-shaped outline of the panel's own divider; the strong step is the one
- * a reader takes for a control's edge.
+ * card-shaped outline of the panel's own divider.
+ *
+ * ONE EDGE FOR THE CONTROL FAMILY: the field's boundary, which clears 3:1 on
+ * every rung, and the control boundary under the pointer, as a text box steps.
+ * On the strong hairline a button beside a field read as a lighter control
+ * than the field, two weights in one row (Input.test.tsx holds the family).
  *
  * Under the pointer it steps up a rung, to the raised ground, which the
  * palette suite holds a visible step above the card, with the boundary a
@@ -246,13 +250,13 @@ a.crewlet-btn--secondary.crewlet-btn--secondary:is(:link, :visited, :hover, :act
   background: var(--color-surface-subtle);
   --crewlet-indicator-ring: var(--color-surface-subtle);
   color: var(--color-text-primary);
-  border-color: var(--color-border-strong);
+  border-color: var(--color-border-field);
 }
 
 .crewlet-btn--secondary:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-elevated);
   --crewlet-indicator-ring: var(--color-surface-elevated);
-  border-color: var(--color-border-strong-hover);
+  border-color: var(--color-border-control);
 }
 
 .crewlet-btn--secondary:active:not(:disabled):not([aria-disabled='true']) {
@@ -301,7 +305,7 @@ a.crewlet-btn--ghost.crewlet-btn--ghost:is(:link, :visited, :hover, :active, :fo
  *
  * A SECONDARY THAT HAS GONE RED, not a red slab. It sits in the same row as
  * Cancel and it is the button a reader must not press by reflex, so it holds
- * the secondary's own weight, the card inside the strong hairline, until it
+ * the secondary's own weight, the card inside the family's edge, until it
  * is pointed at and states itself in its INK, which is the step measured as
  * text; the red fill it used to carry pulled the eye to the destructive
  * answer first on every dialog that had one. The hue arrives on hover, as the
@@ -311,7 +315,7 @@ a.crewlet-btn--ghost.crewlet-btn--ghost:is(:link, :visited, :hover, :active, :fo
 a.crewlet-btn--danger.crewlet-btn--danger:is(:link, :visited, :hover, :active, :focus) {
   background: var(--color-surface-subtle);
   color: var(--color-feedback-danger-ink);
-  border-color: var(--color-border-strong);
+  border-color: var(--color-border-field);
 }
 
 .crewlet-btn--danger:hover:not(:disabled):not([aria-disabled='true']) {

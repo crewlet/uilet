@@ -181,3 +181,16 @@ test('carries no violation, with the dialog open', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+test('takes the control step of the row it stands in', () => {
+  // A toolbar row of small controls drew this one at the medium step, 28px
+  // beside 26px pickers, because the size never reached its segments.
+  render(
+    <>
+      <TimeRangePicker<Window> label="Small" size="sm" options={OPTIONS} value="1d" onChange={() => {}} />
+      <TimeRangePicker<Window> label="Default" options={OPTIONS} value="1d" onChange={() => {}} />
+    </>,
+  );
+  expect(screen.getByRole('radiogroup', { name: 'Small' }).classList.contains('crewlet-tabs--sm')).toBe(true);
+  expect(screen.getByRole('radiogroup', { name: 'Default' }).classList.contains('crewlet-tabs--md')).toBe(true);
+});

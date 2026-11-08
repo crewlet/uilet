@@ -21,11 +21,14 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installSheets, installThemed, themeColour, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { Announcer } from '../Announcer/index.js';
+import { Button } from '../Button/index.js';
 import { Checkbox } from '../Checkbox/index.js';
 import { Combobox } from '../Combobox/index.js';
+import { IconButton } from '../IconButton/index.js';
 import { ListInput } from '../ListInput/index.js';
+import { SegmentedControl } from '../SegmentedControl/index.js';
 import { Select } from '../Select/index.js';
 import { Switch } from '../Switch/index.js';
 import { TagsInput } from '../TagsInput/index.js';
@@ -381,39 +384,98 @@ test('a focused field draws its ring as one outline, never a shadow or a recolou
 });
 
 /*
- * A PICKER'S BOUNDARY IS A BUTTON'S, A TEXT BOX'S IS THE FIELD'S. A select
- * and the date and time-window pickers show their value and a chevron, which
- * is what a reader knows them by, so they draw the secondary button's
- * --color-border-strong and sit quietly among the buttons and switchers beside
- * them; on the control boundary they were the one bright box in that row.
- * The outline is the control only where nothing else says so: a text box
- * draws --color-border-field, the strong border lifted to 3:1 on the rungs a
- * field stands on, and so does every box a person types into.
+ * ONE EDGE FOR THE CONTROL FAMILY. A text box's outline IS the control, so it
+ * draws --color-border-field, the strong border lifted to 3:1 on every rung a
+ * field stands on. Every other bordered control a row puts beside it (a
+ * picker, a secondary or danger button, a bordered square, a segmented well,
+ * the date and time-window pickers) draws the same edge, and the control
+ * boundary under the pointer as a text box does: on the strong hairline they
+ * read as lighter controls than the field beside them, two weights in one row.
  */
-test("a picker draws a button's boundary, and a text box draws the field's", () => {
-  const border = (where: string, selector: string): string =>
-    sheetRules().find((rule) => rule.where === where && rule.selector === selector)?.declared.get('border') ?? '';
-  for (const [where, selector] of [
-    ['Select/Select.css', '.crewlet-select'],
-    ['DateTimePicker/DateTimePicker.css', '.crewlet-datetime'],
-    ['TimeWindowPicker/TimeWindowPicker.css', '.crewlet-time-window'],
-  ] as const) {
-    expect(border(where, selector), selector).toContain('var(--color-border-strong)');
-  }
-  for (const [where, selector] of [
-    ['Input/Input.css', '.crewlet-input'],
-    ['Input/Input.css', '.crewlet-textarea'],
-    ['TagsInput/TagsInput.css', '.crewlet-tags-input__box'],
-    ['DateTimePicker/DateTimePicker.css', '.crewlet-datetime__time-input'],
-    ['TimeWindowPicker/TimeWindowPicker.css', '.crewlet-time-window__masked'],
-  ] as const) {
-    expect(border(where, selector), selector).toContain('var(--color-border-field)');
+/** A token's custom property, named without spelling a declaration the CSS checks would read. */
+const token = (name: string) => `--${name}`;
+
+const FAMILY_EDGE = [
+  ['Input/Input.css', '.crewlet-input'],
+  ['Input/Input.css', '.crewlet-textarea'],
+  ['TagsInput/TagsInput.css', '.crewlet-tags-input__box'],
+  ['Select/Select.css', '.crewlet-select'],
+  ['DateTimePicker/DateTimePicker.css', '.crewlet-datetime'],
+  ['DateTimePicker/DateTimePicker.css', '.crewlet-datetime__time-input'],
+  ['TimeWindowPicker/TimeWindowPicker.css', '.crewlet-time-window'],
+  ['TimeWindowPicker/TimeWindowPicker.css', '.crewlet-time-window__masked'],
+  ['Button/Button.css', '.crewlet-btn--secondary'],
+  ['Button/Button.css', '.crewlet-btn--danger'],
+  ['IconButton/IconButton.css', '.crewlet-icon-btn--secondary'],
+  ['SegmentedControl/SegmentedControl.css', '.crewlet-tabs.crewlet-tabs--pill.crewlet-segmented'],
+] as const;
+
+test('every bordered control in a row draws the field edge at rest', () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  // The edge a rule declares for one member of its selector list, comments blanked.
+  const edge = (where: string, selector: string): string => {
+    const text = readFileSync(resolve(here, '..', where), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ' ');
+    for (const [, list = '', body = ''] of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (!list.split(',').some((one) => one.trim().replace(/\s+/g, ' ') === selector)) continue;
+      const found = /(?:^|;)\s*border(?:-color)?\s*:\s*([^;]+)/.exec(body);
+      if (found) return found[1]!.trim();
+    }
+    return '';
+  };
+  for (const [where, selector] of FAMILY_EDGE) {
+    expect(edge(where, selector), selector).toContain('var(--color-border-field)');
   }
   // The markdown editor draws its own ring and is outside the ring table, so
   // its box is read on its own.
-  const here = dirname(fileURLToPath(import.meta.url));
   const editor = readFileSync(resolve(here, '..', 'MarkdownEditor/MarkdownEditor.css'), 'utf8');
   expect(/\n\.crewlet-markdown-editor\s*\{([^}]*)\}/.exec(editor)?.[1]).toContain('var(--color-border-field)');
+});
+
+test('a row of controls is one edge, as painted, at rest and under the pointer, in both palettes', () => {
+  const SHEETS = [
+    'Input/Input.css',
+    'Select/Select.css',
+    'Button/Button.css',
+    'IconButton/IconButton.css',
+    'Tabs/Tabs.css',
+    'SegmentedControl/SegmentedControl.css',
+  ];
+  for (const theme of ['light', 'dark'] as const) {
+    const uninstall = installThemed(theme, ...SHEETS);
+    try {
+      const { container } = render(
+        <>
+          <Input aria-label="Search work" />
+          <Select ariaLabel="Group by" value="due" onChange={() => {}} options={[{ value: 'due', label: 'Due' }]} />
+          <Button variant="secondary">Display</Button>
+          <Button variant="danger">Delete</Button>
+          <IconButton variant="secondary" label="Next" icon={<svg aria-hidden="true" />} />
+          <SegmentedControl label="Show" semantics="radio" value="a" onValueChange={() => {}} options={[{ value: 'a', label: 'Active' }, { value: 'b', label: 'All' }]} />
+        </>,
+      );
+      const boxes = {
+        field: container.querySelector('.crewlet-input')!,
+        picker: container.querySelector('.crewlet-select')!,
+        secondary: screen.getByRole('button', { name: 'Display' }),
+        danger: screen.getByRole('button', { name: 'Delete' }),
+        square: screen.getByRole('button', { name: 'Next' }),
+        well: screen.getByRole('radiogroup', { name: 'Show' }),
+      };
+      const rest = channels(themeColour(theme, token('color-border-field')));
+      for (const [name, box] of Object.entries(boxes)) {
+        expect(channels(getComputedStyle(box).borderTopColor), `${theme}: ${name} at rest`).toEqual(rest);
+      }
+      const hover = channels(themeColour(theme, token('color-border-control')));
+      for (const name of ['field', 'picker', 'secondary', 'square'] as const) {
+        const release = userAction(boxes[name], 'hover');
+        expect(channels(getComputedStyle(boxes[name]).borderTopColor), `${theme}: ${name} under the pointer`).toEqual(hover);
+        release();
+      }
+    } finally {
+      cleanup();
+      uninstall();
+    }
+  }
 });
 
 test('one element draws the ring, and it is the one a reader reads as the field', () => {

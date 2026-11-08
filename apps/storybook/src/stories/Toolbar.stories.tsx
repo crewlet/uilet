@@ -1,7 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useRef, useState } from 'react';
-import { MaximizeGlyph, MinimizeGlyph, RedoGlyph, UndoGlyph } from '@crewlethq/icons/glyphs';
-import { Button, IconButton, Input, Menu, Spacer, Stack, Toolbar, useFullscreen } from '@crewlethq/ui';
+import { ChevronRightGlyph, MaximizeGlyph, MinimizeGlyph, RedoGlyph, SearchGlyph, UndoGlyph } from '@crewlethq/icons/glyphs';
+import {
+  Button,
+  IconButton,
+  Input,
+  Kbd,
+  Menu,
+  SegmentedControl,
+  Select,
+  Spacer,
+  Stack,
+  TimeRangePicker,
+  Toolbar,
+  useFullscreen,
+} from '@crewlethq/ui';
 
 const meta: Meta<typeof Toolbar> = {
   title: 'UI/Toolbar',
@@ -106,6 +119,73 @@ export const StickyFilters: Story = {
           Row {row + 1}
         </p>
       ))}
+    </Stack>
+  ),
+};
+
+/**
+ * One row of controls at each step: every control the kit draws in a toolbar
+ * stands at that step's height and wears one edge, the field's, so no box in
+ * the row reads heavier or taller than its neighbours. The last row is the
+ * small step disabled and refused.
+ */
+function ControlRow({ size, disabled = false, error = false }: { size: 'sm' | 'md'; disabled?: boolean; error?: boolean }) {
+  const [window, setWindow] = useState<'1d' | '7d' | '30d'>('7d');
+  const [show, setShow] = useState('active');
+  return (
+    <Toolbar label={`Controls at ${size}${disabled ? ', disabled' : ''}${error ? ', refused' : ''}`} mode="group">
+      <TimeRangePicker
+        size={size}
+        label="Window"
+        value={window}
+        onChange={setWindow}
+        options={[
+          { value: '1d', label: '1d' },
+          { value: '7d', label: '7d' },
+          { value: '30d', label: '30d' },
+        ]}
+      />
+      <SegmentedControl
+        size={size}
+        label="Show"
+        semantics="radio"
+        value={show}
+        onValueChange={setShow}
+        options={[
+          { value: 'active', label: 'Active' },
+          { value: 'all', label: 'All' },
+        ]}
+      />
+      <Select size={size} width="auto" ariaLabel="Group by" value="due" disabled={disabled} error={error} onChange={() => {}} options={[{ value: 'due', label: 'Due' }]} />
+      <Select size={size} width="auto" appearance="quiet" ariaLabel="Kind" value="any" disabled={disabled} onChange={() => {}} options={[{ value: 'any', label: 'Any kind' }]} />
+      <Input
+        inputSize={size}
+        width="sm"
+        aria-label="Search work"
+        placeholder="Search work"
+        disabled={disabled}
+        error={error}
+        leading={<SearchGlyph size="sm" />}
+        trailing={<Kbd>/</Kbd>}
+      />
+      <Button size={size === 'sm' ? 'small' : 'medium'} variant="secondary" disabled={disabled}>
+        Display
+      </Button>
+      <Button size={size === 'sm' ? 'small' : 'medium'} variant="ghost" disabled={disabled}>
+        Filter
+      </Button>
+      <IconButton size={size} variant="secondary" label="Next" icon={<ChevronRightGlyph size="sm" />} disabled={disabled} />
+    </Toolbar>
+  );
+}
+
+export const OneRowOfControls: Story = {
+  render: () => (
+    <Stack gap={4}>
+      <ControlRow size="sm" />
+      <ControlRow size="md" />
+      <ControlRow size="sm" disabled />
+      <ControlRow size="sm" error />
     </Stack>
   ),
 };

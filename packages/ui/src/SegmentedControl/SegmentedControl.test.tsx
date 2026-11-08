@@ -16,6 +16,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { themes as palettes } from '@crewlethq/tokens';
 import { contrast, parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installSheets, installThemed, pseudoElement, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { DENSITIES, installSheetsAtDensity } from '../../../../apps/ui-tests/src/density.js';
 import { SegmentedControl } from './SegmentedControl.js';
 
 afterEach(cleanup);
@@ -401,8 +402,9 @@ test('a manual row says which key chooses, and the caller can word it or silence
 
 /*
  * THE APPROVED SEGMENTED CONTROL, as the cascade paints it: a RAISED well
- * inside the default hairline, and the chip that is on the CARD's own ground
- * in the primary ink, with the others in the secondary ink on nothing at all.
+ * inside the control family's edge, and the chip that is on the CARD's own
+ * ground in the primary ink, with the others in the secondary ink on nothing
+ * at all. The chip is drawn by the option's `::before`, a pixel inside it.
  * The well used to be the translucent inset overlay, which stands almost
  * nowhere off a card, so the row had no extent and the chips floated.
  */
@@ -432,14 +434,21 @@ test('the row is a raised well with a card chip in it, in both palettes', () => 
     const well = getComputedStyle(screen.getByRole('radiogroup', { name: 'Time range' }));
     expect(channels(well.backgroundColor), `${theme}: the well`).toEqual(parseHex(palette.surface.elevated));
     expect(well.borderTopStyle, `${theme}: the well's boundary`).toBe('solid');
-    expect(channels(well.borderTopColor), `${theme}: the well's boundary`).toEqual(parseHex(palette.border.default));
+    // The family's edge, the field's, as a text box and a button beside it draw.
+    expect(channels(well.borderTopColor), `${theme}: the well's boundary`).toEqual(parseHex(palette.border.field));
 
-    const on = getComputedStyle(screen.getByRole('radio', { name: '7 days' }));
-    expect(channels(on.backgroundColor), `${theme}: the chip that is on`).toEqual(parseHex(palette.surface.subtle));
+    const onOption = screen.getByRole('radio', { name: '7 days' });
+    const on = getComputedStyle(onOption);
+    const chip = getComputedStyle(pseudoElement(onOption, 'before'));
+    expect(channels(chip.backgroundColor), `${theme}: the chip that is on`).toEqual(parseHex(palette.surface.subtle));
+    expect(transparent(on.backgroundColor), `${theme}: the option round the chip`).toBe(true);
     expect(channels(on.color), `${theme}: the chip that is on`).toEqual(parseHex(palette.text.primary));
 
-    const off = getComputedStyle(screen.getByRole('radio', { name: 'Today' }));
+    const offOption = screen.getByRole('radio', { name: 'Today' });
+    const off = getComputedStyle(offOption);
+    const offChip = getComputedStyle(pseudoElement(offOption, 'before'));
     expect(transparent(off.backgroundColor), `${theme}: a chip that is off, ${off.backgroundColor}`).toBe(true);
+    expect(transparent(offChip.backgroundColor), `${theme}: a chip that is off, ${offChip.backgroundColor}`).toBe(true);
     expect(channels(off.color), `${theme}: a chip that is off`).toEqual(parseHex(palette.text.secondary));
     unmount();
     uninstall();
@@ -603,26 +612,33 @@ test('a trailing field sits in the row after the options, and the arrows never l
   expect(onValueChange).not.toHaveBeenCalled();
 });
 
-test('the well stands at the tab step, 28px, between the panel and the page control steps', () => {
-  /*
-   * A chip, the well's inset above and below it and its boundary above and
-   * below that: 24 + 1 + 1 + 1 + 1 is the 28px tab step, which sits between
-   * the 26px panel controls and the 32px page actions a row of tabs stands
-   * beside, so it reads as navigation rather than as one more button. The chip and the
-   * inset are read from the cascade. The boundary is read from the rule, since
-   * jsdom answers no border width it was given.
-   */
-  const uninstall = installSheets('Tabs/Tabs.css', 'SegmentedControl/SegmentedControl.css');
+/*
+ * A SEGMENTED CONTROL IS ONE OF THE CONTROLS IN ITS ROW. Its well is the
+ * control step at its size: the option on the target floor and the well's 1px
+ * boundary above and below it, with the inset drawn inside the option. At 28px
+ * it stood two pixels over the 26px controls of a toolbar row and two under the
+ * 30px ones. The option is read from the cascade; the boundary from the rule,
+ * since jsdom answers no border width it was given.
+ */
+test.each(DENSITIES)('%s: the well is the control step at each size, and every option a whole target', (_name, density) => {
+  const uninstall = installSheetsAtDensity(density, 'Tabs/Tabs.css', 'SegmentedControl/SegmentedControl.css');
   try {
-    render(<SegmentedControl label="Time range" semantics="radio" value="week" options={ranges} onValueChange={() => {}} />);
-    const well = screen.getByRole('radiogroup', { name: 'Time range' });
-    const chip = screen.getByRole('radio', { name: '7 days' });
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../Tabs/Tabs.css'), 'utf8');
-    const boundary = /\.crewlet-tabs--pill\s*\{[^}]*border:\s*(\d+)px solid/.exec(css)?.[1];
-    expect(boundary).toBe('1');
-    const row = px(chip, 'min-height') + px(well, 'padding-top') + px(well, 'padding-bottom') + 2 * Number(boundary);
-    expect(px(chip, 'min-height')).toBe(24);
-    expect(row).toBe(28);
+    const boundary = Number(/\.crewlet-tabs--pill\s*\{[^}]*border:\s*(\d+)px solid/.exec(css)?.[1]);
+    expect(boundary).toBe(1);
+    const step = (size: 'sm' | 'md') => Math.max(24, (size === 'sm' ? 26 : 30) * density);
+    for (const size of ['sm', 'md'] as const) {
+      cleanup();
+      render(<SegmentedControl label="Time range" semantics="radio" size={size} value="week" options={ranges} onValueChange={() => {}} />);
+      const well = screen.getByRole('radiogroup', { name: 'Time range' });
+      for (const option of screen.getAllByRole('radio')) {
+        expect(px(option, 'min-height'), `${size}: a whole target`).toBeGreaterThanOrEqual(24);
+        const drawn = px(option, 'min-height') + px(well, 'padding-top') + px(well, 'padding-bottom') + 2 * boundary;
+        // At the compact setting the step floors at the target itself, and the
+        // well stands its boundary over it: the one case it cannot be the step.
+        expect(drawn, `${size} at ${density}`).toBeCloseTo(Math.max(step(size), 24 + 2 * boundary), 1);
+      }
+    }
   } finally {
     uninstall();
   }
