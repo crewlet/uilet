@@ -4,10 +4,30 @@ import { Link } from '../Link/index.js';
 import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
 
+/**
+ * How the actor came by the value: `set` it (the default), `seen` it in a
+ * source's read, `observed` it while working, or `confirmed` it as a person.
+ */
+export type SetByVerb = 'set' | 'seen' | 'observed' | 'confirmed';
+
+/** The words each verb is drawn with, before the actor. */
+export const SET_BY_VERBS: Readonly<Record<SetByVerb, string>> = {
+  set: 'set by',
+  seen: 'seen by',
+  observed: 'observed by',
+  confirmed: 'confirmed by',
+};
+
 /** Who last changed a value, and where. */
 export interface SetBy {
-  /** Who changed it: a seat, a person, the operator. */
+  /** Who changed it: a seat, a person, the operator, an integration. */
   actor: string;
+  /** How the actor came by the value. Unset, the line reads "set by". */
+  verb?: SetByVerb | undefined;
+  /** A short word drawn after the actor, such as a confidence: "observed by sre · likely". */
+  qualifier?: string | undefined;
+  /** A mark drawn beside the actor's name, such as a vendor's. Decorative: the name is read. */
+  mark?: ReactNode;
   /** When, already said as a relative time ("2h ago"); the caller formats it. */
   ago?: string | undefined;
   /** The page of the turn that changed it. Drawn as "turn" with an outward arrow. */
@@ -47,7 +67,9 @@ function listOf(names: readonly string[]): string {
 
 /**
  * Who set a value, in the one wording the whole product uses: "set by ada ·
- * 2h ago · turn", the last word a link to the turn that did it.
+ * 2h ago · turn", the last word a link to the turn that did it. A value the
+ * actor did not set takes its own verb: "seen by Cloudflare", "observed by sre
+ * · likely", "confirmed by ada".
  *
  * ONE WORDING. A header's fact line and a properties rail beside it state the
  * same provenance, and phrased two ways on one screen a bare handle under a
@@ -60,8 +82,14 @@ export function SetByLine({ setBy, fields, turnLabel = 'turn', className }: SetB
   return (
     <span className={cx('crewlet-set-by', className)}>
       {fields && fields.length > 1 ? <>{listOf(fields)} · </> : null}
-      {setBy.cleared ? 'cleared by ' : 'set by '}
+      {setBy.cleared ? 'cleared by ' : `${SET_BY_VERBS[setBy.verb ?? 'set']} `}
+      {setBy.mark ? (
+        <span className="crewlet-set-by__mark" aria-hidden="true">
+          {setBy.mark}
+        </span>
+      ) : null}
       {setBy.actor}
+      {setBy.qualifier ? ` · ${setBy.qualifier}` : ''}
       {setBy.ago ? ` · ${setBy.ago}` : ''}
       {setBy.turnHref ? (
         <>

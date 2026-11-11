@@ -123,7 +123,10 @@ function attributions(items: readonly PropertyListItem[]): (Attribution | undefi
     }
     // EVERY PART OF THE LINE, and the change behind it: a key that let two
     // rows merge on less would draw one row's time or turn under both.
-    const next = [line.actor, line.ago, line.turnHref, line.cleared, item.change].join('\u0000');
+    // The mark is the actor's, so the actor stands for it.
+    const next = [line.actor, line.verb ?? 'set', line.qualifier, line.ago, line.turnHref, line.cleared, item.change].join(
+      '\u0000',
+    );
     if (start >= 0 && next === key) return;
     close(i - 1);
     start = i;
