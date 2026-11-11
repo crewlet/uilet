@@ -1,0 +1,376 @@
+/*
+ * A layered map on a canvas (GraphCanvas.tsx).
+ *
+ * Every card is one size, set here in rem and spacing tokens, so the layout
+ * reads it once from a probe rather than measuring each card. Colour carries
+ * state only: a dot for attention, the accent for the selection, a dashed
+ * edge for an unconfirmed entry, and neutral ink for everything else.
+ */
+
+.crewlet-graph-canvas {
+  --crewlet-graph-canvas-card-width: 13.5rem;
+  --crewlet-graph-canvas-card-height: 3.25rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.crewlet-graph-canvas > .crewlet-canvas {
+  flex: 1;
+}
+
+.crewlet-graph-canvas__ground,
+.crewlet-graph-canvas__edges,
+.crewlet-graph-canvas__shapes,
+.crewlet-graph-canvas__card,
+.crewlet-graph-canvas__head,
+.crewlet-graph-canvas__empty,
+.crewlet-graph-canvas__empty-probe,
+.crewlet-graph-canvas__lane-head,
+.crewlet-graph-canvas__band-title,
+.crewlet-graph-canvas__probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.crewlet-graph-canvas__ground,
+.crewlet-graph-canvas__edges,
+.crewlet-graph-canvas__shapes {
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* ── the probes the layout reads its sizes from ────────────────────────── */
+
+.crewlet-graph-canvas__probe,
+.crewlet-graph-canvas__empty-probe {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* The channel between columns, and the gap between rows. */
+.crewlet-graph-canvas__gap {
+  width: var(--spacing-10);
+  height: var(--spacing-5);
+}
+
+/* A lane's padding past its cards, and the room round the map and between bands. */
+.crewlet-graph-canvas__pad {
+  width: var(--spacing-3);
+  height: var(--spacing-6);
+}
+
+.crewlet-graph-canvas__empty-probe {
+  width: var(--crewlet-graph-canvas-card-width);
+}
+
+/* ── lanes and bands ──────────────────────────────────────────────────────── */
+
+/* A lane is a quiet panel under its cards: the column a reader follows down. */
+.crewlet-graph-canvas__lane {
+  fill: var(--color-surface-subtle);
+  rx: var(--radius-xl);
+}
+
+.crewlet-graph-canvas__lane-head {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.crewlet-graph-canvas__lane-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-graph-canvas__lane-count {
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-graph-canvas__band-title {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--spacing-4) var(--spacing-1) var(--spacing-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── groups ──────────────────────────────────────────────────────────────── */
+
+/* A dashed box: a card's own edge is solid, and a grouping is not a thing. */
+.crewlet-graph-canvas__group {
+  fill: var(--color-surface-background);
+  stroke: var(--color-border-strong);
+  stroke-dasharray: 4 3;
+  rx: var(--radius-lg);
+}
+
+.crewlet-graph-canvas__head {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  cursor: pointer;
+  outline: none;
+}
+
+.crewlet-graph-canvas__head:hover {
+  color: var(--color-text-primary);
+}
+
+.crewlet-graph-canvas__head:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-graph-canvas__lead {
+  display: inline-flex;
+  flex: none;
+}
+
+.crewlet-graph-canvas__group-label {
+  min-width: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-graph-canvas__group-count {
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-graph-canvas__chevron {
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+/* ── cards ───────────────────────────────────────────────────────────────── */
+
+.crewlet-graph-canvas__card {
+  box-sizing: border-box;
+  width: var(--crewlet-graph-canvas-card-width);
+  height: var(--crewlet-graph-canvas-card-height);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-3) 0 var(--spacing-2);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  outline: none;
+}
+
+.crewlet-graph-canvas__card:hover {
+  border-color: var(--color-border-hover);
+}
+
+/* The ring is drawn over the card's own edge, never beside it. */
+.crewlet-graph-canvas__card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* The selection is where the reader is: the accent, as the card's own edge made heavier. */
+.crewlet-graph-canvas__card[data-selected] {
+  border-color: var(--color-brand-accent);
+  box-shadow: inset 0 0 0 1px var(--color-brand-accent);
+}
+
+/* Not confirmed by anyone the map trusts: the edge is dashed, the same device a grouping uses. */
+.crewlet-graph-canvas__card[data-unconfirmed] {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  box-shadow: none;
+}
+
+.crewlet-graph-canvas__card[data-unconfirmed][data-selected] {
+  border-color: var(--color-brand-accent);
+}
+
+/* Pushed back: grey, flat and quieter, with every word still above its contrast floor. */
+.crewlet-graph-canvas__card[data-dimmed] {
+  background: var(--color-surface-background);
+  box-shadow: none;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__tile,
+.crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__dot {
+  filter: grayscale(1);
+}
+
+.crewlet-graph-canvas__head[data-dimmed] {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-graph-canvas__tile {
+  flex: none;
+}
+
+.crewlet-graph-canvas__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.crewlet-graph-canvas__name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-graph-canvas__caption {
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__caption {
+  color: var(--color-text-tertiary);
+}
+
+/* The dot stands on the card's top corner, clear of the name. */
+.crewlet-graph-canvas__dot {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+}
+
+.crewlet-graph-canvas__card--group .crewlet-graph-canvas__chevron {
+  margin-right: calc(-1 * var(--spacing-1));
+}
+
+/* ── empty lanes ────────────────────────────────────────────────────────── */
+
+.crewlet-graph-canvas__empty,
+.crewlet-graph-canvas__empty-probe {
+  box-sizing: border-box;
+  padding: var(--spacing-3);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-graph-canvas__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  outline: none;
+}
+
+.crewlet-graph-canvas__empty-probe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.crewlet-graph-canvas__empty:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* ── edges ───────────────────────────────────────────────────────────────── */
+
+/*
+ * An edge is the content between cards, so it takes the boundary step the
+ * palette holds to 3:1 on the canvas's ground, as a tree's connectors do.
+ */
+.crewlet-graph-canvas__edge {
+  fill: none;
+  stroke: var(--color-border-control);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.crewlet-graph-canvas__arrow {
+  fill: var(--color-border-control);
+  stroke: none;
+}
+
+.crewlet-graph-canvas__edge[data-state='faint'] {
+  stroke: var(--color-border-default);
+}
+
+.crewlet-graph-canvas__arrow[data-state='faint'] {
+  fill: var(--color-border-default);
+}
+
+.crewlet-graph-canvas__edge[data-state='strong'] {
+  stroke: var(--color-brand-accent);
+  stroke-width: 2;
+}
+
+.crewlet-graph-canvas__arrow[data-state='strong'] {
+  fill: var(--color-brand-accent);
+}
+
+/* ── cards as shapes, zoomed out past reading ─────────────────────────────── */
+
+.crewlet-graph-canvas__shapes path {
+  stroke-width: 1;
+}
+
+.crewlet-graph-canvas__shapes [data-shape='card'] {
+  fill: var(--color-surface-elevated);
+  stroke: var(--color-border-strong);
+}
+
+.crewlet-graph-canvas__shapes [data-shape='faded'] {
+  fill: var(--color-surface-background);
+  stroke: var(--color-border-default);
+}
+
+.crewlet-graph-canvas__shapes [data-shape='dashed'] {
+  fill: var(--color-surface-elevated);
+  stroke: var(--color-border-strong);
+  stroke-dasharray: 4 3;
+}
+
+.crewlet-graph-canvas__shapes [data-shape='selected'] {
+  fill: var(--color-surface-elevated);
+  stroke: var(--color-brand-accent);
+  stroke-width: 3;
+}
+
+.crewlet-graph-canvas__shapes [data-shape='danger'] {
+  fill: var(--color-feedback-danger);
+}
+
+.crewlet-graph-canvas__shapes [data-shape='warning'] {
+  fill: var(--color-feedback-warning);
+}
+
+.crewlet-graph-canvas__shapes [data-shape='info'] {
+  fill: var(--color-feedback-info);
+}
