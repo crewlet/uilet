@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Card, DescriptionList, PropertyList, Stack, Tag } from '@crewlethq/ui';
+import { VendorMark } from '@crewlethq/icons';
 
 const meta: Meta<typeof PropertyList> = { title: 'UI/PropertyList', component: PropertyList };
 export default meta;
@@ -97,5 +98,51 @@ export const OneMeasureForAPage: Story = {
         />
       </Card>
     </Stack>
+  ),
+};
+
+/**
+ * Facts nobody set: what a source saw, what an agent observed (with how far it
+ * is to be trusted) and what a person confirmed, each in its own words. Rows
+ * share a line only when they share the source, the verb and the moment.
+ */
+export const SeenObservedConfirmed: Story = {
+  render: () => (
+    <div style={{ maxWidth: 380 }}>
+      <PropertyList
+        groups={[
+          {
+            name: 'Identity',
+            items: [
+              {
+                label: 'Engine',
+                value: 'postgres',
+                setBy: { actor: 'AWS', verb: 'seen', mark: <VendorMark vendor="aws" />, ago: '4 min ago' },
+              },
+              {
+                label: 'Version',
+                value: '16.4',
+                setBy: { actor: 'AWS', verb: 'seen', mark: <VendorMark vendor="aws" />, ago: '4 min ago' },
+              },
+              {
+                label: 'Region',
+                value: 'eu-west-1',
+                setBy: { actor: 'ada', verb: 'confirmed', ago: '3 days ago' },
+              },
+            ],
+          },
+          {
+            name: 'Details',
+            items: [
+              {
+                label: 'Port',
+                value: '5432',
+                setBy: { actor: 'sre', verb: 'observed', qualifier: 'likely', turnHref: '#/live/turns/t-2' },
+              },
+            ],
+          },
+        ]}
+      />
+    </div>
   ),
 };
