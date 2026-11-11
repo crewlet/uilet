@@ -65,11 +65,13 @@ export function StatusLegend({ label, items, value = null, onValueChange, countL
             type="button"
             className="crewlet-status-legend__item"
             aria-pressed={pressed}
-            aria-label={named(item)}
             data-empty={item.count === 0 ? '' : undefined}
             onClick={() => onValueChange(pressed ? null : item.key)}
           >
-            {content(item)}
+            {/* Named by its content, as the list's items are: an aria-label that did not contain the
+                visible "Working 4" failed WCAG 2.5.3 (label in name) for a speech user saying it. */}
+            <span aria-hidden="true">{content(item)}</span>
+            <VisuallyHidden>{named(item)}</VisuallyHidden>
           </button>
         );
       })}

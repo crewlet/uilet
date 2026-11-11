@@ -43,17 +43,22 @@ function Filter({ onChange = () => {} }: { onChange?: (key: string | null) => vo
 test('each status is a toggle named in full, in a named group', () => {
   render(<Filter />);
   const group = screen.getByRole('group', { name: 'Filter by status' });
-  expect(within(group).getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual([
+  const buttons = within(group).getAllByRole('button');
+  for (const [i, name] of [
     'Working, 4 agents',
     'Needs you, 1 agent',
     'Paused or stopped, 1 agent',
     'Idle, 0 agents',
-  ]);
+  ].entries()) {
+    expect(screen.getByRole('button', { name })).toBe(buttons[i]);
+  }
+  // Named by what it shows rather than by a label beside it, so the visible words are part of the name.
+  for (const button of buttons) expect(button.hasAttribute('aria-label')).toBe(false);
   for (const button of within(group).getAllByRole('button')) expect(button.getAttribute('aria-pressed')).toBe('false');
   // Its dot, its word and its count, in the tone a status dot takes everywhere.
   const working = screen.getByRole('button', { name: 'Working, 4 agents' });
   expect(working.querySelector('.crewlet-status-dot--info')).not.toBeNull();
-  expect(working.textContent?.trim()).toBe('Working4');
+  expect(working.querySelector('[aria-hidden="true"]')!.textContent?.trim()).toBe('Working4');
 });
 
 test('a press filters by that status, another moves the filter, and the pressed one again clears it', () => {
@@ -81,25 +86,31 @@ test('a status nothing holds stays drawn, in the quieter ink', () => {
   render(<Filter />);
   const idle = screen.getByRole('button', { name: 'Idle, 0 agents' });
   expect(idle.hasAttribute('data-empty')).toBe(true);
-  expect(idle.textContent?.trim()).toBe('Idle0');
-  expect(SHEET).toMatch(/\.crewlet-status-legend__item\[data-empty\]:not\(\[aria-pressed='true'\]\) \{\s*color: var\(--color-text-tertiary\);/);
+  expect(idle.querySelector('[aria-hidden="true"]')!.textContent?.trim()).toBe('Idle0');
+  expect(SHEET).toMatch(
+    /\.crewlet-status-legend__item\[data-empty\]:not\(\[aria-pressed='true'\]\) \{\s*color: var\(--color-text-tertiary\);/,
+  );
 });
 
 test('without a filter it is a list, each status read in full', () => {
   render(<StatusLegend label="Statuses" items={ITEMS} />);
   const list = screen.getByRole('list', { name: 'Statuses' });
   expect(within(list).queryAllByRole('button')).toHaveLength(0);
-  expect(within(list).getAllByRole('listitem').map((item) => item.querySelector('.crewlet-visually-hidden')?.textContent)).toEqual([
-    'Working, 4',
-    'Needs you, 1',
-    'Paused or stopped, 1',
-    'Idle, 0',
-  ]);
+  expect(
+    within(list)
+      .getAllByRole('listitem')
+      .map((item) => item.querySelector('.crewlet-visually-hidden')?.textContent),
+  ).toEqual(['Working, 4', 'Needs you, 1', 'Paused or stopped, 1', 'Idle, 0']);
 });
 
 test("in a canvas's end slot it stands on the bar across from the controls", () => {
   const { container } = render(
-    <Canvas label="Org chart" content={{ x: 0, y: 0, width: 400, height: 300 }} controlsPlacement="top-right" overlayEnd={<Filter />}>
+    <Canvas
+      label="Org chart"
+      content={{ x: 0, y: 0, width: 400, height: 300 }}
+      controlsPlacement="top-right"
+      overlayEnd={<Filter />}
+    >
       <div />
     </Canvas>,
   );
@@ -117,7 +128,9 @@ test('it has no violation, filter or key', async () => {
     </div>,
   );
   fireEvent.click(screen.getByRole('button', { name: 'Working, 4 agents' }));
-  const result = await axe.run(container, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] } });
+  const result = await axe.run(container, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+  });
   expect(result.violations.map((one) => one.id)).toEqual([]);
 });
 
