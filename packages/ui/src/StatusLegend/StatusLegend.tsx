@@ -34,7 +34,14 @@ export interface StatusLegendProps {
  * Each status with its dot, its word and a quiet count, as one line that wraps:
  * the key to a chart's colours, and with `onValueChange` its filter as well.
  */
-export function StatusLegend({ label, items, value = null, onValueChange, countLabel = String, className }: StatusLegendProps) {
+export function StatusLegend({
+  label,
+  items,
+  value = null,
+  onValueChange,
+  countLabel = String,
+  className,
+}: StatusLegendProps) {
   const content = (item: StatusLegendItem) => (
     <>
       <StatusDot tone={item.tone}>{item.label}</StatusDot>
@@ -48,7 +55,9 @@ export function StatusLegend({ label, items, value = null, onValueChange, countL
       <ul className={cx('crewlet-status-legend', className)} aria-label={label}>
         {items.map((item) => (
           <li key={item.key} className="crewlet-status-legend__item" data-empty={item.count === 0 ? '' : undefined}>
-            <span aria-hidden="true">{content(item)}</span>
+            <span className="crewlet-status-legend__face" aria-hidden="true">
+              {content(item)}
+            </span>
             <VisuallyHidden>{named(item)}</VisuallyHidden>
           </li>
         ))}
@@ -70,7 +79,9 @@ export function StatusLegend({ label, items, value = null, onValueChange, countL
           >
             {/* Named by its content, as the list's items are: an aria-label that did not contain the
                 visible "Working 4" failed WCAG 2.5.3 (label in name) for a speech user saying it. */}
-            <span aria-hidden="true">{content(item)}</span>
+            <span className="crewlet-status-legend__face" aria-hidden="true">
+              {content(item)}
+            </span>
             <VisuallyHidden>{named(item)}</VisuallyHidden>
           </button>
         );

@@ -138,3 +138,17 @@ test('it has no violation, filter or key', async () => {
 test('a count keeps the room of two digits, in step', () => {
   expect(SHEET).toMatch(/\.crewlet-status-legend__count \{\s*min-width: 2ch;\s*font-variant-numeric: tabular-nums;/);
 });
+
+test('what an item shows is one row with the count a step and a half after the word, in both forms', () => {
+  const { unmount } = render(<Filter />);
+  const toggles = screen.getAllByRole('button');
+  for (const toggle of toggles) expect(toggle.querySelector(':scope > .crewlet-status-legend__face')).not.toBeNull();
+  unmount();
+  render(<StatusLegend label="Statuses" items={ITEMS} countLabel={agents} />);
+  for (const item of screen.getByRole('list', { name: 'Statuses' }).querySelectorAll('li')) {
+    expect(item.querySelector(':scope > .crewlet-status-legend__face')).not.toBeNull();
+  }
+  const face = /\.crewlet-status-legend__face \{([^}]*)\}/.exec(SHEET)?.[1] ?? '';
+  expect(face).toMatch(/display: inline-flex;/);
+  expect(face).toMatch(/gap: calc\(var\(--spacing-1\) \* 1\.5\);/);
+});
