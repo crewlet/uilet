@@ -156,7 +156,6 @@
 }
 
 .crewlet-graph-canvas__group-count {
-  margin-left: auto;
   color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
@@ -212,14 +211,27 @@
   border-color: var(--color-brand-accent);
 }
 
-/* Pushed back: grey, flat and quieter, with every word still above its contrast floor. */
+/*
+ * Pushed back: the card sinks into its lane's own fill, flat and grey, its
+ * words in the quiet ink, which still clears its contrast floor; only the
+ * glyph, which the name already says, fades.
+ */
 .crewlet-graph-canvas__card[data-dimmed] {
-  background: var(--color-surface-background);
+  background: var(--color-surface-subtle);
+  border-color: var(--color-border-default);
   box-shadow: none;
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
 }
 
-.crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__tile,
+.crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__name {
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__tile {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
 .crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__dot {
   filter: grayscale(1);
 }

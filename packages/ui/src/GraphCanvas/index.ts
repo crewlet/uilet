@@ -4,6 +4,7 @@ export {
   GRAPH_CANVAS_DETAIL_ZOOM,
   GRAPH_CANVAS_FIT_FLOOR,
   GRAPH_CANVAS_LABELS,
+  GRAPH_CANVAS_OPEN_ZOOM,
   GraphCanvas,
   graphWindow,
 } from './GraphCanvas.js';

@@ -144,6 +144,8 @@ export interface GraphRoute {
   d: string;
   /** The arrowhead, as a closed path. */
   arrow: string;
+  /** The box round every point, for drawing only the routes near the view. */
+  box: CanvasRect;
 }
 
 export interface GraphLayout {
@@ -174,6 +176,10 @@ export interface GraphGrid {
   channelX: readonly number[];
   /** Every horizontal street, top to bottom. */
   streets: readonly GraphStreet[];
+  /** Each band's own streets, as indices into `streets`, top to bottom. */
+  bandStreets: readonly (readonly number[])[];
+  /** The street in the gap above each band after the first, by the band's index. */
+  gapStreets: ReadonlyMap<number, number>;
   /** Whether a cell holds anything, by band: `occupied[band][row * columns + col]`. */
   occupied: readonly Uint8Array[];
   bandRows: readonly number[];
@@ -257,22 +263,7 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     }
   }
 
-  // ---- columns: every band as wide as the widest, its lanes sharing it evenly
-  const columns = Math.max(1, ...bands.map((band) => band.lanes.length));
-  const laneCols = new Map<string, { col: number; span: number }>();
-  for (const band of bands) {
-    const base = Math.floor(columns / Math.max(1, band.lanes.length));
-    const extra = columns - base * band.lanes.length;
-    let col = 0;
-    band.lanes.forEach((lane, i) => {
-      const span = base + (i < extra ? 1 : 0);
-      laneCols.set(lane, { col, span });
-      col += span;
-    });
-  }
-
   // ---- blocks per lane, in the caller's order
-  const nodeLane = new Map(nodes.map((node) => [node.id, node.lane]));
   const blocksOf = new Map<string, Block[]>();
   const groupBlock = new Map<string, Block>();
   for (const band of bands) for (const lane of band.lanes) blocksOf.set(lane, []);
@@ -301,24 +292,32 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     }
   }
 
-  // ---- neighbours along the at-rest edges, between drawn items
-  const neighbours = new Map<string, string[]>();
-  const link = (a: string, b: string) => {
-    let list = neighbours.get(a);
-    if (!list) neighbours.set(a, (list = []));
-    list.push(b);
-  };
-  for (const edge of input.edges) {
-    const a = keyOfNode.get(edge.from);
-    const b = keyOfNode.get(edge.to);
-    if (a === undefined || b === undefined || a === b) continue;
-    link(a, b);
-    link(b, a);
+  // ---- the drawn items that are ordered (entries and closed groups), by index, with their
+  // neighbours in other lanes along the at-rest edges: the sweeps read numbers, not strings
+  const allLanes = bands.flatMap((band) => band.lanes);
+  const laneNumber = new Map(allLanes.map((lane, i) => [lane, i]));
+  const itemIndex = new Map<string, number>();
+  const itemLane: number[] = [];
+  for (const lane of allLanes) {
+    for (const block of blocksOf.get(lane)!) {
+      const keys =
+        block.kind === 'closed'
+          ? [graphItemKey('summary', block.id)]
+          : block.members.map((id) => graphItemKey('node', id));
+      for (const key of keys) {
+        itemIndex.set(key, itemLane.length);
+        itemLane.push(laneNumber.get(lane)!);
+      }
+    }
   }
-  const laneOfKey = (key: string): string | undefined => {
-    const id = key.slice(key.indexOf(':') + 1);
-    return key.startsWith('summary:') ? groupLane.get(id) : nodeLane.get(id);
-  };
+  const adjacent: number[][] = itemLane.map(() => []);
+  for (const edge of input.edges) {
+    const a = itemIndex.get(keyOfNode.get(edge.from) ?? '');
+    const b = itemIndex.get(keyOfNode.get(edge.to) ?? '');
+    if (a === undefined || b === undefined || a === b || itemLane[a] === itemLane[b]) continue;
+    adjacent[a]!.push(b);
+    adjacent[b]!.push(a);
+  }
 
   // ---- rows: where each block of a lane lands
   const pitch = metrics.cardHeight + metrics.rowGap;
@@ -336,8 +335,7 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     cols: number;
     rows: number;
   }
-  const placeLane = (lane: string): { cells: Cell[]; rows: number } => {
-    const { span } = laneCols.get(lane)!;
+  const placeLane = (lane: string, span = laneCols.get(lane)!.span): { cells: Cell[]; rows: number } => {
     const blocks = blocksOf.get(lane)!;
     const cells: Cell[] = [];
     if (blocks.length === 0) {
@@ -384,31 +382,61 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     return { cells, rows: row };
   };
 
+  // ---- columns: every band as wide as the widest. A band with fewer lanes gives each spare column
+  // to the tallest lane it makes shorter, so the band ends as soon as it can; when no lane gains from
+  // one, the narrowest lane takes it, so the spare is shared out evenly. An empty lane gains nothing.
+  const columns = Math.max(1, ...bands.map((band) => band.lanes.length));
+  const laneCols = new Map<string, { col: number; span: number }>();
+  for (const band of bands) {
+    const base = Math.floor(columns / Math.max(1, band.lanes.length));
+    const spans = band.lanes.map(() => base);
+    const rowsAt = (i: number, span: number) => {
+      const lane = band.lanes[i]!;
+      return blocksOf.get(lane)!.length === 0 ? 1 : placeLane(lane, span).rows;
+    };
+    for (let spare = columns - base * band.lanes.length; spare > 0; spare--) {
+      let pick = 0;
+      let best: [number, number, number] = [-1, -1, -Infinity];
+      spans.forEach((span, i) => {
+        const now = rowsAt(i, span);
+        const gains = now > rowsAt(i, span + 1);
+        const score: [number, number, number] = [gains ? 1 : 0, gains ? now : 0, -span];
+        if (
+          score[0] > best[0] ||
+          (score[0] === best[0] && (score[1] > best[1] || (score[1] === best[1] && score[2] > best[2])))
+        ) {
+          best = score;
+          pick = i;
+        }
+      });
+      spans[pick]! += 1;
+    }
+    let col = 0;
+    band.lanes.forEach((lane, i) => {
+      laneCols.set(lane, { col, span: spans[i]! });
+      col += spans[i]!;
+    });
+  }
+
   // ---- ordering: barycentric sweeps over the lanes, both ways
-  const allLanes = bands.flatMap((band) => band.lanes);
-  /* A cell's place for ordering: its band, then its row, then its column, as one number. */
-  const rank = new Map<string, number>();
+  /* An item's place for ordering: its band, then its row, then its column, as one number. */
+  const rank = new Float64Array(itemLane.length);
   const rankLane = (lane: string) => {
     const b = laneBand.get(lane)!;
     const { col } = laneCols.get(lane)!;
     for (const cell of placeLane(lane).cells) {
-      rank.set(cell.key, b * 1e6 + cell.row * columns + col + cell.col);
+      const index = itemIndex.get(cell.key);
+      if (index !== undefined) rank[index] = b * 1e6 + cell.row * columns + col + cell.col;
     }
   };
   allLanes.forEach(rankLane);
-  const barycentre = (key: string, lane: string): number | undefined => {
-    const list = neighbours.get(key);
-    if (!list) return undefined;
+  /* The mean place of an item's neighbours, or NaN for an item with none. */
+  const barycentre = (index: number): number => {
+    const list = adjacent[index]!;
+    if (list.length === 0) return NaN;
     let sum = 0;
-    let count = 0;
-    for (const other of list) {
-      if (laneOfKey(other) === lane) continue;
-      const at = rank.get(other);
-      if (at === undefined) continue;
-      sum += at;
-      count += 1;
-    }
-    return count === 0 ? undefined : sum / count;
+    for (const other of list) sum += rank[other]!;
+    return sum / list.length;
   };
   for (let sweep = 0; sweep < GRAPH_ORDER_SWEEPS; sweep++) {
     const order = sweep % 2 === 0 ? allLanes : [...allLanes].reverse();
@@ -416,20 +444,28 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
       const blocks = blocksOf.get(lane)!;
       if (blocks.length === 0) continue;
       const keyed = blocks.map((block, position) => {
-        const memberKey = (id: string) => keyOfNode.get(id)!;
+        const indices =
+          block.kind === 'closed'
+            ? [itemIndex.get(graphItemKey('summary', block.id))!]
+            : block.members.map((id) => itemIndex.get(graphItemKey('node', id))!);
+        const bary = indices.map(barycentre);
         if (block.kind === 'group') {
           const scored = block.members.map((id, i) => ({
             id,
             i,
-            at: barycentre(memberKey(id), lane) ?? rank.get(memberKey(id))!,
+            at: Number.isNaN(bary[i]!) ? rank[indices[i]!]! : bary[i]!,
           }));
           scored.sort((a, b) => a.at - b.at || a.i - b.i);
           block.members = scored.map((one) => one.id);
         }
-        const keys = block.kind === 'closed' ? [graphItemKey('summary', block.id)] : block.members.map(memberKey);
-        const at = keys.map((key) => barycentre(key, lane)).filter((one): one is number => one !== undefined);
-        const own = rank.get(keys[0]!) ?? position;
-        return { block, position, at: at.length > 0 ? at.reduce((s, v) => s + v, 0) / at.length : own };
+        let sum = 0;
+        let count = 0;
+        for (const value of bary) {
+          if (Number.isNaN(value)) continue;
+          sum += value;
+          count += 1;
+        }
+        return { block, position, at: count > 0 ? sum / count : rank[indices[0]!]! };
       });
       keyed.sort((a, b) => a.at - b.at || a.position - b.position);
       blocksOf.set(
@@ -589,8 +625,14 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     });
   });
   streets.sort((a, b) => a.y - b.y);
+  const bandStreets: number[][] = bands.map(() => []);
+  const gapStreets = new Map<number, number>();
+  streets.forEach((street, i) => {
+    if (street.band >= 0) bandStreets[street.band]!.push(i);
+    else gapStreets.set(street.gap, i);
+  });
 
-  const grid: GraphGrid = { colX, channelX, streets, occupied, bandRows, bandRowsTop };
+  const grid: GraphGrid = { colX, channelX, streets, bandStreets, gapStreets, occupied, bandRows, bandRowsTop };
   const itemOfNode = keyOfNode;
 
   const partial = { metrics, columns, itemByKey, itemOfNode, grid };
@@ -693,7 +735,7 @@ function routeAll(
   }
   for (const [key, entries] of sides) {
     const item = itemByKey.get(key.slice(0, key.lastIndexOf('|')))!;
-    entries.sort((a, b) => a.toward - b.toward || a.plan.key.localeCompare(b.plan.key));
+    entries.sort((a, b) => a.toward - b.toward || byText(a.plan.key, b.plan.key));
     const top = item.y + Math.min(PORT_INSET, item.height / 4);
     const room = item.height - 2 * (top - item.y);
     entries.forEach((entry, i) => {
@@ -799,6 +841,7 @@ function routeAll(
       points,
       d: pathOf(drawn),
       arrow: `M${n(endX)} ${n(one.toY)}L${n(base.x)} ${n(one.toY - ARROW_HALF)}L${n(base.x)} ${n(one.toY + ARROW_HALF)}Z`,
+      box: boxOf(points),
     };
   });
   return { routes, routeOfEdge };
@@ -856,21 +899,45 @@ function plan(
   const crossed: number[] = [];
   for (let c = Math.min(out, into); c < Math.max(out, into); c++) crossed.push(c);
   const pitch = metrics.cardHeight + metrics.rowGap;
-  const gap = from.band === to.band ? -1 : from.band < to.band ? from.band + 1 : from.band;
+  if (from.band !== to.band) {
+    const gap = grid.gapStreets.get(from.band < to.band ? from.band + 1 : from.band);
+    return { ...base, street: gap ?? null };
+  }
+  const cost = (i: number) => {
+    const street = grid.streets[i]!;
+    const between = street.y >= lo && street.y <= hi;
+    let penalty = between ? 0 : pitch * 4;
+    for (const c of crossed) {
+      if (street.blocked[c]) penalty += pitch * 50;
+      else if (street.dirty[c]) penalty += pitch * 2;
+    }
+    return Math.abs(street.y - toY) + penalty;
+  };
+  // Outward from the street nearest the target: a street further away than the best cost so far cannot win.
+  const list = grid.bandStreets[from.band]!;
+  let at = 0;
+  let top = list.length;
+  while (at < top) {
+    const mid = (at + top) >> 1;
+    if (grid.streets[list[mid]!]!.y < toY) at = mid + 1;
+    else top = mid;
+  }
   let best = -1;
   let bestCost = Infinity;
-  grid.streets.forEach((street, i) => {
-    if (gap < 0 ? street.band !== from.band : street.gap !== gap) return;
-    const between = street.y >= lo && street.y <= hi;
-    const distance = Math.abs(street.y - toY);
-    const dirty = crossed.some((c) => street.dirty[c]);
-    const blocked = crossed.some((c) => street.blocked[c]);
-    const cost = (between ? 0 : pitch * 4) + distance + (dirty ? pitch * 2 : 0) + (blocked ? pitch * 50 : 0);
-    if (cost < bestCost) {
-      bestCost = cost;
-      best = i;
+  for (let i = at; i < list.length && grid.streets[list[i]!]!.y - toY < bestCost; i++) {
+    const value = cost(list[i]!);
+    if (value < bestCost) {
+      bestCost = value;
+      best = list[i]!;
     }
-  });
+  }
+  for (let i = at - 1; i >= 0 && toY - grid.streets[list[i]!]!.y < bestCost; i--) {
+    const value = cost(list[i]!);
+    if (value < bestCost) {
+      bestCost = value;
+      best = list[i]!;
+    }
+  }
   return { ...base, street: best < 0 ? null : best };
 }
 
@@ -887,18 +954,18 @@ function assignTracks(
   const order = runs
     .map((_, i) => i)
     .sort(
-      (a, b) =>
-        runs[a]!.lo - runs[b]!.lo || runs[a]!.hi - runs[b]!.hi || runs[a]!.plan.key.localeCompare(runs[b]!.plan.key),
+      (a, b) => runs[a]!.lo - runs[b]!.lo || runs[a]!.hi - runs[b]!.hi || byText(runs[a]!.plan.key, runs[b]!.plan.key),
     );
-  const ends: number[] = [];
+  // First fit, by two heaps: the lowest track whose last run ended before this one starts.
   const track = new Array<number>(runs.length).fill(0);
+  const busy = new Heap<[number, number]>((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const free = new Heap<number>((a, b) => a - b);
+  let tracks = 0;
   for (const i of order) {
     const run = runs[i]!;
-    let t = ends.findIndex((end) => end < run.lo - 1);
-    if (t < 0) {
-      t = ends.length;
-      ends.push(run.hi);
-    } else ends[t] = run.hi;
+    while (busy.size > 0 && busy.peek()![0] < run.lo - 1) free.push(busy.pop()![1]);
+    const t = free.size > 0 ? free.pop()! : tracks++;
+    busy.push([run.hi, t]);
     track[i] = t;
   }
   const most = Math.max(1, Math.floor(room / step) + 1);
@@ -907,6 +974,69 @@ function assignTracks(
     const side = slot % 2 === 0 ? 1 : -1;
     return side * Math.ceil(slot / 2) * step;
   });
+}
+
+/** A binary min-heap. */
+class Heap<T> {
+  private readonly items: T[] = [];
+  constructor(private readonly before: (a: T, b: T) => number) {}
+  get size(): number {
+    return this.items.length;
+  }
+  peek(): T | undefined {
+    return this.items[0];
+  }
+  push(item: T): void {
+    const items = this.items;
+    items.push(item);
+    let at = items.length - 1;
+    while (at > 0) {
+      const parent = (at - 1) >> 1;
+      if (this.before(items[at]!, items[parent]!) >= 0) break;
+      [items[at], items[parent]] = [items[parent]!, items[at]!];
+      at = parent;
+    }
+  }
+  pop(): T | undefined {
+    const items = this.items;
+    const top = items[0];
+    const last = items.pop();
+    if (items.length > 0 && last !== undefined) {
+      items[0] = last;
+      let at = 0;
+      for (;;) {
+        const left = at * 2 + 1;
+        const right = left + 1;
+        let least = at;
+        if (left < items.length && this.before(items[left]!, items[least]!) < 0) least = left;
+        if (right < items.length && this.before(items[right]!, items[least]!) < 0) least = right;
+        if (least === at) break;
+        [items[at], items[least]] = [items[least]!, items[at]!];
+        at = least;
+      }
+    }
+    return top;
+  }
+}
+
+/** Orders two keys by their code units: deterministic everywhere, unlike a locale's collation, and cheap. */
+function byText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** The rectangle round a set of points, widened by the arrowhead's half width. */
+function boxOf(points: readonly CanvasPoint[]): CanvasRect {
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+  for (const point of points) {
+    left = Math.min(left, point.x);
+    top = Math.min(top, point.y);
+    right = Math.max(right, point.x);
+    bottom = Math.max(bottom, point.y);
+  }
+  return { x: left, y: top - ARROW_HALF, width: right - left, height: bottom - top + 2 * ARROW_HALF };
 }
 
 /** Drops repeated points and the middle of three in a line. */

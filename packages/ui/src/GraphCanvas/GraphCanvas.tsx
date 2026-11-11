@@ -191,6 +191,12 @@ export const GRAPH_CANVAS_LABELS: GraphCanvasLabels = {
 export const GRAPH_CANVAS_DETAIL_ZOOM = 0.5;
 
 /**
+ * THE ZOOM A MAP TOO LARGE TO READ WHOLE OPENS AT, on its start: a card's
+ * 13px name draws at about 10px, and five lanes still fit across a laptop.
+ */
+export const GRAPH_CANVAS_OPEN_ZOOM = 0.75;
+
+/**
  * THE LOWEST ZOOM A FIT TAKES, so the whole map is one press away however
  * large: two thousand entries in five lanes fit at about a twentieth.
  */
@@ -437,13 +443,7 @@ export function GraphCanvas({
       else quiet.push(route);
     }
     strong.push(...routeGraphEdges(layout, extra));
-    const join = (list: GraphRoute[], part: 'd' | 'arrow') => list.map((route) => route[part]).join('');
-    return {
-      quiet: { d: join(quiet, 'd'), arrow: join(quiet, 'arrow') },
-      faint: { d: join(faint, 'd'), arrow: join(faint, 'arrow') },
-      strong: { d: join(strong, 'd'), arrow: join(strong, 'arrow') },
-      itemDimmed,
-    };
+    return { quiet, faint, strong, itemDimmed };
   }, [layout, reach, edges, nodeDimmed]);
 
   // ---- what each card says about its relations -------------------------------------
@@ -478,6 +478,22 @@ export function GraphCanvas({
     [onViewChange],
   );
 
+  // The quiet and faint routes near the mounted window, as one path each; the lit ones always, whole.
+  const paths = useMemo(() => {
+    if (!drawn) return null;
+    const near = (route: GraphRoute) => !mounted || intersects(route.box, mounted.rect);
+    const join = (list: readonly GraphRoute[], part: 'd' | 'arrow', all = false) =>
+      list
+        .filter((route) => all || near(route))
+        .map((route) => route[part])
+        .join('');
+    return {
+      quiet: { d: join(drawn.quiet, 'd'), arrow: join(drawn.quiet, 'arrow') },
+      faint: { d: join(drawn.faint, 'd'), arrow: join(drawn.faint, 'arrow') },
+      strong: { d: join(drawn.strong, 'd', true), arrow: join(drawn.strong, 'arrow', true) },
+    };
+  }, [drawn, mounted]);
+
   // ---- the opening view: whole when it reads, else the map's start at a size that does ----
   const root = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState<CanvasSize | null>(null);
@@ -491,14 +507,28 @@ export function GraphCanvas({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+  // The canvas's own bars along the top edge, which a map opening on its start must clear.
+  const [chrome, setChrome] = useState(0);
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el || !frame) return;
+    const top = el.getBoundingClientRect().top;
+    let bottom = 0;
+    for (const bar of el.querySelectorAll('.crewlet-canvas__controls')) {
+      const rect = bar.getBoundingClientRect();
+      if (rect.height > 0 && rect.top - top < frame.height / 2) bottom = Math.max(bottom, rect.bottom - top);
+    }
+    setChrome(bottom);
+  }, [frame, controlsStart, controlsPlacement]);
   const opening = useMemo<CanvasView | undefined>(() => {
     if (initialView) return initialView;
     if (!layout || !frame) return undefined;
     const fit = fitView(layout.bounds, frame, CANVAS_FIT_PADDING, minZoom);
     if (fit.k >= GRAPH_CANVAS_DETAIL_ZOOM) return undefined;
-    const k = GRAPH_CANVAS_DETAIL_ZOOM;
-    return { k, x: CANVAS_FIT_PADDING - layout.bounds.x * k, y: CANVAS_FIT_PADDING - layout.bounds.y * k };
-  }, [initialView, layout, frame, minZoom]);
+    const k = GRAPH_CANVAS_OPEN_ZOOM;
+    const y = Math.max(CANVAS_FIT_PADDING, chrome + CANVAS_FIT_PADDING / 2);
+    return { k, x: CANVAS_FIT_PADDING - layout.bounds.x * k, y: y - layout.bounds.y * k };
+  }, [initialView, layout, frame, minZoom, chrome]);
 
   // ---- focus: one roving tab stop ----------------------------------------------------
   const [active, setActive] = useState<string | null>(null);
@@ -704,7 +734,6 @@ export function GraphCanvas({
 
   const renderItem = (item: GraphItem) => {
     const common = {
-      key: item.key,
       itemKey: item.key,
       item,
       tabIndex: item.key === activeKey ? 0 : -1,
@@ -718,6 +747,7 @@ export function GraphCanvas({
       const relations = relationsOf.get(item.id);
       return (
         <GraphCard
+          key={item.key}
           {...common}
           node={node}
           selected={item.id === selectedId}
@@ -733,6 +763,7 @@ export function GraphCanvas({
       const members = layout?.groupById.get(item.id)?.members ?? [];
       return (
         <GraphGroupItem
+          key={item.key}
           {...common}
           label={group?.label ?? item.id}
           lead={group?.lead}
@@ -746,7 +777,7 @@ export function GraphCanvas({
     }
     const lane = laneOf.get(item.id);
     return (
-      <GraphEmptyLane {...common} label={text.emptyLane(lane?.label ?? item.id)}>
+      <GraphEmptyLane key={item.key} {...common} label={text.emptyLane(lane?.label ?? item.id)}>
         {lane?.empty}
       </GraphEmptyLane>
     );
@@ -841,14 +872,14 @@ export function GraphCanvas({
                   <span className="crewlet-graph-canvas__lane-count">{lane.count}</span>
                 </div>
               ))}
-              {drawn ? (
+              {paths ? (
                 <svg className="crewlet-graph-canvas__edges" width={width} height={height} aria-hidden="true">
-                  <path className="crewlet-graph-canvas__edge" data-state="faint" d={drawn.faint.d} />
-                  <path className="crewlet-graph-canvas__arrow" data-state="faint" d={drawn.faint.arrow} />
-                  <path className="crewlet-graph-canvas__edge" data-state="quiet" d={drawn.quiet.d} />
-                  <path className="crewlet-graph-canvas__arrow" data-state="quiet" d={drawn.quiet.arrow} />
-                  <path className="crewlet-graph-canvas__edge" data-state="strong" d={drawn.strong.d} />
-                  <path className="crewlet-graph-canvas__arrow" data-state="strong" d={drawn.strong.arrow} />
+                  <path className="crewlet-graph-canvas__edge" data-state="faint" d={paths.faint.d} />
+                  <path className="crewlet-graph-canvas__arrow" data-state="faint" d={paths.faint.arrow} />
+                  <path className="crewlet-graph-canvas__edge" data-state="quiet" d={paths.quiet.d} />
+                  <path className="crewlet-graph-canvas__arrow" data-state="quiet" d={paths.quiet.arrow} />
+                  <path className="crewlet-graph-canvas__edge" data-state="strong" d={paths.strong.d} />
+                  <path className="crewlet-graph-canvas__arrow" data-state="strong" d={paths.strong.arrow} />
                 </svg>
               ) : null}
               {mounted && !mounted.detail ? (
@@ -974,7 +1005,6 @@ const GraphCard = memo(function GraphCard({
       ref={refFor(itemKey)}
       role="button"
       tabIndex={tabIndex}
-      aria-label={spoken}
       aria-describedby={description ? descriptionId : undefined}
       aria-current={selected ? 'true' : undefined}
       data-graph-key={itemKey}
@@ -991,7 +1021,7 @@ const GraphCard = memo(function GraphCard({
       <IconTile size="sm" tone="neutral" className="crewlet-graph-canvas__tile">
         {node.glyph}
       </IconTile>
-      <span className="crewlet-graph-canvas__text">
+      <span className="crewlet-graph-canvas__text" aria-hidden="true">
         <Text variant="inherit" truncate className="crewlet-graph-canvas__name">
           {node.name}
         </Text>
@@ -1002,7 +1032,7 @@ const GraphCard = memo(function GraphCard({
         ) : null}
       </span>
       {node.attention ? <StatusDot tone={node.attention.tone} className="crewlet-graph-canvas__dot" /> : null}
-      {description ? <VisuallyHidden id={descriptionId}>{description}</VisuallyHidden> : null}
+      <SpokenName spoken={spoken} description={description} descriptionId={descriptionId} />
     </div>
   );
 });
@@ -1041,7 +1071,6 @@ const GraphGroupItem = memo(function GraphGroupItem({
       ref={refFor(itemKey)}
       role="button"
       tabIndex={tabIndex}
-      aria-label={spoken}
       aria-expanded={open}
       data-graph-key={itemKey}
       aria-current={selected ? 'true' : undefined}
@@ -1060,18 +1089,25 @@ const GraphGroupItem = memo(function GraphGroupItem({
       {open ? (
         <>
           <ChevronDownGlyph size="xs" aria-hidden="true" className="crewlet-graph-canvas__chevron" />
-          {lead ? <span className="crewlet-graph-canvas__lead">{lead}</span> : null}
-          <Text variant="inherit" truncate className="crewlet-graph-canvas__group-label">
+          {lead ? (
+            <span className="crewlet-graph-canvas__lead" aria-hidden="true">
+              {lead}
+            </span>
+          ) : null}
+          <Text variant="inherit" truncate className="crewlet-graph-canvas__group-label" aria-hidden="true">
             {label}
           </Text>
-          <span className="crewlet-graph-canvas__group-count">{count}</span>
+          <span className="crewlet-graph-canvas__group-count" aria-hidden="true">
+            {count}
+          </span>
+          <SpokenName spoken={spoken} />
         </>
       ) : (
         <>
           <IconTile size="sm" tone="neutral" className="crewlet-graph-canvas__tile">
             {lead ?? <ChevronRightGlyph size="sm" />}
           </IconTile>
-          <span className="crewlet-graph-canvas__text">
+          <span className="crewlet-graph-canvas__text" aria-hidden="true">
             <Text variant="inherit" truncate className="crewlet-graph-canvas__name">
               {label}
             </Text>
@@ -1081,11 +1117,38 @@ const GraphGroupItem = memo(function GraphGroupItem({
           </span>
           <ChevronRightGlyph size="xs" aria-hidden="true" className="crewlet-graph-canvas__chevron" />
           {attention ? <StatusDot tone={attention.tone} className="crewlet-graph-canvas__dot" /> : null}
+          <SpokenName spoken={spoken} />
         </>
       )}
     </div>
   );
 });
+
+/**
+ * AN ITEM'S NAME IS ITS CONTENT: one sentence, read in place of the visible
+ * words it starts with, which are hidden so they are not read twice. The
+ * relations are its description, in an element only that reference reads.
+ */
+function SpokenName({
+  spoken,
+  description,
+  descriptionId,
+}: {
+  spoken: string;
+  description?: string | undefined;
+  descriptionId?: string | undefined;
+}) {
+  return (
+    <>
+      <VisuallyHidden>{spoken}</VisuallyHidden>
+      {description ? (
+        <span id={descriptionId} hidden>
+          {description}
+        </span>
+      ) : null}
+    </>
+  );
+}
 
 function GraphEmptyLane({
   itemKey,

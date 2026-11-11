@@ -296,12 +296,16 @@ describe('layoutGraph', () => {
     }
   });
 
-  test('a band with fewer lanes shares the width, and its cards flow across the lane', () => {
-    const nodes = Array.from({ length: 5 }, (_, i) => ({ id: `r${i}`, lane: 'code' }));
+  test('a band with fewer lanes gives its spare columns to its fullest lane, whose cards flow across it', () => {
+    const nodes = [
+      ...Array.from({ length: 5 }, (_, i) => ({ id: `r${i}`, lane: 'code' })),
+      ...Array.from({ length: 6 }, (_, i) => ({ id: `t${i}`, lane: 'tools' })),
+    ];
     const layout = layoutGraph({ bands: BANDS, nodes, edges: [], open: allOpen }, METRICS);
     expect(layout.columns).toBe(5);
     const spans = BANDS[1]!.lanes.map((lane) => layout.laneById.get(lane)!.span);
-    expect(spans).toEqual([2, 2, 1]);
+    // Six tool servers take the first spare column and five repositories the second; the empty lane takes none.
+    expect(spans).toEqual([2, 1, 2]);
     const code = layout.items.filter((item) => item.lane === 'code');
     expect(code.map((item) => [item.row, item.col])).toEqual([
       [0, 0],
@@ -310,6 +314,12 @@ describe('layoutGraph', () => {
       [1, 1],
       [2, 0],
     ]);
+  });
+
+  test('spare columns no lane gains from are shared out evenly', () => {
+    const nodes = ['code', 'observability', 'tools'].map((lane) => ({ id: lane, lane }));
+    const layout = layoutGraph({ bands: BANDS, nodes, edges: [], open: allOpen }, METRICS);
+    expect(BANDS[1]!.lanes.map((lane) => layout.laneById.get(lane)!.span)).toEqual([2, 2, 1]);
   });
 
   test('an empty lane keeps the rows its message needs', () => {
@@ -334,9 +344,9 @@ describe('layoutGraph', () => {
       after += crossings(layoutGraph({ ...map, open: allOpen }, METRICS).routes);
       before += crossings(unswept({ ...map, open: allOpen }).routes);
     }
-    // The fixtures' own figures (2578 unswept), so an ordering that draws worse maps is seen.
-    expect(before).toBe(2578);
-    expect(after).toBeLessThanOrEqual(1537);
+    // The fixtures' own figures, so an ordering that draws worse maps is seen.
+    expect(before).toBe(2591);
+    expect(after).toBeLessThanOrEqual(1547);
   });
 
   test('the same input gives the same map', () => {
@@ -385,7 +395,7 @@ describe('layoutGraph', () => {
     const layout = layoutGraph({ ...map, open: allOpen }, METRICS);
     const took = performance.now() - started;
     expect(layout.items.filter((item) => item.kind === 'node')).toHaveLength(2000);
-    // About 60ms on a laptop; the bound is loose for a shared CI runner.
+    // About 150 ms on a laptop under jsdom; the bound is loose for a shared CI runner.
     expect(took).toBeLessThan(1500);
   });
 

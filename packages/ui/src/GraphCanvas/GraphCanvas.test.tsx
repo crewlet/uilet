@@ -199,11 +199,11 @@ describe('GraphCanvas', () => {
     const { container } = render(<Map />);
     LayoutObserver.settle();
     const db = card('orders-db');
-    expect(db.getAttribute('aria-label')).toBe('orders-db, Database, postgres 16, Alerting');
+    expect(screen.getByRole('button', { name: 'orders-db, Database, postgres 16, Alerting' })).toBe(db);
     expect(db.getAttribute('data-attention')).toBe('danger');
     expect(db.querySelector('.crewlet-status-dot--danger')).not.toBeNull();
     const web2 = card('web-2');
-    expect(web2.getAttribute('aria-label')).toBe('web-2, Server, Unconfirmed');
+    expect(screen.getByRole('button', { name: 'web-2, Server, Unconfirmed' })).toBe(web2);
     expect(web2.hasAttribute('data-unconfirmed')).toBe(true);
     // A quiet entry draws no dot at all: the absence of a dot is the state.
     expect(web2.querySelector('.crewlet-status-dot')).toBeNull();
@@ -229,7 +229,7 @@ describe('GraphCanvas', () => {
     fireEvent.keyDown(site, { key: 'ArrowRight' });
     expect(document.activeElement).toBe(card('checkout-api'));
     fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
-    expect(document.activeElement!.getAttribute('aria-label')).toMatch(/^AWS, 2 items, open/);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /^AWS, 2 items, open/ }));
     fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
     expect(document.activeElement).toBe(card('web-1'));
     fireEvent.keyDown(document.activeElement!, { key: 'Enter' });
@@ -264,7 +264,7 @@ describe('GraphCanvas', () => {
     expect(summary.getAttribute('aria-expanded')).toBe('false');
     expect(document.activeElement).toBe(summary);
     // The worst attention inside a closed group is still on its card.
-    expect(summary.getAttribute('aria-label')).toBe('AWS, 2 items, closed, Needs a look');
+    expect(screen.getByRole('button', { name: 'AWS, 2 items, closed, Needs a look' })).toBe(summary);
     expect(screen.queryByRole('button', { name: /^web-1,/ })).toBeNull();
     expect(changes).toEqual([[]]);
     fireEvent.keyDown(summary, { key: 'Enter' });
@@ -357,6 +357,10 @@ describe('at two thousand entries', () => {
     expect(mounted.length).toBeGreaterThan(20);
     expect(mounted.length).toBeLessThan(400);
     expect(container.querySelector('.crewlet-graph-canvas__shapes')).toBeNull();
+    // So are the edges: only the routes near the view are in the path.
+    const routes = () => (edgePath(container, 'quiet').match(/M/g) ?? []).length;
+    expect(routes()).toBeGreaterThan(0);
+    expect(routes()).toBeLessThan(chain.length);
 
     // Fitting it whole is far below reading: only the tab stop stays an element.
     const viewport = container.querySelector('.crewlet-canvas__viewport')!;
@@ -366,6 +370,7 @@ describe('at two thousand entries', () => {
     const shapes = container.querySelector('.crewlet-graph-canvas__shapes [data-shape="card"]')!;
     // Every card is a shape, the tab stop too, which is also drawn as itself over its shape.
     expect(shapes.getAttribute('d')!.match(/M/g)).toHaveLength(2000);
+    expect(routes()).toBe(chain.length);
   });
 });
 
