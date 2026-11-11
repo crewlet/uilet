@@ -25,7 +25,8 @@
         "build/**",
         "storybook-static/**",
         "src/index.ts",
-        "src/themes.ts"
+        "src/themes.ts",
+        "src/palettes.ts"
       ]
     },
     "dev": {

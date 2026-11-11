@@ -1,6 +1,6 @@
 import './ObjectHeader.css';
 
-export { FactLine, ObjectHeader, SetByLine } from './ObjectHeader.js';
+export { FactLine, ObjectHeader, SET_BY_VERBS, SetByLine } from './ObjectHeader.js';
 export type {
   FactLineProps,
   ObjectFact,
@@ -8,4 +8,5 @@ export type {
   ObjectHeaderSize,
   SetBy,
   SetByLineProps,
+  SetByVerb,
 } from './ObjectHeader.js';

@@ -252,6 +252,18 @@
 
 /* ── the by-line ───────────────────────────────────────────────────────── */
 
+/* An actor's mark sits on the line's own baseline, at the line's size. */
+.crewlet-set-by__mark {
+  display: inline-flex;
+  vertical-align: -0.125em;
+  margin-right: 0.25em;
+}
+
+.crewlet-set-by__mark > svg {
+  width: 1em;
+  height: 1em;
+}
+
 /* The word and its arrow are one atomic box, so the arrow never takes a line
    of its own. */
 .crewlet-set-by__turn {

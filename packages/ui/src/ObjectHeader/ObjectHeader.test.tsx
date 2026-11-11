@@ -33,6 +33,33 @@ describe('SetByLine', () => {
     const { container } = render(<SetByLine setBy={{ actor: 'ada', cleared: true }} />);
     expect(container.textContent).toBe('cleared by ada');
   });
+
+  test('says how the actor came by a value it did not set, with its qualifier after it', () => {
+    const lines = (
+      [
+        [{ actor: 'Cloudflare', verb: 'seen', ago: '4 min ago' }, 'seen by Cloudflare · 4 min ago'],
+        [{ actor: 'sre', verb: 'observed', qualifier: 'likely', turnHref: '#/live/turns/t-2' }, 'observed by sre · likely · turn '],
+        [{ actor: 'ada', verb: 'confirmed', ago: '3 days ago' }, 'confirmed by ada · 3 days ago'],
+        [{ actor: 'ada', verb: 'set' }, 'set by ada'],
+      ] as const
+    ).map(([setBy, words]) => {
+      const { container, unmount } = render(<SetByLine setBy={setBy} />);
+      const text = container.textContent;
+      unmount();
+      return [text, words];
+    });
+    for (const [text, words] of lines) expect(text).toBe(words);
+  });
+
+  test('draws an actor mark beside the name, out of what is read', () => {
+    const { container } = render(
+      <SetByLine setBy={{ actor: 'AWS', verb: 'seen', mark: <svg data-testid="mark" /> }} />,
+    );
+    const mark = container.querySelector('.crewlet-set-by__mark')!;
+    expect(mark.getAttribute('aria-hidden')).toBe('true');
+    expect(mark.nextSibling?.textContent).toBe('AWS');
+    expect(container.textContent).toBe('seen by AWS');
+  });
 });
 
 describe('FactLine', () => {

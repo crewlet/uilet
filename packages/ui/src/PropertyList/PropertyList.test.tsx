@@ -187,6 +187,24 @@ describe('the shape', () => {
 describe('who set it', () => {
   const CREATE = { actor: 'agent-ceo', ago: '21h ago', turnHref: '#/live/turns/t-1' };
 
+  test('keeps a value one source saw apart from one a person confirmed, and joins two it saw', () => {
+    const SEEN = { actor: 'AWS', verb: 'seen', ago: '4 min ago' } as const;
+    const { container } = render(
+      <PropertyList
+        groups={[
+          {
+            items: [
+              { label: 'Engine', value: 'postgres', setBy: SEEN },
+              { label: 'Version', value: '16', setBy: SEEN },
+              { label: 'Region', value: 'eu-west-1', setBy: { ...SEEN, verb: 'confirmed' } },
+            ],
+          },
+        ]}
+      />,
+    );
+    expect(setBys(container)).toEqual(['Engine and Version · seen by AWS · 4 min ago', 'confirmed by AWS · 4 min ago']);
+  });
+
   test('says one change once, naming every property it set, under the last of them', () => {
     const { container } = render(
       <PropertyList

@@ -26,6 +26,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **A company's brand and the folders artifacts are filed in**: `swatch-book` for the `brand` artifact kind (`ArtifactKindGlyph`) and the Company › Brand page, `blend` for a brand's colours, `badge-check` for an artifact drawn in the company's current brand, and `folder-open` for a folder with nothing in it, or nothing the reader can open, beside the `folder` a folder is otherwise drawn with.
 - **The conversation surfaces** (`ChatMessage`, `MessageActions`, `ReactionBar` and the composer in `@crewlethq/ui`, and Chatlet's top bar and Rooms panel in the engine dashboard): `face-slightly-smiling-plus` for adding a reaction, `face-slightly-smiling` for the composer's emoji picker, `at-sign` for a mention, `bookmark` for saving a message for later, `bell-off` for a muted room, `messages-square` for the threads a reader follows, `reply` for replying in a thread, `panel-left` for the Rooms panel and `baseline` for the composer's formatting toggle. Lucide 1.47.0 names the two faces `face-slightly-smiling` and `face-slightly-smiling-plus` (`smile` and `smile-plus` are its retired aliases).
 - **`cloud`**, the AWS tile in an integrations catalogue (`VendorMark`'s `aws`). AWS's trademark guidelines allow a third party a plain-text reference only, with no logo, so the tile draws this generic cloud beside the name "AWS" rather than any mark of AWS's own.
+- **A company's map of what it runs on** (`GraphCanvas` in `@crewlethq/ui`, and the Atlas screens in the engine dashboard): `map` for the map itself and its sidebar row, `git-branch` for a repository, `workflow` for a pipeline, `hard-drive` for a bucket or an object store, `container` for a container platform and `waypoints` for an endpoint. Every other kind of entry on the map takes a glyph already here (`server`, `database`, `globe`, `cloud`, `layers`, `activity`, `plug`, `brain`).
 - **The assistant drawer** in the engine dashboard: `square-pen` for New conversation in its head (the conversations themselves keep `rotate-ccw-clock`, already here, because Lucide retired `history` as an alias of it), `square` drawn filled for the Stop a running request turns the send button into, and `circle-stop` for a request or one of its steps that the person stopped.
 
 ## Provenance
@@ -107,6 +108,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `columns-3` | `Columns3Glyph` | `package/icons/columns-3.svg` |
 | `command` | `CommandGlyph` | `package/icons/command.svg` |
 | `compass` | `CompassGlyph` | `package/icons/compass.svg` |
+| `container` | `ContainerGlyph` | `package/icons/container.svg` |
 | `copy` | `CopyGlyph` | `package/icons/copy.svg` |
 | `corner-down-left` | `CornerDownLeftGlyph` | `package/icons/corner-down-left.svg` |
 | `cpu` | `CpuGlyph` | `package/icons/cpu.svg` |
@@ -132,11 +134,13 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `frame` | `FrameGlyph` | `package/icons/frame.svg` |
 | `fullscreen` | `FullscreenGlyph` | `package/icons/fullscreen.svg` |
 | `gauge` | `GaugeGlyph` | `package/icons/gauge.svg` |
+| `git-branch` | `GitBranchGlyph` | `package/icons/git-branch.svg` |
 | `globe` | `GlobeGlyph` | `package/icons/globe.svg` |
 | `grip-vertical` | `GripVerticalGlyph` | `package/icons/grip-vertical.svg` |
 | `group` | `GroupGlyph` | `package/icons/group.svg` |
 | `hand` | `HandGlyph` | `package/icons/hand.svg` |
 | `hand-grab` | `HandGrabGlyph` | `package/icons/hand-grab.svg` |
+| `hard-drive` | `HardDriveGlyph` | `package/icons/hard-drive.svg` |
 | `hash` | `HashGlyph` | `package/icons/hash.svg` |
 | `heading` | `HeadingGlyph` | `package/icons/heading.svg` |
 | `heading-1` | `Heading1Glyph` | `package/icons/heading-1.svg` |
@@ -160,6 +164,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `lock` | `LockGlyph` | `package/icons/lock.svg` |
 | `log-in` | `LogInGlyph` | `package/icons/log-in.svg` |
 | `log-out` | `LogOutGlyph` | `package/icons/log-out.svg` |
+| `map` | `MapGlyph` | `package/icons/map.svg` |
 | `maximize` | `MaximizeGlyph` | `package/icons/maximize.svg` |
 | `maximize-2` | `Maximize2Glyph` | `package/icons/maximize-2.svg` |
 | `menu` | `MenuGlyph` | `package/icons/menu.svg` |
@@ -238,6 +243,8 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `user-plus` | `UserPlusGlyph` | `package/icons/user-plus.svg` |
 | `users` | `UsersGlyph` | `package/icons/users.svg` |
 | `wand-sparkles` | `WandSparklesGlyph` | `package/icons/wand-sparkles.svg` |
+| `waypoints` | `WaypointsGlyph` | `package/icons/waypoints.svg` |
+| `workflow` | `WorkflowGlyph` | `package/icons/workflow.svg` |
 | `wrench` | `WrenchGlyph` | `package/icons/wrench.svg` |
 | `x` | `XGlyph` | `package/icons/x.svg` |
 | `zap` | `ZapGlyph` | `package/icons/zap.svg` |
