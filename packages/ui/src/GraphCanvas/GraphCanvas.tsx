@@ -274,6 +274,12 @@ const POINT_IN_MS = 90;
 const POINT_OUT_MS = 120;
 /** How far a press may travel and still be a press on the ground rather than a drag. */
 const PRESS_SLOP = 4;
+/**
+ * The width, in CSS pixels, under which a map is narrow: its legend and its
+ * dock stand under the picture instead of over it, so neither ever covers an entry.
+ */
+export const GRAPH_CANVAS_NARROW_WIDTH = 800;
+
 /** The room between a card and the card drawn beside it, and between that card and the frame. */
 const CARD_GAP = 12;
 const CARD_INSET = 8;
@@ -722,12 +728,16 @@ export function GraphCanvas({
   // ---- the opening view: whole when it reads, else the map's start at a size that does ----
   const root = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState<CanvasSize | null>(null);
+  // A narrow map has no room to float anything over the picture, so its legend and dock stand under it.
+  const [narrow, setNarrow] = useState(false);
   useLayoutEffect(() => {
     const el = root.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver((entries) => {
       const box = entries[entries.length - 1]?.contentRect;
-      if (box && box.width > 0 && box.height > 0) setFrame((was) => was ?? { width: box.width, height: box.height });
+      if (!box || box.width <= 0 || box.height <= 0) return;
+      setFrame((was) => was ?? { width: box.width, height: box.height });
+      setNarrow(box.width < GRAPH_CANVAS_NARROW_WIDTH);
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -1102,7 +1112,7 @@ export function GraphCanvas({
           {renderCard?.(card)}
         </div>
       ) : null}
-      {dock ? (
+      {dock && !narrow ? (
         <div className="crewlet-graph-canvas__dock" data-graph-solid="">
           {dock}
         </div>
@@ -1110,6 +1120,21 @@ export function GraphCanvas({
       {overlay}
     </>
   );
+  const end = narrow ? (
+    overlayEnd
+  ) : legend || overlayEnd ? (
+    <>
+      {legend}
+      {overlayEnd}
+    </>
+  ) : undefined;
+  const foot =
+    narrow && (dock || legend) ? (
+      <div className="crewlet-graph-canvas__foot" data-graph-solid="">
+        {dock ? <div className="crewlet-graph-canvas__dock">{dock}</div> : null}
+        {legend}
+      </div>
+    ) : null;
 
   const body = frame ? (
     <Canvas
@@ -1122,14 +1147,7 @@ export function GraphCanvas({
       controlsExtra={bar}
       controlsBelow={controlsBelow}
       controlsStart={controlsStart}
-      overlayEnd={
-        legend || overlayEnd ? (
-          <>
-            {legend}
-            {overlayEnd}
-          </>
-        ) : undefined
-      }
+      overlayEnd={end}
       hint={hint}
       ground={ground}
       largestItemWidth={metrics?.cardWidth}
@@ -1290,13 +1308,24 @@ export function GraphCanvas({
     <div
       ref={root}
       className={cx('crewlet-graph-canvas', className)}
+      data-narrow={narrow ? '' : undefined}
       data-focus={focusState}
       data-still={still ? '' : undefined}
       onPointerDownCapture={onPointerDownCapture}
       onClick={onGroundClick}
     >
       {/* A fullscreen element paints only its own subtree, so what the map opens is hosted inside it. */}
-      {ownFullscreen ? <LayerHost>{body}</LayerHost> : body}
+      {ownFullscreen ? (
+        <LayerHost>
+          {body}
+          {foot}
+        </LayerHost>
+      ) : (
+        <>
+          {body}
+          {foot}
+        </>
+      )}
     </div>
   );
 }

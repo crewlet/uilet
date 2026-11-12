@@ -31,6 +31,7 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   GRAPH_CANVAS_DETAIL_ZOOM,
+  GRAPH_CANVAS_NARROW_WIDTH,
   GraphCanvas,
   graphWindow,
   type GraphBand,
@@ -40,7 +41,8 @@ import {
   type GraphNode,
 } from './index.js';
 
-const VIEWPORT = { width: 1200, height: 800 };
+const WIDE = { width: 1200, height: 800 };
+let VIEWPORT = WIDE;
 
 function sizeOf(el: Element): { width: number; height: number } | null {
   if (el.classList.contains('crewlet-graph-canvas')) return VIEWPORT;
@@ -100,6 +102,7 @@ class LayoutObserver {
 
 const realResizeObserver = globalThis.ResizeObserver;
 beforeEach(() => {
+  VIEWPORT = WIDE;
   LayoutObserver.instances = [];
   globalThis.ResizeObserver = LayoutObserver as unknown as typeof ResizeObserver;
 });
@@ -429,6 +432,38 @@ describe('GraphCanvas', () => {
     expect(card('orders-db').getAttribute('data-state')).toBe('lit');
     expect(dimmed(card('acme.example'))).toBe(true);
     expect(routesIn(edgePath(container, 'lit'))).toBe(1);
+  });
+
+  test('a narrow map stands its dock and its legend under the picture, never over it', () => {
+    const dock = <button type="button">Details</button>;
+    const wide = render(<Map selectedId="db" tones={{ danger: 'Alerting' }} dock={dock} />);
+    LayoutObserver.settle();
+    const canvasOf = (container: HTMLElement) => container.querySelector('.crewlet-canvas')!;
+    expect(wide.container.querySelector('.crewlet-graph-canvas__foot')).toBeNull();
+    expect(canvasOf(wide.container).contains(screen.getByRole('button', { name: 'Details' }))).toBe(true);
+    expect(canvasOf(wide.container).contains(screen.getByRole('group', { name: 'Legend' }))).toBe(true);
+    wide.unmount();
+
+    VIEWPORT = { width: GRAPH_CANVAS_NARROW_WIDTH - 1, height: 800 };
+    const picks: (string | null)[] = [];
+    const { container } = render(
+      <Selecting selectedId="db" onPick={(id) => picks.push(id)} tones={{ danger: 'Alerting' }} dock={dock} />,
+    );
+    LayoutObserver.settle();
+    const foot = container.querySelector('.crewlet-graph-canvas__foot')!;
+    const details = screen.getByRole('button', { name: 'Details' });
+    const legend = screen.getByRole('group', { name: 'Legend' });
+    // One dock and one legend, both after the canvas rather than inside it.
+    expect(foot.contains(details)).toBe(true);
+    expect(foot.contains(legend)).toBe(true);
+    expect(canvasOf(container).contains(foot)).toBe(false);
+    expect(canvasOf(container).compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The legend still switches a family, and a press under the map is not a press on the ground.
+    fireEvent.click(within(legend as HTMLElement).getByRole('button', { name: /Runs on/ }));
+    expect(container.querySelector(".crewlet-graph-canvas__edge-layer[data-family='support']")).not.toBeNull();
+    fireEvent.pointerDown(details, { clientX: 10, clientY: 10 });
+    fireEvent.click(details, { clientX: 10, clientY: 10 });
+    expect(picks).toEqual([]);
   });
 
   test('a press on the selected card, or on the ground, clears the selection', () => {
