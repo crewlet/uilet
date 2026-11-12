@@ -8,6 +8,9 @@
   --crewlet-icon-tile-ink: var(--color-brand-accent-ink);
   --crewlet-icon-tile-size: var(--size-row-md);
 
+  --crewlet-icon-tile-line: var(--color-border-default);
+
+  position: relative;
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -25,9 +28,85 @@
 /* A place or a record rather than a kind: the raised ground, the secondary ink. */
 .crewlet-icon-tile--neutral { --crewlet-icon-tile-fill: var(--color-surface-elevated); --crewlet-icon-tile-ink: var(--color-text-secondary); }
 
-.crewlet-icon-tile--purple { --crewlet-icon-tile-fill: var(--color-node-purple-fill); --crewlet-icon-tile-ink: var(--color-node-purple-ink); }
-.crewlet-icon-tile--cyan { --crewlet-icon-tile-fill: var(--color-node-cyan-fill); --crewlet-icon-tile-ink: var(--color-node-cyan-ink); }
-.crewlet-icon-tile--green { --crewlet-icon-tile-fill: var(--color-node-green-fill); --crewlet-icon-tile-ink: var(--color-node-green-ink); }
-.crewlet-icon-tile--amber { --crewlet-icon-tile-fill: var(--color-node-amber-fill); --crewlet-icon-tile-ink: var(--color-node-amber-ink); }
-.crewlet-icon-tile--rose { --crewlet-icon-tile-fill: var(--color-node-rose-fill); --crewlet-icon-tile-ink: var(--color-node-rose-ink); }
-.crewlet-icon-tile--blue { --crewlet-icon-tile-fill: var(--color-node-blue-fill); --crewlet-icon-tile-ink: var(--color-node-blue-ink); }
+.crewlet-icon-tile--purple { --crewlet-icon-tile-fill: var(--color-node-purple-fill); --crewlet-icon-tile-ink: var(--color-node-purple-ink); --crewlet-icon-tile-line: var(--color-node-purple-line); }
+.crewlet-icon-tile--cyan { --crewlet-icon-tile-fill: var(--color-node-cyan-fill); --crewlet-icon-tile-ink: var(--color-node-cyan-ink); --crewlet-icon-tile-line: var(--color-node-cyan-line); }
+.crewlet-icon-tile--green { --crewlet-icon-tile-fill: var(--color-node-green-fill); --crewlet-icon-tile-ink: var(--color-node-green-ink); --crewlet-icon-tile-line: var(--color-node-green-line); }
+.crewlet-icon-tile--amber { --crewlet-icon-tile-fill: var(--color-node-amber-fill); --crewlet-icon-tile-ink: var(--color-node-amber-ink); --crewlet-icon-tile-line: var(--color-node-amber-line); }
+.crewlet-icon-tile--rose { --crewlet-icon-tile-fill: var(--color-node-rose-fill); --crewlet-icon-tile-ink: var(--color-node-rose-ink); --crewlet-icon-tile-line: var(--color-node-rose-line); }
+.crewlet-icon-tile--blue { --crewlet-icon-tile-fill: var(--color-node-blue-fill); --crewlet-icon-tile-ink: var(--color-node-blue-ink); --crewlet-icon-tile-line: var(--color-node-blue-line); }
+
+/*
+ * A DISC: one entry of a catalogue. Round, inside a hairline in its hue, on
+ * the sheet under its tint so the tint reads the same on any ground.
+ */
+.crewlet-icon-tile--disc,
+.crewlet-icon-tile--disc.crewlet-icon-tile--lg {
+  border-radius: var(--radius-circle);
+}
+
+.crewlet-icon-tile--disc {
+  background:
+    linear-gradient(var(--crewlet-icon-tile-fill), var(--crewlet-icon-tile-fill)), var(--color-surface-background);
+  box-shadow: inset 0 0 0 1.5px var(--crewlet-icon-tile-line);
+}
+
+/* Not confirmed yet: the edge is dashed. */
+.crewlet-icon-tile[data-dashed] {
+  box-shadow: none;
+  outline: 1.5px dashed var(--color-border-strong);
+  outline-offset: -1.5px;
+}
+
+/*
+ * NEEDS A PERSON: a ring in the tone inside a soft one, and a badge with a
+ * glyph, so the tone is never colour alone. The word is beside the tile.
+ */
+.crewlet-icon-tile[data-status='danger'] {
+  --crewlet-icon-tile-status: var(--color-feedback-danger);
+  --crewlet-icon-tile-status-soft: var(--color-feedback-danger-soft);
+}
+
+.crewlet-icon-tile[data-status='warning'] {
+  --crewlet-icon-tile-status: var(--color-feedback-warning);
+  --crewlet-icon-tile-status-soft: var(--color-feedback-warning-soft);
+}
+
+.crewlet-icon-tile[data-status='info'] {
+  --crewlet-icon-tile-status: var(--color-feedback-info);
+  --crewlet-icon-tile-status-soft: var(--color-feedback-info-soft);
+}
+
+.crewlet-icon-tile[data-status] {
+  box-shadow:
+    inset 0 0 0 2px var(--crewlet-icon-tile-status),
+    0 0 0 3px var(--crewlet-icon-tile-status-soft);
+  outline: none;
+}
+
+.crewlet-icon-tile__mark,
+.crewlet-icon-tile__badge {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: calc(var(--crewlet-icon-tile-size) * 0.42);
+  height: calc(var(--crewlet-icon-tile-size) * 0.42);
+  border-radius: var(--radius-circle);
+  font-size: calc(var(--crewlet-icon-tile-size) * 0.26);
+}
+
+/* A vendor's mark on the lower corner, cut out of the tile by the sheet's colour. */
+.crewlet-icon-tile__mark {
+  right: calc(var(--crewlet-icon-tile-size) * -0.1);
+  bottom: calc(var(--crewlet-icon-tile-size) * -0.08);
+  background: var(--color-surface-background);
+  box-shadow: 0 0 0 1px var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
+.crewlet-icon-tile__badge {
+  top: calc(var(--crewlet-icon-tile-size) * -0.1);
+  right: calc(var(--crewlet-icon-tile-size) * -0.12);
+  background: var(--crewlet-icon-tile-status);
+  box-shadow: 0 0 0 1.5px var(--color-surface-background);
+  color: var(--color-surface-background);
+}

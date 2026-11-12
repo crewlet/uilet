@@ -13,6 +13,7 @@ import {
   DATA_COLOR_OTHER,
   dataColor,
   Histogram,
+  StackedRing,
 } from '@crewlethq/ui';
 
 /*
@@ -641,6 +642,52 @@ export const EdgeCases: Story = {
           reading={{ formatTime: dayLabel, format: (value) => value.toLocaleString() }}
         />
       </Frame>
+    </div>
+  ),
+};
+
+/**
+ * One whole round its figure, beside the keys that name its parts: the lead
+ * tile of a summary band. A whole of nothing is the empty track.
+ */
+export const Ring: Story = {
+  render: () => {
+    const parts = [
+      { id: 'quiet', label: 'Quiet', value: 46, color: 'var(--color-border-control)' },
+      { id: 'look', label: 'To look at', value: 4, color: 'var(--color-feedback-warning)' },
+      { id: 'alerting', label: 'Alerting', value: 2, color: 'var(--color-feedback-danger)' },
+    ];
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+        <StackedRing segments={parts}>52</StackedRing>
+        <Legend items={parts} />
+        <StackedRing segments={[{ id: 'none', label: 'Quiet', value: 0 }]} size="3rem">
+          0
+        </StackedRing>
+      </div>
+    );
+  },
+};
+
+/**
+ * A column of shapes read down a table takes the fine line: 1px, under a
+ * faint halo of its own colour. Each stands beside its count.
+ */
+export const FineLines: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 8, width: 160 }}>
+      {[
+        [1, 4, 2, 6, 3, 7, 5, 9, 4, 6, 8, 5, 7, 10],
+        [5, 5, 4, 6, 5, 3, 4, 2, 3, 1, 2, 1, 0, 1],
+        [0, 0, 1, 0, 0, 2, 0, 0, 0, 3, 0, 0, 1, 0],
+      ].map((values, index) => (
+        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 72 }}>
+            <Sparkline values={values} weight="fine" color="var(--color-brand-accent)" height="1.375rem" />
+          </div>
+          <span>{values.reduce((a, b) => a + b, 0)}</span>
+        </div>
+      ))}
     </div>
   ),
 };

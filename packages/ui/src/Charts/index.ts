@@ -7,6 +7,8 @@ export { BarList } from './BarList.js';
 export type { BarDatum, BarListLayout, BarListProps, BarPart } from './BarList.js';
 export { StackedBar } from './StackedBar.js';
 export type { StackedBarProps, StackedSegment } from './StackedBar.js';
+export { StackedRing } from './StackedRing.js';
+export type { StackedRingProps } from './StackedRing.js';
 export { ActivityStrip } from './ActivityStrip.js';
 export type { ActivityBucket, ActivityStripProps } from './ActivityStrip.js';
 export { Histogram, histogramTicks } from './Histogram.js';

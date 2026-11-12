@@ -28,6 +28,7 @@ export type {
   DataGridProps,
   DataGridReorder,
   DataGridRowTone,
+  DataGridSelection,
   DataGridSummaryRow,
   GridFit,
 } from './DataGrid.js';

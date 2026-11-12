@@ -337,7 +337,9 @@ button.crewlet-data-grid__row-link {
   border-bottom: none;
 }
 
-.crewlet-data-grid__row:hover {
+/* Under the pointer, or pointed at from another surface showing the same records: one overlay, the same. */
+.crewlet-data-grid__row:hover,
+.crewlet-data-grid__row--pointed {
   background: var(--color-surface-hover);
 }
 

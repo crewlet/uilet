@@ -420,6 +420,62 @@
   background: var(--crewlet-stacked-bar-segment-color, var(--color-data-other));
 }
 
+/* ─── Stacked ring ────────────────────────────────────────────── */
+
+/*
+ * One whole round a figure. The line starts at the top and runs clockwise;
+ * each arc is a dash of one circle, in its part's colour, over a track on the
+ * inset ground, with a faint halo of itself behind it.
+ */
+.crewlet-stacked-ring {
+  --crewlet-stacked-ring-size: 4rem;
+  --crewlet-stacked-ring-halo: 0.5px;
+
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--crewlet-stacked-ring-size);
+  height: var(--crewlet-stacked-ring-size);
+}
+
+.crewlet-stacked-ring__plot {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(-90deg);
+}
+
+.crewlet-stacked-ring__track,
+.crewlet-stacked-ring__arc {
+  fill: none;
+  stroke-width: 6;
+}
+
+.crewlet-stacked-ring__track {
+  stroke: var(--color-surface-inset);
+}
+
+.crewlet-stacked-ring__arc {
+  stroke: var(--crewlet-stacked-ring-segment-color, var(--color-data-other));
+}
+
+.crewlet-stacked-ring__halo {
+  opacity: 0.5;
+  filter: blur(var(--crewlet-stacked-ring-halo));
+}
+
+/* The whole, as a figure in the middle, sized by the ring. */
+.crewlet-stacked-ring__figure {
+  grid-area: 1 / 1;
+  color: var(--color-text-primary);
+  font-size: calc(var(--crewlet-stacked-ring-size) * 0.3);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--font-line-height-tight);
+}
+
 /* ─── Stacked columns ─────────────────────────────────────────── */
 
 /*
@@ -975,6 +1031,35 @@
    design's 1.75 stroke, under the 2 a line across a plot takes. */
 .crewlet-spark__plot .crewlet-chart__series {
   stroke-width: 1.75;
+}
+
+/*
+ * A FINE LINE, for a column of shapes read down a table: 1px, under a faint
+ * halo that is the same line at half strength behind a 1px blur, so the line
+ * itself stays crisp.
+ */
+.crewlet-spark--fine {
+  --crewlet-spark-halo: 0.5px;
+}
+
+.crewlet-spark--fine .crewlet-chart__series {
+  stroke-width: 1;
+}
+
+.crewlet-spark__halo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  opacity: 0.5;
+  filter: blur(var(--crewlet-spark-halo));
+  pointer-events: none;
+}
+
+.crewlet-spark--current .crewlet-spark__halo {
+  width: calc(100% - var(--crewlet-spark-point) / 2 - var(--crewlet-spark-ring));
 }
 
 .crewlet-spark--current {

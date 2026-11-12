@@ -19,6 +19,7 @@ import {
   Legend,
   niceScale,
   Sparkline,
+  StackedRing,
   StackedBar,
   StackedColumns,
   TimeSeries,
@@ -519,6 +520,91 @@ test('a sparkline is never announced, and keeps its box before it has a shape', 
   // carries a height carries the silence too.
   expect((container.firstElementChild as HTMLElement).getAttribute('aria-hidden')).toBe('true');
   expect((container.firstElementChild as HTMLElement).style.height).toBe('2rem');
+});
+
+test('a stacked ring draws each part as an arc of one circle, in order, and names itself with every value', () => {
+  /*
+   * THE ARCS ADD UP TO THE CIRCLE. Each part is a dash of the same circle,
+   * starting where the one before it ended, so the lengths (with the gaps
+   * taken out of the parts) are the shares; a zero part is not drawn; and the
+   * sentence that names the ring says everything the picture does.
+   */
+  const { container, rerender } = render(
+    <StackedRing
+      segments={[
+        { id: 'quiet', label: 'Quiet', value: 46 },
+        { id: 'look', label: 'To look at', value: 4 },
+        { id: 'none', label: 'Retired', value: 0 },
+        { id: 'alerting', label: 'Alerting', value: 2 },
+      ]}
+    >
+      52
+    </StackedRing>,
+  );
+  const round = 2 * Math.PI * 29;
+  const arcs = [...container.querySelectorAll('g:not(.crewlet-stacked-ring__halo) > .crewlet-stacked-ring__arc')];
+  expect(arcs).toHaveLength(3);
+  const lengths = arcs.map((arc) => Number(arc.getAttribute('stroke-dasharray')!.split(' ')[0]));
+  const starts = arcs.map((arc) => -Number(arc.getAttribute('stroke-dashoffset')));
+  expect(lengths[0]! + 2).toBeCloseTo((46 / 52) * round, 1);
+  expect(starts[0]).toBeCloseTo(0, 5);
+  expect(starts[1]).toBeCloseTo((46 / 52) * round, 1);
+  expect(starts[2]).toBeCloseTo((50 / 52) * round, 1);
+  // A part's colour is its place in the list, the zero part included, as the Legend keyed from that list shows it.
+  expect((arcs[2] as SVGElement).style.getPropertyValue('--crewlet-stacked-ring-segment-color')).toBe(
+    'var(--color-data-4)',
+  );
+  // The halo is the same arcs again, behind them.
+  expect(container.querySelectorAll('.crewlet-stacked-ring__halo > .crewlet-stacked-ring__arc')).toHaveLength(3);
+  expect(container.querySelector('.crewlet-stacked-ring__figure')!.textContent).toBe('52');
+  const plot = container.querySelector('svg')!;
+  expect(plot.getAttribute('role')).toBe('img');
+  expect(document.getElementById(plot.getAttribute('aria-labelledby')!)!.textContent).toBe(
+    'Quiet: 46 (88%), To look at: 4 (8%), Alerting: 2 (4%)',
+  );
+
+  // A whole of nothing is the empty track round its figure, and says so.
+  rerender(<StackedRing segments={[{ id: 'quiet', label: 'Quiet', value: 0 }]}>0</StackedRing>);
+  expect(container.querySelectorAll('.crewlet-stacked-ring__arc')).toHaveLength(0);
+  expect(container.querySelector('.crewlet-stacked-ring__track')).not.toBeNull();
+  expect(document.getElementById(container.querySelector('svg')!.getAttribute('aria-labelledby')!)!.textContent).toBe(
+    'Nothing recorded',
+  );
+
+  // One part is the whole circle: no gap is taken out of it.
+  rerender(<StackedRing segments={[{ id: 'quiet', label: 'Quiet', value: 7 }]} />);
+  const whole = container.querySelector('g:not(.crewlet-stacked-ring__halo) > .crewlet-stacked-ring__arc')!;
+  expect(Number(whole.getAttribute('stroke-dasharray')!.split(' ')[0])).toBeCloseTo(round, 1);
+  expect(container.querySelector('.crewlet-stacked-ring__figure')).toBeNull();
+});
+
+test('a fine sparkline is a 1px line over a halo of itself, and the regular one draws no halo', () => {
+  /*
+   * A COLUMN OF SHAPES READ DOWN A TABLE takes the fine line. Its halo is the
+   * same line again on a layer behind it, at half strength and blurred, so it
+   * follows whatever colour the line is given and the line stays crisp.
+   */
+  const { container, rerender } = render(<Sparkline values={[3, 8, 5, 10, 6]} />);
+  expect(container.querySelector('.crewlet-spark__halo')).toBeNull();
+
+  rerender(<Sparkline values={[3, 8, 5, 10, 6]} weight="fine" color="var(--color-brand-accent)" />);
+  const halo = container.querySelector('.crewlet-spark__halo')!;
+  const line = container.querySelector('.crewlet-spark__plot polyline')!;
+  expect(halo.querySelector('polyline')!.getAttribute('points')).toBe(line.getAttribute('points'));
+  expect(halo.querySelector('polyline')!.getAttribute('stroke')).toBe('var(--color-brand-accent)');
+  uninstall = installSheets('Charts/Charts.css');
+  expect(getComputedStyle(line).getPropertyValue('stroke-width')).toBe('1');
+  expect(getComputedStyle(halo).opacity).toBe('0.5');
+  expect(getComputedStyle(halo).filter).toBe('blur(0.5px)');
+  // Behind the line, and never in the way of a press.
+  expect(halo.compareDocumentPosition(line.closest('svg')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(getComputedStyle(halo).pointerEvents).toBe('none');
+  uninstall();
+  uninstall = null;
+
+  // Before it has a shape it has no halo either.
+  rerender(<Sparkline values={[3]} weight="fine" />);
+  expect(container.querySelector('.crewlet-spark__halo')).toBeNull();
 });
 
 test('a sparkline is the residual neutral at the design stroke, and its present is one accent point', () => {
