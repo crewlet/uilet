@@ -1,7 +1,12 @@
 /**
  * A company's map of what it runs on, at several sizes, for the GraphCanvas
- * stories: the lanes and their empty messages, the first slice of a company
+ * stories: the clusters and their empty messages, the first slice of a company
  * called acme, the same company grown, and generated maps of any size.
+ *
+ * The request path is the top band, read left to right: what the world
+ * reaches, the services (a column a depth, callers left of what they call),
+ * the data. Under it what those run on and the accounts they live in, then
+ * what stands around: code, monitoring, tools and models.
  */
 import type { ReactNode } from 'react';
 import type { GraphBand, GraphEdge, GraphGroup, GraphNode } from '@crewlethq/ui';
@@ -64,6 +69,7 @@ export const ATLAS_BANDS: GraphBand[] = [
       {
         id: 'entry',
         label: 'Entry',
+        columns: 2,
         empty: (
           <>
             <span>Domains, DNS and CDN appear here from Cloudflare, or when an agent records one.</span>
@@ -76,31 +82,56 @@ export const ATLAS_BANDS: GraphBand[] = [
       {
         id: 'services',
         label: 'Services',
+        columns: 3,
         empty: 'Services appear when an agent records what it deploys or runs, or when you add one.',
-      },
-      {
-        id: 'runtime',
-        label: 'Runtime',
-        empty: 'Servers and clusters appear from your cloud accounts or the SSH servers you connect.',
       },
       {
         id: 'data',
         label: 'Data',
+        columns: 2,
         empty: 'Databases, caches, queues and buckets appear from your cloud accounts, or as agents record them.',
       },
-      { id: 'platforms', label: 'Platforms', empty: 'The accounts and projects your integrations reach appear here.' },
+    ],
+  },
+  {
+    id: 'under',
+    lanes: [
+      {
+        id: 'runtime',
+        label: 'Runtime',
+        columns: 4,
+        empty: 'Servers and clusters appear from your cloud accounts or the SSH servers you connect.',
+      },
+      {
+        id: 'platforms',
+        label: 'Platforms',
+        columns: 2,
+        empty: 'The accounts and projects your integrations reach appear here.',
+      },
     ],
   },
   {
     id: 'around',
-    label: 'Around it',
     lanes: [
-      { id: 'code', label: 'Code and delivery', empty: 'Repositories and pipelines appear from your code host.' },
-      { id: 'observability', label: 'Observability', empty: 'Monitors appear from Datadog.' },
-      { id: 'tools', label: 'Tools and models', empty: 'Tool servers and models appear from the configuration.' },
+      {
+        id: 'code',
+        label: 'Code and delivery',
+        columns: 3,
+        empty: 'Repositories and pipelines appear from your code host.',
+      },
+      { id: 'observability', label: 'Observability', columns: 2, empty: 'Monitors appear from Datadog.' },
+      {
+        id: 'tools',
+        label: 'Tools and models',
+        columns: 2,
+        empty: 'Tool servers and models appear from the configuration.',
+      },
     ],
   },
 ];
+
+/** The word for each tone, for the map's legend and each cluster's tally. */
+export const ATLAS_TONES = { danger: 'Alerting', warning: 'Needs a look', info: 'Being worked on' } as const;
 
 /** The word for one entry, many, for the map's own labels. */
 export const ENTRY_LABELS = {
@@ -142,14 +173,38 @@ const VENDOR_NAMES: Partial<Record<Vendor, string>> = {
   'google-cloud': 'Google Cloud',
 };
 
-/** Builds the map from entries and `from > to` pairs, grouping each lane's entries by vendor. */
-function build(entries: Entry[], pairs: [string, string, string, boolean?][]): AtlasMap {
+/** How deep the services lane goes: a service stands one column right of the deepest service that calls it. */
+const SERVICE_COLUMNS = 3;
+
+/**
+ * Builds the map from entries and `from > to` pairs. A pair is a call unless
+ * its relation is "runs on" (what a thing runs on) or it is marked as standing
+ * around. With `grouped`, each lane's entries are grouped by vendor, which a
+ * large map closes to one card each.
+ */
+function build(entries: Entry[], pairs: [string, string, string, boolean?][], grouped = false): AtlasMap {
   const groups = new Map<string, GraphGroup>();
+  const laneOf = new Map(entries.map((entry) => [entry.id, KINDS[entry.kind].lane]));
+  const callers = new Map<string, string[]>();
+  for (const [from, to, label, calls = true] of pairs) {
+    if (!calls || label === 'runs on' || laneOf.get(from) !== 'services' || laneOf.get(to) !== 'services') continue;
+    callers.set(to, [...(callers.get(to) ?? []), from]);
+  }
+  const depths = new Map<string, number>();
+  const depthOf = (id: string, seen: Set<string>): number => {
+    const known = depths.get(id);
+    if (known !== undefined) return known;
+    if (seen.has(id)) return 0;
+    seen.add(id);
+    const depth = Math.max(0, ...(callers.get(id) ?? []).map((caller) => depthOf(caller, seen) + 1));
+    depths.set(id, depth);
+    return depth;
+  };
   const nodes = entries.map((entry): GraphNode => {
     const { lane, word, glyph } = KINDS[entry.kind];
     let group: string | undefined;
     // An account is its vendor already, so accounts are never grouped by one.
-    if (entry.vendor && entry.kind !== 'account') {
+    if (grouped && entry.vendor && entry.kind !== 'account') {
       group = `${lane}:${entry.vendor}`;
       if (!groups.has(group)) {
         groups.set(group, {
@@ -164,15 +219,26 @@ function build(entries: Entry[], pairs: [string, string, string, boolean?][]): A
       id: entry.id,
       lane,
       group,
+      column:
+        lane === 'services' && !grouped ? Math.min(SERVICE_COLUMNS - 1, depthOf(entry.id, new Set())) : undefined,
       name: entry.name,
       caption: entry.caption,
       kind: word,
       glyph,
+      mark: entry.vendor ? <VendorMark vendor={entry.vendor} size="xs" /> : undefined,
       attention: entry.attention,
       unconfirmed: entry.unconfirmed,
     };
   });
-  const edges = pairs.map(([from, to, label, atRest = true]) => ({ id: `${from}>${to}`, from, to, label, atRest }));
+  const edges = pairs.map(
+    ([from, to, label, calls = true]): GraphEdge => ({
+      id: `${from}>${to}`,
+      from,
+      to,
+      label,
+      family: !calls ? 'context' : label === 'runs on' ? 'support' : 'flow',
+    }),
+  );
   return { nodes, edges, groups: [...groups.values()] };
 }
 
@@ -298,7 +364,10 @@ export function grownCompany(): AtlasMap {
       ['checkout', 'queue', 'depends on'],
       ['billing', 'queue', 'depends on'],
       ['billing', 'orders-db', 'depends on'],
-      ['web-app', 'checkout', 'depends on'],
+      ['web-app', 'checkout', 'calls'],
+      ['web-app', 'search', 'calls'],
+      ['checkout', 'billing', 'calls'],
+      ['checkout', 'notify', 'calls'],
       ['web-app', 'users-db', 'depends on'],
       ['web-app', 'assets', 'depends on'],
       ['notify', 'users-db', 'depends on'],
@@ -419,5 +488,5 @@ export function generatedCompany(count: number, seed = 7): AtlasMap {
     if (of('platforms').length > 0) pairs.push([id, pick(of('platforms')), 'belongs to', false]);
   }
   const unique = new Map(pairs.filter(([a, b]) => a !== b).map((pair) => [`${pair[0]}>${pair[1]}`, pair]));
-  return build(entries, [...unique.values()]);
+  return build(entries, [...unique.values()], true);
 }

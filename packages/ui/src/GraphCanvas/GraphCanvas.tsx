@@ -1,12 +1,25 @@
 /**
- * A layered map on a canvas: entries in lanes read left to right, bands of
- * lanes under each other, groups that open and close, and orthogonal edges
- * from each entry to what it relies on.
+ * A layered map on a canvas: entries stand in clusters (lanes) read left to
+ * right, bands of clusters under each other, groups that open and close, and
+ * right-angled lines from each entry to what it relies on.
  *
  * PURE PRESENTATION. Entries, edges, the selection and the trace come in as
  * props and every decision goes out through a callback; nothing is fetched.
  * The layout is `layout.ts` (pure, tested without a DOM), the walk `walk.ts`
  * and the reach `reach.ts`; this component measures, draws and listens.
+ *
+ * THREE FAMILIES OF LINE. `flow` is the path a request takes: drawn at rest,
+ * with dashes moving along it that say which way it points (direction, never
+ * volume). `support` is what something runs on: at rest it is one trunk per
+ * pair of clusters, with its count. `context` is everything around (an
+ * account, a repository, a monitor). The last two are drawn line by line for
+ * the entry a reader stands on, or when the legend turns them on, which is
+ * what keeps a few hundred entries from being a tangle.
+ *
+ * ONE LOOK, INSIDE THE WORLD ONLY. Outlined boxes on a fine grid, a ruled
+ * glyph cell, square corners and mono labels are the drawing of clusters,
+ * entries, lines and trunks. The legend, the card, the dock and the zoom bar
+ * are the kit's own surfaces.
  *
  * IT STAYS LIGHT AT THOUSANDS OF ENTRIES. Every card is one size, so nothing
  * is measured per card; only the cards near the view are mounted; edges are a
@@ -17,6 +30,7 @@
 import {
   memo,
   useCallback,
+  useEffect,
   useId,
   useImperativeHandle,
   useLayoutEffect,
@@ -24,10 +38,19 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type Ref,
+  type RefObject,
 } from 'react';
-import { ChevronDownGlyph, ChevronRightGlyph } from '@crewlethq/icons/glyphs';
+import {
+  ChevronDownGlyph,
+  ChevronRightGlyph,
+  CircleAlertGlyph,
+  InfoGlyph,
+  TriangleAlertGlyph,
+} from '@crewlethq/icons/glyphs';
 import {
   CANVAS_FIT_PADDING,
   Canvas,
@@ -40,14 +63,16 @@ import {
   type CanvasSize,
   type CanvasView,
 } from '../Canvas/index.js';
-import { IconTile } from '../IconTile/index.js';
-import { StatusDot } from '../StatusDot/index.js';
+import { FilterChip } from '../FilterChip/index.js';
+import { FullscreenToggle } from '../Fullscreen/index.js';
+import { LayerHost } from '../Layer/index.js';
 import { Text } from '../Text/index.js';
 import { isTypeAheadKey, typeAheadBuffer, useMeasuredSizes, type TypeAheadState } from '../Tree/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import {
   graphItemKey,
+  graphTrunks,
   layoutGraph,
   routeGraphEdges,
   type GraphItem,
@@ -62,8 +87,10 @@ import { graphStep } from './walk.js';
 /** A lane: one column of the map, or several in a band with fewer lanes. */
 export interface GraphLane {
   id: string;
-  /** Its name, drawn over it: "Runtime". */
+  /** Its name, set into its outline: "Runtime". */
   label: string;
+  /** How many columns of entries it is wide. One unless named. */
+  columns?: number | undefined;
   /** What an empty lane says would fill it. Drawn in the lane, and read when the walk reaches it. */
   empty?: ReactNode;
 }
@@ -86,28 +113,44 @@ export interface GraphGroup {
   lead?: ReactNode;
 }
 
-/** What needs attention on an entry, as one dot: never colour alone, so the word is read with it. */
+/**
+ * What needs attention on an entry: a notch on its leading edge in the tone,
+ * and a badge with a glyph. Never colour alone, so the word is read with it.
+ */
 export type GraphAttentionTone = 'danger' | 'warning' | 'info';
 
 export interface GraphAttention {
   tone: GraphAttentionTone;
   /** The word a screen reader hears, such as "Alerting". */
   label: string;
+  /** Drawn in the badge in place of the tone's own glyph. */
+  glyph?: ReactNode;
 }
+
+/** What a line says: a call, what something runs on, or what stands around it. */
+export type GraphEdgeFamily = 'flow' | 'support' | 'context';
+
+export const GRAPH_EDGE_FAMILIES: readonly GraphEdgeFamily[] = ['flow', 'support', 'context'];
 
 export interface GraphNode {
   id: string;
   lane: string;
   group?: string | undefined;
-  /** The first line: "orders-db". */
+  /** The column of its lane it stands in, from 0, in a lane of several: see [GraphLayoutNode]. */
+  column?: number | undefined;
+  /** Its name, on one line: "orders-db". */
   name: string;
-  /** The second line, in the quiet ink: "postgres 16 · eu-west-1". */
+  /** The whole name, where `name` is a short form of it: the hover text, and what is read. */
+  title?: string | undefined;
+  /** Read after the name and never drawn, a card being one line: "postgres 16, eu-west-1". */
   caption?: string | undefined;
   /** What it is, read after the name: "Database". */
   kind?: string | undefined;
-  /** The kind's glyph, drawn on a tile at the card's start. */
+  /** The kind's glyph, drawn in the cell at the card's start. */
   glyph?: ReactNode;
-  /** A dot on the card's corner, only when something needs a person. */
+  /** A small mark on the cell's corner, such as a vendor's. Decorative. */
+  mark?: ReactNode;
+  /** A notch and a badge, only when something needs a person. */
   attention?: GraphAttention | undefined;
   /** Not confirmed by anyone the map trusts: drawn with a dashed edge. */
   unconfirmed?: boolean | undefined;
@@ -120,8 +163,8 @@ export interface GraphEdge {
   to: string;
   /** The relation, as words a reader hears in a card's description: "runs on". */
   label?: string | undefined;
-  /** Drawn while nothing is selected. Off for a relation that would cross the whole map (an owning account). */
-  atRest?: boolean | undefined;
+  /** What it says, which decides how and when it is drawn. A call (`flow`) unless named. */
+  family?: GraphEdgeFamily | undefined;
 }
 
 /** What a trace lights from the selected entry: which way, and how many hops. */
@@ -153,6 +196,17 @@ export interface GraphCanvasLabels extends CanvasLabels {
   unconfirmed: string;
   /** A card's description: what it relies on and what relies on it. */
   relations: (dependsOn: readonly GraphRelationText[], usedBy: readonly GraphRelationText[]) => string;
+  /** The legend's name. */
+  legend: string;
+  /** Each family of line, as its legend switch says it. */
+  families: Record<GraphEdgeFamily, string>;
+  /** The legend's key for an entry nothing is wrong with. */
+  quiet: string;
+  /** On a trunk between two clusters: how many lines it stands for. */
+  trunk: (lines: number) => string;
+  /** The fullscreen control's two names. */
+  fullscreen: string;
+  leaveFullscreen: string;
 }
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
@@ -181,6 +235,12 @@ export const GRAPH_CANVAS_LABELS: GraphCanvasLabels = {
     if (usedBy.length > 0) parts.push(`Used by ${usedBy.map((one) => one.name).join(', ')}.`);
     return parts.join(' ');
   },
+  legend: 'Legend',
+  families: { flow: 'Calls', support: 'Runs on', context: 'Around it' },
+  quiet: 'Quiet',
+  trunk: (lines) => `${lines} run on`,
+  fullscreen: 'Fullscreen',
+  leaveFullscreen: 'Leave fullscreen',
 };
 
 /**
@@ -201,6 +261,22 @@ export const GRAPH_CANVAS_OPEN_ZOOM = 0.75;
  * large: two thousand entries in five lanes fit at about a twentieth.
  */
 export const GRAPH_CANVAS_FIT_FLOOR = 0.02;
+
+/**
+ * HOW MANY MOVING LINES A VIEW CARRIES. Past this many calls in view the
+ * dashes at rest stand still: a few hundred animated dashes cost every frame
+ * and say nothing a reader can follow. The lit path always moves.
+ */
+export const GRAPH_CANVAS_FLOW_LIMIT = 160;
+
+/** How long the pointer rests on a card before its neighbours light, and how long after it leaves, in ms. */
+const POINT_IN_MS = 90;
+const POINT_OUT_MS = 120;
+/** How far a press may travel and still be a press on the ground rather than a drag. */
+const PRESS_SLOP = 4;
+/** The room between a card and the card drawn beside it, and between that card and the frame. */
+const CARD_GAP = 12;
+const CARD_INSET = 8;
 
 /** What a screen can ask of a map it holds a ref to. */
 export interface GraphCanvasHandle {
@@ -227,10 +303,40 @@ export interface GraphCanvasProps {
   /** Called with the open groups whenever one opens or closes. */
   onOpenGroupsChange?: ((open: ReadonlySet<string>) => void) | undefined;
   selectedId?: string | null | undefined;
-  /** A press or Enter on a card selects it; Escape clears with `null`. */
+  /** A press or Enter on a card selects it; the same on the selected card, a press on the ground or Escape clears with `null`. */
   onSelect?: ((id: string | null) => void) | undefined;
-  /** Lights what the selection reaches; unset, the selection lights its neighbours. */
+  /**
+   * How far the selection lights along the lines that carry a failure (calls
+   * and what things run on). Unset, the whole path both ways. What stands
+   * around the selection is lit one step away whatever the trace.
+   */
   trace?: GraphTrace | null | undefined;
+  /** The entry another surface points at, such as a table row under the pointer: lit as the pointer lights one. */
+  hoveredId?: string | null | undefined;
+  /** Called with the entry the pointer or focus rests on, and `null` when it leaves. */
+  onHover?: ((id: string | null) => void) | undefined;
+  /** The card drawn beside the entry the pointer or focus rests on. */
+  renderCard?: ((id: string) => ReactNode) | undefined;
+  /** Drawn over the map's lower edge, such as what is selected and what can be done with it. */
+  dock?: ReactNode;
+  /** The families of line drawn at rest, when the caller holds them. Calls alone unless named. */
+  families?: ReadonlySet<GraphEdgeFamily> | undefined;
+  /** Called with the families drawn at rest whenever the legend switches one. */
+  onFamiliesChange?: ((families: ReadonlySet<GraphEdgeFamily>) => void) | undefined;
+  /** The word for each tone, for the legend and each cluster's tally: "Alerting". A tone with no word has no key. */
+  tones?: Partial<Record<GraphAttentionTone, string>> | undefined;
+  /**
+   * The zoom bar, the legend, the trunks and fullscreen. Off for a small,
+   * still diagram, such as one entry among its neighbours.
+   */
+  chrome?: boolean | undefined;
+  /**
+   * The fullscreen control in the zoom bar. On by default, taking the map
+   * itself; pass the element to take instead where the map opens something
+   * beside it (a detail sheet), since a fullscreen element paints only its
+   * own subtree.
+   */
+  fullscreen?: boolean | RefObject<HTMLElement | null> | undefined;
   /** A card pushed back, such as one a legend filter leaves out. */
   cardDimmed?: ((id: string) => boolean) | undefined;
   /** Drawn over the canvas without the transform. */
@@ -240,7 +346,7 @@ export interface GraphCanvasProps {
   controlsBelow?: ReactNode;
   /** A bar in the corner opposite the zoom bar, such as the trace switch. */
   controlsStart?: ReactNode;
-  /** A bar across from the zoom bar, such as a status legend. */
+  /** More in the bar across from the zoom bar, after the legend. */
   overlayEnd?: ReactNode;
   hint?: ReactNode;
   ground?: CanvasGround | undefined;
@@ -265,6 +371,12 @@ const PROBES = [CARD_PROBE, GAP_PROBE, PAD_PROBE, HEAD_PROBE, BAND_PROBE];
 const emptyProbe = (lane: string) => `crewlet:graph-canvas-empty:${lane}`;
 
 const NO_GROUPS: readonly GraphGroup[] = [];
+const AT_REST: ReadonlySet<GraphEdgeFamily> = new Set<GraphEdgeFamily>(['flow']);
+const FAMILY_RANK: Record<GraphEdgeFamily, number> = { context: 0, support: 1, flow: 2 };
+const TONES: readonly GraphAttentionTone[] = ['danger', 'warning', 'info'];
+type EdgeState = 'dim' | 'rest' | 'lit';
+const EDGE_STATES: readonly EdgeState[] = ['dim', 'rest', 'lit'];
+const DRAW_ORDER: readonly GraphEdgeFamily[] = ['context', 'support', 'flow'];
 const TONE_RANK: Record<GraphAttentionTone, number> = { info: 1, warning: 2, danger: 3 };
 
 /** The part of the world that is mounted: what is near the view, with room to pan before it moves. */
@@ -286,6 +398,15 @@ export function GraphCanvas({
   selectedId = null,
   onSelect,
   trace = null,
+  hoveredId = null,
+  onHover,
+  renderCard,
+  dock,
+  families,
+  onFamiliesChange,
+  tones,
+  chrome = true,
+  fullscreen = true,
   cardDimmed,
   overlay,
   controlsPlacement,
@@ -309,7 +430,23 @@ export function GraphCanvas({
   // ---- what the caller handed in, indexed ---------------------------------
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const groupById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
-  const restEdges = useMemo(() => edges.filter((edge) => edge.atRest !== false), [edges]);
+  const familyOf = useMemo(() => new Map(edges.map((edge) => [edge.id, edge.family ?? 'flow'])), [edges]);
+  // ---- which families of line are drawn at rest ---------------------------
+  const [ownFamilies, setOwnFamilies] = useState<ReadonlySet<GraphEdgeFamily>>(AT_REST);
+  const shown = families ?? ownFamilies;
+  const toggleFamily = useCallback(
+    (family: GraphEdgeFamily) => {
+      const next = new Set(shown);
+      if (next.has(family)) next.delete(family);
+      else next.add(family);
+      if (!families) setOwnFamilies(next);
+      onFamiliesChange?.(next);
+    },
+    [shown, families, onFamiliesChange],
+  );
+  const restEdges = useMemo(() => edges.filter((edge) => shown.has(edge.family ?? 'flow')), [edges, shown]);
+  // WHAT RELIES ON WHAT: a call and a "runs on" both carry a failure upstream; what stands around does not.
+  const carrying = useMemo(() => edges.filter((edge) => (edge.family ?? 'flow') !== 'context'), [edges]);
   const groupOf = useCallback((id: string) => nodeById.get(id)?.group, [nodeById]);
 
   // ---- which groups are open ----------------------------------------------
@@ -371,13 +508,27 @@ export function GraphCanvas({
     () => bands.map((band) => ({ id: band.id, titled: Boolean(band.label), lanes: band.lanes.map((lane) => lane.id) })),
     [bands],
   );
+  const laneColumns = useMemo(() => {
+    const out = new Map<string, number>();
+    for (const band of bands) for (const lane of band.lanes) if (lane.columns !== undefined) out.set(lane.id, lane.columns);
+    return out;
+  }, [bands]);
   const layout = useMemo<GraphLayout | null>(() => {
     if (!metrics) return null;
     return layoutGraph(
-      { bands: layoutBands, nodes, groups, open: (id) => openSet.has(id), edges: restEdges, emptyHeights },
+      {
+        bands: layoutBands,
+        nodes,
+        groups,
+        open: (id) => openSet.has(id),
+        edges: restEdges,
+        ordering: carrying,
+        laneColumns,
+        emptyHeights,
+      },
       metrics,
     );
-  }, [metrics, layoutBands, nodes, groups, openSet, restEdges, emptyHeights]);
+  }, [metrics, layoutBands, nodes, groups, openSet, restEdges, carrying, laneColumns, emptyHeights]);
   // The first placement waits for every empty lane's message; a lane emptied later is measured in place.
   const everPlaced = useRef(false);
   const placed = layout !== null && (everPlaced.current || measured(emptyLanes.map((lane) => emptyProbe(lane.id))));
@@ -385,10 +536,38 @@ export function GraphCanvas({
   const laneOf = useMemo(() => new Map(bands.flatMap((band) => band.lanes.map((lane) => [lane.id, lane]))), [bands]);
 
   // ---- selection, trace and what is pushed back ---------------------------------
+  // THE POINTER AND FOCUS LIGHT AS A SELECTION DOES, one step out, after a short rest so a pass over the map lights nothing.
+  const [own, setOwn] = useState<string | null>(null);
+  const [card, setCard] = useState<string | null>(null);
+  const pointTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const hoverNow = useRef(onHover);
+  hoverNow.current = onHover;
+  const point = useCallback((id: string | null, delay: number) => {
+    clearTimeout(pointTimer.current);
+    const land = () => {
+      setOwn(id);
+      setCard(id);
+      hoverNow.current?.(id);
+    };
+    if (delay === 0) land();
+    else pointTimer.current = setTimeout(land, delay);
+  }, []);
+  useEffect(() => () => clearTimeout(pointTimer.current), []);
+  const pointed = own ?? hoveredId;
+
   const reach = useMemo<GraphReach | null>(() => {
-    if (selectedId === null || !nodeById.has(selectedId)) return null;
-    return trace ? graphReach(edges, selectedId, trace.direction, trace.depth) : graphNeighbourhood(edges, selectedId);
-  }, [selectedId, nodeById, trace, edges]);
+    const focus = selectedId !== null && nodeById.has(selectedId) ? selectedId : null;
+    const beside = pointed !== null && nodeById.has(pointed) ? pointed : null;
+    if (focus === null) return beside === null ? null : graphNeighbourhood(edges, beside);
+    const far = graphReach(carrying, focus, trace?.direction ?? 'both', trace?.depth ?? Infinity);
+    const near = graphNeighbourhood(edges, focus);
+    const reached = new Map(far.nodes);
+    for (const [id, hops] of near.nodes) if (!reached.has(id)) reached.set(id, hops);
+    // The entry under the pointer stays lit beside a selection, so a card never opens on a ghost.
+    if (beside !== null && !reached.has(beside)) reached.set(beside, Infinity);
+    return { nodes: reached, edges: new Set([...far.edges, ...near.edges]) };
+  }, [selectedId, pointed, nodeById, trace, edges, carrying]);
+  const focusState = reach === null ? undefined : selectedId !== null && nodeById.has(selectedId) ? 'selected' : 'hover';
   const nodeDimmed = useCallback(
     (id: string) => Boolean(cardDimmed?.(id)) || (reach !== null && !reach.nodes.has(id)),
     [cardDimmed, reach],
@@ -408,25 +587,31 @@ export function GraphCanvas({
     setGroupOpen(selectedGroup, true);
   }, [selectedGroup, selectedId, openSet, layout, setGroupOpen]);
 
-  // ---- the edges, as three layers -------------------------------------------------
+  // ---- the edges, as one layer per family and state ----------------------------------
   const drawn = useMemo(() => {
     if (!layout) return null;
-    const lit = new Set<string>();
+    const strongest = (ids: readonly string[], only?: ReadonlySet<string>): GraphEdgeFamily => {
+      let best: GraphEdgeFamily = 'context';
+      for (const id of ids) {
+        if (only && !only.has(id)) continue;
+        const family = familyOf.get(id) ?? 'flow';
+        if (FAMILY_RANK[family] > FAMILY_RANK[best]) best = family;
+      }
+      return best;
+    };
+    // A lit edge with no route at rest lights the route already between its two items, or is routed on top.
+    const borrowed = new Map<string, string[]>();
     const extra: GraphLayoutEdge[] = [];
     const known = new Set(layout.routes.map((route) => route.key));
     if (reach) {
       for (const edge of edges) {
-        if (!reach.edges.has(edge.id)) continue;
-        const route = layout.routeOfEdge.get(edge.id);
-        if (route !== undefined) {
-          lit.add(route);
-          continue;
-        }
+        if (!reach.edges.has(edge.id) || layout.routeOfEdge.has(edge.id)) continue;
         const from = layout.itemOfNode.get(edge.from);
         const to = layout.itemOfNode.get(edge.to);
         if (from === undefined || to === undefined || from === to) continue;
-        if (known.has(`${from}>${to}`)) lit.add(`${from}>${to}`);
-        else extra.push(edge);
+        const key = `${from}>${to}`;
+        if (!known.has(key)) extra.push(edge);
+        else borrowed.set(key, [...(borrowed.get(key) ?? []), edge.id]);
       }
     }
     const itemDimmed = (key: string) => {
@@ -434,17 +619,34 @@ export function GraphCanvas({
       if (item.kind === 'node') return nodeDimmed(item.id);
       return layout.groupById.get(item.id)?.members.every(nodeDimmed) ?? false;
     };
-    const quiet: GraphRoute[] = [];
-    const faint: GraphRoute[] = [];
-    const strong: GraphRoute[] = [];
+    const layers = new Map<string, GraphRoute[]>();
+    const put = (family: GraphEdgeFamily, state: EdgeState, route: GraphRoute) => {
+      const key = `${family}:${state}`;
+      const list = layers.get(key);
+      if (list) list.push(route);
+      else layers.set(key, [route]);
+    };
     for (const route of layout.routes) {
-      if (lit.has(route.key)) strong.push(route);
-      else if (reach || itemDimmed(route.from) || itemDimmed(route.to)) faint.push(route);
-      else quiet.push(route);
+      const also = borrowed.get(route.key);
+      const lit = reach !== null && (also !== undefined || route.edges.some((id) => reach.edges.has(id)));
+      if (lit) put(strongest(also ? [...route.edges, ...also] : route.edges, reach.edges), 'lit', route);
+      else if (reach || itemDimmed(route.from) || itemDimmed(route.to)) put(strongest(route.edges), 'dim', route);
+      else put(strongest(route.edges), 'rest', route);
     }
-    strong.push(...routeGraphEdges(layout, extra));
-    return { quiet, faint, strong, itemDimmed };
-  }, [layout, reach, edges, nodeDimmed]);
+    for (const route of routeGraphEdges(layout, extra)) put(strongest(route.edges), 'lit', route);
+    return { layers, itemDimmed };
+  }, [layout, reach, edges, nodeDimmed, familyOf]);
+
+  // TRUNKS: while what things run on is not drawn line by line, each pair of clusters it joins is one line with its count.
+  const laneOfNode = useCallback((id: string) => nodeById.get(id)?.lane, [nodeById]);
+  const trunks = useMemo(() => {
+    if (!layout || !chrome || shown.has('support')) return [];
+    return graphTrunks(
+      layout,
+      edges.filter((edge) => edge.family === 'support'),
+      laneOfNode,
+    );
+  }, [layout, chrome, shown, edges, laneOfNode]);
 
   // ---- what each card says about its relations -------------------------------------
   const relationsOf = useMemo(() => {
@@ -469,30 +671,53 @@ export function GraphCanvas({
   const [mounted, setMounted] = useState<GraphWindow | null>(null);
   const mountedNow = useRef(mounted);
   mountedNow.current = mounted;
+  const viewport = useRef<CanvasSize | null>(null);
+  const placeCardNow = useRef<() => void>(() => {});
   const viewChanged = useCallback(
-    (view: CanvasView, viewport: CanvasSize) => {
-      onViewChange?.(view, viewport);
-      const next = graphWindow(mountedNow.current, view, viewport);
+    (view: CanvasView, size: CanvasSize) => {
+      onViewChange?.(view, size);
+      viewport.current = size;
+      placeCardNow.current();
+      const next = graphWindow(mountedNow.current, view, size);
       if (next !== mountedNow.current) setMounted(next);
     },
     [onViewChange],
   );
 
-  // The quiet and faint routes near the mounted window, as one path each; the lit ones always, whole.
+  // Each layer near the mounted window as one path; the lit ones always, whole.
   const paths = useMemo(() => {
     if (!drawn) return null;
     const near = (route: GraphRoute) => !mounted || intersects(route.box, mounted.rect);
-    const join = (list: readonly GraphRoute[], part: 'd' | 'arrow', all = false) =>
-      list
-        .filter((route) => all || near(route))
-        .map((route) => route[part])
-        .join('');
-    return {
-      quiet: { d: join(drawn.quiet, 'd'), arrow: join(drawn.quiet, 'arrow') },
-      faint: { d: join(drawn.faint, 'd'), arrow: join(drawn.faint, 'arrow') },
-      strong: { d: join(drawn.strong, 'd', true), arrow: join(drawn.strong, 'arrow', true) },
-    };
+    const out = new Map<string, { d: string; arrow: string; count: number }>();
+    for (const [key, list] of drawn.layers) {
+      const kept = key.endsWith(':lit') ? list : list.filter(near);
+      out.set(key, {
+        d: kept.map((route) => route.d).join(''),
+        arrow: kept.map((route) => route.arrow).join(''),
+        count: kept.length,
+      });
+    }
+    return out;
   }, [drawn, mounted]);
+  const still = (paths?.get('flow:rest')?.count ?? 0) > GRAPH_CANVAS_FLOW_LIMIT;
+
+  // ---- the card beside the entry the pointer or focus rests on -----------------------
+  const cardEl = useRef<HTMLDivElement>(null);
+  const cardItem = card === null || !renderCard || !layout ? undefined : layout.itemByKey.get(graphItemKey('node', card));
+  // Placed by hand on every move of the view, so a pan never re-renders the map to move one card.
+  placeCardNow.current = () => {
+    const el = cardEl.current;
+    const size = viewport.current;
+    if (!el || !cardItem || !size || !canvas.current) return;
+    const at = canvas.current.screenRect(cardItem);
+    const width = el.offsetWidth;
+    const height = el.offsetHeight;
+    const fitsAfter = at.x + at.width + CARD_GAP + width <= size.width - CARD_INSET;
+    const left = fitsAfter ? at.x + at.width + CARD_GAP : Math.max(CARD_INSET, at.x - CARD_GAP - width);
+    const top = Math.max(CARD_INSET, Math.min(at.y - CARD_GAP, size.height - height - CARD_INSET));
+    el.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+  };
+  useLayoutEffect(() => placeCardNow.current());
 
   // ---- the opening view: whole when it reads, else the map's start at a size that does ----
   const root = useRef<HTMLDivElement>(null);
@@ -508,7 +733,7 @@ export function GraphCanvas({
     return () => observer.disconnect();
   }, []);
   // The canvas's own bars along the top edge, which a map opening on its start must clear.
-  const [chrome, setChrome] = useState(0);
+  const [barsBottom, setBarsBottom] = useState(0);
   useLayoutEffect(() => {
     const el = root.current;
     if (!el || !frame) return;
@@ -518,7 +743,7 @@ export function GraphCanvas({
       const rect = bar.getBoundingClientRect();
       if (rect.height > 0 && rect.top - top < frame.height / 2) bottom = Math.max(bottom, rect.bottom - top);
     }
-    setChrome(bottom);
+    setBarsBottom(bottom);
   }, [frame, controlsStart, controlsPlacement]);
   const opening = useMemo<CanvasView | undefined>(() => {
     if (initialView) return initialView;
@@ -526,9 +751,9 @@ export function GraphCanvas({
     const fit = fitView(layout.bounds, frame, CANVAS_FIT_PADDING, minZoom);
     if (fit.k >= GRAPH_CANVAS_DETAIL_ZOOM) return undefined;
     const k = GRAPH_CANVAS_OPEN_ZOOM;
-    const y = Math.max(CANVAS_FIT_PADDING, chrome + CANVAS_FIT_PADDING / 2);
+    const y = Math.max(CANVAS_FIT_PADDING, barsBottom + CANVAS_FIT_PADDING / 2);
     return { k, x: CANVAS_FIT_PADDING - layout.bounds.x * k, y: y - layout.bounds.y * k };
-  }, [initialView, layout, frame, minZoom, chrome]);
+  }, [initialView, layout, frame, minZoom, barsBottom]);
 
   // ---- focus: one roving tab stop ----------------------------------------------------
   const [active, setActive] = useState<string | null>(null);
@@ -635,19 +860,34 @@ export function GraphCanvas({
   const activate = useCallback(
     (item: GraphItem, focus: boolean) => {
       if (item.kind === 'node') {
-        onSelect?.(item.id);
+        onSelect?.(item.id === selectedId ? null : item.id);
         setActive(item.key);
         if (focus) pendingFocus.current = item.key;
       } else if (item.kind === 'head' || item.kind === 'summary') {
         toggleGroup(item.id, focus);
       }
     },
-    [onSelect, toggleGroup],
+    [onSelect, selectedId, toggleGroup],
   );
+
+  // A press on the ground that did not drag clears the selection.
+  const pressed = useRef<CanvasPoint | null>(null);
+  const onPointerDownCapture = (event: ReactPointerEvent<HTMLDivElement>) => {
+    pressed.current = { x: event.clientX, y: event.clientY };
+  };
+  const onGroundClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const from = pressed.current;
+    pressed.current = null;
+    if (!chrome || selectedId === null || !from) return;
+    if (Math.hypot(event.clientX - from.x, event.clientY - from.y) > PRESS_SLOP) return;
+    if ((event.target as HTMLElement).closest('[data-graph-key], [data-graph-solid], .crewlet-canvas__controls')) return;
+    onSelect?.(null);
+  };
 
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (!layout) return;
     if (event.key === 'Escape') {
+      if (card !== null) setCard(null);
       if (selectedId === null) return;
       event.preventDefault();
       event.stopPropagation();
@@ -685,6 +925,11 @@ export function GraphCanvas({
   // Stable for the memoised items: each reads the newest handler through a ref.
   const handlers = useRef({ onKeyDown, activate, setActive, layout });
   handlers.current = { onKeyDown, activate, setActive, layout };
+  const onItemPoint = useCallback(
+    (id: string | null, how: 'pointer' | 'focus') =>
+      point(id, how === 'focus' ? 0 : id === null ? POINT_OUT_MS : POINT_IN_MS),
+    [point],
+  );
   const onItemKey = useCallback((event: KeyboardEvent<HTMLElement>) => handlers.current.onKeyDown(event), []);
   const onItemPress = useCallback((key: string) => {
     const item = handlers.current.layout?.itemByKey.get(key);
@@ -751,7 +996,8 @@ export function GraphCanvas({
           {...common}
           node={node}
           selected={item.id === selectedId}
-          dimmed={nodeDimmed(item.id)}
+          state={nodeDimmed(item.id) ? 'dim' : reach?.nodes.has(item.id) ? 'lit' : 'rest'}
+          onPoint={onItemPoint}
           description={relations ? text.relations(relations.dependsOn, relations.usedBy) : ''}
           descriptionId={`${uid}-d-${encodeURIComponent(item.key)}`}
           unconfirmedLabel={text.unconfirmed}
@@ -786,138 +1032,271 @@ export function GraphCanvas({
   const width = layout?.bounds.width ?? 0;
   const height = layout?.bounds.height ?? 0;
 
-  return (
-    <div ref={root} className={cx('crewlet-graph-canvas', className)}>
-      {frame ? (
-        <Canvas
-          label={label}
-          content={placed ? layout!.bounds : null}
-          ref={canvas}
-          overlay={overlay}
-          controlsPlacement={controlsPlacement}
-          controlsExtra={controlsExtra}
-          controlsBelow={controlsBelow}
-          controlsStart={controlsStart}
-          overlayEnd={overlayEnd}
-          hint={hint}
-          ground={ground}
-          largestItemWidth={metrics?.cardWidth}
-          labels={text}
-          minZoom={minZoom}
-          initialView={opening}
-          onViewChange={viewChanged}
-        >
-          <Probes measure={measure} />
-          {emptyLanes.map((lane) => {
-            const placedLane = layout?.laneById.get(lane.id);
+  // ---- each cluster's tally of what is wrong inside it ------------------------------------
+  const tallies = useMemo(() => {
+    const out = new Map<string, Partial<Record<GraphAttentionTone, number>>>();
+    for (const node of nodes) {
+      if (!node.attention) continue;
+      let tally = out.get(node.lane);
+      if (!tally) out.set(node.lane, (tally = {}));
+      tally[node.attention.tone] = (tally[node.attention.tone] ?? 0) + 1;
+    }
+    return out;
+  }, [nodes]);
+  const laneName = (id: string, count: number) => {
+    const tally = tallies.get(id);
+    const words = TONES.flatMap((tone) => (tally?.[tone] && tones?.[tone] ? [`${tally[tone]} ${tones[tone]}`] : []));
+    return [text.lane(laneOf.get(id)?.label ?? id, count), ...words].join(', ');
+  };
+
+  // ---- the legend, the card and the dock: the kit's own surfaces, outside the world --------
+  const legend = chrome ? (
+    <div className="crewlet-graph-canvas__legend" role="group" aria-label={text.legend}>
+      {TONES.map((tone) =>
+        tones?.[tone] ? (
+          <span key={tone} className="crewlet-graph-canvas__key">
+            <span className="crewlet-graph-canvas__key-notch" data-tone={tone} aria-hidden="true" />
+            {tones[tone]}
+          </span>
+        ) : null,
+      )}
+      <span className="crewlet-graph-canvas__key">
+        <span className="crewlet-graph-canvas__key-notch" aria-hidden="true" />
+        {text.quiet}
+      </span>
+      <span className="crewlet-graph-canvas__key">
+        <span className="crewlet-graph-canvas__key-notch" data-unconfirmed="" aria-hidden="true" />
+        {text.unconfirmed}
+      </span>
+      <span className="crewlet-graph-canvas__legend-rule" aria-hidden="true" />
+      {GRAPH_EDGE_FAMILIES.map((family) => (
+        <FilterChip key={family} pressed={shown.has(family)} onPressedChange={() => toggleFamily(family)}>
+          <span className="crewlet-graph-canvas__switch">
+            <svg className="crewlet-graph-canvas__key-line" data-family={family} viewBox="0 0 22 8" aria-hidden="true">
+              <path d="M1 4h20" />
+            </svg>
+            {text.families[family]}
+          </span>
+        </FilterChip>
+      ))}
+    </div>
+  ) : null;
+  const ownFullscreen = fullscreen === true;
+  const fullscreenTarget = typeof fullscreen === 'object' ? fullscreen : root;
+  const bar =
+    chrome && fullscreen !== false ? (
+      <>
+        <FullscreenToggle
+          target={fullscreenTarget}
+          labels={{ enter: text.fullscreen, leave: text.leaveFullscreen }}
+        />
+        {controlsExtra}
+      </>
+    ) : (
+      controlsExtra
+    );
+  const over = (
+    <>
+      {cardItem && card !== null ? (
+        <div ref={cardEl} className="crewlet-graph-canvas__popup" role="tooltip">
+          {renderCard?.(card)}
+        </div>
+      ) : null}
+      {dock ? (
+        <div className="crewlet-graph-canvas__dock" data-graph-solid="">
+          {dock}
+        </div>
+      ) : null}
+      {overlay}
+    </>
+  );
+
+  const body = frame ? (
+    <Canvas
+      label={label}
+      content={placed ? layout!.bounds : null}
+      ref={canvas}
+      overlay={over}
+      controls={chrome}
+      controlsPlacement={controlsPlacement}
+      controlsExtra={bar}
+      controlsBelow={controlsBelow}
+      controlsStart={controlsStart}
+      overlayEnd={
+        legend || overlayEnd ? (
+          <>
+            {legend}
+            {overlayEnd}
+          </>
+        ) : undefined
+      }
+      hint={hint}
+      ground={ground}
+      largestItemWidth={metrics?.cardWidth}
+      labels={text}
+      minZoom={minZoom}
+      initialView={opening}
+      onViewChange={viewChanged}
+    >
+      <Probes measure={measure} />
+      {emptyLanes.map((lane) => {
+        const placedLane = layout?.laneById.get(lane.id);
+        return (
+          <div
+            key={lane.id}
+            ref={measure(emptyProbe(lane.id))}
+            className="crewlet-graph-canvas__empty-probe"
+            aria-hidden="true"
+            inert
+            style={placedLane ? { width: `${placedLane.head.width}px` } : undefined}
+          >
+            {lane.empty}
+          </div>
+        );
+      })}
+      {layout && placed ? (
+        <div className="crewlet-graph-canvas__world" style={{ width: `${width}px`, height: `${height}px` }}>
+          <svg className="crewlet-graph-canvas__ground" width={width} height={height} aria-hidden="true">
+            {layout.lanes.map((lane) => (
+              <rect
+                key={lane.id}
+                className="crewlet-graph-canvas__lane"
+                x={lane.panel.x}
+                y={lane.panel.y}
+                width={lane.panel.width}
+                height={lane.panel.height}
+              />
+            ))}
+            {layout.groups.map((group) =>
+              group.box ? (
+                <rect
+                  key={group.id}
+                  className="crewlet-graph-canvas__group"
+                  x={group.box.x}
+                  y={group.box.y}
+                  width={group.box.width}
+                  height={group.box.height}
+                />
+              ) : null,
+            )}
+          </svg>
+          {layout.bands.map((band) =>
+            band.title ? (
+              <div
+                key={band.id}
+                className="crewlet-graph-canvas__band-title"
+                aria-hidden="true"
+                style={placedStyle(band.title)}
+              >
+                {bands[band.index]!.label}
+              </div>
+            ) : null,
+          )}
+          {paths ? (
+            <svg className="crewlet-graph-canvas__edges" width={width} height={height} aria-hidden="true">
+              {trunks.length > 0 ? (
+                <path className="crewlet-graph-canvas__trunk" d={trunks.map((trunk) => trunk.d).join('')} />
+              ) : null}
+              {EDGE_STATES.flatMap((state) =>
+                DRAW_ORDER.map((family) => {
+                  const layer = paths.get(`${family}:${state}`);
+                  if (!layer || layer.d === '') return null;
+                  return (
+                    <g
+                      key={`${family}:${state}`}
+                      className="crewlet-graph-canvas__edge-layer"
+                      data-family={family}
+                      data-state={state}
+                    >
+                      <path className="crewlet-graph-canvas__edge" d={layer.d} />
+                      <path className="crewlet-graph-canvas__arrow" d={layer.arrow} />
+                      {family === 'flow' && state !== 'dim' ? (
+                        <path className="crewlet-graph-canvas__flow" d={layer.d} />
+                      ) : null}
+                    </g>
+                  );
+                }),
+              )}
+            </svg>
+          ) : null}
+          {trunks.map((trunk) => (
+            <span
+              key={trunk.key}
+              className="crewlet-graph-canvas__trunk-label"
+              aria-hidden="true"
+              style={{ transform: `translate(${trunk.label.x}px, ${trunk.label.y}px) translate(-50%, -50%)` }}
+            >
+              {text.trunk(trunk.count)}
+            </span>
+          ))}
+          {layout.lanes.map((lane) => {
+            const tally = tallies.get(lane.id);
             return (
               <div
                 key={lane.id}
-                ref={measure(emptyProbe(lane.id))}
-                className="crewlet-graph-canvas__empty-probe"
+                className="crewlet-graph-canvas__lane-head"
                 aria-hidden="true"
-                inert
-                style={placedLane ? { width: `${placedLane.head.width}px` } : undefined}
+                style={placedStyle(lane.head)}
               >
-                {lane.empty}
+                <span className="crewlet-graph-canvas__lane-title">
+                  <span className="crewlet-graph-canvas__lane-label">{laneOf.get(lane.id)?.label}</span>
+                  <span className="crewlet-graph-canvas__lane-count">{lane.count}</span>
+                  {TONES.map((tone) =>
+                    tally?.[tone] ? (
+                      <span key={tone} className="crewlet-graph-canvas__lane-tone" data-tone={tone}>
+                        {tally[tone]}
+                      </span>
+                    ) : null,
+                  )}
+                </span>
               </div>
             );
           })}
-          {layout && placed ? (
-            <>
-              <svg className="crewlet-graph-canvas__ground" width={width} height={height} aria-hidden="true">
-                {layout.lanes.map((lane) => (
-                  <rect
-                    key={lane.id}
-                    className="crewlet-graph-canvas__lane"
-                    x={lane.panel.x}
-                    y={lane.panel.y}
-                    width={lane.panel.width}
-                    height={lane.panel.height}
-                  />
-                ))}
-                {layout.groups.map((group) =>
-                  group.box ? (
-                    <rect
-                      key={group.id}
-                      className="crewlet-graph-canvas__group"
-                      x={group.box.x}
-                      y={group.box.y}
-                      width={group.box.width}
-                      height={group.box.height}
-                    />
-                  ) : null,
-                )}
-              </svg>
-              {layout.bands.map((band) =>
-                band.title ? (
-                  <div
-                    key={band.id}
-                    className="crewlet-graph-canvas__band-title"
-                    aria-hidden="true"
-                    style={placedStyle(band.title)}
-                  >
-                    {bands[band.index]!.label}
-                  </div>
-                ) : null,
-              )}
-              {layout.lanes.map((lane) => (
-                <div
-                  key={lane.id}
-                  className="crewlet-graph-canvas__lane-head"
-                  aria-hidden="true"
-                  style={placedStyle(lane.head)}
-                >
-                  <span className="crewlet-graph-canvas__lane-label">{laneOf.get(lane.id)?.label}</span>
-                  <span className="crewlet-graph-canvas__lane-count">{lane.count}</span>
-                </div>
-              ))}
-              {paths ? (
-                <svg className="crewlet-graph-canvas__edges" width={width} height={height} aria-hidden="true">
-                  <path className="crewlet-graph-canvas__edge" data-state="faint" d={paths.faint.d} />
-                  <path className="crewlet-graph-canvas__arrow" data-state="faint" d={paths.faint.arrow} />
-                  <path className="crewlet-graph-canvas__edge" data-state="quiet" d={paths.quiet.d} />
-                  <path className="crewlet-graph-canvas__arrow" data-state="quiet" d={paths.quiet.arrow} />
-                  <path className="crewlet-graph-canvas__edge" data-state="strong" d={paths.strong.d} />
-                  <path className="crewlet-graph-canvas__arrow" data-state="strong" d={paths.strong.arrow} />
-                </svg>
-              ) : null}
-              {mounted && !mounted.detail ? (
-                <Shapes
-                  layout={layout}
-                  nodeById={nodeById}
-                  dimmed={drawn?.itemDimmed}
-                  worstOf={worstOf}
-                  selectedKey={selectedKey}
-                />
-              ) : null}
-              <div className="crewlet-graph-canvas__items">
-                {bands.map((band, b) => {
-                  const lanes = layout.lanes.filter((lane) => lane.band === b);
-                  const body = lanes.map((lane) => (
-                    <div
-                      key={lane.id}
-                      role="group"
-                      aria-label={text.lane(laneOf.get(lane.id)?.label ?? lane.id, lane.count)}
-                    >
-                      {(shownByLane.get(lane.id) ?? []).map(renderItem)}
-                    </div>
-                  ));
-                  return band.label ? (
-                    <div key={band.id} role="group" aria-label={band.label}>
-                      {body}
-                    </div>
-                  ) : (
-                    <div key={band.id} role="none">
-                      {body}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
+          {mounted && !mounted.detail ? (
+            <Shapes
+              layout={layout}
+              nodeById={nodeById}
+              dimmed={drawn?.itemDimmed}
+              worstOf={worstOf}
+              selectedKey={selectedKey}
+            />
           ) : null}
-        </Canvas>
+          <div className="crewlet-graph-canvas__items">
+            {bands.map((band, b) => {
+              const lanes = layout.lanes.filter((lane) => lane.band === b);
+              const inner = lanes.map((lane) => (
+                <div key={lane.id} role="group" aria-label={laneName(lane.id, lane.count)}>
+                  {(shownByLane.get(lane.id) ?? []).map(renderItem)}
+                </div>
+              ));
+              return band.label ? (
+                <div key={band.id} role="group" aria-label={band.label}>
+                  {inner}
+                </div>
+              ) : (
+                <div key={band.id} role="none">
+                  {inner}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       ) : null}
+    </Canvas>
+  ) : null;
+
+  return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- a press on the ground clears the selection, which Escape does from the keys
+    <div
+      ref={root}
+      className={cx('crewlet-graph-canvas', className)}
+      data-focus={focusState}
+      data-still={still ? '' : undefined}
+      onPointerDownCapture={onPointerDownCapture}
+      onClick={onGroundClick}
+    >
+      {/* A fullscreen element paints only its own subtree, so what the map opens is hosted inside it. */}
+      {ownFullscreen ? <LayerHost>{body}</LayerHost> : body}
     </div>
   );
 }
@@ -969,6 +1348,13 @@ interface ItemProps {
   onItemKey: (event: KeyboardEvent<HTMLElement>) => void;
 }
 
+/** The glyph a tone's badge draws when the entry names none. */
+function toneGlyph(tone: GraphAttentionTone): ReactNode {
+  if (tone === 'danger') return <TriangleAlertGlyph />;
+  if (tone === 'warning') return <CircleAlertGlyph />;
+  return <InfoGlyph />;
+}
+
 const GraphCard = memo(function GraphCard({
   itemKey,
   item,
@@ -979,20 +1365,23 @@ const GraphCard = memo(function GraphCard({
   onItemKey,
   node,
   selected,
-  dimmed,
+  state,
+  onPoint,
   description,
   descriptionId,
   unconfirmedLabel,
 }: ItemProps & {
   node: GraphNode;
   selected: boolean;
-  dimmed: boolean;
+  /** Lit by the selection or the pointer, pushed back by it, or neither. */
+  state: 'lit' | 'dim' | 'rest';
+  onPoint: (id: string | null, how: 'pointer' | 'focus') => void;
   description: string;
   descriptionId: string;
   unconfirmedLabel: string;
 }) {
   const spoken = [
-    node.name,
+    node.title ?? node.name,
     node.kind,
     node.caption,
     node.attention?.label,
@@ -1005,33 +1394,38 @@ const GraphCard = memo(function GraphCard({
       ref={refFor(itemKey)}
       role="button"
       tabIndex={tabIndex}
+      title={node.title}
       aria-describedby={description ? descriptionId : undefined}
       aria-current={selected ? 'true' : undefined}
       data-graph-key={itemKey}
       data-attention={node.attention?.tone}
       data-unconfirmed={node.unconfirmed ? '' : undefined}
       data-selected={selected ? '' : undefined}
-      data-dimmed={dimmed ? '' : undefined}
+      data-state={state}
       className="crewlet-graph-canvas__card"
       style={{ transform: `translate(${item.x}px, ${item.y}px)` }}
       onClick={() => onPress(itemKey)}
-      onFocus={() => onFocusItem(itemKey)}
+      onFocus={() => {
+        onFocusItem(itemKey);
+        onPoint(node.id, 'focus');
+      }}
+      onBlur={() => onPoint(null, 'focus')}
+      onPointerEnter={() => onPoint(node.id, 'pointer')}
+      onPointerLeave={() => onPoint(null, 'pointer')}
       onKeyDown={onItemKey}
     >
-      <IconTile size="sm" tone="neutral" className="crewlet-graph-canvas__tile">
+      <span className="crewlet-graph-canvas__cell" aria-hidden="true">
         {node.glyph}
-      </IconTile>
-      <span className="crewlet-graph-canvas__text" aria-hidden="true">
-        <Text variant="inherit" truncate className="crewlet-graph-canvas__name">
-          {node.name}
-        </Text>
-        {node.caption ? (
-          <Text variant="inherit" truncate className="crewlet-graph-canvas__caption">
-            {node.caption}
-          </Text>
-        ) : null}
+        {node.mark ? <span className="crewlet-graph-canvas__mark">{node.mark}</span> : null}
       </span>
-      {node.attention ? <StatusDot tone={node.attention.tone} className="crewlet-graph-canvas__dot" /> : null}
+      <Text variant="inherit" truncate className="crewlet-graph-canvas__name" aria-hidden="true">
+        {node.name}
+      </Text>
+      {node.attention ? (
+        <span className="crewlet-graph-canvas__badge" aria-hidden="true">
+          {node.attention.glyph ?? toneGlyph(node.attention.tone)}
+        </span>
+      ) : null}
       <SpokenName spoken={spoken} description={description} descriptionId={descriptionId} />
     </div>
   );
@@ -1075,7 +1469,7 @@ const GraphGroupItem = memo(function GraphGroupItem({
       data-graph-key={itemKey}
       aria-current={selected ? 'true' : undefined}
       data-attention={attention?.tone}
-      data-dimmed={dimmed ? '' : undefined}
+      data-state={dimmed ? 'dim' : 'rest'}
       data-selected={selected ? '' : undefined}
       className={open ? 'crewlet-graph-canvas__head' : 'crewlet-graph-canvas__card crewlet-graph-canvas__card--group'}
       style={{
@@ -1104,19 +1498,21 @@ const GraphGroupItem = memo(function GraphGroupItem({
         </>
       ) : (
         <>
-          <IconTile size="sm" tone="neutral" className="crewlet-graph-canvas__tile">
+          <span className="crewlet-graph-canvas__cell" aria-hidden="true">
             {lead ?? <ChevronRightGlyph size="sm" />}
-          </IconTile>
-          <span className="crewlet-graph-canvas__text" aria-hidden="true">
-            <Text variant="inherit" truncate className="crewlet-graph-canvas__name">
-              {label}
-            </Text>
-            <Text variant="inherit" truncate className="crewlet-graph-canvas__caption">
-              {text.entries(count)}
-            </Text>
+          </span>
+          <Text variant="inherit" truncate className="crewlet-graph-canvas__name" aria-hidden="true">
+            {label}
+          </Text>
+          <span className="crewlet-graph-canvas__group-count" aria-hidden="true">
+            {count}
           </span>
           <ChevronRightGlyph size="xs" aria-hidden="true" className="crewlet-graph-canvas__chevron" />
-          {attention ? <StatusDot tone={attention.tone} className="crewlet-graph-canvas__dot" /> : null}
+          {attention ? (
+            <span className="crewlet-graph-canvas__badge" aria-hidden="true">
+              {attention.glyph ?? toneGlyph(attention.tone)}
+            </span>
+          ) : null}
           <SpokenName spoken={spoken} />
         </>
       )}
@@ -1182,9 +1578,13 @@ function GraphEmptyLane({
   );
 }
 
+/** A shape's corner and its notch's width, in world units: the card's own, which a stylesheet cannot hand a path. */
+const SHAPE_CORNER = 2;
+const SHAPE_NOTCH = 4;
+
 /**
  * Every card as a shape on one layer, for a zoom too far out to read: a
- * rectangle per card, a dashed one per unconfirmed card, and a dot per tone.
+ * rectangle per card, a dashed one per unconfirmed card, and a notch per tone.
  */
 function Shapes({
   layout,
@@ -1201,7 +1601,7 @@ function Shapes({
 }) {
   const paths = useMemo(() => {
     const out = { card: '', faded: '', dashed: '', danger: '', warning: '', info: '', selected: '' };
-    const radius = Math.min(6, layout.metrics.cardHeight / 6);
+    const radius = SHAPE_CORNER;
     for (const item of layout.items) {
       if (item.kind !== 'node' && item.kind !== 'summary') continue;
       const node = item.kind === 'node' ? nodeById.get(item.id) : undefined;
@@ -1211,12 +1611,8 @@ function Shapes({
       else if (node?.unconfirmed) out.dashed += rect;
       else out.card += rect;
       const attention = node ? node.attention : worstOf(layout.groupById.get(item.id)?.members ?? []);
-      if (attention) {
-        const r = layout.metrics.cardHeight / 8;
-        const cx = item.x + item.width - r * 2;
-        const cy = item.y + r * 2;
-        out[attention.tone] += `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
-      }
+      // The notch on the leading edge, as a card draws it.
+      if (attention) out[attention.tone] += `M${item.x} ${item.y}h${SHAPE_NOTCH}v${item.height}h${-SHAPE_NOTCH}Z`;
     }
     return out;
   }, [layout, nodeById, dimmed, worstOf, selectedKey]);
