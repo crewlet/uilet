@@ -6,18 +6,18 @@ import {
   IconButton,
   StatusDot,
   Text,
-  graphNeighbourhood,
   graphReach,
-  type GraphBand,
   type GraphCanvasProps,
   type GraphNode,
 } from '@crewlethq/ui';
 import { XGlyph } from '@crewlethq/icons/glyphs';
 import { BothThemes } from '../BothThemes';
 import {
+  ATLAS_AROUND,
   ATLAS_BANDS,
   ATLAS_TONES,
   ENTRY_LABELS,
+  atlasNeighbourhood,
   firstSlice,
   generatedCompany,
   grownCompany,
@@ -201,24 +201,6 @@ export const EmptyLanes: Story = {
   render: () => <AtlasMapScreen map={{ nodes: [], edges: [], groups: [] }} />,
 };
 
-const AROUND: GraphBand[] = [
-  {
-    id: 'path',
-    lanes: [
-      { id: 'used', label: 'Used by', empty: 'Nothing recorded depends on it.' },
-      { id: 'self', label: 'This entry' },
-      { id: 'uses', label: 'Depends on', empty: 'It depends on nothing recorded.' },
-    ],
-  },
-  {
-    id: 'under',
-    lanes: [
-      { id: 'runs', label: 'Runs on', columns: 2, empty: 'Nothing recorded says what it runs on.' },
-      { id: 'around', label: 'Around it', columns: 2, empty: 'Nothing recorded stands around it.' },
-    ],
-  },
-];
-
 /**
  * One entry among its neighbours, as a detail sheet draws it: the same map
  * with its chrome off, so no zoom bar, legend or trunk, and the entry itself
@@ -226,27 +208,13 @@ const AROUND: GraphBand[] = [
  */
 export const Neighbourhood: Story = {
   render: () => {
-    const map = grownCompany();
     const self = 'checkout';
-    const near = graphNeighbourhood(map.edges, self);
-    const laneFor = (id: string): string => {
-      if (id === self) return 'self';
-      const edge = map.edges.find(
-        (one) => near.edges.has(one.id) && (one.from === id || one.to === id) && (one.from === self || one.to === self),
-      )!;
-      if (edge.family === 'context') return 'around';
-      if (edge.family === 'support') return 'runs';
-      return edge.to === self ? 'used' : 'uses';
-    };
-    const nodes = map.nodes
-      .filter((node) => near.nodes.has(node.id))
-      .map((node) => ({ ...node, lane: laneFor(node.id), column: undefined, group: undefined }));
-    const edges = map.edges.filter((edge) => near.edges.has(edge.id));
+    const { nodes, edges } = atlasNeighbourhood(grownCompany(), self);
     return (
       <div style={{ height: 420, maxWidth: 720, margin: '0 auto', padding: 'var(--spacing-4)' }}>
         <GraphCanvas
           label="checkout-api and what it touches"
-          bands={AROUND}
+          bands={ATLAS_AROUND}
           nodes={nodes}
           edges={edges}
           labels={ENTRY_LABELS}
@@ -276,12 +244,20 @@ export const SelectedLightAndDark: Story = {
   ),
 };
 
-/** On a phone's width the map opens on its start at a size that reads, and pans; the dock takes the width. */
-export const Narrow: Story = {
+const narrowAt = (width: number): Story => ({
   render: () => (
-    <div style={{ width: 390, maxWidth: '100%', margin: '0 auto' }}>
+    <div style={{ width, maxWidth: '100%', margin: '0 auto' }}>
       <AtlasMapScreen map={grownCompany()} height={640} initialSelected="checkout" />
     </div>
   ),
   parameters: { layout: 'fullscreen' },
-};
+});
+
+/**
+ * On a phone's width the map opens on its start at a size that reads, and
+ * pans. Nothing floats over the picture: the dock and the legend stand under it.
+ */
+export const Narrow: Story = narrowAt(390);
+
+/** The same on a tablet's width. */
+export const Tablet: Story = narrowAt(768);

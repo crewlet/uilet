@@ -6,12 +6,12 @@ import {
   Card,
   DataGrid,
   EntityChip,
-  FactList,
   GraphCanvas,
   IconButton,
   IconTile,
   Input,
   Legend,
+  PropertyList,
   Sparkline,
   StackedBar,
   StackedRing,
@@ -26,11 +26,19 @@ import {
   graphReach,
   type DataGridBand,
   type DataGridColumn,
+  type PropertyListGroup,
 } from '@crewlethq/ui';
 import { VendorMark } from '@crewlethq/icons';
-import { ArrowUpRightGlyph, CornerDownLeftGlyph, SearchGlyph, XGlyph } from '@crewlethq/icons/glyphs';
+import { ArrowUpRightGlyph, CornerDownLeftGlyph, SearchGlyph, TargetGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 import { BothThemes } from '../BothThemes';
-import { ATLAS_BANDS, ATLAS_TONES, ENTRY_LABELS, grownCompany } from '../fixtures/atlasMap';
+import {
+  ATLAS_AROUND_STACKED,
+  ATLAS_BANDS,
+  ATLAS_TONES,
+  ENTRY_LABELS,
+  atlasNeighbourhood,
+  grownCompany,
+} from '../fixtures/atlasMap';
 import {
   ATLAS_DAYS,
   ATLAS_NOW,
@@ -55,8 +63,10 @@ import {
  *   how sure the record is;
  * - the band over it is `StackedRing`, `ActivityStrip`, and `StackedBar` with
  *   its `Legend`, on `Card`;
- * - the detail's facts, each with where it comes from, are a `FactList`, and
- *   its recent changes a `Timeline`;
+ * - the detail is its header, the entry among its neighbours (the same
+ *   `GraphCanvas` with `chrome={false}`), its facts as a `PropertyList` whose
+ *   every value carries the kit's source by-line (`setBy`), and its recent
+ *   changes as a `Timeline`;
  * - the map is `GraphCanvas`, sharing one selection and one pointed-at entry
  *   with the grid (`hoveredId` and `onHover`, `isPointed` and `onRowPoint`).
  *
@@ -109,6 +119,10 @@ function Relations({ row }: { row: AtlasRow }) {
   );
 }
 
+/**
+ * Every column has a floor, so a grid too narrow for all of them gives columns
+ * way in order (`drop`) instead of cutting every value short.
+ */
 const COLUMNS: DataGridColumn<AtlasRow>[] = [
   {
     key: 'name',
@@ -116,12 +130,13 @@ const COLUMNS: DataGridColumn<AtlasRow>[] = [
     width: 'minmax(13rem, 2fr)',
     sortValue: (row) => row.node.name,
     phoneLead: true,
-    cell: (row) => <TableTwoLineCell icon={<Disc row={row} />} value={row.node.name} detail={row.node.kind} />,
+    cell: (row) => <TableTwoLineCell icon={<Disc row={row} size="md" />} value={row.node.name} detail={row.node.kind} />,
   },
   {
     key: 'vendor',
     header: 'Vendor',
-    drop: 2,
+    width: 'minmax(8rem, 1fr)',
+    drop: 4,
     sortValue: (row) => row.vendor?.name ?? '',
     cell: (row) =>
       row.vendor ? (
@@ -133,7 +148,8 @@ const COLUMNS: DataGridColumn<AtlasRow>[] = [
   {
     key: 'owner',
     header: 'Owner',
-    drop: 3,
+    width: 'minmax(9rem, 1fr)',
+    drop: 6,
     sortValue: (row) => row.owner?.name ?? '',
     cell: (row) =>
       row.owner ? (
@@ -147,14 +163,22 @@ const COLUMNS: DataGridColumn<AtlasRow>[] = [
   {
     key: 'health',
     header: 'Health',
+    width: 'minmax(8rem, 1fr)',
     sortValue: (row) => HEALTH_ORDER.indexOf(row.health),
     cell: (row) => <StatusDot tone={HEALTH_TONE[row.health]}>{row.healthWord}</StatusDot>,
   },
-  { key: 'relations', header: 'Relations', drop: 1, cell: (row) => <Relations row={row} /> },
+  {
+    key: 'relations',
+    header: 'Relations',
+    width: 'minmax(7rem, 0.8fr)',
+    drop: 1,
+    cell: (row) => <Relations row={row} />,
+  },
   {
     key: 'activity',
     header: 'Activity',
-    drop: 4,
+    width: 'minmax(8rem, 1fr)',
+    drop: 2,
     sortValue: (row) => sum(row.activity),
     cell: (row) => (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
@@ -171,6 +195,7 @@ const COLUMNS: DataGridColumn<AtlasRow>[] = [
   {
     key: 'changed',
     header: 'Last change',
+    width: 'minmax(10rem, 1.4fr)',
     drop: 5,
     sortValue: (row) => row.changedAt,
     cell: (row) => (
@@ -180,7 +205,8 @@ const COLUMNS: DataGridColumn<AtlasRow>[] = [
   {
     key: 'confidence',
     header: 'Confidence',
-    drop: 6,
+    width: 'minmax(7rem, 0.8fr)',
+    drop: 3,
     sortValue: (row) => row.confidence,
     cell: (row) => (
       <Tag size="xs" appearance={row.confidence === 'confirmed' ? 'quiet' : 'outline'}>
@@ -215,20 +241,28 @@ function Catalogue({
 }) {
   const [sort, setSort] = useState('name');
   return (
-    <DataGrid
-      aria-label="Catalogue of everything the company runs on"
-      bands={bandsOf(rows)}
-      columns={COLUMNS}
-      rowKey={(row) => row.id}
-      sort={sort}
-      onSortChange={setSort}
-      isSelected={(row) => row.id === selected}
-      isPointed={(row) => row.id === pointed}
-      onRowPoint={onPoint ? (row) => onPoint(row?.id ?? null) : undefined}
-      onRowActivate={(row) => onSelect(row.id)}
-      rowTone={(row) => (row.health === 'quiet' ? undefined : HEALTH_TONE[row.health])}
-      empty={{ title: 'Nothing matches', hint: 'Try a name, a vendor or a team.' }}
-    />
+    <div style={{ display: 'grid', gap: 'var(--spacing-2)' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--spacing-3)' }}>
+        <Text variant="heading">Catalogue</Text>
+        <Text variant="caption" tone="secondary">
+          {plural(rows.length)}
+        </Text>
+      </div>
+      <DataGrid
+        aria-label="Catalogue of everything the company runs on"
+        bands={bandsOf(rows)}
+        columns={COLUMNS}
+        rowKey={(row) => row.id}
+        sort={sort}
+        onSortChange={setSort}
+        isSelected={(row) => row.id === selected}
+        isPointed={(row) => row.id === pointed}
+        onRowPoint={onPoint ? (row) => onPoint(row?.id ?? null) : undefined}
+        onRowActivate={(row) => onSelect(row.id)}
+        rowTone={(row) => (row.health === 'quiet' ? undefined : HEALTH_TONE[row.health])}
+        empty={{ title: 'Nothing matches', hint: 'Try a name, a vendor or a team.' }}
+      />
+    </div>
   );
 }
 
@@ -246,12 +280,12 @@ function CatalogueAlone() {
 /** The catalogue alone: rich rows, grouped by health, sortable, one row the selection. */
 export const CatalogueGrid: Story = { render: () => <CatalogueAlone /> };
 
-const tile = { display: 'grid', gap: 'var(--spacing-2)', alignContent: 'center', minWidth: 0 } as const;
+const tile = { display: 'grid', gap: 'var(--spacing-2)', alignContent: 'start', minWidth: 0 } as const;
 const overline = (words: string) => (
-  <Text variant="caption" tone="tertiary" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-    {words}
-  </Text>
+  <Text variant="label">{words}</Text>
 );
+/** A tile of the band: it grows by its share and wraps under the others when the row runs out. */
+const share = (grow: number, basis: string) => ({ flex: `${grow} 1 ${basis}`, minWidth: 0 }) as const;
 
 /** The band over the map: how many entries and how they are, what needs attention, the week, and where the record comes from. */
 function Band({ rows = ROWS, onSelect }: { rows?: readonly AtlasRow[]; onSelect?: (id: string) => void }) {
@@ -259,6 +293,9 @@ function Band({ rows = ROWS, onSelect }: { rows?: readonly AtlasRow[]; onSelect?
   const wrong = rows.filter((row) => row.health !== 'quiet').sort((a, b) => b.usedBy - a.usedBy);
   const perDay = Array.from({ length: ATLAS_DAYS }, (_, day) => sum(rows.map((row) => row.activity[day] ?? 0)));
   const sure = (confidence: AtlasRow['confidence']) => rows.filter((row) => row.confidence === confidence).length;
+  const vendors = [
+    ...new Map(rows.flatMap((row) => (row.vendor ? [[row.vendor.id, row.vendor] as const] : []))).values(),
+  ];
   const health = [
     { id: 'quiet', label: 'Quiet', value: count('quiet'), color: 'var(--color-border-control)' },
     { id: 'look', label: 'To look at', value: count('look'), color: 'var(--color-feedback-warning)' },
@@ -270,64 +307,90 @@ function Band({ rows = ROWS, onSelect }: { rows?: readonly AtlasRow[]; onSelect?
     { id: 'unconfirmed', label: 'Unconfirmed', value: sure('unconfirmed'), color: 'var(--color-border-control)' },
   ];
   return (
-    <div
-      style={{
-        display: 'grid',
-        gap: 'var(--spacing-3)',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(15rem, 1fr))',
-      }}
-    >
-      <Card padding="md">
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-3)' }}>
+      <Card padding="md" style={share(1.1, '15rem')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-4)' }}>
           <StackedRing segments={health}>{rows.length}</StackedRing>
           <div style={tile}>
             {overline('The company runs on')}
-            <Text variant="body" style={{ fontWeight: 'var(--font-weight-semibold)' }}>
-              {plural(rows.length)}
-            </Text>
-            <Legend items={health.map((part) => ({ ...part, value: part.value }))} />
+            <Text variant="heading">{plural(rows.length)}</Text>
+            <Legend items={health} />
           </div>
         </div>
       </Card>
-      <Card padding="md">
+      <Card padding="md" style={share(1.9, '26rem')}>
         <div style={tile}>
-          {overline('Needs attention now')}
-          {wrong.slice(0, 2).map((row) => (
-            <Button
-              key={row.id}
-              variant="secondary"
-              size="small"
-              onClick={() => onSelect?.(row.id)}
-              style={{ justifyContent: 'flex-start', gap: 'var(--spacing-2)' }}
-            >
-              <Disc row={row} />
-              <span style={{ minWidth: 0, textAlign: 'start' }}>
-                {row.node.name}: {row.changeReason}
-              </span>
-            </Button>
-          ))}
-          <Text variant="caption" tone="tertiary">
-            {wrong.length} in all
-          </Text>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--spacing-3)' }}>
+            {overline('Needs attention now')}
+            <Text variant="caption" tone="tertiary">
+              {wrong.length} in all
+            </Text>
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gap: 'var(--spacing-2)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(15rem, 100%), 1fr))',
+            }}
+          >
+            {wrong.slice(0, 2).map((row) => (
+              <Card key={row.id} padding="sm" data-attention-entry="">
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'auto minmax(0, 1fr) auto',
+                    alignItems: 'center',
+                    gap: 'var(--spacing-3)',
+                  }}
+                >
+                  <Disc row={row} size="md" />
+                  <div data-attention-words="" style={{ display: 'grid', minWidth: 0 }}>
+                    <Text variant="body" truncate style={{ fontWeight: 'var(--font-weight-semibold)' }}>
+                      {row.node.name}
+                    </Text>
+                    <Text variant="caption" tone="secondary">
+                      {row.changeReason}
+                    </Text>
+                  </div>
+                  <IconButton
+                    label={`Show ${row.node.name} on the map`}
+                    icon={<TargetGlyph />}
+                    size="sm"
+                    onClick={() => onSelect?.(row.id)}
+                  />
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       </Card>
-      <Card padding="md">
+      <Card padding="md" style={share(0.9, '12rem')}>
         <div style={tile}>
           {overline('Recorded this week')}
-          <Text variant="body" numeric style={{ fontWeight: 'var(--font-weight-semibold)' }}>
-            {sum(perDay.slice(-7))} updates
-          </Text>
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--spacing-2)' }}>
+            <Text variant="display" numeric>
+              {sum(perDay.slice(-7))}
+            </Text>
+            <Text variant="caption" tone="secondary">
+              updates
+            </Text>
+          </span>
           <ActivityStrip
             label={`Lines recorded per day, the last ${ATLAS_DAYS} days`}
             buckets={perDay.map((v, day) => ({ t: ATLAS_NOW - (ATLAS_DAYS - 1 - day) * 86_400_000, v }))}
           />
         </div>
       </Card>
-      <Card padding="md">
+      <Card padding="md" style={share(1, '14rem')}>
         <div style={tile}>
           {overline('Where it comes from')}
+          <span style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-2)' }}>
+            {vendors.map((vendor) => (
+              <VendorMark key={vendor.id} vendor={vendor.id} size="sm" title={vendor.name} />
+            ))}
+          </span>
           <StackedBar segments={sources} />
-          <Legend items={sources.map((part) => ({ ...part, value: part.value }))} />
+          <Legend items={sources} />
         </div>
       </Card>
     </div>
@@ -346,55 +409,94 @@ export const SummaryBand: Story = {
 const CHANGES = [
   { at: 2, word: 'Alert', text: 'A standing alarm was raised: cpu high', state: 'danger' as const },
   { at: 9, word: 'Changed', text: 'Engine version 16.3 to 16.4, seen by the cloud account', state: 'default' as const },
-  { at: 30, word: 'Confirmed', text: 'Owner confirmed by a person', state: 'default' as const },
+  { at: 30, word: 'Confirmed', text: 'Purpose confirmed as it stands by a person', state: 'default' as const },
   { at: 170, word: 'Found', text: 'Found in the cloud account', state: 'default' as const },
 ];
 
-const FACTS = [
-  { key: 'engine', label: 'Engine', value: 'postgres 16.4', reason: 'Seen by the cloud account, 9 hours ago' },
-  { key: 'region', label: 'Region', value: 'eu-west-1', reason: 'Seen by the cloud account, 9 hours ago' },
-  { key: 'owner', label: 'Owner', value: 'Payments', reason: 'Confirmed by a person, 30 hours ago' },
-  { key: 'purpose', label: 'Purpose', value: 'Orders and their line items', reason: 'Recorded by an agent after a deploy' },
+const cloud = { actor: 'AWS', verb: 'seen', mark: <VendorMark vendor="aws" size="sm" />, ago: '9h ago' } as const;
+const FACTS: PropertyListGroup[] = [
+  {
+    name: 'What it is',
+    items: [
+      { label: 'Engine', value: 'postgres 16.4', setBy: cloud },
+      { label: 'Region', value: 'eu-west-1', setBy: cloud },
+      { label: 'Account', value: 'acme-prod', setBy: cloud },
+      {
+        label: 'Purpose',
+        value: 'Orders and their line items',
+        setBy: { actor: 'engineer', verb: 'observed', qualifier: 'likely', ago: '2d ago' },
+      },
+    ],
+  },
 ];
 
-/** The detail's head, facts and recent changes: identity and health, what is known and from where, then what was recorded. */
+/**
+ * The detail: identity and health, the entry among its neighbours in the
+ * map's own look, what is known with where each value comes from, then what
+ * was recorded.
+ */
 function Detail({ row }: { row: AtlasRow }) {
+  const near = useMemo(() => atlasNeighbourhood(MAP, row.id), [row.id]);
+  // A sheet is short of room, so a cluster nothing stands in is left out rather than drawn empty.
+  const bands = ATLAS_AROUND_STACKED.filter((band) => near.nodes.some((node) => node.lane === band.id));
+  const carrying = MAP.edges.filter((edge) => edge.family !== 'context');
+  const reach = (direction: 'up' | 'down') => graphReach(carrying, row.id, direction, Infinity).nodes.size - 1;
   return (
-    <div style={{ display: 'grid', gap: 'var(--spacing-4)', maxWidth: '30rem' }}>
+    <div style={{ display: 'grid', gap: 'var(--spacing-4)', maxWidth: '28rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
         <Disc row={row} size="lg" />
         <div style={{ display: 'grid', gap: 'var(--spacing-1)', minWidth: 0 }}>
-          <Text variant="body" style={{ fontWeight: 'var(--font-weight-semibold)' }}>
-            {row.node.name}
-          </Text>
+          <Text variant="heading">{row.node.name}</Text>
           <Text variant="caption" tone="secondary">
             {[row.node.kind, row.vendor?.name].filter(Boolean).join(' · ')}
           </Text>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)', flexWrap: 'wrap' }}>
-            <StatusDot tone={HEALTH_TONE[row.health]}>{row.healthWord}</StatusDot>
-            {row.owner ? <EntityChip name={row.owner.name} kind={row.owner.kind} size="xs" /> : null}
-            <Relations row={row} />
-          </span>
         </div>
       </div>
-      <FactList label="Facts, each with where it comes from" items={FACTS} />
-      <Timeline itemLabel="Change" density="compact">
-        {CHANGES.map((change) => (
-          <Timeline.Item key={change.at} state={change.state}>
-            <Text variant="cell">
-              {change.word}: {change.text}
-            </Text>
-            <Text variant="caption" tone="tertiary">
-              <TableDateCell value={ATLAS_NOW - change.at * 3_600_000} now={ATLAS_NOW} />
-            </Text>
-          </Timeline.Item>
-        ))}
-      </Timeline>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)', flexWrap: 'wrap' }}>
+        <StatusDot tone={HEALTH_TONE[row.health]}>{row.healthWord}</StatusDot>
+        {row.owner ? <EntityChip name={row.owner.name} kind={row.owner.kind} size="xs" /> : null}
+        <Tag size="xs" appearance={row.confidence === 'confirmed' ? 'quiet' : 'outline'}>
+          {CONFIDENCE_WORD[row.confidence]}
+        </Tag>
+      </span>
+      <div style={{ display: 'grid', gap: 'var(--spacing-2)' }}>
+        {overline('What it touches')}
+        <Text variant="body">
+          {plural(reach('up'))} depend on it, and it depends on {reach('down')}.
+        </Text>
+        <div style={{ height: `${6 + bands.length * 5.5}rem` }}>
+          <GraphCanvas
+            label={`${row.node.name} and what it touches`}
+            bands={bands}
+            nodes={near.nodes}
+            edges={near.edges}
+            labels={ENTRY_LABELS}
+            selectedId={row.id}
+            chrome={false}
+          />
+        </div>
+      </div>
+      <PropertyList aria-label="What is known, each value with where it comes from" groups={FACTS} />
+      <div style={{ display: 'grid', gap: 'var(--spacing-2)' }}>
+        {overline('Recent changes')}
+        <Timeline itemLabel="Change" density="compact">
+          {CHANGES.map((change) => (
+            <Timeline.Item key={change.at} state={change.state}>
+              <Text variant="cell">
+                {change.word}: {change.text}
+              </Text>
+              <Text variant="caption" tone="tertiary">
+                <TableDateCell value={ATLAS_NOW - change.at * 3_600_000} now={ATLAS_NOW} />
+              </Text>
+            </Timeline.Item>
+          ))}
+        </Timeline>
+      </div>
     </div>
   );
 }
 
-/** The detail's header and its recent changes. */
+/** The detail: its header, the entry among its neighbours, its facts with their sources, and its recent changes. */
 export const DetailHeadAndChanges: Story = {
   render: () => (
     <div style={frame}>

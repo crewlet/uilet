@@ -10,7 +10,7 @@
  */
 import type { ReactNode } from 'react';
 import type { GraphBand, GraphEdge, GraphGroup, GraphNode } from '@crewlethq/ui';
-import { Link } from '@crewlethq/ui';
+import { Link, graphNeighbourhood } from '@crewlethq/ui';
 import { VendorMark, type Vendor } from '@crewlethq/icons';
 import {
   ActivityGlyph,
@@ -489,4 +489,45 @@ export function generatedCompany(count: number, seed = 7): AtlasMap {
   }
   const unique = new Map(pairs.filter(([a, b]) => a !== b).map((pair) => [`${pair[0]}>${pair[1]}`, pair]));
   return build(entries, [...unique.values()], true);
+}
+
+const AROUND_LANES = {
+  used: { id: 'used', label: 'Used by', empty: 'Nothing recorded depends on it.' },
+  self: { id: 'self', label: 'This entry' },
+  uses: { id: 'uses', label: 'Depends on', empty: 'It depends on nothing recorded.' },
+  runs: { id: 'runs', label: 'Runs on', columns: 2, empty: 'Nothing recorded says what it runs on.' },
+  around: { id: 'around', label: 'Around it', columns: 2, empty: 'Nothing recorded stands around it.' },
+} as const;
+
+/** One entry among its neighbours on a wide surface: its path across, what it runs on and what stands around under it. */
+export const ATLAS_AROUND: GraphBand[] = [
+  { id: 'path', lanes: [AROUND_LANES.used, AROUND_LANES.self, AROUND_LANES.uses] },
+  { id: 'under', lanes: [AROUND_LANES.runs, AROUND_LANES.around] },
+];
+
+/** The same on a narrow sheet: one cluster under another, each two columns wide. */
+export const ATLAS_AROUND_STACKED: GraphBand[] = (['used', 'self', 'uses', 'runs', 'around'] as const).map((id) => ({
+  id,
+  lanes: [{ ...AROUND_LANES[id], columns: 2 }],
+}));
+
+/** An entry and everything one step from it, each stood in the cluster that says how it relates. */
+export function atlasNeighbourhood(map: AtlasMap, self: string): AtlasMap {
+  const near = graphNeighbourhood(map.edges, self);
+  const laneFor = (id: string): string => {
+    if (id === self) return 'self';
+    const edge = map.edges.find(
+      (one) => near.edges.has(one.id) && (one.from === id || one.to === id) && (one.from === self || one.to === self),
+    )!;
+    if (edge.family === 'context') return 'around';
+    if (edge.family === 'support') return 'runs';
+    return edge.to === self ? 'used' : 'uses';
+  };
+  return {
+    nodes: map.nodes
+      .filter((node) => near.nodes.has(node.id))
+      .map((node) => ({ ...node, lane: laneFor(node.id), column: undefined, group: undefined })),
+    edges: map.edges.filter((edge) => near.edges.has(edge.id)),
+    groups: [],
+  };
 }
