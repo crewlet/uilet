@@ -51,3 +51,44 @@ test('a neutral tile is a place rather than a kind: no hue, and a hue wins over 
   expect(container.firstElementChild!.className).toContain('crewlet-icon-tile--rose');
   expect(container.firstElementChild!.className).not.toContain('crewlet-icon-tile--neutral');
 });
+
+test('a disc is one entry: round, with a vendor mark on its corner and a dashed edge while unconfirmed', () => {
+  const { container, rerender } = render(
+    <IconTile shape="disc" tone="neutral" mark={<svg data-mark />}>
+      x
+    </IconTile>,
+  );
+  const tile = container.querySelector('.crewlet-icon-tile')!;
+  expect(tile.classList.contains('crewlet-icon-tile--disc')).toBe(true);
+  expect(tile.querySelector('.crewlet-icon-tile__mark [data-mark]')).not.toBeNull();
+  expect(tile.hasAttribute('data-dashed')).toBe(false);
+  // A quiet entry draws no badge at all: the absence of one is the state.
+  expect(tile.querySelector('.crewlet-icon-tile__badge')).toBeNull();
+  rerender(
+    <IconTile shape="disc" dashed>
+      x
+    </IconTile>,
+  );
+  expect(container.querySelector('.crewlet-icon-tile')!.hasAttribute('data-dashed')).toBe(true);
+  expect(container.querySelector('.crewlet-icon-tile__mark')).toBeNull();
+});
+
+test('a status is a ring in its tone and a badge with a glyph, never colour alone, and stays unannounced', () => {
+  const { container, rerender } = render(
+    <IconTile shape="disc" status={{ tone: 'danger' }}>
+      x
+    </IconTile>,
+  );
+  const tile = container.querySelector('.crewlet-icon-tile')!;
+  expect(tile.getAttribute('data-status')).toBe('danger');
+  expect(tile.querySelector('.crewlet-icon-tile__badge svg')).not.toBeNull();
+  // The word is said beside the tile: the tile itself stays out of the reading order.
+  expect(tile.getAttribute('aria-hidden')).toBe('true');
+  rerender(
+    <IconTile status={{ tone: 'warning', glyph: <i data-own /> }}>
+      x
+    </IconTile>,
+  );
+  expect(container.querySelector('.crewlet-icon-tile__badge [data-own]')).not.toBeNull();
+  expect(container.querySelector('.crewlet-icon-tile')!.getAttribute('data-status')).toBe('warning');
+});

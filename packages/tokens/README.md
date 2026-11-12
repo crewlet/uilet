@@ -83,6 +83,21 @@ nearestContrastShade('#00baba', '#f6f7fb', WCAG_CONTRAST.aaLarge); // '#00a0a0',
 
 Show the ratio of the value it returns, measured with `contrast`, rather than the floor it was asked for.
 
+## Added: the layered map's drawing
+
+The layered map (`GraphCanvas` in `@crewlethq/ui`) draws a fine grid, see-through panes and hairlines. Each is a step of the palette at a fixed share, derived per palette and per mode by the build, so a theme repaints the map without declaring it. They are tokens rather than mixes in the component because a mix is a colour nobody measured.
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| `--color-map-grid-major`, `--color-map-grid-minor` | the accent at 0.07 and 0.03 in light, 0.10 and 0.05 in dark | The grid's two weights: faint enough never to compete with a line or a name, and a little stronger on a dark ground, where the lighter values vanished. |
+| `--color-map-outline` | the accent mixed 0.55 into `text.tertiary`, opaque | A cluster's outline, a trunk and its label's edge. |
+| `--color-map-pane` | `surface.background` at 0.46 | A cluster's pane, so the grid shows inside it. |
+| `--color-map-hairline` | `text.primary` at 0.46 | A card's edge, its glyph cell's rule and a line that calls. |
+| `--color-map-support`, `--color-map-context` | `text.primary` at 0.34, `text.tertiary` at 0.5 | A line for what something runs on, and one for what stands around it. |
+| `--color-map-context-lit` | the accent at 0.62 | A line for what stands around the selection. |
+| `--color-map-chrome` | `surface.frame` at 0.88 | What floats over the map (the card beside an entry, the dock), under a blur. |
+| `--color-map-flow-glow`, `--color-map-selected-glow` | the accent at 0.55 and 0.45 | The halo of a moving dash on a lit line, and of the selected card. |
+
 ## Added: the tooltip's bubble
 
 A tooltip is a dark bubble in both modes. Its four colours are derived per palette and per mode by the build from the palette's own steps, so a theme repaints them without declaring them. The palette suite holds its words and its second ink to 4.5:1 on the bubble (7:1 in a high-contrast theme).

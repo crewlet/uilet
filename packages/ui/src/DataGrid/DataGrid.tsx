@@ -436,6 +436,16 @@ export interface DataGridProps<T> {
    * Wins over `isFailed` where both are given.
    */
   rowTone?: ((row: T) => DataGridRowTone | undefined) | undefined;
+  /**
+   * The row another surface points at, such as the card under the pointer on
+   * a map of the same records: drawn as the pointer draws one.
+   */
+  isPointed?: ((row: T) => boolean) | undefined;
+  /**
+   * Called with the row the pointer rests on, and `null` when it leaves, so
+   * another surface showing the same records can point at it too.
+   */
+  onRowPoint?: ((row: T | null) => void) | undefined;
   /** Rows that open in place, with their detail under them: see [DataGridExpansion]. */
   expansion?: DataGridExpansion<T> | undefined;
   /**
@@ -671,6 +681,8 @@ export function DataGrid<T>({
   onRowActivate,
   rowHref,
   isSelected,
+  isPointed,
+  onRowPoint,
   selection,
   isFailed,
   rowTone,
@@ -1150,6 +1162,7 @@ export function DataGrid<T>({
           className={cx(
             'crewlet-data-grid__row',
             marked && 'crewlet-data-grid__row--selected',
+            !marked && isPointed?.(row) && 'crewlet-data-grid__row--pointed',
             picked && 'crewlet-data-grid__row--picked',
             tone === 'danger' && 'crewlet-data-grid__row--failed',
             cursor === at && 'crewlet-data-grid__row--cursor',
@@ -1161,6 +1174,8 @@ export function DataGrid<T>({
           data-pending={pending || undefined}
           aria-busy={pending || undefined}
           aria-current={overlay === null && marked ? 'true' : undefined}
+          onPointerEnter={onRowPoint ? () => onRowPoint(row) : undefined}
+          onPointerLeave={onRowPoint ? () => onRowPoint(null) : undefined}
         >
           {inner}
         </div>

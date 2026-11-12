@@ -61,6 +61,31 @@ const NODE_LINE_ALPHA = 0.38;
 const NODE_HALO_ALPHA = 0.16;
 const NODE_HUES = ['purple', 'cyan', 'green', 'amber', 'rose', 'blue'];
 
+// The layered map's drawing (GraphCanvas): a fine grid, translucent panes and
+// hairlines, each a step of the palette at a fixed share, derived per palette
+// and per mode like every other tint so a theme repaints the map without
+// declaring it. The grid is the accent, faint enough never to compete with a
+// line or a name, and a little stronger on a dark ground, where the lighter
+// values vanished. `outline` is the pane's edge, the accent mixed this far
+// into the tertiary ink, opaque so two panes' edges never add up.
+const MAP_GRID_ALPHAS = { light: { major: 0.07, minor: 0.03 }, dark: { major: 0.1, minor: 0.05 } };
+const MAP_OUTLINE_SHARE = 0.55;
+const MAP_STEPS = {
+  // A pane: the sheet, see-through, so the grid shows inside a cluster.
+  pane: ['surface', 'background', 0.46],
+  // What floats over the map: the ground, nearly opaque, under a blur.
+  chrome: ['surface', 'frame', 0.88],
+  // A node's edge, its glyph cell's rule and a line that calls.
+  hairline: ['text', 'primary', 0.46],
+  // A line that says what something runs on, and one for what stands around it.
+  support: ['text', 'primary', 0.34],
+  context: ['text', 'tertiary', 0.5],
+  contextLit: ['brand', 'accent', 0.62],
+  // The halo of a moving dash on a lit line, and of the selected node.
+  flowGlow: ['brand', 'accent', 0.55],
+  selectedGlow: ['brand', 'accent', 0.45],
+};
+
 // The artifact kinds whose hue is their own rather than an alias of a node
 // hue. Every node hue already draws a kind, so a kind added after the six
 // carries its own value in each palette, and its Fill and Line steps are
@@ -361,6 +386,21 @@ function deriveTints(tokens, where, { contrast = 'standard', kindHues, mode } = 
     text: { value: words },
     meta: { value: formatHex(mix(TOOLTIP_META_SHARE)) },
     edge: { value: contrast === 'high' ? fill('border', 'control') : withAlpha(words, EDGE_ALPHAS.hairline[2]) },
+  };
+  // The layered map's drawing. See MAP_STEPS.
+  const grid = MAP_GRID_ALPHAS[mode];
+  if (grid === undefined) throw new Error(`${where}: the mode is "${mode}", and the map's grid is drawn for light or dark`);
+  const outlineFrom = [parseHex(fill('brand', 'accent')), parseHex(fill('text', 'tertiary'))];
+  if (outlineFrom[1] === null) throw new Error(`${where}: color.text.tertiary is "${fill('text', 'tertiary')}"; the map's outline is mixed from a #rrggbb ink`);
+  const [outlineAccent, outlineInk] = outlineFrom;
+  const outlineChannel = (channel) => outlineAccent[channel] * MAP_OUTLINE_SHARE + outlineInk[channel] * (1 - MAP_OUTLINE_SHARE);
+  tokens.color.map = {
+    gridMajor: { value: withAlpha(fill('brand', 'accent'), grid.major) },
+    gridMinor: { value: withAlpha(fill('brand', 'accent'), grid.minor) },
+    outline: { value: formatHex({ r: outlineChannel('r'), g: outlineChannel('g'), b: outlineChannel('b') }) },
+    ...Object.fromEntries(
+      Object.entries(MAP_STEPS).map(([step, [group, name, alpha]]) => [step, { value: withAlpha(fill(group, name), alpha) }]),
+    ),
   };
   // The start sheet's shadow. See mirrorShadow.
   const sheetShadow = tokens.shadow?.sheet?.value;

@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { IconTile } from '@crewlethq/ui';
-import { ChartPieGlyph, GaugeGlyph, ListChecksGlyph, RadioGlyph } from '@crewlethq/icons/glyphs';
+import { VendorMark } from '@crewlethq/icons';
+import { ChartPieGlyph, DatabaseGlyph, GaugeGlyph, LayersGlyph, ListChecksGlyph, RadioGlyph } from '@crewlethq/icons/glyphs';
+import { BothThemes } from '../BothThemes';
 
 /**
  * A glyph on a tinted square, what a choice in a catalog is told apart by
@@ -51,5 +53,37 @@ export const Neutral: Story = {
     <IconTile tone="neutral" size="sm">
       <ListChecksGlyph size="sm" />
     </IconTile>
+  ),
+};
+
+/**
+ * A disc is one entry of a catalogue: round, with the vendor it lives at on
+ * its lower corner, a ring and a badge when it needs a person (the word is
+ * said beside it), and a dashed edge while nobody has confirmed it.
+ */
+export const Discs: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <IconTile shape="disc" tone="neutral" size="sm">
+          <LayersGlyph />
+        </IconTile>
+        <IconTile shape="disc" tone="neutral" mark={<VendorMark vendor="aws" />}>
+          <DatabaseGlyph />
+        </IconTile>
+        <IconTile shape="disc" tone="neutral" mark={<VendorMark vendor="aws" />} status={{ tone: 'danger' }}>
+          <DatabaseGlyph />
+        </IconTile>
+        <IconTile shape="disc" tone="neutral" status={{ tone: 'warning' }}>
+          <LayersGlyph />
+        </IconTile>
+        <IconTile shape="disc" tone="neutral" dashed>
+          <LayersGlyph />
+        </IconTile>
+        <IconTile shape="disc" hue="purple" size="lg" mark={<VendorMark vendor="github" />} status={{ tone: 'info' }}>
+          <LayersGlyph />
+        </IconTile>
+      </div>
+    </BothThemes>
   ),
 };

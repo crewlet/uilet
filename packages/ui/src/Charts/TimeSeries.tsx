@@ -336,6 +336,13 @@ export interface SparklineProps {
    * itself or an ancestor.
    */
   current?: boolean | undefined;
+  /**
+   * How heavy the line is. `fine` is a 1px line under a faint halo of its own
+   * colour, for a dense table where a column of shapes is read down: the
+   * heavier line of a card's one sparkline would turn such a column into
+   * stripes. `regular` unless named.
+   */
+  weight?: 'regular' | 'fine' | undefined;
   /** How tall the shape is, as a CSS length. */
   height?: string;
   className?: string;
@@ -369,12 +376,14 @@ export function Sparkline({
   values,
   color = DATA_COLOR_OTHER,
   current = false,
+  weight = 'regular',
   height = '1.75rem',
   className,
 }: SparklineProps) {
   const width = 200;
   const box = 28;
-  const classes = cx('crewlet-spark', current && 'crewlet-spark--current', className);
+  const fine = weight === 'fine';
+  const classes = cx('crewlet-spark', current && 'crewlet-spark--current', fine && 'crewlet-spark--fine', className);
   if (values.length < 2) return <div className={classes} style={{ height }} aria-hidden />;
   const peak = Math.max(1, ...values);
   const step = width / (values.length - 1);
@@ -383,6 +392,13 @@ export function Sparkline({
   const last = values[values.length - 1]!;
   return (
     <div className={classes} style={{ height }} aria-hidden>
+      {/* THE HALO IS THE LINE AGAIN, blurred and at half strength, on a layer of its own: a blur inside the
+          stretched plot would be stretched with it. */}
+      {fine ? (
+        <svg className="crewlet-spark__halo" viewBox={`0 0 ${width} ${box}`} preserveAspectRatio="none">
+          <polyline className="crewlet-chart__series" points={points} stroke={color} vectorEffect="non-scaling-stroke" />
+        </svg>
+      ) : null}
       <svg className="crewlet-spark__plot" viewBox={`0 0 ${width} ${box}`} preserveAspectRatio="none">
         <polyline className="crewlet-chart__series" points={points} stroke={color} vectorEffect="non-scaling-stroke" />
       </svg>

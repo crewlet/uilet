@@ -1,11 +1,18 @@
 /**
- * The map's lanes, cards, keys, groups, selection, trace and drawing budget.
+ * The map's lanes, cards, keys, groups, selection, trace, lines and drawing budget.
  *
  * What these protect:
+ * - the three families of line: calls drawn at rest, what things run on as a
+ *   trunk with its count until the legend draws them, and what stands around
+ *   only for the entry a reader stands on;
+ * - the pointer and focus light an entry's neighbours and open its card, and
+ *   an entry another surface points at is lit the same way;
+ * - a press on the selected card or on the ground clears the selection;
+ * - with its chrome off the map has no zoom bar, legend or trunks;
  * - every lane is a named group with its count, and an empty lane says what
  *   would fill it, as a stop of the walk;
  * - a card says its name, kind, attention and confirmation in words, and its
- *   relations as its description; the dot is drawn only for attention;
+ *   relations as its description; the badge is drawn only for attention;
  * - one roving tab stop: the arrows walk, Enter selects or opens a group,
  *   Escape clears, typing finds a name;
  * - groups start closed past the caller's threshold, and a selection inside a
@@ -24,6 +31,7 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   GRAPH_CANVAS_DETAIL_ZOOM,
+  GRAPH_CANVAS_NARROW_WIDTH,
   GraphCanvas,
   graphWindow,
   type GraphBand,
@@ -33,7 +41,8 @@ import {
   type GraphNode,
 } from './index.js';
 
-const VIEWPORT = { width: 1200, height: 800 };
+const WIDE = { width: 1200, height: 800 };
+let VIEWPORT = WIDE;
 
 function sizeOf(el: Element): { width: number; height: number } | null {
   if (el.classList.contains('crewlet-graph-canvas')) return VIEWPORT;
@@ -93,6 +102,7 @@ class LayoutObserver {
 
 const realResizeObserver = globalThis.ResizeObserver;
 beforeEach(() => {
+  VIEWPORT = WIDE;
   LayoutObserver.instances = [];
   globalThis.ResizeObserver = LayoutObserver as unknown as typeof ResizeObserver;
 });
@@ -149,10 +159,10 @@ const NODES: GraphNode[] = [
 const GROUPS: GraphGroup[] = [{ id: 'aws', lane: 'runtime', label: 'AWS' }];
 const EDGES: GraphEdge[] = [
   { id: 'site>api', from: 'site', to: 'api', label: 'resolves to' },
-  { id: 'api>web-1', from: 'api', to: 'web-1', label: 'runs on' },
+  { id: 'api>web-1', from: 'api', to: 'web-1', label: 'runs on', family: 'support' },
   { id: 'api>db', from: 'api', to: 'db', label: 'depends on' },
-  { id: 'web-1>acct', from: 'web-1', to: 'acct', label: 'belongs to', atRest: false },
-  { id: 'api>repo', from: 'api', to: 'repo', label: 'built from', atRest: false },
+  { id: 'web-1>acct', from: 'web-1', to: 'acct', label: 'belongs to', family: 'context' },
+  { id: 'api>repo', from: 'api', to: 'repo', label: 'built from', family: 'context' },
 ];
 
 function Map(props: Partial<GraphCanvasProps>) {
@@ -176,8 +186,14 @@ function Selecting(props: Partial<GraphCanvasProps> & { onPick?: (id: string | n
 
 const card = (name: RegExp | string) =>
   screen.getByRole('button', { name: typeof name === 'string' ? new RegExp(`^${name},`) : name });
-const edgePath = (container: HTMLElement, state: string) =>
-  container.querySelector(`.crewlet-graph-canvas__edge[data-state='${state}']`)!.getAttribute('d') ?? '';
+/** The path one family draws in one state, or nothing when that layer is not drawn. */
+const edgePath = (container: HTMLElement, state: string, family = 'flow') =>
+  container
+    .querySelector(`.crewlet-graph-canvas__edge-layer[data-family='${family}'][data-state='${state}']`)
+    ?.querySelector('.crewlet-graph-canvas__edge')
+    ?.getAttribute('d') ?? '';
+const routesIn = (d: string) => (d.match(/M/g) ?? []).length;
+const dimmed = (el: HTMLElement) => el.getAttribute('data-state') === 'dim';
 
 describe('GraphCanvas', () => {
   test('every lane is a named group with its count, and an empty lane says what would fill it', () => {
@@ -201,20 +217,24 @@ describe('GraphCanvas', () => {
     const db = card('orders-db');
     expect(screen.getByRole('button', { name: 'orders-db, Database, postgres 16, Alerting' })).toBe(db);
     expect(db.getAttribute('data-attention')).toBe('danger');
-    expect(db.querySelector('.crewlet-status-dot--danger')).not.toBeNull();
+    // The tone is said three ways: the word, the notch, and a badge with a glyph.
+    expect(db.querySelector('.crewlet-graph-canvas__badge svg')).not.toBeNull();
     const web2 = card('web-2');
     expect(screen.getByRole('button', { name: 'web-2, Server, Unconfirmed' })).toBe(web2);
     expect(web2.hasAttribute('data-unconfirmed')).toBe(true);
-    // A quiet entry draws no dot at all: the absence of a dot is the state.
-    expect(web2.querySelector('.crewlet-status-dot')).toBeNull();
+    // A quiet entry draws no badge at all: the absence of one is the state.
+    expect(web2.querySelector('.crewlet-graph-canvas__badge')).toBeNull();
     const api = card('checkout-api');
     const description = document.getElementById(api.getAttribute('aria-describedby')!)!;
     expect(description.textContent).toBe(
       'runs on web-1, depends on orders-db, built from acme/api. Used by acme.example.',
     );
-    // At rest, the edges not drawn at rest are not drawn.
-    expect(edgePath(container, 'quiet')).not.toBe('');
-    expect(edgePath(container, 'strong')).toBe('');
+    // At rest only the calls are drawn, each with its moving dashes.
+    expect(routesIn(edgePath(container, 'rest'))).toBe(2);
+    expect(container.querySelectorAll('.crewlet-graph-canvas__flow')).toHaveLength(1);
+    expect(edgePath(container, 'rest', 'support')).toBe('');
+    expect(edgePath(container, 'rest', 'context')).toBe('');
+    expect(edgePath(container, 'lit')).toBe('');
   });
 
   test('one tab stop; the arrows walk the lanes, and Enter and Escape select and clear', () => {
@@ -285,30 +305,214 @@ describe('GraphCanvas', () => {
   test('a selection dims what it does not reach and draws its edges strong, the hidden ones included', () => {
     const { container, rerender } = render(<Map selectedId="api" />);
     LayoutObserver.settle();
-    expect(card('orders-db').hasAttribute('data-dimmed')).toBe(false);
-    expect(card('acme-prod').hasAttribute('data-dimmed')).toBe(true);
-    expect(card('acme/api').hasAttribute('data-dimmed')).toBe(false);
-    const strong = edgePath(container, 'strong');
-    // Four routes leave or reach the selection, one of them not drawn at rest.
-    expect(strong.match(/M/g)).toHaveLength(4);
-    expect(edgePath(container, 'quiet')).toBe('');
+    expect(dimmed(card('orders-db'))).toBe(false);
+    // What stands around is lit one step from the selection, and no further.
+    expect(dimmed(card('acme/api'))).toBe(false);
+    expect(dimmed(card('acme-prod'))).toBe(true);
+    // Four routes leave or reach the selection, two of them not drawn at rest, each in its family.
+    expect(routesIn(edgePath(container, 'lit'))).toBe(2);
+    expect(routesIn(edgePath(container, 'lit', 'support'))).toBe(1);
+    expect(routesIn(edgePath(container, 'lit', 'context'))).toBe(1);
+    expect(edgePath(container, 'rest')).toBe('');
+    expect(container.querySelector('.crewlet-graph-canvas')!.getAttribute('data-focus')).toBe('selected');
+
+    // Unset, the trace is the whole path both ways along what carries a failure.
+    rerender(<Map selectedId="site" />);
+    LayoutObserver.settle();
+    expect(dimmed(card('orders-db'))).toBe(false);
+    expect(dimmed(card('web-1'))).toBe(false);
+    expect(dimmed(card('acme/api'))).toBe(true);
 
     // A trace up from the database lights what depends on it, as far as the hop limit.
     rerender(<Map selectedId="db" trace={{ direction: 'up', depth: 1 }} />);
     LayoutObserver.settle();
-    expect(card('checkout-api').hasAttribute('data-dimmed')).toBe(false);
-    expect(card('acme.example').hasAttribute('data-dimmed')).toBe(true);
+    expect(dimmed(card('checkout-api'))).toBe(false);
+    expect(dimmed(card('acme.example'))).toBe(true);
     rerender(<Map selectedId="db" trace={{ direction: 'up', depth: Infinity }} />);
     LayoutObserver.settle();
-    expect(card('acme.example').hasAttribute('data-dimmed')).toBe(false);
-    expect(card('web-1').hasAttribute('data-dimmed')).toBe(true);
+    expect(dimmed(card('acme.example'))).toBe(false);
+    expect(dimmed(card('web-1'))).toBe(true);
   });
 
   test('a card the caller pushes back is dimmed, and so are its edges', () => {
     const { container } = render(<Map cardDimmed={(id) => id === 'db'} />);
     LayoutObserver.settle();
-    expect(card('orders-db').hasAttribute('data-dimmed')).toBe(true);
-    expect(edgePath(container, 'faint').match(/M/g)).toHaveLength(1);
+    expect(dimmed(card('orders-db'))).toBe(true);
+    expect(routesIn(edgePath(container, 'dim'))).toBe(1);
+    // A pushed back line carries no moving dashes.
+    expect(container.querySelector("[data-state='dim'] .crewlet-graph-canvas__flow")).toBeNull();
+  });
+
+  test('what things run on is a trunk with its count until the legend draws the lines', () => {
+    const changes: string[][] = [];
+    const edges: GraphEdge[] = [
+      ...EDGES,
+      { id: 'api>repo-runs', from: 'api', to: 'repo', family: 'support' },
+      { id: 'site>repo-runs', from: 'site', to: 'repo', family: 'support' },
+    ];
+    const { container } = render(<Map edges={edges} onFamiliesChange={(next) => changes.push([...next].sort())} />);
+    LayoutObserver.settle();
+    // One trunk per pair of clusters in neighbouring bands; the pair inside one band has none.
+    const labels = [...container.querySelectorAll('.crewlet-graph-canvas__trunk-label')].map((el) => el.textContent);
+    expect(labels.sort()).toEqual(['1 run on', '1 run on']);
+    expect(routesIn(container.querySelector('.crewlet-graph-canvas__trunk')!.getAttribute('d')!)).toBe(2);
+
+    const legend = screen.getByRole('group', { name: 'Legend' });
+    const calls = within(legend).getByRole('button', { name: 'Calls' });
+    const runsOn = within(legend).getByRole('button', { name: 'Runs on' });
+    expect(calls.getAttribute('aria-pressed')).toBe('true');
+    expect(runsOn.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(runsOn);
+    LayoutObserver.settle();
+    expect(runsOn.getAttribute('aria-pressed')).toBe('true');
+    expect(changes).toEqual([['flow', 'support']]);
+    // Drawn line by line, the trunks go.
+    expect(routesIn(edgePath(container, 'rest', 'support'))).toBe(3);
+    expect(container.querySelector('.crewlet-graph-canvas__trunk')).toBeNull();
+    expect(container.querySelector('.crewlet-graph-canvas__trunk-label')).toBeNull();
+    // Hiding a family moves no card: the order inside a lane never reads what is shown.
+    const before = card('orders-db').style.transform;
+    fireEvent.click(calls);
+    LayoutObserver.settle();
+    expect(edgePath(container, 'rest')).toBe('');
+    expect(card('orders-db').style.transform).toBe(before);
+  });
+
+  test('the legend keys each tone the caller words, and a cluster says how many inside carry it', () => {
+    render(<Map tones={{ danger: 'Alerting', warning: 'Needs a look' }} />);
+    LayoutObserver.settle();
+    const legend = screen.getByRole('group', { name: 'Legend' });
+    expect(legend.textContent).toContain('Alerting');
+    expect(legend.textContent).toContain('Needs a look');
+    expect(legend.textContent).toContain('Quiet');
+    expect(legend.textContent).toContain('Unconfirmed');
+    expect(legend.querySelectorAll('.crewlet-graph-canvas__key-notch[data-tone]')).toHaveLength(2);
+    expect(screen.getByRole('group', { name: 'Data, 1 item, 1 Alerting' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Runtime, 2 items, 1 Needs a look' })).toBeTruthy();
+  });
+
+  test('the pointer and focus light an entry and its neighbours and open its card', () => {
+    vi.useFakeTimers();
+    try {
+      const hovers: (string | null)[] = [];
+      const { container } = render(
+        <Map onHover={(id) => hovers.push(id)} renderCard={(id) => <span>card for {id}</span>} />,
+      );
+      LayoutObserver.settle();
+      const root = container.querySelector('.crewlet-graph-canvas')!;
+      fireEvent.pointerEnter(card('orders-db'));
+      // A pass over the map lights nothing: the pointer has to rest.
+      expect(root.hasAttribute('data-focus')).toBe(false);
+      act(() => void vi.advanceTimersByTime(100));
+      expect(root.getAttribute('data-focus')).toBe('hover');
+      expect(hovers).toEqual(['db']);
+      expect(card('orders-db').getAttribute('data-state')).toBe('lit');
+      expect(card('checkout-api').getAttribute('data-state')).toBe('lit');
+      expect(dimmed(card('acme.example'))).toBe(true);
+      expect(screen.getByRole('tooltip').textContent).toBe('card for db');
+      fireEvent.pointerLeave(card('orders-db'));
+      act(() => void vi.advanceTimersByTime(150));
+      expect(root.hasAttribute('data-focus')).toBe(false);
+      expect(screen.queryByRole('tooltip')).toBeNull();
+      expect(hovers).toEqual(['db', null]);
+      // Focus does the same at once, and Escape closes the card.
+      act(() => card('checkout-api').focus());
+      expect(screen.getByRole('tooltip').textContent).toBe('card for api');
+      fireEvent.keyDown(card('checkout-api'), { key: 'Escape' });
+      expect(screen.queryByRole('tooltip')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('an entry another surface points at is lit as the pointer lights one', () => {
+    const { container } = render(<Map hoveredId="db" />);
+    LayoutObserver.settle();
+    expect(container.querySelector('.crewlet-graph-canvas')!.getAttribute('data-focus')).toBe('hover');
+    expect(card('orders-db').getAttribute('data-state')).toBe('lit');
+    expect(dimmed(card('acme.example'))).toBe(true);
+    expect(routesIn(edgePath(container, 'lit'))).toBe(1);
+  });
+
+  test('a narrow map stands its dock and its legend under the picture, never over it', () => {
+    const dock = <button type="button">Details</button>;
+    const wide = render(<Map selectedId="db" tones={{ danger: 'Alerting' }} dock={dock} />);
+    LayoutObserver.settle();
+    const canvasOf = (container: HTMLElement) => container.querySelector('.crewlet-canvas')!;
+    expect(wide.container.querySelector('.crewlet-graph-canvas__foot')).toBeNull();
+    expect(canvasOf(wide.container).contains(screen.getByRole('button', { name: 'Details' }))).toBe(true);
+    expect(canvasOf(wide.container).contains(screen.getByRole('group', { name: 'Legend' }))).toBe(true);
+    wide.unmount();
+
+    VIEWPORT = { width: GRAPH_CANVAS_NARROW_WIDTH - 1, height: 800 };
+    const picks: (string | null)[] = [];
+    const { container } = render(
+      <Selecting selectedId="db" onPick={(id) => picks.push(id)} tones={{ danger: 'Alerting' }} dock={dock} />,
+    );
+    LayoutObserver.settle();
+    const foot = container.querySelector('.crewlet-graph-canvas__foot')!;
+    const details = screen.getByRole('button', { name: 'Details' });
+    const legend = screen.getByRole('group', { name: 'Legend' });
+    // One dock and one legend, both after the canvas rather than inside it.
+    expect(foot.contains(details)).toBe(true);
+    expect(foot.contains(legend)).toBe(true);
+    expect(canvasOf(container).contains(foot)).toBe(false);
+    expect(canvasOf(container).compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The legend still switches a family, and a press under the map is not a press on the ground.
+    fireEvent.click(within(legend as HTMLElement).getByRole('button', { name: /Runs on/ }));
+    expect(container.querySelector(".crewlet-graph-canvas__edge-layer[data-family='support']")).not.toBeNull();
+    fireEvent.pointerDown(details, { clientX: 10, clientY: 10 });
+    fireEvent.click(details, { clientX: 10, clientY: 10 });
+    expect(picks).toEqual([]);
+  });
+
+  test('a press on the selected card, or on the ground, clears the selection', () => {
+    const picks: (string | null)[] = [];
+    const { container } = render(<Selecting onPick={(id) => picks.push(id)} dock={<button type="button">Details</button>} />);
+    LayoutObserver.settle();
+    fireEvent.click(card('orders-db'));
+    fireEvent.click(card('orders-db'));
+    expect(picks).toEqual(['db', null]);
+    fireEvent.click(card('orders-db'));
+    // A press on the dock is not a press on the ground.
+    const details = screen.getByRole('button', { name: 'Details' });
+    fireEvent.pointerDown(details, { clientX: 10, clientY: 10 });
+    fireEvent.click(details, { clientX: 10, clientY: 10 });
+    expect(picks).toEqual(['db', null, 'db']);
+    // Neither is the end of a drag that panned the map.
+    const ground = container.querySelector('.crewlet-canvas__viewport')!;
+    fireEvent.pointerDown(ground, { clientX: 10, clientY: 10 });
+    fireEvent.click(ground, { clientX: 90, clientY: 10 });
+    expect(picks).toEqual(['db', null, 'db']);
+    fireEvent.pointerDown(ground, { clientX: 10, clientY: 10 });
+    fireEvent.click(ground, { clientX: 11, clientY: 10 });
+    expect(picks).toEqual(['db', null, 'db', null]);
+  });
+
+  test('with its chrome off the map is a still diagram: no zoom bar, no legend, no trunks', () => {
+    const edges: GraphEdge[] = [...EDGES, { id: 'api>repo-runs', from: 'api', to: 'repo', family: 'support' }];
+    const { container } = render(<Map edges={edges} chrome={false} selectedId="api" />);
+    LayoutObserver.settle();
+    expect(screen.queryByRole('group', { name: 'Legend' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Zoom in' })).toBeNull();
+    expect(container.querySelector('.crewlet-graph-canvas__trunk')).toBeNull();
+    expect(card('checkout-api').getAttribute('aria-current')).toBe('true');
+  });
+
+  test('a lane of several columns stands its entries in the columns they name', () => {
+    const bands: GraphBand[] = [
+      { id: 'request', lanes: [{ id: 'services', label: 'Services', columns: 2 }] },
+    ];
+    const nodes: GraphNode[] = [
+      { id: 'a', lane: 'services', name: 'web-app', kind: 'Service', column: 0 },
+      { id: 'b', lane: 'services', name: 'checkout-api', kind: 'Service', column: 1 },
+      { id: 'c', lane: 'services', name: 'search-api', kind: 'Service', column: 1 },
+    ];
+    render(<GraphCanvas label="Atlas map" bands={bands} nodes={nodes} edges={[]} />);
+    LayoutObserver.settle();
+    const x = (name: string) => Number(/translate\(([\d.]+)px/.exec(card(name).style.transform)![1]);
+    expect(x('checkout-api')).toBe(x('search-api'));
+    expect(x('checkout-api')).toBeGreaterThan(x('web-app'));
   });
 
   test('a press selects a card, and a press on a group header toggles it', () => {
@@ -358,7 +562,7 @@ describe('at two thousand entries', () => {
     expect(mounted.length).toBeLessThan(400);
     expect(container.querySelector('.crewlet-graph-canvas__shapes')).toBeNull();
     // So are the edges: only the routes near the view are in the path.
-    const routes = () => (edgePath(container, 'quiet').match(/M/g) ?? []).length;
+    const routes = () => routesIn(edgePath(container, 'rest'));
     expect(routes()).toBeGreaterThan(0);
     expect(routes()).toBeLessThan(chain.length);
 
@@ -371,6 +575,8 @@ describe('at two thousand entries', () => {
     // Every card is a shape, the tab stop too, which is also drawn as itself over its shape.
     expect(shapes.getAttribute('d')!.match(/M/g)).toHaveLength(2000);
     expect(routes()).toBe(chain.length);
+    // Far more calls than a reader can follow: the dashes at rest stand still.
+    expect(container.querySelector('.crewlet-graph-canvas')!.hasAttribute('data-still')).toBe(true);
   });
 });
 

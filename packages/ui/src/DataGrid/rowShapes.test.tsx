@@ -104,6 +104,33 @@ describe('a line under a row (rowAccessory)', () => {
   });
 });
 
+describe('a row pointed at (isPointed, onRowPoint)', () => {
+  test('says which row the pointer rests on, and draws the row another surface points at as a hovered one', () => {
+    const pointed: (string | null)[] = [];
+    render(
+      <DataGrid
+        rows={ROWS}
+        columns={COLUMNS}
+        rowKey={(r) => r.id}
+        isSelected={(r) => r.id === 'c'}
+        isPointed={(r) => r.id !== 'a'}
+        onRowPoint={(row) => pointed.push(row?.id ?? null)}
+      />,
+    );
+    const [a, b, c] = records();
+    fireEvent.pointerEnter(a!);
+    fireEvent.pointerLeave(a!);
+    expect(pointed).toEqual(['a', null]);
+    expect(a!.classList.contains('crewlet-data-grid__row--pointed')).toBe(false);
+    expect(b!.classList.contains('crewlet-data-grid__row--pointed')).toBe(true);
+    // The selected row keeps its own fill: one fill on a row, never two.
+    expect(c!.classList.contains('crewlet-data-grid__row--pointed')).toBe(false);
+    expect(sheet()).toContain(
+      '.crewlet-data-grid__row:hover, .crewlet-data-grid__row--pointed { background: var(--color-surface-hover); }',
+    );
+  });
+});
+
 describe('a row tone (rowTone)', () => {
   test('marks the row and the lines under it, with isFailed as the danger tone and rowTone winning', () => {
     render(

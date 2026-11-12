@@ -1,23 +1,86 @@
 /*
  * A layered map on a canvas (GraphCanvas.tsx).
  *
- * Every card is one size, set here in rem and spacing tokens, so the layout
- * reads it once from a probe rather than measuring each card. Colour carries
- * state only: a dot for attention, the accent for the selection, a dashed
- * edge for an unconfirmed entry, and neutral ink for everything else.
+ * ONE LOOK, WRITTEN AS THE COMPONENT'S OWN VALUES. The drawing (a fine grid,
+ * outlined boxes with a ruled glyph cell, square corners, mono labels, a
+ * notch for health, right-angled lines) applies inside the map's world only:
+ * clusters, cards, lines, trunks and their labels. The legend, the card
+ * beside an entry and the dock are outside it and keep the kit's own shapes,
+ * radius tokens and type. The one exception is the legend's health key, which
+ * is the notch it explains.
+ *
+ * Every card is one size, set here, so the layout reads it once from a probe
+ * rather than measuring each card. Colour never carries a state alone: health
+ * is a notch and a badge with a glyph, the selection a filled card with a
+ * glow, and an unconfirmed entry a dashed edge.
  */
 
 .crewlet-graph-canvas {
-  --crewlet-graph-canvas-card-width: 13.5rem;
-  --crewlet-graph-canvas-card-height: 3.25rem;
+  --crewlet-graph-canvas-card-width: 11rem;
+  --crewlet-graph-canvas-card-height: 2.375rem;
+  --crewlet-graph-canvas-cell: 2.125rem;
+  /* The drawing's corner: square, a hairline's worth of rounding. */
+  --crewlet-graph-canvas-corner: 2px;
+  --crewlet-graph-canvas-notch: 4px;
+  /* The grid: a major line every fifth minor one. */
+  --crewlet-graph-canvas-grid: 24px;
+  --crewlet-graph-canvas-grid-major: 120px;
+  /* What is not on the lit path falls this far back. */
+  --crewlet-graph-canvas-dim: 0.2;
+  --crewlet-graph-canvas-line-dim: 0.14;
+  --crewlet-graph-canvas-trunk-dim: 0.25;
+  /* The laser: the lit line's width and glow, and the dashes that run along it. */
+  --crewlet-graph-canvas-lit-width: 1.75;
+  --crewlet-graph-canvas-lit-glow: 4px;
+  --crewlet-graph-canvas-flow-dash: 9 27;
+  --crewlet-graph-canvas-flow-period: 36;
+  --crewlet-graph-canvas-flow-width: 2;
+  --crewlet-graph-canvas-flow-lit-width: 3;
+  --crewlet-graph-canvas-flow-glow: 1.5px;
+  --crewlet-graph-canvas-flow-duration: 1.6s;
+  --crewlet-graph-canvas-flow-lit-duration: 0.9s;
+  --crewlet-graph-canvas-selected-glow: 18px;
+  --crewlet-graph-canvas-popup-width: 18rem;
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  container-type: inline-size;
 }
 
+/*
+ * THE GROUND IS THE MAP'S: the grid in two weights over a wash of the accent
+ * from the top, on the frame's own colour. It is drawn on the canvas's frame,
+ * so it stays put while the world moves over it.
+ */
 .crewlet-graph-canvas > .crewlet-canvas {
   flex: 1;
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(var(--color-map-grid-major) 1px, transparent 1px) -1px -1px / var(--crewlet-graph-canvas-grid-major)
+      var(--crewlet-graph-canvas-grid-major),
+    linear-gradient(90deg, var(--color-map-grid-major) 1px, transparent 1px) -1px -1px /
+      var(--crewlet-graph-canvas-grid-major) var(--crewlet-graph-canvas-grid-major),
+    linear-gradient(var(--color-map-grid-minor) 1px, transparent 1px) -1px -1px / var(--crewlet-graph-canvas-grid)
+      var(--crewlet-graph-canvas-grid),
+    linear-gradient(90deg, var(--color-map-grid-minor) 1px, transparent 1px) -1px -1px /
+      var(--crewlet-graph-canvas-grid) var(--crewlet-graph-canvas-grid),
+    radial-gradient(90% 70% at 50% 0%, var(--color-brand-accent-soft), transparent 70%),
+    var(--color-surface-frame);
+}
+
+/* A fullscreen map fills the screen on the frame's colour, with no corner to round. */
+.crewlet-graph-canvas:fullscreen {
+  background: var(--color-surface-frame);
+}
+
+.crewlet-graph-canvas:fullscreen > .crewlet-canvas {
+  border-radius: var(--radius-none);
+}
+
+.crewlet-graph-canvas__world {
+  position: relative;
 }
 
 .crewlet-graph-canvas__ground,
@@ -29,6 +92,7 @@
 .crewlet-graph-canvas__empty-probe,
 .crewlet-graph-canvas__lane-head,
 .crewlet-graph-canvas__band-title,
+.crewlet-graph-canvas__trunk-label,
 .crewlet-graph-canvas__probe {
   position: absolute;
   top: 0;
@@ -50,40 +114,55 @@
   pointer-events: none;
 }
 
-/* The channel between columns, and the gap between rows. */
+/* The channel between columns, where upright runs stand, and the gap between rows, where level ones do. */
 .crewlet-graph-canvas__gap {
-  width: var(--spacing-10);
-  height: var(--spacing-5);
+  width: var(--spacing-7);
+  height: var(--spacing-3);
 }
 
-/* A lane's padding past its cards, and the room round the map and between bands. */
+/* A cluster's padding past its cards, and the room round the map and between bands. */
 .crewlet-graph-canvas__pad {
   width: var(--spacing-3);
-  height: var(--spacing-6);
+  height: var(--spacing-7);
 }
 
 .crewlet-graph-canvas__empty-probe {
   width: var(--crewlet-graph-canvas-card-width);
 }
 
-/* ── lanes and bands ──────────────────────────────────────────────────────── */
+/* ── clusters and bands ────────────────────────────────────────────────── */
 
-/* A lane is a quiet panel under its cards: the column a reader follows down. */
+/* A cluster is a see-through pane inside an outline, so the grid shows through it and never through a card. */
 .crewlet-graph-canvas__lane {
-  fill: var(--color-surface-subtle);
-  rx: var(--radius-xl);
+  fill: var(--color-map-pane);
+  stroke: var(--color-map-outline);
+  stroke-width: 1;
+  rx: var(--crewlet-graph-canvas-corner);
 }
 
+/* The room above a cluster's first row. Its title is set into the outline, as a drawing names a part. */
 .crewlet-graph-canvas__lane-head {
   box-sizing: border-box;
+  height: var(--spacing-5);
+  pointer-events: none;
+}
+
+.crewlet-graph-canvas__lane-title {
+  position: absolute;
+  top: 0;
+  left: calc(var(--spacing-2) - var(--spacing-3));
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  padding: var(--spacing-3) var(--spacing-1) var(--spacing-2);
-  font-size: var(--font-size-xs);
+  max-width: 100%;
+  padding: 0 var(--spacing-2);
+  /* The ground's own colour cuts the outline. */
+  background: var(--color-surface-frame);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
   line-height: var(--font-line-height-snug);
   white-space: nowrap;
-  pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .crewlet-graph-canvas__lane-label {
@@ -91,35 +170,79 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-primary);
 }
 
-.crewlet-graph-canvas__lane-count {
+.crewlet-graph-canvas__lane-count,
+.crewlet-graph-canvas__group-count {
   color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
+}
+
+.crewlet-graph-canvas__lane-count::before,
+.crewlet-graph-canvas__group-count::before {
+  content: '\00d7';
+}
+
+/* How many inside need a person, in the tone's ink on its soft fill, after a mark that is not colour alone. */
+.crewlet-graph-canvas__lane-tone {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: 0 var(--spacing-1);
+  border-radius: var(--crewlet-graph-canvas-corner);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-graph-canvas__lane-tone::before {
+  content: '';
+  width: var(--crewlet-graph-canvas-notch);
+  height: 0.75em;
+  background: currentColor;
+}
+
+.crewlet-graph-canvas__lane-tone[data-tone='danger'] {
+  background: var(--color-feedback-danger-soft);
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-graph-canvas__lane-tone[data-tone='warning'] {
+  background: var(--color-feedback-warning-soft);
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-graph-canvas__lane-tone[data-tone='info'] {
+  background: var(--color-feedback-info-soft);
+  color: var(--color-feedback-info-ink);
 }
 
 .crewlet-graph-canvas__band-title {
   box-sizing: border-box;
   display: flex;
   align-items: flex-end;
-  padding: var(--spacing-4) var(--spacing-1) var(--spacing-1);
-  font-size: var(--font-size-sm);
+  padding: var(--spacing-3) 0 var(--spacing-3);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-snug);
-  color: var(--color-text-primary);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
   white-space: nowrap;
   pointer-events: none;
 }
 
 /* ── groups ──────────────────────────────────────────────────────────────── */
 
-/* A dashed box: a card's own edge is solid, and a grouping is not a thing. */
+/* A dashed outline: a card's own edge is solid, and a grouping is not a thing. */
 .crewlet-graph-canvas__group {
-  fill: var(--color-surface-background);
-  stroke: var(--color-border-strong);
+  fill: none;
+  stroke: var(--color-map-hairline);
   stroke-dasharray: 4 3;
-  rx: var(--radius-lg);
+  rx: var(--crewlet-graph-canvas-corner);
 }
 
 .crewlet-graph-canvas__head {
@@ -128,10 +251,11 @@
   align-items: center;
   gap: var(--spacing-2);
   padding: 0 var(--spacing-2);
-  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
   line-height: var(--font-line-height-snug);
   color: var(--color-text-secondary);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-radius: var(--crewlet-graph-canvas-corner);
   cursor: pointer;
   outline: none;
 }
@@ -155,11 +279,6 @@
   font-weight: var(--font-weight-medium);
 }
 
-.crewlet-graph-canvas__group-count {
-  color: var(--color-text-tertiary);
-  font-variant-numeric: tabular-nums;
-}
-
 .crewlet-graph-canvas__chevron {
   flex: none;
   color: var(--color-text-tertiary);
@@ -167,6 +286,10 @@
 
 /* ── cards ───────────────────────────────────────────────────────────────── */
 
+/*
+ * An outlined box on the ground's own colour: opaque, so no grid line and no
+ * edge shows through a card and a name never sits on a line.
+ */
 .crewlet-graph-canvas__card {
   box-sizing: border-box;
   width: var(--crewlet-graph-canvas-card-width);
@@ -174,18 +297,22 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  padding: 0 var(--spacing-3) 0 var(--spacing-2);
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs);
+  padding: 0 var(--spacing-2) 0 0;
+  background: var(--color-surface-frame);
+  border: 1px solid var(--color-map-hairline);
+  border-radius: var(--crewlet-graph-canvas-corner);
   color: var(--color-text-primary);
   cursor: pointer;
   outline: none;
+  transition:
+    opacity var(--motion-duration-base) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-.crewlet-graph-canvas__card:hover {
-  border-color: var(--color-border-hover);
+.crewlet-graph-canvas__card:hover,
+.crewlet-graph-canvas__card[data-state='lit'] {
+  border-color: var(--color-brand-accent);
 }
 
 /* The ring is drawn over the card's own edge, never beside it. */
@@ -194,88 +321,114 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
-/* The selection is where the reader is: the accent, as the card's own edge made heavier. */
+/*
+ * HEALTH IS A NOTCH: a thick tick on the leading edge in the tone, with its
+ * badge. It is drawn over the glyph's cell, which would cover a shadow.
+ */
+.crewlet-graph-canvas__card[data-attention='danger'] {
+  --crewlet-graph-canvas-tone: var(--color-feedback-danger);
+}
+
+.crewlet-graph-canvas__card[data-attention='warning'] {
+  --crewlet-graph-canvas-tone: var(--color-feedback-warning);
+}
+
+.crewlet-graph-canvas__card[data-attention='info'] {
+  --crewlet-graph-canvas-tone: var(--color-feedback-info);
+}
+
+.crewlet-graph-canvas__card[data-attention]::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: -1px;
+  z-index: 1;
+  width: var(--crewlet-graph-canvas-notch);
+  border-radius: var(--crewlet-graph-canvas-corner) 0 0 var(--crewlet-graph-canvas-corner);
+  background: var(--crewlet-graph-canvas-tone);
+}
+
+/*
+ * The selection is where the reader is: the accent's edge, its soft fill and
+ * a glow. The soft fill is see-through, so it is laid on the ground's colour.
+ */
 .crewlet-graph-canvas__card[data-selected] {
   border-color: var(--color-brand-accent);
-  box-shadow: inset 0 0 0 1px var(--color-brand-accent);
+  background:
+    linear-gradient(var(--color-brand-accent-soft), var(--color-brand-accent-soft)), var(--color-surface-frame);
+  box-shadow: 0 0 var(--crewlet-graph-canvas-selected-glow) var(--color-map-selected-glow);
 }
 
 /* Not confirmed by anyone the map trusts: the edge is dashed, the same device a grouping uses. */
 .crewlet-graph-canvas__card[data-unconfirmed] {
   border-style: dashed;
-  border-color: var(--color-border-strong);
-  box-shadow: none;
 }
 
-.crewlet-graph-canvas__card[data-unconfirmed][data-selected] {
-  border-color: var(--color-brand-accent);
+/* Pushed back: what is not on the lit path recedes, whole. */
+.crewlet-graph-canvas__card[data-state='dim'],
+.crewlet-graph-canvas__head[data-state='dim'] {
+  opacity: var(--crewlet-graph-canvas-dim);
 }
 
-/*
- * Pushed back: the card sinks into its lane's own fill, flat and grey, its
- * words in the quiet ink, which still clears its contrast floor; only the
- * glyph, which the name already says, fades.
- */
-.crewlet-graph-canvas__card[data-dimmed] {
-  background: var(--color-surface-subtle);
-  border-color: var(--color-border-default);
-  box-shadow: none;
-  color: var(--color-text-tertiary);
-}
-
-.crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__name {
-  font-weight: var(--font-weight-regular);
-}
-
-.crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__tile {
-  filter: grayscale(1);
-  opacity: 0.5;
-}
-
-.crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__dot {
-  filter: grayscale(1);
-}
-
-.crewlet-graph-canvas__head[data-dimmed] {
-  color: var(--color-text-tertiary);
-}
-
-.crewlet-graph-canvas__tile {
+/* THE GLYPH STANDS IN A CELL OF ITS OWN, ruled off from the name. */
+.crewlet-graph-canvas__cell {
+  position: relative;
   flex: none;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: var(--crewlet-graph-canvas-cell);
+  border-right: 1px solid var(--color-map-hairline);
+  background: var(--color-surface-background);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
 }
 
-.crewlet-graph-canvas__text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
+.crewlet-graph-canvas__card[data-unconfirmed] .crewlet-graph-canvas__cell {
+  border-right-style: dashed;
+}
+
+/* A vendor's mark on the cell's lower corner. */
+.crewlet-graph-canvas__mark {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: grid;
+  place-items: center;
+  width: var(--font-size-xs);
+  height: var(--font-size-xs);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-badge);
+}
+
+/* The badge says the tone again with a glyph, on the card's top corner. */
+.crewlet-graph-canvas__badge {
+  position: absolute;
+  top: calc(var(--spacing-2) * -0.75);
+  left: calc(var(--crewlet-graph-canvas-cell) - var(--spacing-2));
+  display: grid;
+  place-items: center;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  border-radius: var(--crewlet-graph-canvas-corner);
+  z-index: 1;
+  background: var(--crewlet-graph-canvas-tone);
+  color: var(--color-surface-frame);
+  font-size: var(--font-size-badge);
 }
 
 .crewlet-graph-canvas__name {
-  font-size: var(--font-size-sm);
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-compact);
   font-weight: var(--font-weight-medium);
   line-height: var(--font-line-height-snug);
 }
 
-.crewlet-graph-canvas__caption {
-  font-size: var(--font-size-xs);
-  line-height: var(--font-line-height-snug);
-  color: var(--color-text-tertiary);
-}
-
-.crewlet-graph-canvas__card[data-dimmed] .crewlet-graph-canvas__caption {
-  color: var(--color-text-tertiary);
-}
-
-/* The dot stands on the card's top corner, clear of the name. */
-.crewlet-graph-canvas__dot {
-  position: absolute;
-  top: var(--spacing-2);
-  right: var(--spacing-2);
-}
-
-.crewlet-graph-canvas__card--group .crewlet-graph-canvas__chevron {
-  margin-right: calc(-1 * var(--spacing-1));
+.crewlet-graph-canvas__card--group .crewlet-graph-canvas__group-count {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
 }
 
 /* ── empty lanes ────────────────────────────────────────────────────────── */
@@ -295,8 +448,8 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--spacing-2);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-map-hairline);
+  border-radius: var(--crewlet-graph-canvas-corner);
   outline: none;
 }
 
@@ -313,38 +466,129 @@
 
 /* ── edges ───────────────────────────────────────────────────────────────── */
 
-/*
- * An edge is the content between cards, so it takes the boundary step the
- * palette holds to 3:1 on the canvas's ground, as a tree's connectors do.
- */
+.crewlet-graph-canvas__edge-layer {
+  transition: opacity var(--motion-duration-base) var(--motion-easing-default);
+}
+
+/* A call: a hairline with a small solid head. */
 .crewlet-graph-canvas__edge {
   fill: none;
-  stroke: var(--color-border-control);
-  stroke-width: 1.5;
+  stroke: var(--color-map-hairline);
+  stroke-width: 1;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .crewlet-graph-canvas__arrow {
-  fill: var(--color-border-control);
+  fill: var(--color-map-hairline);
   stroke: none;
 }
 
-.crewlet-graph-canvas__edge[data-state='faint'] {
-  stroke: var(--color-border-default);
+/* What something runs on: quieter, and dashed, so the family is not told by colour. */
+.crewlet-graph-canvas__edge-layer[data-family='support'] .crewlet-graph-canvas__edge {
+  stroke: var(--color-map-support);
+  stroke-dasharray: 5 3;
 }
 
-.crewlet-graph-canvas__arrow[data-state='faint'] {
-  fill: var(--color-border-default);
+.crewlet-graph-canvas__edge-layer[data-family='support'] .crewlet-graph-canvas__arrow {
+  fill: var(--color-map-support);
 }
 
-.crewlet-graph-canvas__edge[data-state='strong'] {
+/* What stands around: the quietest. */
+.crewlet-graph-canvas__edge-layer[data-family='context'] .crewlet-graph-canvas__edge {
+  stroke: var(--color-map-context);
+}
+
+.crewlet-graph-canvas__edge-layer[data-family='context'] .crewlet-graph-canvas__arrow {
+  fill: var(--color-map-context);
+}
+
+.crewlet-graph-canvas__edge-layer[data-state='dim'] {
+  opacity: var(--crewlet-graph-canvas-line-dim);
+}
+
+/* THE LIT PATH: the accent, a little heavier, under a glow. */
+.crewlet-graph-canvas__edge-layer[data-state='lit'] .crewlet-graph-canvas__edge {
   stroke: var(--color-brand-accent);
-  stroke-width: 2;
+  stroke-width: var(--crewlet-graph-canvas-lit-width);
+  filter: drop-shadow(0 0 var(--crewlet-graph-canvas-lit-glow) var(--color-brand-accent));
 }
 
-.crewlet-graph-canvas__arrow[data-state='strong'] {
+.crewlet-graph-canvas__edge-layer[data-state='lit'] .crewlet-graph-canvas__arrow {
   fill: var(--color-brand-accent);
+}
+
+.crewlet-graph-canvas__edge-layer[data-state='lit'][data-family='context'] .crewlet-graph-canvas__edge {
+  stroke: var(--color-map-context-lit);
+  stroke-width: 1.25;
+  filter: none;
+}
+
+.crewlet-graph-canvas__edge-layer[data-state='lit'][data-family='context'] .crewlet-graph-canvas__arrow {
+  fill: var(--color-map-context-lit);
+}
+
+/* THE RUN OF DASHES says which way a line points. It is direction, never volume. */
+.crewlet-graph-canvas__flow {
+  fill: none;
+  stroke: var(--color-brand-accent);
+  stroke-width: var(--crewlet-graph-canvas-flow-width);
+  stroke-linecap: round;
+  stroke-dasharray: var(--crewlet-graph-canvas-flow-dash);
+  opacity: 0.95;
+  filter: drop-shadow(0 0 var(--crewlet-graph-canvas-flow-glow) var(--color-map-flow-glow));
+  animation: crewlet-graph-canvas-flow var(--crewlet-graph-canvas-flow-duration) linear infinite;
+}
+
+.crewlet-graph-canvas__edge-layer[data-state='lit'] .crewlet-graph-canvas__flow {
+  stroke: var(--color-brand-highlight);
+  stroke-width: var(--crewlet-graph-canvas-flow-lit-width);
+  opacity: 1;
+  animation: crewlet-graph-canvas-flow var(--crewlet-graph-canvas-flow-lit-duration) linear infinite;
+}
+
+/* Too many calls in view to follow: the dashes at rest stand still, and the lit path still moves. */
+.crewlet-graph-canvas[data-still] .crewlet-graph-canvas__edge-layer[data-state='rest'] .crewlet-graph-canvas__flow {
+  filter: none;
+  animation: none;
+}
+
+@keyframes crewlet-graph-canvas-flow {
+  from {
+    stroke-dashoffset: var(--crewlet-graph-canvas-flow-period);
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* A TRUNK: every "runs on" between two clusters as one dashed line, with its count. */
+.crewlet-graph-canvas__trunk {
+  fill: none;
+  stroke: var(--color-map-outline);
+  stroke-width: 1;
+  stroke-dasharray: 7 4;
+  transition: opacity var(--motion-duration-base) var(--motion-easing-default);
+}
+
+.crewlet-graph-canvas__trunk-label {
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--color-map-outline);
+  border-radius: var(--crewlet-graph-canvas-corner);
+  background: var(--color-surface-frame);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-normal);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-base) var(--motion-easing-default);
+}
+
+.crewlet-graph-canvas[data-focus] .crewlet-graph-canvas__trunk,
+.crewlet-graph-canvas[data-focus] .crewlet-graph-canvas__trunk-label {
+  opacity: var(--crewlet-graph-canvas-trunk-dim);
 }
 
 /* ── cards as shapes, zoomed out past reading ─────────────────────────────── */
@@ -354,35 +598,196 @@
 }
 
 .crewlet-graph-canvas__shapes [data-shape='card'] {
-  fill: var(--color-surface-elevated);
-  stroke: var(--color-border-strong);
+  fill: var(--color-surface-frame);
+  stroke: var(--color-map-hairline);
 }
 
 .crewlet-graph-canvas__shapes [data-shape='faded'] {
-  fill: var(--color-surface-background);
-  stroke: var(--color-border-default);
+  fill: var(--color-surface-frame);
+  stroke: var(--color-map-hairline);
+  opacity: var(--crewlet-graph-canvas-dim);
 }
 
 .crewlet-graph-canvas__shapes [data-shape='dashed'] {
-  fill: var(--color-surface-elevated);
-  stroke: var(--color-border-strong);
+  fill: var(--color-surface-frame);
+  stroke: var(--color-map-hairline);
   stroke-dasharray: 4 3;
 }
 
 .crewlet-graph-canvas__shapes [data-shape='selected'] {
-  fill: var(--color-surface-elevated);
+  fill: var(--color-brand-accent-soft);
   stroke: var(--color-brand-accent);
   stroke-width: 3;
 }
 
 .crewlet-graph-canvas__shapes [data-shape='danger'] {
   fill: var(--color-feedback-danger);
+  stroke: none;
 }
 
 .crewlet-graph-canvas__shapes [data-shape='warning'] {
   fill: var(--color-feedback-warning);
+  stroke: none;
 }
 
 .crewlet-graph-canvas__shapes [data-shape='info'] {
   fill: var(--color-feedback-info);
+  stroke: none;
+}
+
+/* ── outside the world: the legend, the card beside an entry, the dock ───── */
+
+.crewlet-graph-canvas__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-3);
+  padding: 0 0 0 var(--spacing-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-2xs);
+}
+
+.crewlet-graph-canvas__key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  white-space: nowrap;
+}
+
+/* The key is the notch it explains. */
+.crewlet-graph-canvas__key-notch {
+  width: var(--crewlet-graph-canvas-notch);
+  height: 0.6875rem;
+  background: var(--color-map-hairline);
+}
+
+.crewlet-graph-canvas__key-notch[data-tone='danger'] {
+  background: var(--color-feedback-danger);
+}
+
+.crewlet-graph-canvas__key-notch[data-tone='warning'] {
+  background: var(--color-feedback-warning);
+}
+
+.crewlet-graph-canvas__key-notch[data-tone='info'] {
+  background: var(--color-feedback-info);
+}
+
+.crewlet-graph-canvas__key-notch[data-unconfirmed] {
+  box-sizing: border-box;
+  width: 0.5625rem;
+  border: 1px dashed var(--color-map-hairline);
+  background: none;
+}
+
+.crewlet-graph-canvas__legend-rule {
+  align-self: stretch;
+  border-left: 1px solid var(--color-border-default);
+}
+
+/* Each switch pictures its own line: solid, dashed, fine. */
+.crewlet-graph-canvas__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.crewlet-graph-canvas__key-line {
+  flex: none;
+  width: 1.375rem;
+  height: 0.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.crewlet-graph-canvas__key-line[data-family='flow'] {
+  stroke: var(--color-brand-accent);
+}
+
+.crewlet-graph-canvas__key-line[data-family='support'] {
+  stroke-dasharray: 2.5 3.5;
+}
+
+.crewlet-graph-canvas__key-line[data-family='context'] {
+  stroke-width: 1;
+}
+
+.crewlet-graph-canvas__popup,
+.crewlet-graph-canvas__dock {
+  position: absolute;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-map-chrome);
+  backdrop-filter: blur(var(--blur-md));
+}
+
+/* The card takes no press: it follows the pointer, which is on the entry it describes. */
+.crewlet-graph-canvas__popup {
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: var(--crewlet-graph-canvas-popup-width);
+  max-width: calc(100% - var(--spacing-4));
+  padding: var(--spacing-3);
+  pointer-events: none;
+}
+
+.crewlet-graph-canvas__dock {
+  bottom: calc(var(--spacing-9) + var(--spacing-2));
+  left: 50%;
+  max-width: min(40rem, calc(100% - var(--spacing-7)));
+  cursor: default;
+  transform: translateX(-50%);
+}
+
+/*
+ * A NARROW MAP keeps the whole picture: nothing floats over it. The dock and
+ * the legend stand under the canvas, in room the map gives up for them, so
+ * neither ever covers a cluster's title or an entry.
+ */
+.crewlet-graph-canvas__foot {
+  display: grid;
+  flex: none;
+  gap: var(--spacing-2);
+  padding-top: var(--spacing-2);
+}
+
+.crewlet-graph-canvas__foot > .crewlet-graph-canvas__dock {
+  position: static;
+  max-width: none;
+  background: var(--color-surface-frame);
+  backdrop-filter: none;
+  transform: none;
+}
+
+.crewlet-graph-canvas__foot > .crewlet-graph-canvas__legend {
+  padding: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-graph-canvas__card {
+    transition: none;
+  }
+
+  .crewlet-graph-canvas__edge-layer {
+    transition: none;
+  }
+
+  .crewlet-graph-canvas__flow {
+    animation: none;
+  }
+
+  .crewlet-graph-canvas__edge-layer[data-state='lit'] .crewlet-graph-canvas__flow {
+    animation: none;
+  }
+
+  .crewlet-graph-canvas__trunk {
+    transition: none;
+  }
+
+  .crewlet-graph-canvas__trunk-label {
+    transition: none;
+  }
 }

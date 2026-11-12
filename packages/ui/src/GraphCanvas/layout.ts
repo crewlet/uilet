@@ -29,6 +29,13 @@ export interface GraphLayoutNode {
   id: string;
   lane: string;
   group?: string | undefined;
+  /**
+   * The column of its lane it stands in, from 0, for a lane wider than one
+   * column whose columns mean something (a depth: what calls stands left of
+   * what is called). Read for a lane that holds no groups; elsewhere the lane
+   * fills row by row.
+   */
+  column?: number | undefined;
 }
 
 export interface GraphLayoutGroup {
@@ -69,8 +76,12 @@ export interface GraphLayoutInput {
   groups?: readonly GraphLayoutGroup[] | undefined;
   /** Whether a group is drawn open. A closed group is one summary card. */
   open: (groupId: string) => boolean;
-  /** The edges drawn at rest, which also decide the order inside a lane. */
+  /** The edges drawn at rest. */
   edges: readonly GraphLayoutEdge[];
+  /** The edges that decide the order inside a lane: `edges` unless given, so hiding a line never moves a card. */
+  ordering?: readonly GraphLayoutEdge[] | undefined;
+  /** How many columns a lane asks for, by lane id. Unlisted lanes ask for one. */
+  laneColumns?: ReadonlyMap<string, number> | undefined;
   /** The height an empty lane's message takes, by lane id. Unlisted lanes keep one row. */
   emptyHeights?: ReadonlyMap<string, number> | undefined;
 }
@@ -311,13 +322,16 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     }
   }
   const adjacent: number[][] = itemLane.map(() => []);
-  for (const edge of input.edges) {
+  for (const edge of input.ordering ?? input.edges) {
     const a = itemIndex.get(keyOfNode.get(edge.from) ?? '');
     const b = itemIndex.get(keyOfNode.get(edge.to) ?? '');
     if (a === undefined || b === undefined || a === b || itemLane[a] === itemLane[b]) continue;
     adjacent[a]!.push(b);
     adjacent[b]!.push(a);
   }
+
+  const columnOf = new Map<string, number>();
+  for (const node of nodes) if (node.column !== undefined && node.group === undefined) columnOf.set(node.id, node.column);
 
   // ---- rows: where each block of a lane lands
   const pitch = metrics.cardHeight + metrics.rowGap;
@@ -341,6 +355,35 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     if (blocks.length === 0) {
       const rows = emptyRowsOf(lane);
       cells.push({ key: graphItemKey('empty', lane), kind: 'empty', id: lane, col: 0, row: 0, cols: span, rows });
+      return { cells, rows };
+    }
+    // COLUMNS THAT MEAN SOMETHING: a lane of loose entries, some naming a column, stands column by
+    // column, each column in the lane's order and centred on the tallest.
+    if (span > 1 && blocks.every((block) => block.kind === 'loose') && blocks.some((block) => columnOf.has(block.id))) {
+      const stacks: Block[][] = Array.from({ length: span }, () => []);
+      for (const block of blocks) {
+        const named = columnOf.get(block.id);
+        let at = 0;
+        if (named === undefined) {
+          for (let c = 1; c < span; c++) if (stacks[c]!.length < stacks[at]!.length) at = c;
+        } else at = Math.min(span - 1, Math.max(0, Math.trunc(named)));
+        stacks[at]!.push(block);
+      }
+      const rows = Math.max(...stacks.map((stack) => stack.length));
+      stacks.forEach((stack, c) => {
+        const first = Math.floor((rows - stack.length) / 2);
+        stack.forEach((block, i) =>
+          cells.push({
+            key: graphItemKey('node', block.id),
+            kind: 'node',
+            id: block.id,
+            col: c,
+            row: first + i,
+            cols: 1,
+            rows: 1,
+          }),
+        );
+      });
       return { cells, rows };
     }
     let row = 0;
@@ -382,19 +425,22 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     return { cells, rows: row };
   };
 
-  // ---- columns: every band as wide as the widest. A band with fewer lanes gives each spare column
-  // to the tallest lane it makes shorter, so the band ends as soon as it can; when no lane gains from
-  // one, the narrowest lane takes it, so the spare is shared out evenly. An empty lane gains nothing.
-  const columns = Math.max(1, ...bands.map((band) => band.lanes.length));
+  // ---- columns: every band as wide as the widest. A lane takes the columns it asks for; a narrower
+  // band shares its spare columns out evenly, then gives each one left to the tallest lane it makes
+  // shorter, so the band ends as soon as it can; when no lane gains from one, the narrowest lane
+  // takes it. An empty lane gains nothing.
+  const asked = (lane: string) => Math.max(1, Math.trunc(input.laneColumns?.get(lane) ?? 1));
+  const widthOf = (band: GraphLayoutBand) => band.lanes.reduce((sum, lane) => sum + asked(lane), 0);
+  const columns = Math.max(1, ...bands.map(widthOf));
   const laneCols = new Map<string, { col: number; span: number }>();
   for (const band of bands) {
-    const base = Math.floor(columns / Math.max(1, band.lanes.length));
-    const spans = band.lanes.map(() => base);
+    const even = Math.floor((columns - widthOf(band)) / Math.max(1, band.lanes.length));
+    const spans = band.lanes.map((lane) => asked(lane) + even);
     const rowsAt = (i: number, span: number) => {
       const lane = band.lanes[i]!;
       return blocksOf.get(lane)!.length === 0 ? 1 : placeLane(lane, span).rows;
     };
-    for (let spare = columns - base * band.lanes.length; spare > 0; spare--) {
+    for (let spare = columns - spans.reduce((sum, span) => sum + span, 0); spare > 0; spare--) {
       let pick = 0;
       let best: [number, number, number] = [-1, -1, -Infinity];
       spans.forEach((span, i) => {
@@ -845,6 +891,75 @@ function routeAll(
     };
   });
   return { routes, routeOfEdge };
+}
+
+/** Every line between two lanes of a kind that is not drawn one by one, as one line with its count. */
+export interface GraphTrunk {
+  /** The two lanes, upper then lower: `services>runtime`. */
+  key: string;
+  from: string;
+  to: string;
+  /** How many edges it stands for. */
+  count: number;
+  d: string;
+  /** Where its count is written: the middle of its run. */
+  label: CanvasPoint;
+  box: CanvasRect;
+}
+
+/** How far a trunk stays inside the corners of the two panels it joins. */
+const TRUNK_INSET = 48;
+
+/**
+ * The trunks of a set of edges: one per pair of lanes in neighbouring bands,
+ * straight down where the two panels overlap and stepped through the gap
+ * between the bands where they do not. Edges inside one band have no trunk.
+ */
+export function graphTrunks(
+  layout: Pick<GraphLayout, 'laneById'>,
+  edges: readonly GraphLayoutEdge[],
+  laneOf: (node: string) => string | undefined,
+): GraphTrunk[] {
+  const pairs = new Map<string, { upper: GraphLanePlaced; lower: GraphLanePlaced; count: number }>();
+  for (const edge of edges) {
+    const a = layout.laneById.get(laneOf(edge.from) ?? '');
+    const b = layout.laneById.get(laneOf(edge.to) ?? '');
+    if (!a || !b || Math.abs(a.band - b.band) !== 1) continue;
+    const [upper, lower] = a.band < b.band ? [a, b] : [b, a];
+    const key = `${upper.id}>${lower.id}`;
+    const pair = pairs.get(key);
+    if (pair) pair.count += 1;
+    else pairs.set(key, { upper, lower, count: 1 });
+  }
+  return [...pairs].map(([key, { upper, lower, count }]) => {
+    const from = upper.panel;
+    const to = lower.panel;
+    const inset = Math.min(TRUNK_INSET, from.width / 4, to.width / 4);
+    const lo = Math.max(from.x, to.x) + inset;
+    const hi = Math.min(from.x + from.width, to.x + to.width) - inset;
+    const mid = from.x + from.width / 2;
+    const left = to.x + to.width / 2 < mid;
+    const x1 = lo <= hi ? Math.min(hi, Math.max(lo, mid)) : left ? from.x + inset : from.x + from.width - inset;
+    const x2 = lo <= hi ? x1 : left ? to.x + to.width - inset : to.x + inset;
+    const y1 = from.y + from.height;
+    const y2 = to.y;
+    const turn = (y1 + y2) / 2;
+    const points = simplify([
+      { x: x1, y: y1 },
+      { x: x1, y: turn },
+      { x: x2, y: turn },
+      { x: x2, y: y2 },
+    ]);
+    return {
+      key,
+      from: upper.id,
+      to: lower.id,
+      count,
+      d: pathOf(points),
+      label: { x: (x1 + x2) / 2, y: turn },
+      box: boxOf(points),
+    };
+  });
 }
 
 /** Decides which channels and street an edge takes, before ports and tracks are known. */

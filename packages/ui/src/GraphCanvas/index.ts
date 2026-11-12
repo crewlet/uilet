@@ -3,8 +3,11 @@ import './GraphCanvas.css';
 export {
   GRAPH_CANVAS_DETAIL_ZOOM,
   GRAPH_CANVAS_FIT_FLOOR,
+  GRAPH_CANVAS_FLOW_LIMIT,
+  GRAPH_CANVAS_NARROW_WIDTH,
   GRAPH_CANVAS_LABELS,
   GRAPH_CANVAS_OPEN_ZOOM,
+  GRAPH_EDGE_FAMILIES,
   GraphCanvas,
   graphWindow,
 } from './GraphCanvas.js';
@@ -16,6 +19,7 @@ export type {
   GraphCanvasLabels,
   GraphCanvasProps,
   GraphEdge,
+  GraphEdgeFamily,
   GraphGroup,
   GraphLane,
   GraphNode,
@@ -23,7 +27,7 @@ export type {
   GraphTrace,
   GraphWindow,
 } from './GraphCanvas.js';
-export { GRAPH_ORDER_SWEEPS, graphItemKey, layoutGraph, routeGraphEdges } from './layout.js';
+export { GRAPH_ORDER_SWEEPS, graphItemKey, graphTrunks, layoutGraph, routeGraphEdges } from './layout.js';
 export type {
   GraphBandPlaced,
   GraphGrid,
@@ -40,6 +44,7 @@ export type {
   GraphMetrics,
   GraphRoute,
   GraphStreet,
+  GraphTrunk,
 } from './layout.js';
 export { graphNeighbourhood, graphReach } from './reach.js';
 export type { GraphReach, GraphTraceDirection } from './reach.js';

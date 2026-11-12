@@ -13,6 +13,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   graphItemKey,
+  graphTrunks,
   layoutGraph,
   routeGraphEdges,
   type GraphLayout,
@@ -322,6 +323,101 @@ describe('layoutGraph', () => {
     expect(BANDS[1]!.lanes.map((lane) => layout.laneById.get(lane)!.span)).toEqual([2, 2, 1]);
   });
 
+  test('a lane takes the columns it asks for, and the map is as wide as its widest band', () => {
+    const nodes = [
+      ...Array.from({ length: 6 }, (_, i) => ({ id: `s${i}`, lane: 'services' })),
+      ...Array.from({ length: 4 }, (_, i) => ({ id: `d${i}`, lane: 'data' })),
+      { id: 'repo', lane: 'code' },
+    ];
+    const laneColumns = new Map([
+      ['services', 3],
+      ['data', 2],
+    ]);
+    const layout = layoutGraph({ bands: BANDS, nodes, edges: [], open: allOpen, laneColumns }, METRICS);
+    // Entry 1, services 3, runtime 1, data 2, platforms 1.
+    expect(layout.columns).toBe(8);
+    expect(BANDS[0]!.lanes.map((lane) => layout.laneById.get(lane)!.span)).toEqual([1, 3, 1, 2, 1]);
+    expect(layout.laneById.get('services')!.rows).toBe(2);
+    // The band under it shares the same eight columns out among its three lanes.
+    const under = BANDS[1]!.lanes.map((lane) => layout.laneById.get(lane)!.span);
+    expect(under.reduce((sum, span) => sum + span, 0)).toBe(8);
+    expect(Math.min(...under)).toBeGreaterThanOrEqual(2);
+  });
+
+  test('entries that name a column stand in it, each column centred on the tallest', () => {
+    const nodes = [
+      { id: 'web', lane: 'services', column: 0 },
+      { id: 'checkout', lane: 'services', column: 1 },
+      { id: 'search', lane: 'services', column: 1 },
+      { id: 'notify', lane: 'services', column: 1 },
+      { id: 'billing', lane: 'services', column: 2 },
+      { id: 'orders', lane: 'services', column: 9 },
+    ];
+    const layout = layoutGraph(
+      { bands: BANDS, nodes, edges: [], open: allOpen, laneColumns: new Map([['services', 3]]) },
+      METRICS,
+    );
+    const at = (id: string) => {
+      const item = layout.itemByKey.get(graphItemKey('node', id))!;
+      return [item.col - layout.laneById.get('services')!.col, item.row];
+    };
+    // One entry beside three stands on the middle row.
+    expect(at('web')).toEqual([0, 1]);
+    expect(['checkout', 'search', 'notify'].map((id) => at(id)[0])).toEqual([1, 1, 1]);
+    expect(['checkout', 'search', 'notify'].map((id) => at(id)[1]).sort()).toEqual([0, 1, 2]);
+    // A column past the lane's last is its last.
+    expect(at('billing')[0]).toBe(2);
+    expect(at('orders')[0]).toBe(2);
+    expect(layout.laneById.get('services')!.rows).toBe(3);
+  });
+
+  test('the edges that order a lane are not the edges drawn, so hiding a line moves no card', () => {
+    const map = layeredMap(4, 60);
+    const all = layoutGraph({ ...map, open: allOpen }, METRICS);
+    const hidden = layoutGraph({ ...map, edges: [], ordering: map.edges, open: allOpen }, METRICS);
+    expect(hidden.routes).toHaveLength(0);
+    expect(hidden.items.map((item) => [item.key, item.x, item.y])).toEqual(
+      all.items.map((item) => [item.key, item.x, item.y]),
+    );
+  });
+
+  test('a trunk stands for every edge between two lanes of neighbouring bands, with its count', () => {
+    const nodes = [
+      { id: 'api', lane: 'services' },
+      { id: 'jobs', lane: 'services' },
+      { id: 'db', lane: 'data' },
+      { id: 'repo', lane: 'code' },
+      { id: 'monitor', lane: 'observability' },
+    ];
+    const layout = layoutGraph({ bands: BANDS, nodes, edges: [], open: allOpen }, METRICS);
+    const laneOf = (id: string) => nodes.find((node) => node.id === id)?.lane;
+    const trunks = graphTrunks(
+      layout,
+      [
+        { id: 'a', from: 'api', to: 'repo' },
+        { id: 'b', from: 'jobs', to: 'repo' },
+        // Drawn the other way, it is the same pair of lanes.
+        { id: 'c', from: 'monitor', to: 'db' },
+        // Inside one band there is no trunk.
+        { id: 'd', from: 'api', to: 'db' },
+      ],
+      laneOf,
+    );
+    expect(trunks.map((trunk) => [trunk.key, trunk.count])).toEqual([
+      ['services>code', 2],
+      ['data>observability', 1],
+    ]);
+    for (const trunk of trunks) {
+      const upper = layout.laneById.get(trunk.from)!.panel;
+      const lower = layout.laneById.get(trunk.to)!.panel;
+      // It runs through the gap between the two bands and nowhere else.
+      expect(trunk.box.y).toBeGreaterThanOrEqual(upper.y + upper.height - 4);
+      expect(trunk.box.y + trunk.box.height).toBeLessThanOrEqual(lower.y + 4);
+      expect(trunk.label.y).toBeGreaterThan(upper.y + upper.height);
+      expect(trunk.label.y).toBeLessThan(lower.y);
+    }
+  });
+
   test('an empty lane keeps the rows its message needs', () => {
     const layout = layoutGraph(
       { bands: BANDS, nodes: [], edges: [], open: allOpen, emptyHeights: new Map([['runtime', 150]]) },
@@ -443,6 +539,34 @@ describe('graphStep', () => {
     expect(graphStep(layout, node('jobs'), { key: 'ArrowRight' })).toBe(node('web'));
     // An empty lane is a stop, so its message is read.
     expect(graphStep(layout, node('web'), { key: 'ArrowRight' })).toBe(graphItemKey('empty', 'data'));
+  });
+
+  test('in a lane of several columns the arrows move the way they point', () => {
+    const wide = layoutGraph(
+      {
+        bands: BANDS,
+        nodes: [
+          { id: 'site', lane: 'entry' },
+          { id: 'a', lane: 'services', column: 0 },
+          { id: 'b', lane: 'services', column: 0 },
+          { id: 'c', lane: 'services', column: 1 },
+          { id: 'd', lane: 'services', column: 1 },
+          { id: 'db', lane: 'data' },
+        ],
+        edges: [],
+        open: allOpen,
+        laneColumns: new Map([['services', 2]]),
+      },
+      METRICS,
+    );
+    expect(graphStep(wide, node('a'), { key: 'ArrowDown' })).toBe(node('b'));
+    expect(graphStep(wide, node('a'), { key: 'ArrowRight' })).toBe(node('c'));
+    expect(graphStep(wide, node('b'), { key: 'ArrowRight' })).toBe(node('d'));
+    expect(graphStep(wide, node('d'), { key: 'ArrowLeft' })).toBe(node('b'));
+    expect(graphStep(wide, node('d'), { key: 'ArrowUp' })).toBe(node('c'));
+    // Past the lane's last column, the lane beside.
+    expect(graphStep(wide, node('c'), { key: 'ArrowRight' })).toBe(graphItemKey('empty', 'runtime'));
+    expect(graphStep(wide, node('a'), { key: 'ArrowLeft' })).toBe(node('site'));
   });
 
   test('a group header is a stop of its own, and the walk crosses into the band below and back', () => {
