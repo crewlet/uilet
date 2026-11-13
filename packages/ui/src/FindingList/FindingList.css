@@ -83,9 +83,10 @@ button.crewlet-finding-list__row:focus-visible {
 }
 
 /*
- * COMPACT: rows a small step apart. A row that goes nowhere has no hover
- * ground to keep, so it gives up its side padding too and its glyph stands
- * on the edge the words around the list start from.
+ * COMPACT: rows a small step apart, in the size and leading of the passage
+ * the list stands in, so a finding reads as one more line of it. A row that
+ * goes nowhere has no hover ground to keep, so it gives up its side padding
+ * too and its glyph stands on the edge the words around the list start from.
  */
 .crewlet-finding-list--compact .crewlet-finding-list__row {
   padding-block: var(--spacing-1);
@@ -93,4 +94,14 @@ button.crewlet-finding-list__row:focus-visible {
 
 .crewlet-finding-list--compact div.crewlet-finding-list__row {
   padding-inline: 0;
+}
+
+.crewlet-finding-list--compact .crewlet-finding-list__message {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* The glyph's box is the inherited line, which the message now shares. */
+.crewlet-finding-list--compact .crewlet-finding-list__row:not(:has(.crewlet-finding-list__location)) > .crewlet-finding-list__glyph {
+  height: 1lh;
 }

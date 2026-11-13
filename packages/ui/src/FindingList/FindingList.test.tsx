@@ -86,6 +86,13 @@ test("a compact list sets its rows a small step apart, a static row on the list'
       css,
     )?.[1] ?? "";
   expect(still).toMatch(/padding-inline:\s*0/);
+  // Its words take the size and leading of the passage it stands in.
+  const message =
+    /\.crewlet-finding-list--compact \.crewlet-finding-list__message\s*\{([^}]*)\}/.exec(
+      css,
+    )?.[1] ?? "";
+  expect(message).toMatch(/font-size:\s*inherit/);
+  expect(message).toMatch(/line-height:\s*inherit/);
 });
 
 test("it has no detectable accessibility violations", async () => {
