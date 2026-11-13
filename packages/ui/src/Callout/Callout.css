@@ -67,6 +67,9 @@
 
 .crewlet-callout__content {
   min-width: 0;
+  /* A word no line can hold (a path, an address) breaks rather than pushing
+     past the callout's own edge, whatever element inside carries it. */
+  overflow-wrap: anywhere;
   padding-block: var(--crewlet-callout-lead, 0px);
 }
 

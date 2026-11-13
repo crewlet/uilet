@@ -139,6 +139,19 @@ describe('Callout', () => {
     expect(css.indexOf('.crewlet-callout--quiet')).toBeGreaterThan(css.lastIndexOf('.crewlet-callout--danger'));
   });
 
+  test('a word no line can hold breaks inside the callout', () => {
+    // A path or an address in a sentence pushed past the callout's edge, over
+    // whatever stood beside it, since nothing in the content let it break.
+    uninstall = installSheets('Callout/Callout.css');
+    render(
+      <Callout variant="warning">
+        <p>services/billing/migrations/2026_11_12_add_invoice_lines_and_backfill_totals.sql</p>
+      </Callout>,
+    );
+    const path = screen.getByText(/add_invoice_lines/);
+    expect(getComputedStyle(path.closest('.crewlet-callout__content')!).overflowWrap).toBe('anywhere');
+  });
+
   test('draws its title on a line of its own above the message', () => {
     // Run on the same line, a title and the body's first sentence read as one
     // run-on sentence: "You were signed out Your session ended".
