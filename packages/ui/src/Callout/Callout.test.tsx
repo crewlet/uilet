@@ -112,6 +112,33 @@ describe('Callout', () => {
     expect(banner).toMatch(/border-bottom-color:\s*var\(--color-border-default\)/);
   });
 
+  test('a quiet callout keeps its tone on the glyph and the leading edge, and its words in the page ink', () => {
+    // A reading inside a full tint outshouts the controls beside it, and the
+    // tone's ink on every line makes each of them a warning.
+    const { container } = render(
+      <>
+        <Callout variant="warning">Tinted</Callout>
+        <Callout variant="warning" appearance="quiet">
+          Quiet
+        </Callout>
+      </>,
+    );
+    const [tinted, quiet] = [...container.querySelectorAll('.crewlet-callout')];
+    expect(tinted?.className).not.toContain('crewlet-callout--quiet');
+    expect(quiet?.className).toContain('crewlet-callout--warning');
+    expect(quiet?.className).toContain('crewlet-callout--quiet');
+    expect(quiet?.querySelector('.crewlet-callout__icon svg')).toBeTruthy();
+    const css = calloutCss().replace(/\/\*[\s\S]*?\*\//g, ' ');
+    const rule = /\.crewlet-callout--quiet\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/background:\s*var\(--color-surface-inset\)/);
+    expect(rule).toMatch(/color:\s*var\(--color-text-primary\)/);
+    expect(rule).toMatch(/border-inline-start:\s*2px solid var\(--crewlet-callout-ink\)/);
+    const glyph = /\.crewlet-callout--quiet > \.crewlet-callout__icon\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(glyph).toMatch(/color:\s*var\(--crewlet-callout-ink\)/);
+    // After every tone, so the quiet ground wins over the tone's fill.
+    expect(css.indexOf('.crewlet-callout--quiet')).toBeGreaterThan(css.lastIndexOf('.crewlet-callout--danger'));
+  });
+
   test('draws its title on a line of its own above the message', () => {
     // Run on the same line, a title and the body's first sentence read as one
     // run-on sentence: "You were signed out Your session ended".

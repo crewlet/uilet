@@ -66,3 +66,37 @@ export const AdviceOnly: Story = {
     </div>
   ),
 };
+
+/**
+ * COMPACT, for findings read as part of a longer passage: rows a small step
+ * apart, and a row that goes nowhere on the list's own edge.
+ */
+export const Compact: Story = {
+  render: () => (
+    <div style={{ maxWidth: 420 }}>
+      <FindingList
+        density="compact"
+        label="What the reviewer found"
+        toneLabels={{ warning: "Finding" }}
+        findings={[
+          {
+            key: "1",
+            tone: "warning",
+            message:
+              "Only the manifest step changes, with an explicit agent header and a warning for each step.",
+          },
+          {
+            key: "2",
+            tone: "warning",
+            message: "The approval covers exactly the head asked about.",
+          },
+          {
+            key: "3",
+            tone: "warning",
+            message: "Touches a pipeline path no delegate allows.",
+          },
+        ]}
+      />
+    </div>
+  ),
+};

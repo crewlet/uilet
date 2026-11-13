@@ -21,6 +21,18 @@ export type CalloutVariant = Exclude<Tone, 'brand'>;
  */
 export type CalloutLayout = 'card' | 'banner';
 
+/**
+ * How loudly the tone is drawn.
+ *
+ * `tinted` (the default) is the tone's soft fill behind the tone's ink: a
+ * sentence the screen is saying. `quiet` keeps the tone on the glyph and the
+ * leading edge alone, with the words in the page's own ink on a quiet
+ * surface, for a callout that holds a READING: a reviewer's reasons, a list
+ * of findings. A full tint behind several paragraphs outshouts the controls
+ * beside it, and the tone's ink on every line makes each of them a warning.
+ */
+export type CalloutAppearance = 'tinted' | 'quiet';
+
 export interface CalloutProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   variant?: CalloutVariant | undefined;
   /**
@@ -34,6 +46,7 @@ export interface CalloutProps extends Omit<HTMLAttributes<HTMLDivElement>, 'titl
   /** A glyph replacing the variant's own. A component, not a name. */
   icon?: ReactNode;
   layout?: CalloutLayout | undefined;
+  appearance?: CalloutAppearance | undefined;
   /** A control at the trailing edge: "Reconnect", "Open the log", "Dismiss". */
   action?: ReactNode;
   /**
@@ -78,6 +91,7 @@ export const Callout = ({
   title,
   icon,
   layout = 'card',
+  appearance = 'tinted',
   action,
   live,
   className,
@@ -87,7 +101,13 @@ export const Callout = ({
   <div
     {...rest}
     aria-live={live}
-    className={cx('crewlet-callout', `crewlet-callout--${variant}`, `crewlet-callout--${layout}`, className)}
+    className={cx(
+      'crewlet-callout',
+      `crewlet-callout--${variant}`,
+      `crewlet-callout--${layout}`,
+      appearance === 'quiet' && 'crewlet-callout--quiet',
+      className,
+    )}
   >
     <span className="crewlet-callout__icon" aria-hidden>
       {icon ?? GLYPHS[variant]}

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, Callout } from '@crewlethq/ui';
+import { Button, Callout, FindingList } from '@crewlethq/ui';
 
 const meta: Meta<typeof Callout> = {
   title: 'UI/Callout',
@@ -12,6 +12,7 @@ const meta: Meta<typeof Callout> = {
   argTypes: {
     variant: { control: 'inline-radio', options: ['neutral', 'info', 'success', 'warning', 'danger'] },
     layout: { control: 'inline-radio', options: ['card', 'banner'] },
+    appearance: { control: 'inline-radio', options: ['tinted', 'quiet'] },
     live: { control: 'inline-radio', options: [undefined, 'polite', 'assertive'] },
     title: { control: 'text' },
   },
@@ -145,4 +146,38 @@ export const WithATitle: Story = {
     title: 'You were signed out',
     children: 'Your session ended on another device. Sign in again to carry on.',
   },
+};
+
+/**
+ * QUIET, FOR A CALLOUT THAT HOLDS A READING. The tone stays on the glyph and
+ * the leading edge, and the words are in the page's own ink on a quiet
+ * surface: a full tint behind several paragraphs outshouts the controls beside
+ * it, and the tone's ink on every line makes each of them a warning.
+ */
+export const Quiet: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 12, maxWidth: 560 }}>
+      <Callout variant="warning" appearance="quiet" title="Escalated by the Release Manager (rule 2), low confidence">
+        <p style={{ margin: 0 }}>
+          The change edits a deploy workflow, which takes effect on every production deploy, so a person should
+          decide.
+        </p>
+        <FindingList
+          density="compact"
+          label="What the Release Manager found"
+          toneLabels={{ warning: 'Finding' }}
+          findings={[
+            { key: '1', tone: 'warning', message: 'Only the manifest step changes: 1 file, 32 lines added.' },
+            { key: '2', tone: 'warning', message: 'Touches a pipeline path no delegate allows.' },
+          ]}
+        />
+      </Callout>
+      <Callout variant="info" appearance="quiet">
+        With the Security Engineer. It reaches people only if the delegate escalates it.
+      </Callout>
+      <Callout variant="danger" appearance="quiet" title="Refused">
+        The write did not match the revision on the node.
+      </Callout>
+    </div>
+  ),
 };

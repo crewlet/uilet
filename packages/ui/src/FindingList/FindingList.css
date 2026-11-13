@@ -81,3 +81,16 @@ button.crewlet-finding-list__row:focus-visible {
   line-height: var(--font-line-height-normal);
   overflow-wrap: anywhere;
 }
+
+/*
+ * COMPACT: rows a small step apart. A row that goes nowhere has no hover
+ * ground to keep, so it gives up its side padding too and its glyph stands
+ * on the edge the words around the list start from.
+ */
+.crewlet-finding-list--compact .crewlet-finding-list__row {
+  padding-block: var(--spacing-1);
+}
+
+.crewlet-finding-list--compact div.crewlet-finding-list__row {
+  padding-inline: 0;
+}

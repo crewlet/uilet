@@ -28,6 +28,13 @@ export interface FindingListProps {
   label: string;
   /** What each tone is called to a screen reader, before the message. */
   toneLabels?: Partial<Record<FindingTone, string>> | undefined;
+  /**
+   * How much room a row takes. `comfortable` (the default) gives each row the
+   * ground a pointer hovers. `compact` sets the rows a small step apart, and a
+   * row that goes nowhere against the list's own edge, for findings read as
+   * part of a longer passage (a reviewer's note) rather than walked one by one.
+   */
+  density?: "comfortable" | "compact" | undefined;
   className?: string | undefined;
 }
 
@@ -48,6 +55,7 @@ export function FindingList({
   findings,
   label,
   toneLabels,
+  density = "comfortable",
   className,
 }: FindingListProps) {
   const words = { ...TONE_LABELS, ...toneLabels };
@@ -56,7 +64,14 @@ export function FindingList({
     ...findings.filter((f) => f.tone === "warning"),
   ];
   return (
-    <ul className={cx("crewlet-finding-list", className)} aria-label={label}>
+    <ul
+      className={cx(
+        "crewlet-finding-list",
+        density === "compact" && "crewlet-finding-list--compact",
+        className,
+      )}
+      aria-label={label}
+    >
       {ordered.map((f) => {
         const body = (
           <>
