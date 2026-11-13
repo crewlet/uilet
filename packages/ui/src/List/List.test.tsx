@@ -272,3 +272,29 @@ test('a row’s own control stands beside its link, outside its name, and its no
   fireEvent.click(join);
   expect(onJoin).toHaveBeenCalledTimes(1);
 });
+
+test('a bulleted list draws discs whatever list it stands in, and circles only inside another bulleted one', () => {
+  // The browser's own rule gives any list inside another a hollow circle, so
+  // a bulleted list in a card's unmarked list of rows drew hollow markers.
+  const uninstall = installSheets('List/List.css');
+  try {
+    render(
+      <ul>
+        <li>
+          <List variant="bulleted" aria-label="Outer">
+            <ListItem>
+              Read access.
+              <List variant="bulleted" aria-label="Inner">
+                <ListItem>To one repository.</ListItem>
+              </List>
+            </ListItem>
+          </List>
+        </li>
+      </ul>,
+    );
+    expect(getComputedStyle(screen.getByRole('list', { name: 'Outer' })).listStyleType).toBe('disc');
+    expect(getComputedStyle(screen.getByRole('list', { name: 'Inner' })).listStyleType).toBe('circle');
+  } finally {
+    uninstall();
+  }
+});
