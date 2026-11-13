@@ -122,6 +122,21 @@
   list-style: revert;
 }
 
+/*
+ * A BULLETED LIST'S MARKER IS ITS OWN, not its ancestors'. `revert` hands the
+ * choice to the browser, which draws a hollow circle for any list inside
+ * another, one whose rows carry no marker at all included: a card's list of
+ * rows turned every bulleted list in it hollow. The disc is stated, and only
+ * a bulleted list inside a bulleted one steps to the circle.
+ */
+.crewlet-list--bulleted {
+  list-style-type: disc;
+}
+
+.crewlet-list--bulleted .crewlet-list--bulleted {
+  list-style-type: circle;
+}
+
 .crewlet-list--bulleted .crewlet-list__item,
 .crewlet-list--numbered .crewlet-list__item {
   display: list-item;

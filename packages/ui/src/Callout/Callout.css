@@ -67,6 +67,9 @@
 
 .crewlet-callout__content {
   min-width: 0;
+  /* A word no line can hold (a path, an address) breaks rather than pushing
+     past the callout's own edge, whatever element inside carries it. */
+  overflow-wrap: anywhere;
   padding-block: var(--crewlet-callout-lead, 0px);
 }
 
@@ -159,4 +162,24 @@
   border-width: 0 0 1px;
   border-bottom-color: var(--color-border-default);
   padding: var(--spacing-2) var(--spacing-4);
+}
+
+/* ── appearances ───────────────────────────────────────────────────────── */
+
+/*
+ * QUIET: the tone on the glyph and the leading edge alone, the words in the
+ * page's own ink on a quiet surface. For a callout that holds a reading (a
+ * reviewer's reasons, a list of findings), where a full tint behind several
+ * paragraphs outshouts the controls beside it and the tone's ink on every
+ * line makes each of them a warning. The glyph still says which tone this
+ * is, so the hue is never the only carrier here either.
+ */
+.crewlet-callout--quiet {
+  border-inline-start: 2px solid var(--crewlet-callout-ink);
+  background: var(--color-surface-inset);
+  color: var(--color-text-primary);
+}
+
+.crewlet-callout--quiet > .crewlet-callout__icon {
+  color: var(--crewlet-callout-ink);
 }
