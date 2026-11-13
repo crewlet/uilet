@@ -5,6 +5,7 @@ import {
   CheckGlyph,
   CopyGlyph,
   DatabaseGlyph,
+  ExternalLinkGlyph,
   InfoGlyph,
   PencilGlyph,
   PinGlyph,
@@ -66,7 +67,8 @@ function versions(showing: number, latest: number, pick: (n: number) => void): M
 /**
  * The bar over a deck, with every artifact's panels: press a control to open
  * its panel at the side, and narrow the canvas to see the presence stack and
- * Share's word go first, then the views and the tools fold into More.
+ * Share's word go first, then the views and the tools fold into More. Open in
+ * new tab is a tool and a row of More at once, so folded it stays one row.
  */
 export const OverADeck: Story = {
   render: function Render() {
@@ -80,12 +82,14 @@ export const OverADeck: Story = {
       { key: 'history', label: 'Versions and history', icon: <RotateCcwClockGlyph size="sm" />, keys: ['h'], pressed: panel === 'history', onSelect: () => toggle('history') },
       { key: 'data', label: 'Data', icon: <DatabaseGlyph size="sm" />, keys: ['d'], pressed: panel === 'data', onSelect: () => toggle('data') },
       { key: 'people', label: 'People here, 2 others', icon: <UsersGlyph size="sm" />, keys: ['p'], badge: 2, pressed: panel === 'people', onSelect: () => toggle('people') },
+      { key: 'tab', label: 'Open in new tab', icon: <ExternalLinkGlyph size="sm" />, onSelect: () => {} },
       { key: 'share', label: 'Share', icon: <Share2Glyph size="sm" />, keys: ['s'], labelled: true, onSelect: () => {} },
     ];
     const menu: MenuEntry[] = [
       { key: 'rename', label: 'Rename', icon: <PencilGlyph size="sm" />, onSelect: () => {} },
       { key: 'settings', label: 'Settings', icon: <SettingsGlyph size="sm" />, onSelect: () => {} },
       { kind: 'separator', key: 's1' },
+      { key: 'tab', label: 'Open in new tab', icon: <ExternalLinkGlyph size="sm" />, onSelect: () => {} },
       { key: 'print', label: 'Print or save as PDF', icon: <ArrowDownToLineGlyph size="sm" />, onSelect: () => {} },
       { key: 'copy', label: 'Copy link', icon: <CopyGlyph size="sm" />, onSelect: () => {} },
       { key: 'pin', label: 'Pin', icon: <PinGlyph size="sm" />, onSelect: () => {} },

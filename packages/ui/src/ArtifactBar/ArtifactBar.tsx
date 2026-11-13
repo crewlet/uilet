@@ -19,6 +19,11 @@ import { returnFocus } from '../utils/focusModality.js';
  * does not. An element could only ever be drawn in one of the two.
  */
 export interface ArtifactBarTool {
+  /**
+   * Its identity. A tool whose key also names a row of the bar's `menu` is
+   * one action in two places, an icon button while the bar is wide and that
+   * row of More, so on a narrow bar it does not fold into More a second time.
+   */
   key: string;
   /** What it does, in words: the button's name, its tooltip and its menu row. */
   label: string;
@@ -192,7 +197,9 @@ export function ArtifactBar({
   const headingId = useId();
   const Root = as;
   const apple = isApplePlatform();
-  const folding = [...kindTools, ...tools].filter((t) => !t.labelled);
+  // A TOOL MORE ALREADY LISTS (a `menu` row under its key) folds into that row, never beside it.
+  const listed = new Set(menu.map((entry) => entry.key));
+  const folding = [...kindTools, ...tools].filter((t) => !t.labelled && !listed.has(t.key));
   const pinned = [...kindTools, ...tools].filter((t) => t.labelled);
   const folded: MenuEntry[] = [
     ...(modes
