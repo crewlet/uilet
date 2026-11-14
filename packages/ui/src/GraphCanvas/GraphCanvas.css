@@ -499,6 +499,23 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/* What would fill the lane: its parts stand in the lane's own column, as if unwrapped. */
+.crewlet-graph-canvas__empty-words {
+  display: contents;
+}
+
+/*
+ * UNDER HALF SIZE AN EMPTY LANE IS ITS DASHED OUTLINE, under its title and its
+ * count of none, which hold their size. Its words scale with the map, so there
+ * they are a few pixels of grey texture, and a link among them would be a
+ * target nobody can see: they come back with the cards. A fitted map of a new
+ * company on a phone is drawn at this size. The lane stays a stop of the walk,
+ * named "empty".
+ */
+.crewlet-graph-canvas__world:not([data-detail='cards']) .crewlet-graph-canvas__empty-words {
+  visibility: hidden;
+}
+
 /* ── edges ───────────────────────────────────────────────────────────────── */
 
 .crewlet-graph-canvas__edge-layer {

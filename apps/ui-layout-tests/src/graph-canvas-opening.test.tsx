@@ -189,6 +189,36 @@ describe('a map opens fitted to its view', () => {
     });
   }
 
+  test('a new company on a phone opens fitted, its empty lanes their outlines until zoomed in to cards', async () => {
+    const bare = BANDS.map((band) => ({
+      ...band,
+      lanes: band.lanes.map((lane) => ({ ...lane, empty: `What would fill ${lane.label} appears here.` })),
+    }));
+    await page.viewport(PHONE.width + 40, PHONE.height + 200);
+    host = document.createElement('div');
+    host.style.cssText = `width: ${PHONE.width}px; height: ${PHONE.height}px; display: flex; flex-direction: column;`;
+    document.body.append(host);
+    root = createRoot(host);
+    const code = company(3).map((node) => ({ ...node, lane: 'code' }));
+    flushSync(() => root!.render(<GraphCanvas label="Map" bands={bare} nodes={code} edges={[]} />));
+    await expect.poll(() => worldOf()?.dataset.detail).toBeDefined();
+    const canvas = viewportOf().getBoundingClientRect();
+    expect(inside(worldOf().getBoundingClientRect(), canvas)).toBe(true);
+    expect(worldOf().dataset.detail).not.toBe('cards');
+    const words = () => [...host!.querySelectorAll('.crewlet-graph-canvas__empty .crewlet-graph-canvas__empty-words')];
+    expect(words()).toHaveLength(LANES.length - 1);
+    // A FEW PIXELS OF TEXTURE ARE NOT DRAWN: the outline and the held title say the lane is empty.
+    for (const one of words()) expect(getComputedStyle(one).visibility).toBe('hidden');
+    for (const empty of host!.querySelectorAll('.crewlet-graph-canvas__empty')) {
+      expect(getComputedStyle(empty).visibility, 'the lane is still drawn and walked').toBe('visible');
+    }
+    // At actual size the words are back, at their own size.
+    viewportOf().dispatchEvent(new KeyboardEvent('keydown', { key: ')', code: 'Digit0', shiftKey: true, bubbles: true }));
+    await expect.poll(() => worldOf().dataset.detail).toBe('cards');
+    expect(words().length).toBeGreaterThan(0);
+    for (const one of words()) expect(getComputedStyle(one).visibility).toBe('visible');
+  });
+
   test('a map opened on one entry draws it in the middle of the canvas, as a card that reads', async () => {
     const { painted } = await open(WIDE, company(600), 'n301');
     expect(painted).toHaveLength(1);

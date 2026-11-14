@@ -1693,7 +1693,8 @@ function GraphEmptyLane({
       }}
       onKeyDown={onItemKey}
     >
-      {children}
+      {/* What would fill the lane, laid out as the lane's own items: see the stylesheet for when it is drawn. */}
+      <span className="crewlet-graph-canvas__empty-words">{children}</span>
     </div>
   );
 }
