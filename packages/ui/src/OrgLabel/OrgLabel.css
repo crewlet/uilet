@@ -208,7 +208,7 @@
 .crewlet-org-label__name:has(:focus-visible) {
   border-radius: var(--radius-xs);
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-org-label__name.crewlet-org-label__name :focus-visible {

@@ -234,7 +234,7 @@ Stories: `GraphCanvas` (tiles, marks, both in light and dark).
 - **A pill row scrolls inside its place** (`Tabs` `variant="pill"`, `SegmentedControl`): `max-width: 100%` with `overflow-x: auto`, as the underline row has, where `fit-content` alone grew past a narrow container. An application that added this rule itself can drop it.
 - **Its ring is drawn inside the tab** (`--size-focus-ring-inset-offset`), because a scroller clips at its padding edge: a ring flush on a pill tab, or a pixel outside a segmented option, was cut top and bottom to two side bars.
 - **A tab that takes focus is shown whole.** A browser scrolls a focused element that is out of view and leaves one that is partly in view where it is; the row now moves by the overhang (`revealInRow`), however focus arrived.
-- **A link in truncating text** (`Text truncate`) has its ring drawn by the text, inside the text's own box, where neither the ellipsis clip nor a clipping cell round it can cut it. A fact line's clamped or token value draws its ring inside its box for the same reason.
+- **A link in truncating text** (`Text truncate`) has its ring drawn by the text, inside the text's own box, where neither the ellipsis clip nor a clipping cell round it can cut it. A fact line's clamped or token value and an org label's name draw their ring inside their box for the same reason.
 
 ## Changes in 0.123.0
 
