@@ -217,12 +217,14 @@
 }
 
 /* A clipped value (a clamp, a token) would cut a link's focus ring to a
-   bracket, so the value draws the ring, which its own clip cannot cut. */
+   bracket, so the value draws the ring, which its own clip cannot cut: and
+   INSIDE its own box, since a ring standing off it is cut by the next
+   clipping box round it instead (a truncating cell, a scrolling pane). */
 .crewlet-fact-line__value--clamp:has(:focus-visible),
 .crewlet-fact-line__value--token:has(:focus-visible) {
   border-radius: var(--radius-xs);
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-fact-line__value.crewlet-fact-line__value--clamp :focus-visible,

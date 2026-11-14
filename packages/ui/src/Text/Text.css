@@ -142,6 +142,23 @@
   vertical-align: bottom;
 }
 
+/*
+ * A LINK IN TRUNCATING TEXT WOULD HAVE ITS RING CUT by the clip that makes
+ * the ellipsis: every side of an outset ring lies outside the text's box. So
+ * the text draws the ring, inside its own box, where neither its own clip nor
+ * any clipping box round it can cut it, and the link's own ring stands down
+ * (transparent, not none, so forced colours still draw one).
+ */
+.crewlet-text--truncate:has(:focus-visible) {
+  border-radius: var(--radius-xs);
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-text.crewlet-text--truncate :focus-visible {
+  outline: 2px solid transparent;
+}
+
 .crewlet-text--clamp-2,
 .crewlet-text--clamp-3 {
   display: -webkit-box;

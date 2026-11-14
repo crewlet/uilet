@@ -896,11 +896,18 @@ test('toggling actions keeps the tab list node and its focus, in a tab list and 
   expect(document.activeElement).toBe(link);
 });
 
-test('a pill or chip row scrolls inside a bar rather than painting under its actions', () => {
+test('a pill row scrolls wherever it stands, and a chip row inside a bar, rather than painting past its place', () => {
   const css = tabsCss();
-  const rule =
-    /\.crewlet-tabs-bar > \.crewlet-tabs--pill,\s*\.crewlet-tabs-bar > \.crewlet-tabs--chip\s*\{([^}]*)\}/.exec(css)?.[1] ??
-    '';
+  const pill = /\n\.crewlet-tabs--pill\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  // Capped at its place and scrolling inside it: `fit-content` alone grows past a narrow container.
+  expect(pill).toMatch(/max-width:\s*100%/);
+  expect(pill).toMatch(/overflow-x:\s*auto/);
+  expect(pill).toMatch(/scrollbar-width:\s*none/);
+  // A scroller clips an outset ring, so a pill tab's is drawn inside the tab.
+  const ring =
+    /\.crewlet-tabs--pill \.crewlet-tabs__tab\.crewlet-tabs__tab:focus-visible\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(ring).toMatch(/outline-offset:\s*var\(--size-focus-ring-inset-offset\)/);
+  const rule = /\.crewlet-tabs-bar > \.crewlet-tabs--chip\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(rule).toMatch(/overflow-x:\s*auto/);
   expect(rule).toMatch(/scrollbar-width:\s*none/);
   // Every class the bar draws with has a rule; a size modifier had none.

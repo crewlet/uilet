@@ -180,12 +180,10 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'LinkCard/LinkCard.css | .crewlet-link-card:focus-visible',
       // A receipt's "and 4 more", a plain text button in the line's words.
       'DeliveryReceipt/DeliveryReceipt.css | .crewlet-delivery-receipt__more:focus-visible',
-      // A header fact's value and an org label's name clip their words, which
-      // cut a link's ring inside them, so the box draws the link's ring: text
-      // with no edge of its own, ringed as the link would be.
-      'ObjectHeader/ObjectHeader.css | .crewlet-fact-line__value--clamp:has(:focus-visible)',
-      'ObjectHeader/ObjectHeader.css | .crewlet-fact-line__value--token:has(:focus-visible)',
-      'OrgLabel/OrgLabel.css | .crewlet-org-label__name:has(:focus-visible)',
+      // NOT HERE: a box that clips its words and draws its link's ring for it
+      // (a header fact's value, an org label's name, truncating text). Its
+      // ring is inside its own box, since one standing off it is cut by the
+      // next clipping box round it.
     ].sort(),
   );
 });

@@ -7,7 +7,7 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 import { useFold } from './fold.js';
-import { tabStop, useRoving } from './roving.js';
+import { revealInRow, tabStop, useRoving } from './roving.js';
 
 /**
  * How the row is drawn. `pill` is a segmented well with a raised chip for the
@@ -366,12 +366,13 @@ export function Tabs({
   }, [variant, value, items, barred]);
 
   /*
-   * A PILL OR CHIP ROW SCROLLS INSIDE A BAR, and only there, so there its
-   * current tab is brought into the row's view as an underline row's is: a
-   * lens past the room the actions leave was otherwise chosen and never shown.
+   * A PILL ROW SCROLLS WHEREVER IT STANDS, and a chip row inside a bar, so
+   * there the current tab is brought into the row's view as an underline
+   * row's is: a lens past the room the row has was otherwise chosen and never
+   * shown.
    */
   useLayoutEffect(() => {
-    if (variant === 'underline' || !barred) return;
+    if (variant === 'underline' || (variant === 'chip' && !barred)) return;
     const nav = navRef.current;
     if (nav) reveal(nav);
   }, [variant, value, items, barred]);
@@ -469,6 +470,9 @@ export function Tabs({
         // On the TAB, not on the row: a key pressed on a tab is the tab's, and
         // a row that is not focusable has no business listening for one.
         onKeyDown={(event) => onKeyDown(event, false)}
+        // However focus arrived (Tab into the row, a press on a tab half past
+        // the edge), the tab is shown whole: see `revealInRow`.
+        onFocus={(event) => revealInRow(event.currentTarget)}
       >
         {children}
       </button>

@@ -190,10 +190,36 @@ export const TwoThousandClosed: Story = {
 /**
  * Two thousand entries, every group open: the map opens on its start at a
  * size that reads, and only the cards near the view are mounted. Fit it to see
- * all of them drawn as shapes.
+ * all of them drawn as marks, under cluster titles that keep their size.
  */
 export const TwoThousand: Story = {
   render: () => <AtlasMapScreen map={generatedCompany(2000, 11)} />,
+};
+
+/**
+ * Under half size a card is a tile: its glyph fills the cell, its name is held
+ * at a size that reads and cut to what fits, and its tone takes the cell.
+ * Three hundred entries, since a map zooms out no further than the fit of all
+ * of it.
+ */
+export const Tiles: Story = {
+  render: () => (
+    <BothThemes>
+      <AtlasMapScreen map={generatedCompany(300)} height={620} initialView={{ x: 24, y: 72, k: 0.4 }} />
+    </BothThemes>
+  ),
+};
+
+/**
+ * Past a word fitting a card, every card is a filled mark in its tone, and the
+ * clusters' titles, counts and tallies carry the words at their own size.
+ */
+export const Marks: Story = {
+  render: () => (
+    <BothThemes>
+      <AtlasMapScreen map={generatedCompany(2000, 11)} height={620} initialView={{ x: 24, y: 72, k: 0.2 }} />
+    </BothThemes>
+  ),
 };
 
 /** Nothing recorded yet: every cluster is drawn and says what would fill it. */
