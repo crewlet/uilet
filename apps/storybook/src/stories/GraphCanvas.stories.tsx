@@ -188,12 +188,21 @@ export const TwoThousandClosed: Story = {
 };
 
 /**
- * Two thousand entries, every group open: the map opens on its start at a
- * size that reads, and only the cards near the view are mounted. Fit it to see
- * all of them drawn as marks, under cluster titles that keep their size.
+ * Two thousand entries, every group open: the map opens fitted, every entry a
+ * mark under cluster titles that keep their size. Zoom in and only the cards
+ * near the view are mounted.
  */
 export const TwoThousand: Story = {
   render: () => <AtlasMapScreen map={generatedCompany(2000, 11)} />,
+};
+
+/**
+ * Opened on one entry, as a link that names it arrives: the entry in the
+ * middle at a size its card reads, selected, in a map that opens fitted
+ * otherwise. Fit shows the whole map.
+ */
+export const OpenedOnOneEntry: Story = {
+  render: () => <AtlasMapScreen map={generatedCompany(300)} initialSelected="data-20" initialNode="data-20" />,
 };
 
 /**
@@ -280,8 +289,8 @@ const narrowAt = (width: number): Story => ({
 });
 
 /**
- * On a phone's width the map opens on its start at a size that reads, and
- * pans. Nothing floats over the picture: the dock and the legend stand under it.
+ * On a phone's width the map opens fitted, and zooms and pans from there.
+ * Nothing floats over the picture: the dock and the legend stand under it.
  */
 export const Narrow: Story = narrowAt(390);
 

@@ -208,6 +208,21 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.127.0
+
+### A map opens fitted to its view
+
+`GraphCanvas` opened a map too large to fit at half size on its top left corner at 75%, so on a laptop a few dozen entries and on a phone almost any map ran off the canvas, and a reader pressed Fit by hand. That rule was there because under half size a card was a blank box; since 0.126.0 tiles and marks keep a signal at every zoom, so a map now opens on the whole of itself, centred, at the zoom that fits it and at the level of detail that zoom draws (story: `GraphCanvas` Two Thousand). No other view is painted first.
+
+- **It fits again when its first entries arrive.** A map placed while it holds no entries was fitted to its empty lanes; its first entries now fit it again, once. A later refresh of the same map keeps the view a reader made.
+- **It refits when its box is resized while nobody has moved the view** (`Canvas`'s `refitOnResize`, which the map now turns on): a sheet opening beside the page, fullscreen, the narrow layout's foot. Once a reader has zoomed or panned, a resize keeps their view.
+- **`initialNode` opens a map on one entry**, such as the one a link names: that entry in the middle of the view at up to `GRAPH_CANVAS_FOCUS_ZOOM` (75%), or less where the window is narrower than its card and padding; its closed group's card where it stands in one. A map whose fit already draws the entry that large opens on the fit (story: `GraphCanvas` Opened On One Entry). `graphFocusView` is that view, as a pure function.
+- **`fitKey` names what is drawn.** Its documentation now says so: a key taken from the question still being asked fits the map the answer is about to replace.
+
+**`Canvas`'s `initialView` takes a `CanvasOpening`**: a function asked once, when the first content is placed, with the room the canvas's bars leave and the fit, for an opening that depends on the viewport's size. Answering null opens on the fit, which then counts as an untouched fit.
+
+**Breaking: `GRAPH_CANVAS_OPEN_ZOOM` is removed**, since no map opens at it any more. Use `GRAPH_CANVAS_FOCUS_ZOOM` for the zoom a map opened on one entry draws it at.
+
 ## Changes in 0.126.0
 
 ### A map keeps a readable signal as it zooms out
