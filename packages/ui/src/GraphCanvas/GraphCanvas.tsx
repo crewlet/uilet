@@ -23,8 +23,15 @@
  *
  * IT STAYS LIGHT AT THOUSANDS OF ENTRIES. Every card is one size, so nothing
  * is measured per card; only the cards near the view are mounted; edges are a
- * few paths rather than one element each; and zoomed out past legibility the
- * cards are drawn as shapes on one layer rather than as elements at all.
+ * few paths rather than one element each; and zoomed out past the least a
+ * card can say the cards are drawn as marks on one layer rather than as
+ * elements at all.
+ *
+ * A CARD IS NEVER A BLANK BOX. The map has three levels of detail
+ * ([GraphDetail]), and each keeps a signal a reader can use at its size: the
+ * whole card; then a tile, its glyph filling the cell and its name held at a
+ * size that reads; then a filled mark in its tone, under cluster titles,
+ * counts and tallies that hold their size on screen at every zoom.
  */
 
 import {
@@ -244,11 +251,38 @@ export const GRAPH_CANVAS_LABELS: GraphCanvasLabels = {
 };
 
 /**
- * THE ZOOM BELOW WHICH CARDS ARE SHAPES. At half size a 13px name draws at
- * about 6.5px, the least that still reads as words; below it a card's text is
- * texture, so the map draws every card as a shape on one layer instead.
+ * How much of an entry the map draws at a zoom.
+ *
+ * `cards` is the whole card. `tiles` is the card cut to what still reads: its
+ * glyph filling the cell, its name held at one size on screen and cut to what
+ * fits, its tone on the whole cell. `marks` is every card as a filled shape
+ * on one layer, in its tone, with the clusters' titles and counts carrying
+ * the words.
+ */
+export type GraphDetail = 'cards' | 'tiles' | 'marks';
+
+/**
+ * THE ZOOM BELOW WHICH CARDS ARE TILES. At half size a 13px name draws at
+ * about 6.5px, the least that still reads as words; below it a card's own
+ * text is texture, so the name is held at a size on screen instead of being
+ * scaled with the map.
  */
 export const GRAPH_CANVAS_DETAIL_ZOOM = 0.5;
+
+/**
+ * THE ZOOM BELOW WHICH TILES ARE MARKS. A tile's name is held at 10px on
+ * screen, and a card is 38px tall, so at three tenths it is about 11px: the
+ * last size one line of that name still fits inside its own card. Below it no
+ * word fits a card at all, and at most a few hundred elements were mounted to
+ * get here, so every card becomes a filled mark on one layer.
+ */
+export const GRAPH_CANVAS_TILE_ZOOM = 0.3;
+
+/** The level of detail a zoom draws: see [GraphDetail]. */
+export function graphDetail(zoom: number): GraphDetail {
+  if (zoom >= GRAPH_CANVAS_DETAIL_ZOOM) return 'cards';
+  return zoom >= GRAPH_CANVAS_TILE_ZOOM ? 'tiles' : 'marks';
+}
 
 /**
  * THE ZOOM A MAP TOO LARGE TO READ WHOLE OPENS AT, on its start: a card's
@@ -268,6 +302,9 @@ export const GRAPH_CANVAS_FIT_FLOOR = 0.02;
  * and say nothing a reader can follow. The lit path always moves.
  */
 export const GRAPH_CANVAS_FLOW_LIMIT = 160;
+
+/** The custom property the world's element carries the zoom in, for the stylesheet. */
+const ZOOM_PROPERTY = '--crewlet-graph-canvas-zoom';
 
 /** How long the pointer rests on a card before its neighbours light, and how long after it leaves, in ms. */
 const POINT_IN_MS = 90;
@@ -388,8 +425,8 @@ const TONE_RANK: Record<GraphAttentionTone, number> = { info: 1, warning: 2, dan
 /** The part of the world that is mounted: what is near the view, with room to pan before it moves. */
 export interface GraphWindow {
   rect: CanvasRect;
-  /** Whether cards are drawn as cards, or as shapes for a zoom too far out to read. */
-  detail: boolean;
+  /** How much of each entry is drawn: elements for cards and tiles, one layer of marks past them. */
+  detail: GraphDetail;
 }
 
 export function GraphCanvas({
@@ -679,10 +716,23 @@ export function GraphCanvas({
   mountedNow.current = mounted;
   const viewport = useRef<CanvasSize | null>(null);
   const placeCardNow = useRef<() => void>(() => {});
+  // THE ZOOM, HANDED TO THE STYLESHEET, which holds every title, count and
+  // tile name at a size on screen by dividing by it. Written on the world's
+  // own element rather than through a render: a pinch moves it every frame.
+  const zoomNow = useRef(1);
+  const worldEl = useRef<HTMLDivElement | null>(null);
+  const world = useCallback((el: HTMLDivElement | null) => {
+    worldEl.current = el;
+    el?.style.setProperty(ZOOM_PROPERTY, String(zoomNow.current));
+  }, []);
   const viewChanged = useCallback(
     (view: CanvasView, size: CanvasSize) => {
       onViewChange?.(view, size);
       viewport.current = size;
+      if (view.k !== zoomNow.current) {
+        zoomNow.current = view.k;
+        worldEl.current?.style.setProperty(ZOOM_PROPERTY, String(view.k));
+      }
       placeCardNow.current();
       const next = graphWindow(mountedNow.current, view, size);
       if (next !== mountedNow.current) setMounted(next);
@@ -961,7 +1011,7 @@ export function GraphCanvas({
     if (selectedKey !== null) keep.add(selectedKey);
     return layout.items.filter((item) => {
       if (keep.has(item.key)) return true;
-      if (!mounted.detail && item.kind !== 'empty' && item.kind !== 'head') return false;
+      if (mounted.detail === 'marks' && item.kind !== 'empty' && item.kind !== 'head') return false;
       return intersects(item, mounted.rect);
     });
   }, [layout, mounted, activeKey, selectedKey]);
@@ -1173,7 +1223,12 @@ export function GraphCanvas({
         );
       })}
       {layout && placed ? (
-        <div className="crewlet-graph-canvas__world" style={{ width: `${width}px`, height: `${height}px` }}>
+        <div
+          ref={world}
+          className="crewlet-graph-canvas__world"
+          data-detail={mounted?.detail}
+          style={{ width: `${width}px`, height: `${height}px` }}
+        >
           <svg className="crewlet-graph-canvas__ground" width={width} height={height} aria-hidden="true">
             {layout.lanes.map((lane) => (
               <rect
@@ -1270,7 +1325,7 @@ export function GraphCanvas({
               </div>
             );
           })}
-          {mounted && !mounted.detail ? (
+          {mounted?.detail === 'marks' ? (
             <Shapes
               layout={layout}
               nodeById={nodeById}
@@ -1607,13 +1662,16 @@ function GraphEmptyLane({
   );
 }
 
-/** A shape's corner and its notch's width, in world units: the card's own, which a stylesheet cannot hand a path. */
+/** A mark's corner, in world units: the card's own, which a stylesheet cannot hand a path. */
 const SHAPE_CORNER = 2;
-const SHAPE_NOTCH = 4;
 
 /**
- * Every card as a shape on one layer, for a zoom too far out to read: a
- * rectangle per card, a dashed one per unconfirmed card, and a notch per tone.
+ * Every card as a mark on one layer, for a zoom no word fits a card at: a
+ * filled rectangle per card, an outlined dashed one per unconfirmed card, and
+ * the whole mark in its tone where something needs a person. A card's 4px
+ * notch is under a pixel and a half here, so the tone takes the mark: a
+ * cluster is read as how much of it is in which tone, beside the tally its
+ * title carries in figures.
  */
 function Shapes({
   layout,
@@ -1635,13 +1693,14 @@ function Shapes({
       if (item.kind !== 'node' && item.kind !== 'summary') continue;
       const node = item.kind === 'node' ? nodeById.get(item.id) : undefined;
       const rect = roundRect(item, radius);
+      const attention = node ? node.attention : worstOf(layout.groupById.get(item.id)?.members ?? []);
+      // ONE PATH EACH, the first that holds: what the reader chose, what a
+      // search pushed back, what needs a person, what nobody confirmed.
       if (item.key === selectedKey) out.selected += rect;
       else if (dimmed?.(item.key)) out.faded += rect;
+      else if (attention) out[attention.tone] += rect;
       else if (node?.unconfirmed) out.dashed += rect;
       else out.card += rect;
-      const attention = node ? node.attention : worstOf(layout.groupById.get(item.id)?.members ?? []);
-      // The notch on the leading edge, as a card draws it.
-      if (attention) out[attention.tone] += `M${item.x} ${item.y}h${SHAPE_NOTCH}v${item.height}h${-SHAPE_NOTCH}Z`;
     }
     return out;
   }, [layout, nodeById, dimmed, worstOf, selectedKey]);
@@ -1683,7 +1742,7 @@ function intersects(a: CanvasRect, b: CanvasRect): boolean {
  * than every frame.
  */
 export function graphWindow(was: GraphWindow | null, view: CanvasView, viewport: CanvasSize): GraphWindow {
-  const detail = view.k >= GRAPH_CANVAS_DETAIL_ZOOM;
+  const detail = graphDetail(view.k);
   const visible: CanvasRect = {
     x: -view.x / view.k,
     y: -view.y / view.k,

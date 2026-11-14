@@ -7,8 +7,10 @@ export {
   GRAPH_CANVAS_NARROW_WIDTH,
   GRAPH_CANVAS_LABELS,
   GRAPH_CANVAS_OPEN_ZOOM,
+  GRAPH_CANVAS_TILE_ZOOM,
   GRAPH_EDGE_FAMILIES,
   GraphCanvas,
+  graphDetail,
   graphWindow,
 } from './GraphCanvas.js';
 export type {
@@ -18,6 +20,7 @@ export type {
   GraphCanvasHandle,
   GraphCanvasLabels,
   GraphCanvasProps,
+  GraphDetail,
   GraphEdge,
   GraphEdgeFamily,
   GraphGroup,

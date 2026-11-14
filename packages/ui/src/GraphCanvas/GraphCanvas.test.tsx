@@ -31,8 +31,10 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   GRAPH_CANVAS_DETAIL_ZOOM,
+  GRAPH_CANVAS_TILE_ZOOM,
   GRAPH_CANVAS_NARROW_WIDTH,
   GraphCanvas,
+  graphDetail,
   graphWindow,
   type GraphBand,
   type GraphCanvasProps,
@@ -553,7 +555,7 @@ describe('at two thousand entries', () => {
   }));
   const chain: GraphEdge[] = many.slice(1).map((node, i) => ({ id: `e${i}`, from: many[i]!.id, to: node.id }));
 
-  test('only the cards near the view are mounted, and zoomed out past reading the map draws shapes', () => {
+  test('only the cards near the view are mounted, and zoomed out past a word fitting a card the map draws marks', () => {
     const { container } = render(<GraphCanvas label="Atlas map" bands={BANDS} nodes={many} edges={chain} />);
     LayoutObserver.settle();
     const mounted = container.querySelectorAll('.crewlet-graph-canvas__items .crewlet-graph-canvas__card');
@@ -572,11 +574,96 @@ describe('at two thousand entries', () => {
     LayoutObserver.settle();
     expect(container.querySelectorAll('.crewlet-graph-canvas__items .crewlet-graph-canvas__card')).toHaveLength(1);
     const shapes = container.querySelector('.crewlet-graph-canvas__shapes [data-shape="card"]')!;
-    // Every card is a shape, the tab stop too, which is also drawn as itself over its shape.
+    // Every card is a mark, the tab stop too, which is also drawn as itself over its mark.
     expect(shapes.getAttribute('d')!.match(/M/g)).toHaveLength(2000);
     expect(routes()).toBe(chain.length);
     // Far more calls than a reader can follow: the dashes at rest stand still.
     expect(container.querySelector('.crewlet-graph-canvas')!.hasAttribute('data-still')).toBe(true);
+  });
+});
+
+describe('levels of detail', () => {
+  const NODES: GraphNode[] = [
+    { id: 'quiet', lane: BANDS[0]!.lanes[0]!.id, name: 'orders-api', kind: 'Service' },
+    {
+      id: 'loud',
+      lane: BANDS[0]!.lanes[0]!.id,
+      name: 'orders-db',
+      attention: { tone: 'danger', label: 'Alerting' },
+    },
+    { id: 'guess', lane: BANDS[0]!.lanes[0]!.id, name: 'orders-cache', unconfirmed: true },
+  ];
+  /**
+   * A WINDOW A FIFTH THE MAP'S SIZE, because a map zooms out no further than
+   * the fit of all of it: in a window the map fits at a size that reads, there
+   * is no zoom under half size to draw.
+   */
+  const SMALL = { width: 200, height: 150 };
+  const at = (k: number) => {
+    VIEWPORT = SMALL;
+    const view = render(
+      <GraphCanvas label="Atlas map" bands={BANDS} nodes={NODES} edges={[]} initialView={{ x: 0, y: 0, k }} />,
+    );
+    LayoutObserver.settle();
+    const world = view.container.querySelector<HTMLElement>('.crewlet-graph-canvas__world')!;
+    const cards = () => view.container.querySelectorAll('.crewlet-graph-canvas__items .crewlet-graph-canvas__card');
+    const mark = (shape: string) =>
+      view.container.querySelector(`.crewlet-graph-canvas__shapes [data-shape="${shape}"]`)?.getAttribute('d') ?? '';
+    return { ...view, world, cards, mark };
+  };
+
+  test('a zoom is one of three levels, cut at half size and at the least a name fits a card', () => {
+    expect(graphDetail(1)).toBe('cards');
+    expect(graphDetail(GRAPH_CANVAS_DETAIL_ZOOM)).toBe('cards');
+    expect(graphDetail(GRAPH_CANVAS_DETAIL_ZOOM - 0.01)).toBe('tiles');
+    expect(graphDetail(GRAPH_CANVAS_TILE_ZOOM)).toBe('tiles');
+    expect(graphDetail(GRAPH_CANVAS_TILE_ZOOM - 0.01)).toBe('marks');
+  });
+
+  test('under half size every card is still an element with its glyph and its name: a tile, never a blank box', () => {
+    const { world, cards, container } = at(0.4);
+    expect(world.dataset.detail).toBe('tiles');
+    expect(container.querySelector('.crewlet-graph-canvas__shapes')).toBeNull();
+    expect(cards()).toHaveLength(NODES.length);
+    for (const card of cards()) {
+      expect(card.querySelector('.crewlet-graph-canvas__cell')).not.toBeNull();
+      expect(card.querySelector('.crewlet-graph-canvas__name')!.textContent).not.toBe('');
+    }
+    // A tile is pressed as a card is.
+    expect(screen.getByRole('button', { name: /orders-db/ }).getAttribute('data-attention')).toBe('danger');
+  });
+
+  test('the world carries the zoom, which is what holds a title and a tile name at a size on screen', () => {
+    const { world, container } = at(0.4);
+    expect(world.style.getPropertyValue('--crewlet-graph-canvas-zoom')).toBe('0.4');
+    const viewport = container.querySelector('.crewlet-canvas__viewport')!;
+    fireEvent.keyDown(viewport, { key: '+' });
+    LayoutObserver.settle();
+    const zoom = Number(world.style.getPropertyValue('--crewlet-graph-canvas-zoom'));
+    expect(zoom).toBeGreaterThan(0.4);
+  });
+
+  test('past a word fitting a card every card is a filled mark, whole in its tone where something needs a person', () => {
+    const { world, mark } = at(0.2);
+    expect(world.dataset.detail).toBe('marks');
+    // One path each: the tone takes the whole mark, so it is not also drawn at rest.
+    expect(mark('card').match(/M/g)).toHaveLength(1);
+    expect(mark('danger').match(/M/g)).toHaveLength(1);
+    expect(mark('dashed').match(/M/g)).toHaveLength(1);
+    // The whole card's rectangle, not a notch on its edge: the same shape a card at rest is.
+    const shape = (d: string) => d.replace(/^M[\d.-]+ [\d.-]+/, '');
+    expect(shape(mark('danger'))).toBe(shape(mark('card')));
+  });
+
+  test('a cluster keeps its title, its count and its tally as elements at every level', () => {
+    for (const k of [1, 0.4, 0.2]) {
+      const { container, unmount } = at(k);
+      const title = container.querySelector('.crewlet-graph-canvas__lane-title')!;
+      expect(title.querySelector('.crewlet-graph-canvas__lane-label')!.textContent, String(k)).not.toBe('');
+      expect(title.querySelector('.crewlet-graph-canvas__lane-count')!.textContent, String(k)).toBe('3');
+      expect(title.querySelector('[data-tone="danger"]')!.textContent, String(k)).toBe('1');
+      unmount();
+    }
   });
 });
 
@@ -585,20 +672,23 @@ describe('graphWindow', () => {
 
   test('mounts the view with half a screen of room each side, and keeps it while the view stays inside', () => {
     const first = graphWindow(null, { x: 0, y: 0, k: 1 }, viewport);
-    expect(first).toEqual({ rect: { x: -500, y: -250, width: 2000, height: 1000 }, detail: true });
+    expect(first).toEqual({ rect: { x: -500, y: -250, width: 2000, height: 1000 }, detail: 'cards' });
     expect(graphWindow(first, { x: -300, y: -100, k: 1 }, viewport)).toBe(first);
     const moved = graphWindow(first, { x: -700, y: 0, k: 1 }, viewport);
     expect(moved).not.toBe(first);
     expect(moved.rect.x).toBe(200);
   });
 
-  test('a zoom past reading switches to shapes, and a deep zoom in remounts a smaller window', () => {
-    const far = graphWindow(null, { x: 0, y: 0, k: GRAPH_CANVAS_DETAIL_ZOOM / 2 }, viewport);
-    expect(far.detail).toBe(false);
+  test('a zoom under half size switches to tiles, one past them to marks, and a deep zoom in remounts a smaller window', () => {
+    const tiles = graphWindow(null, { x: 0, y: 0, k: GRAPH_CANVAS_TILE_ZOOM }, viewport);
+    expect(tiles.detail).toBe('tiles');
+    // A LEVEL IS A NEW WINDOW even where the view stayed inside the old one.
+    const far = graphWindow(tiles, { x: 0, y: 0, k: GRAPH_CANVAS_TILE_ZOOM / 2 }, viewport);
+    expect(far.detail).toBe('marks');
     const near = graphWindow(far, { x: 0, y: 0, k: 2 }, viewport);
-    expect(near.detail).toBe(true);
+    expect(near.detail).toBe('cards');
     const deeper = graphWindow(
-      { rect: { x: 0, y: 0, width: 100000, height: 100000 }, detail: true },
+      { rect: { x: 0, y: 0, width: 100000, height: 100000 }, detail: 'cards' },
       { x: 0, y: 0, k: 2 },
       viewport,
     );

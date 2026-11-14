@@ -41,6 +41,8 @@
   --crewlet-graph-canvas-flow-lit-duration: 0.9s;
   --crewlet-graph-canvas-selected-glow: 18px;
   --crewlet-graph-canvas-popup-width: 18rem;
+  /* The size a tile's name is held at on screen: the least type the kit sets. */
+  --crewlet-graph-canvas-tile-name: var(--font-size-badge);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -81,6 +83,17 @@
 
 .crewlet-graph-canvas__world {
   position: relative;
+  /* The map's zoom, which the component writes on this element as it moves. */
+  --crewlet-graph-canvas-zoom: 1;
+  /*
+   * What a length is multiplied by to HOLD ITS SIZE ON SCREEN once the map is
+   * zoomed out: one over the zoom, and never under one, so nothing grows past
+   * its own size when the map is zoomed in. Declared HERE, on the element the
+   * zoom is written on: a custom property is worked out where it is declared,
+   * so on the root it would be worked out from the root's zoom, which is
+   * always one.
+   */
+  --crewlet-graph-canvas-hold: calc(1 / min(1, var(--crewlet-graph-canvas-zoom)));
 }
 
 .crewlet-graph-canvas__ground,
@@ -147,32 +160,46 @@
   pointer-events: none;
 }
 
+/*
+ * A CLUSTER'S TITLE HOLDS ITS SIZE ON SCREEN. Scaled with the map, an 11px
+ * title is under 5px by the zoom a whole map fits at, which is exactly where
+ * the cards under it stop carrying words and the title, its count and its
+ * tally are what is left to read. Its gaps are in its own type, so they hold
+ * with it; the name gives way to the cluster's width, and the figures never do.
+ */
 .crewlet-graph-canvas__lane-title {
   position: absolute;
   top: 0;
   left: calc(var(--spacing-2) - var(--spacing-3));
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
+  gap: 0.75em;
+  box-sizing: border-box;
   max-width: 100%;
-  padding: 0 var(--spacing-2);
+  padding: 0 0.75em;
   /* The ground's own colour cuts the outline. */
   background: var(--color-surface-frame);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-2xs);
+  font-size: calc(var(--font-size-2xs) * var(--crewlet-graph-canvas-hold));
   line-height: var(--font-line-height-snug);
   white-space: nowrap;
   transform: translateY(-50%);
 }
 
 .crewlet-graph-canvas__lane-label {
-  min-width: 0;
+  /* A letter and the ellipsis at the least, so a cluster too narrow for its name still says which it is. */
+  min-width: 2ch;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--font-letter-spacing-wide);
   text-transform: uppercase;
   color: var(--color-text-primary);
+}
+
+.crewlet-graph-canvas__lane-count,
+.crewlet-graph-canvas__lane-tone {
+  flex: none;
 }
 
 .crewlet-graph-canvas__lane-count,
@@ -190,8 +217,8 @@
 .crewlet-graph-canvas__lane-tone {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-1);
-  padding: 0 var(--spacing-1);
+  gap: 0.375em;
+  padding: 0 0.375em;
   border-radius: var(--crewlet-graph-canvas-corner);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
@@ -199,7 +226,7 @@
 
 .crewlet-graph-canvas__lane-tone::before {
   content: '';
-  width: var(--crewlet-graph-canvas-notch);
+  width: 0.375em;
   height: 0.75em;
   background: currentColor;
 }
@@ -225,7 +252,8 @@
   align-items: flex-end;
   padding: var(--spacing-3) 0 var(--spacing-3);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-2xs);
+  /* Held on screen, as a cluster's title is. */
+  font-size: calc(var(--font-size-2xs) * var(--crewlet-graph-canvas-hold));
   font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-snug);
   letter-spacing: var(--font-letter-spacing-wide);
@@ -252,7 +280,14 @@
   gap: var(--spacing-2);
   padding: 0 var(--spacing-2);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-2xs);
+  /*
+   * Held on screen like a cluster's title, up to what its own row holds: a
+   * header is one row of the map, so past that it shrinks with the map.
+   */
+  font-size: min(
+    calc(var(--font-size-2xs) * var(--crewlet-graph-canvas-hold)),
+    calc(var(--crewlet-graph-canvas-card-height) * 0.6)
+  );
   line-height: var(--font-line-height-snug);
   color: var(--color-text-secondary);
   border-radius: var(--crewlet-graph-canvas-corner);
@@ -573,13 +608,14 @@
 }
 
 .crewlet-graph-canvas__trunk-label {
-  padding: 0 var(--spacing-2);
+  padding: 0 0.75em;
   border: 1px solid var(--color-map-outline);
   border-radius: var(--crewlet-graph-canvas-corner);
   background: var(--color-surface-frame);
   color: var(--color-text-secondary);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-2xs);
+  /* A trunk's count is the only thing that says how many lines it stands for: held on screen. */
+  font-size: calc(var(--font-size-2xs) * var(--crewlet-graph-canvas-hold));
   line-height: var(--font-line-height-normal);
   white-space: nowrap;
   pointer-events: none;
@@ -591,27 +627,78 @@
   opacity: var(--crewlet-graph-canvas-trunk-dim);
 }
 
-/* ── cards as shapes, zoomed out past reading ─────────────────────────────── */
+/* ── cards as tiles, under half size ──────────────────────────────────────── */
 
+/*
+ * A TILE IS A CARD CUT TO WHAT STILL READS. Its glyph fills the cell, its name
+ * is held at one size on screen and cut to what fits beside the cell, and its
+ * tone takes the whole cell: the 4px notch and the corner badge are under two
+ * pixels here. The vendor's mark and a group's chevron go, since neither says
+ * anything at this size.
+ */
+.crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__card {
+  gap: calc(var(--spacing-1) * var(--crewlet-graph-canvas-hold));
+  padding-right: calc(var(--spacing-1) * var(--crewlet-graph-canvas-hold));
+}
+
+.crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__cell {
+  font-size: calc(var(--crewlet-graph-canvas-cell) * 0.75);
+}
+
+/* Whatever the caller drew in the cell takes the cell's own size: a glyph says its size in px. */
+.crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__cell > :not(.crewlet-graph-canvas__mark) {
+  width: 1em;
+  height: 1em;
+}
+
+.crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__card[data-attention] .crewlet-graph-canvas__cell {
+  background: var(--crewlet-graph-canvas-tone);
+  color: var(--color-surface-frame);
+}
+
+.crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__name,
+.crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__card--group .crewlet-graph-canvas__group-count {
+  font-size: calc(var(--crewlet-graph-canvas-tile-name) * var(--crewlet-graph-canvas-hold));
+  /* One line with no leading: at the tile floor the card is a pixel taller than its name. */
+  line-height: 1;
+}
+
+.crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__mark,
+.crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__badge,
+.crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__card::after,
+.crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__card--group .crewlet-graph-canvas__chevron {
+  display: none;
+}
+
+/* ── cards as marks, zoomed out past a word fitting one ───────────────────── */
+
+/*
+ * A MARK IS FILLED, never an outline round the ground's own colour: an empty
+ * rectangle reads as a card that failed to draw. At rest it is the colour the
+ * legend keys "quiet" in, and where something needs a person the whole mark
+ * is in the tone, so the legend reads the marks as it reads the cards.
+ */
 .crewlet-graph-canvas__shapes path {
   stroke-width: 1;
 }
 
 .crewlet-graph-canvas__shapes [data-shape='card'] {
-  fill: var(--color-surface-frame);
+  fill: var(--color-map-hairline);
   stroke: var(--color-map-hairline);
 }
 
 .crewlet-graph-canvas__shapes [data-shape='faded'] {
-  fill: var(--color-surface-frame);
+  fill: var(--color-map-hairline);
   stroke: var(--color-map-hairline);
   opacity: var(--crewlet-graph-canvas-dim);
 }
 
+/* Not confirmed: the outline alone, dashed, as its card's edge and the legend's key are. */
 .crewlet-graph-canvas__shapes [data-shape='dashed'] {
-  fill: var(--color-surface-frame);
+  fill: var(--color-map-pane);
   stroke: var(--color-map-hairline);
-  stroke-dasharray: 4 3;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
 }
 
 .crewlet-graph-canvas__shapes [data-shape='selected'] {

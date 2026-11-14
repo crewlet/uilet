@@ -208,11 +208,32 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.126.0
+
+### A map keeps a readable signal as it zooms out
+
+`GraphCanvas` drew every card as an empty outlined rectangle under half size, and scaled its cluster titles, counts and trunk counts with the map, so at the zoom a whole map fits a window at (about 40% for eighty entries on a laptop) it was boxes with nothing in them under 4px labels. It now has three levels of detail (`GraphDetail`, from `graphDetail(zoom)`), and each keeps a signal a reader can use at its size:
+
+- **`cards`**, from half size up (`GRAPH_CANVAS_DETAIL_ZOOM`): the whole card, as before.
+- **`tiles`**, from there down to three tenths (`GRAPH_CANVAS_TILE_ZOOM`): the card stays an element, pressed and walked like a card, cut to what still reads. Its glyph fills the cell, its name is held at one size on screen (`--crewlet-graph-canvas-tile-name`, the kit's smallest type) and cut to what fits, and its tone takes the whole cell, where the 4px notch and the corner badge are under two pixels. The vendor mark and a group's chevron are not drawn.
+- **`marks`**, below that, where no word fits a card: every card is a FILLED shape on one layer, in the colour the legend keys "quiet" in at rest and whole in its tone where something needs a person, and an unconfirmed one is the dashed outline its card has. Never an outline round the ground's own colour.
+
+**Cluster titles, their counts and tallies, band titles and trunk counts hold their size on screen** at every zoom under 100% (`--crewlet-graph-canvas-hold`, worked out from `--crewlet-graph-canvas-zoom`, which the component writes on the world as the view moves). A title gives way to its cluster's width by cutting its name down to a letter; its count and tally are never the part that goes. An open group's header holds its size up to what its own row holds.
+
+Stories: `GraphCanvas` (tiles, marks, both in light and dark).
+
+**Breaking: `GraphWindow.detail` is a `GraphDetail`**, not a boolean.
+
+| Was | Is |
+|---|---|
+| `graphWindow(...).detail === true` | `graphWindow(...).detail === 'cards'` |
+| `graphWindow(...).detail === false` | `graphWindow(...).detail !== 'cards'` (`'tiles'` or `'marks'`) |
+
 ## Changes in 0.123.0
 
 ### A map and a catalogue of what a company runs on
 
-**Breaking: `GraphCanvas` is the layered service map, in one look.** It keeps its clusters (lanes) in bands, its groups that open and close, its right-angled routing round every card, its keyboard walk and its drawing budget (only the cards near the view are mounted, and zoomed out past reading they are shapes on one layer), and gains what a map of a company needs:
+**Breaking: `GraphCanvas` is the layered service map, in one look.** It keeps its clusters (lanes) in bands, its groups that open and close, its right-angled routing round every card, its keyboard walk and its drawing budget (only the cards near the view are mounted, and zoomed out past reading they are shapes on one layer; since 0.126.0, filled marks under tiles), and gains what a map of a company needs:
 
 - **Three families of line** (`GraphEdge.family`, `GraphEdgeFamily`, `GRAPH_EDGE_FAMILIES`). `flow` is a call: drawn at rest, with dashes moving along it that say which way it points (direction, never volume). `support` is what something runs on: at rest it is one trunk per pair of clusters in neighbouring bands, with its count ("7 run on"; `graphTrunks`, `GraphTrunk`). `context` is what stands around (an account, a repository, a monitor). The last two are drawn line by line for the entry a reader stands on, or when the legend switches them on (`families`, `onFamiliesChange`, calls alone unless named). Hiding a family never moves a card: the order inside a cluster reads the calls and the "runs on" lines whatever is shown.
 - **The lit path.** A selection lights its whole path both ways along the lines that carry a failure (calls and "runs on"), and what stands around it one step away; everything else recedes to a fifth. The lit line is the accent under a glow, with faster dashes. `trace` narrows the direction and the depth. A press on the selected card, a press on the ground or Escape clears.
