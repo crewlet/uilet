@@ -67,6 +67,20 @@
 }
 
 /*
+ * ONE PLACE ON A LINE, WHATEVER THE FACE HOLDS. An inline flex box takes its
+ * baseline from its first item, so a face standing in a line of text or in an
+ * inline wrapper (a title tooltip's span) sat on its initials' baseline when
+ * it held initials and on its picture's foot when it held a character: a
+ * person beside two agents stood 2px lower at 20px, measured. Centred on the
+ * line, every face lands on the same middle. A face in a sentence
+ * (`size="text"`) is placed by the sentence that holds it (InlineRef.css), so
+ * it is left out here.
+ */
+.crewlet-avatar:not(.crewlet-avatar--text) {
+  vertical-align: middle;
+}
+
+/*
  * The four steps. Each pairs its box with a type step, so two initials sit
  * inside the outline at every one of them. A numeric size sets the same
  * `--crewlet-avatar-size` inline and computes its own type, because nothing in
