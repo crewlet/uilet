@@ -57,10 +57,15 @@
   box-shadow: var(--shadow-xs), 0 0 0 1px var(--color-border-default);
 }
 
-/* The ring over the chip's edge and the sliver round it, as before the inset
-   moved: the option's edge is a pixel outside the chip. */
+/*
+ * THE RING IS INSIDE THE OPTION, whole. The option fills the well, which is a
+ * scroll container (Tabs.css), so a ring that stood a pixel outside the
+ * option, over the well's boundary, was cut top and bottom to two side bars.
+ * Inside the option it lies round the chip's own edge, which is drawn a pixel
+ * in, and nothing clips it.
+ */
 .crewlet-tabs.crewlet-tabs--pill.crewlet-segmented .crewlet-segmented__option:focus-visible {
-  outline-offset: calc(-1 * var(--crewlet-tabs-pill-inset));
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-segmented__text {

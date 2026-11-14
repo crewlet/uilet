@@ -112,6 +112,23 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   width: fit-content;
+  /*
+   * THE ROW SCROLLS RATHER THAN PUSHING THE SCREEN SIDEWAYS, as the underline
+   * row does. `fit-content` alone does not cap: a flex row of nowrap labels
+   * has a min-content width equal to the sum of them, so the box grew past
+   * its container (a view switcher of five tabs stood 497px wide in a 390px
+   * window and took the whole page sideways with it). `max-width` is the half
+   * that gives the scrollport something to hide. The scrollbar is hidden for
+   * the underline row's reason: it would sit on the line the chips are drawn
+   * on, and the row answers the arrow keys either way.
+   */
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.crewlet-tabs--pill::-webkit-scrollbar {
+  display: none;
 }
 
 /* ─── Tab item (shared) ───────────────────────────────────────── */
@@ -327,6 +344,19 @@
   outline-offset: 0;
 }
 
+/*
+ * AND INSIDE THE TAB, because the row is a scroll container and a scroller
+ * clips at its padding edge: `overflow-x: auto` computes `overflow-y` to
+ * `auto` as well, so a ring that stands on or outside the tab's edge loses
+ * whatever lies over the well's inset and boundary. Flush, a pill tab's ring
+ * was cut to two side bars: a pixel gone top and bottom, and on the first and
+ * last tab's outer side. Two classes on the tab, so it wins over the flush
+ * ring above and over a segmented option's own offset in any bundle order.
+ */
+.crewlet-tabs--pill .crewlet-tabs__tab.crewlet-tabs__tab:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
 /* ─── Chip (a lens row) ───────────────────────────────────────── */
 /*
  * QUIET CHIPS WITH NO WELL: the lenses of an object or a scope, set beside its
@@ -517,21 +547,18 @@
   min-width: 0;
 }
 
-/* The scroll contract an underline row has on its own, for a pill or chip
-   row that must shrink beside its actions. Its ring is drawn inside the tab,
-   as the underline's is, because the scroller clips an outset one. */
-.crewlet-tabs-bar > .crewlet-tabs--pill,
+/* The scroll contract an underline and a pill row have on their own, for a
+   chip row that must shrink beside its actions. Its ring is drawn inside the
+   tab, as theirs is, because the scroller clips an outset one. */
 .crewlet-tabs-bar > .crewlet-tabs--chip {
   overflow-x: auto;
   scrollbar-width: none;
 }
 
-.crewlet-tabs-bar > .crewlet-tabs--pill::-webkit-scrollbar,
 .crewlet-tabs-bar > .crewlet-tabs--chip::-webkit-scrollbar {
   display: none;
 }
 
-.crewlet-tabs-bar > .crewlet-tabs--pill .crewlet-tabs__tab:focus-visible,
 .crewlet-tabs-bar > .crewlet-tabs--chip .crewlet-tabs__tab:focus-visible {
   outline-offset: var(--size-focus-ring-inset-offset);
 }

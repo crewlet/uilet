@@ -60,6 +60,31 @@ export interface RovingOptions {
 }
 
 /**
+ * Bring an option that took focus WHOLLY into its row's own visible range.
+ *
+ * A pill or underline row scrolls (Tabs.css), and a browser's own answer to
+ * `focus()` is to scroll an element that is out of view: one that is PARTLY
+ * in view is left where it is, cut at the row's edge with its ring. So the
+ * fourth tab of six in a narrow place took focus half shown, its name and
+ * the far side of its ring past the edge.
+ *
+ * It moves the row's own scrollLeft, as `reveal` in Tabs.tsx does for the
+ * chosen tab and for its reason: `scrollIntoView` walks every scrolling
+ * ancestor and would pull the page sideways. A row that does not scroll has
+ * nothing outside its range, and nothing moves.
+ */
+export function revealInRow(option: HTMLElement | null | undefined): void {
+  const row = option?.closest<HTMLElement>('.crewlet-tabs');
+  if (!option || !row) return;
+  const range = row.getBoundingClientRect();
+  const left = range.left + row.clientLeft;
+  const right = left + row.clientWidth;
+  const box = option.getBoundingClientRect();
+  if (box.left < left) row.scrollLeft -= left - box.left;
+  else if (box.right > right) row.scrollLeft += box.right - right;
+}
+
+/**
  * Roving focus over a row of buttons: ONE TAB STOP for the row, the arrows to
  * move inside it.
  *
@@ -141,6 +166,7 @@ export function useRoving(
    * with itself about where the reader is.
    */
   const onFocusAt = (index: number) => {
+    revealInRow(buttons.current[index]);
     if (followFocus) setLanded(index);
   };
 
