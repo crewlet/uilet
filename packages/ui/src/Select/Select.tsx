@@ -572,6 +572,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     return out;
   }, [offered]);
   const flat = useMemo(() => groups.flatMap((group) => group.items), [groups]);
+  const described = useMemo(() => options.some((option) => Boolean(option.description)), [options]);
   /*
    * A LIST WHOSE ROWS LEAD WITH A MARK ENDS THEM WITH THE TICK. The tick's
    * column is held open on every row so the labels line up, and in front of
@@ -1078,6 +1079,10 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       className={cx(
         'crewlet-select__menu',
         `crewlet-select__menu--${size}`,
+        // SIX ROWS OF THE LIST'S OWN HEIGHT: a row with a second line is two
+        // lines tall, so the one-line cap scrolled a list of four described
+        // answers and cut the first or the last of them.
+        described && 'crewlet-select__menu--described',
         container !== null && container !== document.body ? 'crewlet-select__menu--in-host' : 'crewlet-select__menu--fixed',
         menuClassName,
       )}

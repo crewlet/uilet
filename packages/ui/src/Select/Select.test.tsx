@@ -936,6 +936,40 @@ test("a taller panel is a taller list, and the panel keeps the window's cap", ()
   expect(list).toMatch(/max-height:\s*none/);
 });
 
+/*
+ * SIX ROWS OF THE LIST'S OWN HEIGHT. The panel's cap was six one-line rows, so
+ * a list whose answers each carry a second line scrolled at four of them and
+ * cut the first or the last at its edge. A described list takes twice the cap.
+ */
+test('a list of described answers gets room for six of its own rows', () => {
+  render(<Picker />);
+  fireEvent.click(trigger());
+  const panel = screen.getByRole('listbox', { name: 'Owner' }).closest('.crewlet-select__menu')!;
+  expect(panel.classList.contains('crewlet-select__menu--described')).toBe(true);
+  const css = selectCss();
+  const plain = /\.crewlet-select__menu\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  const described = /\.crewlet-select__menu--described\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  const rem = (block: string) => Number(/--crewlet-select-menu-max-height:\s*([\d.]+)rem/.exec(block)?.[1]);
+  expect(rem(described)).toBe(2 * rem(plain));
+});
+
+test('a list of one-line answers keeps the one-line cap', () => {
+  render(
+    <Select
+      ariaLabel="Size"
+      options={[
+        { value: 's', label: 'Small' },
+        { value: 'l', label: 'Large' },
+      ]}
+      value="s"
+      onChange={() => {}}
+    />,
+  );
+  fireEvent.click(screen.getByRole('combobox', { name: 'Size' }));
+  const panel = screen.getByRole('listbox', { name: 'Size' }).closest('.crewlet-select__menu')!;
+  expect(panel.classList.contains('crewlet-select__menu--described')).toBe(false);
+});
+
 test('a held select says why, to a screen reader and on hover, and opens nothing', () => {
   // Disabled alone, a picker on an agent that is off looked available and
   // could not say why it was not.
