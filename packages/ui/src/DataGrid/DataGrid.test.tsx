@@ -127,14 +127,18 @@ describe('the columns', () => {
     expect(sheet()).toMatch(/\.crewlet-data-grid__cell:empty \{\s*display: none;/);
   });
 
-  test('draw the set asked for in the order asked, and offer the way back', () => {
+  test('draw the set asked for in the order asked, with the row actions after it, and offer the way back', () => {
     const onCols = vi.fn();
     const { container } = render(
       <DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} cols="tokens,name" onColsChange={onCols} />,
     );
+    // THE ACTION COLUMN IS NO CHOICE: a set that does not name it still
+    // draws it, last, so choosing what to read never takes away what a row
+    // can be asked to do.
     expect([...container.querySelector('.crewlet-data-grid__row')!.children].map((c) => c.textContent)).toEqual([
       '30',
       'Bravo',
+      'Open Bravo',
     ]);
     fireEvent.click(screen.getByRole('button', { name: 'Show every column' }));
     expect(onCols).toHaveBeenCalledWith('');
@@ -754,13 +758,14 @@ test('an application drives the cursor through the handle, and Enter activates t
 test('a chooser writes the declaration order whatever the order of the ticks, and an empty value is the default set', () => {
   const onChange = vi.fn();
   const choices = columnChoicesOf([...COLUMNS, { key: 'extra', header: 'Extra', cell: () => '', optional: true }]);
-  expect(choices.map((c) => c.label)).toEqual(['Name', 'Seat', 'Tokens', 'Kind', 'go', 'Extra']);
+  // NO BOX FOR THE ACTION COLUMN (`go`): it is drawn whatever is chosen.
+  expect(choices.map((c) => c.label)).toEqual(['Name', 'Seat', 'Tokens', 'Kind', 'Extra']);
   render(<ColumnChooser choices={choices} value="" onChange={onChange} />);
   const box = (name: string) => screen.getByRole('checkbox', { name });
   expect((box('Name') as HTMLInputElement).checked).toBe(true);
   expect((box('Extra') as HTMLInputElement).checked).toBe(false);
   fireEvent.click(box('Extra'));
-  expect(onChange).toHaveBeenLastCalledWith('name,seat,tokens,mark,go,extra');
+  expect(onChange).toHaveBeenLastCalledWith('name,seat,tokens,mark,extra');
 });
 
 test('a chooser list is one group named by its heading, and a box says which item it toggles', () => {
