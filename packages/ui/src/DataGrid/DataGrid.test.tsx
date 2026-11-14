@@ -166,6 +166,19 @@ describe('the heads', () => {
       />,
     );
     expect(container.querySelectorAll('[role="columnheader"]')[4]!.textContent).toBe('Open');
+    // A HEAD WHOSE CONTENT IS A CONTROL is named by it alone: the select-all
+    // box's head is not also called "Actions".
+    rerender(
+      <DataGrid
+        rows={ROWS}
+        columns={COLUMNS}
+        rowKey={(r) => r.id}
+        selection={{ selected: new Set(), onChange: () => {}, rowLabel: (r) => `Select ${r.name}` }}
+      />,
+    );
+    const box = screen.getAllByRole('columnheader')[0]!;
+    expect(box.textContent).not.toContain('Actions');
+    expect(box.querySelector('input[type="checkbox"]')).not.toBeNull();
   });
 
   test('are buttons only where they sort, with the sort said on the column head', () => {

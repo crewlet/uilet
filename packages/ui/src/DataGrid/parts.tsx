@@ -223,7 +223,11 @@ export function GridHeadCell({
     // an unnamed column before every row's controls (axe `empty-table-header`).
     const word = headerWord(column);
     const glyph = !word && !column.action ? column.label : undefined;
-    const named = word ? undefined : (glyph ?? (column.action ? (column.label ?? actionsLabel) : undefined));
+    // ONLY A HEAD THAT DRAWS NOTHING: a head whose content is a control
+    // (the grid's own select-all box) is named by that control.
+    const named = word
+      ? undefined
+      : (glyph ?? (column.action && !worded ? (column.label ?? actionsLabel) : undefined));
     return (
       <div className={headClass} role="columnheader" aria-colindex={colIndex} title={glyph} aria-sort={ariaSort}>
         {label}
