@@ -94,9 +94,7 @@ function MentionComposer({ chat = false }: { chat?: boolean }) {
           sendHint={!chat}
           label="Message #engineering"
           placeholder="Message #engineering"
-          role="combobox"
           aria-autocomplete="list"
-          aria-expanded={open}
           aria-controls={open ? listbox.listId : undefined}
           aria-activedescendant={open && listbox.active >= 0 ? listbox.optionId(listbox.active) : undefined}
           value={value}

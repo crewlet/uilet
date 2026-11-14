@@ -57,8 +57,7 @@ function Composer({ onTake }: { onTake: (insert: string) => void }) {
       ) : null}
       <textarea
         aria-label="Message"
-        role="combobox"
-        aria-expanded={open}
+        aria-autocomplete="list"
         aria-controls={open ? listbox.listId : undefined}
         aria-activedescendant={open ? listbox.optionId(listbox.active) : undefined}
         value={value}
@@ -90,7 +89,7 @@ describe('mentionQuery', () => {
 
 test('the list is a listbox the field points at, its rows named options with the PersonRow design', () => {
   render(<Composer onTake={() => undefined} />);
-  const field = screen.getByRole('combobox', { name: 'Message' });
+  const field = screen.getByRole('textbox', { name: 'Message' });
   fireEvent.change(field, { target: { value: '@', selectionStart: 1 } });
   const list = screen.getByRole('listbox', { name: 'People and agents' });
   const options = screen.getAllByRole('option');
@@ -109,7 +108,7 @@ test('the list is a listbox the field points at, its rows named options with the
 test('the arrows move the highlight and wrap, and Tab takes the highlighted option', () => {
   const taken: string[] = [];
   render(<Composer onTake={(insert) => taken.push(insert)} />);
-  const field = screen.getByRole('combobox', { name: 'Message' });
+  const field = screen.getByRole('textbox', { name: 'Message' });
   fireEvent.change(field, { target: { value: '@', selectionStart: 1 } });
   fireEvent.keyDown(field, { key: 'ArrowUp' });
   expect(field.getAttribute('aria-activedescendant')).toMatch(/-2$/);
@@ -123,7 +122,7 @@ test('the arrows move the highlight and wrap, and Tab takes the highlighted opti
 test('a press on an option takes it without taking focus from the field', () => {
   const taken: string[] = [];
   render(<Composer onTake={(insert) => taken.push(insert)} />);
-  const field = screen.getByRole('combobox', { name: 'Message' });
+  const field = screen.getByRole('textbox', { name: 'Message' });
   fireEvent.change(field, { target: { value: '@', selectionStart: 1 } });
   const option = screen.getByRole('option', { name: /@channel/ });
   const press = fireEvent.mouseDown(option);
@@ -134,7 +133,7 @@ test('a press on an option takes it without taking focus from the field', () => 
 
 test('Escape closes the list and nothing else', () => {
   render(<Composer onTake={() => undefined} />);
-  const field = screen.getByRole('combobox', { name: 'Message' });
+  const field = screen.getByRole('textbox', { name: 'Message' });
   fireEvent.change(field, { target: { value: '@', selectionStart: 1 } });
   fireEvent.keyDown(field, { key: 'Escape' });
   expect(screen.queryByRole('listbox')).toBeNull();
@@ -157,7 +156,7 @@ test('an open menu carries no axe violation', async () => {
       <Composer onTake={() => undefined} />
     </main>,
   );
-  fireEvent.change(screen.getByRole('combobox', { name: 'Message' }), { target: { value: '@', selectionStart: 1 } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), { target: { value: '@', selectionStart: 1 } });
   const result = await axe.run(container, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
     rules: { 'color-contrast': { enabled: false } },

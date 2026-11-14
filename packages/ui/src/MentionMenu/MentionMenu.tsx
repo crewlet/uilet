@@ -86,9 +86,10 @@ export type MentionMenuAppearance = 'default' | 'chat';
  * the highlighted row with `aria-activedescendant`, so typing goes on while
  * the list narrows. `useListbox` gives the keys (the arrows wrap, Enter and
  * Tab take the row, Escape closes the list and nothing else); the host spreads
- * `role="combobox"`, `aria-controls`, `aria-expanded` and
- * `aria-activedescendant` on its field, and finds the word being typed with
- * `mentionQuery`.
+ * `aria-autocomplete="list"`, `aria-controls` and `aria-activedescendant` on
+ * its field, and finds the word being typed with `mentionQuery`. THE FIELD
+ * STAYS THE TEXTBOX a textarea is: ARIA in HTML allows no `combobox` role on
+ * a textarea (axe aria-allowed-role), and a textbox takes all three.
  *
  * DRAWN ABOVE THE COMPOSER, never over what is being typed: it is placed
  * against the nearest positioned box round the field, as wide as the field
