@@ -2,7 +2,8 @@
  * The line under a message that has replies, and the working line under it.
  */
 
-/* The column's width, so the line's own cap (below) is what bounds it. */
+/* A column under the message: the line hugs its own content, and the working
+   line under it may run the column's width. */
 .crewlet-thread-summary-wrap {
   display: flex;
   flex-direction: column;
@@ -17,18 +18,25 @@
   max-width: 100%;
 }
 
-/* The faces sit on the content edge: the line's 1px edge and its inset are
-   taken back by the same amount outside it. It runs the content column's
-   width up to a reading cap, so the whole line is the target and its end
-   stands at one place down a room. */
+/*
+ * AS LONG AS WHAT IT SAYS: the faces, the count, how many are new, when the
+ * last reply came and the chevron's place, and no more. It was a bar the
+ * content column's width up to 37.5rem, with "View thread" or "Thread open"
+ * at its far end, which turned a two-word fact into the heaviest thing under
+ * a message.
+ *
+ * The faces sit on the content edge: the line's 1px edge and its inset are
+ * taken back by the same amount outside it.
+ */
 .crewlet-thread-summary {
   --crewlet-thread-summary-inset: var(--spacing-1);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--spacing-2);
-  width: min(100%, 37.5rem);
-  /* The 24px faces with 5px of air above and below. */
-  height: calc(var(--size-control-md) + var(--spacing-1));
+  gap: var(--spacing-1);
+  /* The small control's height: the 20px faces with a little air inside the
+     hairline. */
+  height: var(--size-control-sm);
+  min-width: 0;
   box-sizing: border-box;
   margin-inline-start: calc((var(--crewlet-thread-summary-inset) + 1px) * -1);
   padding: 0 var(--crewlet-thread-summary-inset);
@@ -40,6 +48,7 @@
   font-size: var(--font-size-compact);
   line-height: 1;
   text-align: start;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -55,47 +64,53 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/* A step between the faces and the words, wider than the one between the
+   words themselves. */
+.crewlet-thread-summary > .crewlet-avatar-stack {
+  margin-inline-end: var(--spacing-1);
+}
+
 .crewlet-thread-summary__count {
   flex: none;
   color: var(--color-brand-accent-ink);
   font-weight: var(--font-weight-medium);
-  white-space: nowrap;
 }
 
-/* When the last reply came, laid out at rest and shown on the line's hover:
-   the part that gives way first where the column is narrow. */
+/* When the last reply came, after the count and a middle dot the eye reads
+   between them, in the quiet ink: always shown, and the part that gives way
+   first where the column is narrow. */
 .crewlet-thread-summary__last {
   min-width: 0;
   overflow: hidden;
   color: var(--color-text-tertiary);
   text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity var(--motion-duration-moderate) var(--motion-easing-default);
 }
 
-/* "View thread" and the chevron that says the line opens, at its end. */
-.crewlet-thread-summary__end {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: var(--spacing-1);
-  margin-inline-start: auto;
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  opacity: 0;
+.crewlet-thread-summary__last::before {
+  content: '\00b7\00a0';
 }
 
+/* The chevron that says the line opens: its place always laid out, shown
+   under the pointer or the keyboard. */
 .crewlet-thread-summary__chevron {
+  flex: none;
   color: var(--color-text-tertiary);
+  opacity: 0;
 }
 
-.crewlet-thread-summary:is(:hover, :focus-visible) .crewlet-thread-summary__last,
-.crewlet-thread-summary:is(:hover, :focus-visible, .is-open) .crewlet-thread-summary__end {
+.crewlet-thread-summary:is(:hover, :focus-visible) .crewlet-thread-summary__chevron {
   opacity: 1;
 }
 
-/* OPEN, the end says so and opens nothing new. */
+/* OPEN, the line is the selected surface inside its hairline, and opens
+   nothing new: no chevron. */
+.crewlet-thread-summary.is-open,
+.crewlet-thread-summary.is-open:is(:hover, :focus-visible) {
+  border-color: var(--color-edge-hairline);
+  background: var(--color-surface-selected);
+  color: var(--color-text-primary);
+}
+
 .crewlet-thread-summary.is-open .crewlet-thread-summary__chevron {
   visibility: hidden;
 }
@@ -106,10 +121,4 @@
 .crewlet-chat-message:has(.crewlet-thread-summary.is-open),
 .crewlet-chat-message:has(.crewlet-thread-summary.is-open):hover {
   background: var(--color-surface-selected);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .crewlet-thread-summary__last {
-    transition: none;
-  }
 }

@@ -1,12 +1,12 @@
 /**
  * The line under a message with replies: the repliers' faces, the count in
- * the accent's ink, how many are new and when the last came, named once for
- * a screen reader, and "View thread" in the time's cell under the pointer.
+ * the accent's ink, how many are new and when the last came, as long as what
+ * it says and named once for a screen reader; open is a state, not words.
  */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
-import { installSheets, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
+import { installSheets, installThemed, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { ThreadSummary, type ThreadSummaryProps } from './index.js';
 
 afterEach(cleanup);
@@ -18,6 +18,13 @@ const people = [
   { name: 'CTO', id: 'cto' },
 ];
 
+/** What the line says in words, part by part: the faces' initials left out. */
+function words(line: HTMLElement): string {
+  return [...line.querySelectorAll('.crewlet-thread-summary__count, .crewlet-tag, .crewlet-thread-summary__last')]
+    .map((part) => part.textContent)
+    .join(' ');
+}
+
 function Summary(props: Partial<ThreadSummaryProps>) {
   return <ThreadSummary replies={4} participants={people} last="12m ago" onOpen={() => {}} {...props} />;
 }
@@ -25,7 +32,7 @@ function Summary(props: Partial<ThreadSummaryProps>) {
 test('is one button named by what it shows, which opens the thread', () => {
   const onOpen = vi.fn();
   render(<Summary unread={2} onOpen={onOpen} />);
-  const line = screen.getByRole('button', { name: '4 replies, 2 new, Last reply 12m ago' });
+  const line = screen.getByRole('button', { name: '4 replies, 2 new, last reply 12m ago' });
   expect(line.getAttribute('aria-expanded')).toBe('false');
   fireEvent.click(line);
   expect(onOpen).toHaveBeenCalledTimes(1);
@@ -34,7 +41,7 @@ test('is one button named by what it shows, which opens the thread', () => {
 
 test('one reply is a reply, and nothing is new unless told', () => {
   render(<Summary replies={1} participants={people.slice(0, 1)} />);
-  expect(screen.getByRole('button', { name: '1 reply, Last reply 12m ago' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '1 reply, last reply 12m ago' })).toBeTruthy();
   expect(document.querySelector('.crewlet-tag')).toBeNull();
 });
 
@@ -46,12 +53,18 @@ test('draws at most three faces, said by nothing (the count says it)', () => {
   expect(stack.querySelector('.crewlet-avatar-stack__more')!.textContent).toBe('+1');
 });
 
-test('says the thread is open while it is', () => {
-  render(<Summary open />);
-  const line = screen.getByRole('button', { name: '4 replies, Last reply 12m ago' });
+// OPEN IS A STATE, NOT WORDS: the button says it through aria-expanded and
+// the line's class, and adds no word to the line. Mutation: print "Thread
+// open" again, and the line grows and reads differently open and shut.
+test('says the thread is open as its state, with no words added', () => {
+  const { rerender } = render(<Summary />);
+  const shut = screen.getByRole('button').textContent;
+  rerender(<Summary open />);
+  const line = screen.getByRole('button', { name: '4 replies, last reply 12m ago' });
   expect(line.getAttribute('aria-expanded')).toBe('true');
   expect(line.classList.contains('is-open')).toBe(true);
-  expect(line.querySelector('.crewlet-thread-summary__view')!.textContent).toBe('Thread open');
+  expect(line.textContent).toBe(shut);
+  expect(line.textContent).not.toMatch(/open|view/i);
 });
 
 test('draws the working line under it', () => {
@@ -59,24 +72,26 @@ test('draws the working line under it', () => {
   expect(screen.getByText('Senior Backend Engineer is writing a reply').parentElement!.classList.contains('crewlet-thread-summary-wrap')).toBe(true);
 });
 
-// QUIET AT REST: the time and the end are laid out but unseen, and shown by
-// opacity alone under the pointer, so nothing moves. Mutation: show them at
-// rest, or take them out of the layout.
-test('rests on faces and the count, and shows the last reply and View thread under the pointer', () => {
+// SHORT AND ALWAYS THE SAME: the count and when the last reply came are
+// shown at rest, after a middle dot, and only the chevron comes in under the
+// pointer, its place laid out all along. Mutation: hide the time at rest
+// again, or print "View thread" at the end.
+test('shows "4 replies · 12m ago" at rest, and only the chevron under the pointer', () => {
   const uninstall = installSheets('ChatMessage/ChatScale.css', 'ThreadSummary/ThreadSummary.css');
   try {
     render(<Summary />);
     const line = screen.getByRole('button');
     const last = line.querySelector<HTMLElement>('.crewlet-thread-summary__last')!;
-    const end = line.querySelector<HTMLElement>('.crewlet-thread-summary__end')!;
+    const chevron = line.querySelector<SVGElement>('.crewlet-thread-summary__chevron')!;
     expect(getComputedStyle(line.querySelector('.crewlet-thread-summary__count')!).fontWeight).toBe('500');
-    expect(getComputedStyle(last).opacity).toBe('0');
-    expect(getComputedStyle(end).opacity).toBe('0');
-    expect(getComputedStyle(last).display).not.toBe('none');
+    expect(last.textContent).toBe('12m ago');
+    expect(getComputedStyle(last).opacity).not.toBe('0');
+    expect(words(line)).toBe('4 replies 12m ago');
+    expect(getComputedStyle(chevron).opacity).toBe('0');
+    expect(getComputedStyle(chevron).display).not.toBe('none');
     const release = userAction(line, 'hover');
-    expect(getComputedStyle(last).opacity).toBe('1');
-    expect(getComputedStyle(end).opacity).toBe('1');
-    expect(end.textContent).toBe('View thread');
+    expect(getComputedStyle(chevron).opacity).toBe('1');
+    expect(getComputedStyle(last).opacity).not.toBe('0');
     release();
   } finally {
     uninstall();
@@ -85,21 +100,40 @@ test('rests on faces and the count, and shows the last reply and View thread und
 
 // The message's selected surface is a `:has()` rule, which jsdom does not
 // evaluate; the stories show it.
-test('while its thread is open the end says so at rest', () => {
+test('while its thread is open the line is the selected surface, without its chevron', () => {
+  const uninstall = installThemed('light', 'ChatMessage/ChatScale.css', 'ThreadSummary/ThreadSummary.css');
+  try {
+    const { container, rerender } = render(<ThreadSummary replies={2} participants={[]} last="12m ago" onOpen={() => {}} />);
+    const line = container.querySelector<HTMLElement>('.crewlet-thread-summary')!;
+    const rest = { ground: getComputedStyle(line).backgroundColor, edge: getComputedStyle(line).borderTopColor };
+    rerender(<ThreadSummary replies={2} participants={[]} last="12m ago" open onOpen={() => {}} />);
+    expect(getComputedStyle(line).backgroundColor).not.toBe(rest.ground);
+    expect(getComputedStyle(line).borderTopColor).not.toBe(rest.edge);
+    expect(getComputedStyle(container.querySelector('.crewlet-thread-summary__chevron')!).visibility).toBe('hidden');
+  } finally {
+    uninstall();
+  }
+});
+
+// AS LONG AS WHAT IT SAYS: the line is an inline box with no width of its
+// own. Mutation: give it the old min(100%, 37.5rem) bar again.
+test('hugs its content rather than running the column wide', () => {
   const uninstall = installSheets('ChatMessage/ChatScale.css', 'ThreadSummary/ThreadSummary.css');
   try {
-    const { container } = render(<ThreadSummary replies={2} participants={[]} last="12m ago" open onOpen={() => {}} />);
-    const end = container.querySelector<HTMLElement>('.crewlet-thread-summary__end')!;
-    expect(getComputedStyle(end).opacity).toBe('1');
-    expect(end.textContent).toBe('Thread open');
+    render(<Summary />);
+    const line = screen.getByRole('button');
+    expect(getComputedStyle(line).display).toBe('inline-flex');
+    expect(line.style.width).toBe('');
+    expect(['', 'auto']).toContain(getComputedStyle(line).width);
   } finally {
     uninstall();
   }
 });
 
 test('takes its words from the caller', () => {
-  render(<Summary labels={{ replies: (n) => `${n} Antworten`, last: (when) => `Zuletzt ${when}` }} />);
-  expect(screen.getByRole('button', { name: '4 Antworten, Zuletzt 12m ago' })).toBeTruthy();
+  render(<Summary labels={{ replies: (n) => `${n} Antworten`, last: (when) => `zuletzt ${when}` }} />);
+  expect(screen.getByRole('button', { name: '4 Antworten, zuletzt 12m ago' })).toBeTruthy();
+  expect(words(screen.getByRole('button'))).toBe('4 Antworten 12m ago');
 });
 
 test('carries no axe violation', async () => {
@@ -116,23 +150,22 @@ test('carries no axe violation', async () => {
   expect(result.violations).toEqual([]);
 });
 
-// 24px FACES, A STEP APART, IN A 34px LINE: the repliers read as people, not
-// as a blot. Mutation: draw the xs stack again, and the faces are 20px and
-// overlap.
-test('draws the repliers as 24px faces side by side, 4px apart, in a 34px line', () => {
+// 20px FACES, OVERLAPPED, ON THE SMALL CONTROL'S LINE: a glance at who
+// replied rather than a row of portraits. Mutation: draw the spread 24px
+// faces again, and the line is 34px tall and wider by a face.
+test('draws the repliers as an overlapped stack of 20px faces on a 26px line', () => {
   const uninstall = installSheets('ChatMessage/ChatScale.css', 'Avatar/Avatar.css', 'Avatar/AvatarStack.css', 'ThreadSummary/ThreadSummary.css');
   try {
     const { container } = render(<Summary />);
     const line = screen.getByRole('button');
-    expect(px(line, 'height')).toBe(34);
+    expect(px(line, 'height')).toBe(26);
     const stack = container.querySelector<HTMLElement>('.crewlet-avatar-stack')!;
-    expect(stack.classList.contains('crewlet-avatar-stack--spread')).toBe(true);
-    expect(px(stack, 'gap')).toBe(4);
+    expect(stack.classList.contains('crewlet-avatar-stack--spread')).toBe(false);
+    expect(stack.classList.contains('crewlet-avatar-stack--xs')).toBe(true);
     // Three faces and the count of the rest.
     const faces = [...stack.querySelectorAll<HTMLElement>('.crewlet-avatar-stack__member')];
     expect(faces).toHaveLength(4);
-    expect(faces[0]!.style.getPropertyValue('--crewlet-avatar-size')).toBe('24px');
-    expect(px(faces[1]!, 'margin-inline-start')).toBe(0);
+    expect(px(faces[1]!, 'margin-inline-start')).toBe(-2);
   } finally {
     uninstall();
   }

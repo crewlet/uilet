@@ -3,11 +3,12 @@ import { useState } from 'react';
 import { Avatar, ChatDivider, ChatMessage, ThreadSummary, WorkingLine } from '@crewlethq/ui';
 
 /**
- * The line under a message with replies: the repliers' faces, "4 replies" at
- * the medium weight in the accent's ink, and how many are new. Under the
- * pointer it is set into the transcript's ground in a hairline, when the last
- * reply came fades in, and View thread with a chevron stands at its end. While
- * open, the message it hangs off wears the selected surface.
+ * The line under a message with replies, as long as what it says: the
+ * repliers' faces, "4 replies" at the medium weight in the accent's ink, how
+ * many are new and when the last came ("4 replies · 12m ago"). Under the
+ * pointer it is set into the transcript's ground in a hairline with a chevron
+ * at its end. While open, the line and the message it hangs off wear the
+ * selected surface.
  */
 const meta: Meta<typeof ThreadSummary> = {
   title: 'UI/ThreadSummary',
@@ -48,7 +49,7 @@ function Toggling(props: { unread?: number; working?: boolean }) {
   );
 }
 
-/** Point at it, then press it: the thread opens and the line says so. */
+/** Point at it, then press it: the thread opens and the line shows it as selected. */
 export const Default: Story = { render: () => <Toggling /> };
 
 /** Two replies the reader has not seen. */
@@ -57,7 +58,7 @@ export const WithNewReplies: Story = { render: () => <Toggling unread={2} /> };
 /** Agents writing replies in the thread, on one line under it. */
 export const WithAgentWorking: Story = { render: () => <Toggling unread={1} working /> };
 
-/** Under its message, open: the message wears the selected surface, the line says so. */
+/** Under its message, open: the message and the line wear the selected surface. */
 export const OpenUnderItsMessage: Story = {
   render: () => (
     <div style={{ maxWidth: 720 }}>
