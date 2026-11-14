@@ -28,6 +28,32 @@ test('each kind is one link named by the kind, with what it is for as its descri
   expect(screen.getByRole('list', { name: 'Start a new artifact' })).toBeDefined();
 });
 
+// NAMED BY THE WORDS IT SHOWS FOR ITS NAME, never by an aria-label over them.
+// The label replaced a link's content while its detail line stood visible
+// inside it, so the name did not contain what the tile shows (axe
+// label-content-name-mismatch on every tile). The kind's word is the name,
+// from the content, and the detail is drawn out of the name and read as the
+// description.
+test('a tile is named from its own words, with no aria-label over them', () => {
+  render(
+    <ArtifactMakeRow
+      aria-label="Start a new artifact"
+      items={[
+        { kind: 'doc', label: 'Doc', detail: 'A page to write', href: '#/artifacts/new/doc' },
+        { kind: 'sheet', label: 'Sheet', detail: 'A table to fill in', disabledReason: 'This needs the Artifacts app.' },
+      ]}
+    />,
+  );
+  for (const name of ['Doc', 'Sheet']) {
+    const tile = screen.getByRole('link', { name });
+    expect(tile.hasAttribute('aria-label')).toBe(false);
+    const detail = tile.querySelector('.crewlet-make-row__detail');
+    expect(detail?.getAttribute('aria-hidden')).toBe('true');
+  }
+  const doc = screen.getByRole('link', { name: 'Doc' });
+  expect(document.getElementById(doc.getAttribute('aria-describedby') ?? '')?.textContent).toBe('A page to write');
+});
+
 test('a kind the reader cannot start stays a stop on the row and says why', () => {
   render(<ArtifactMakeRow aria-label="Start a new artifact" items={[{ kind: 'sheet', label: 'Sheet', detail: 'A table to fill in', disabledReason: 'This needs the Artifacts app.' }]} />);
   const item = screen.getByRole('link', { name: 'Sheet' });
