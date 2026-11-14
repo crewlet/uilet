@@ -38,7 +38,7 @@
 }
 
 /*
- * THE RING IS THE ONLY EDGE A STACKED FACE NEEDS. A face's own hairline inside
+ * THE RING IS THE ONLY EDGE A PLATED FACE NEEDS. A face's own hairline inside
  * the ring drew each face as a framed tile, two edges a pixel apart, so a
  * stacked face (a member, or the face a member wraps) draws its border in no
  * colour. The border keeps its width, so the face keeps its box.
@@ -46,6 +46,19 @@
 .crewlet-avatar-stack > .crewlet-avatar-stack__member.crewlet-avatar,
 .crewlet-avatar-stack > .crewlet-avatar-stack__member > .crewlet-avatar {
   border-color: transparent;
+}
+
+/*
+ * EXCEPT A FACE WITH NO PLATE OF ITS OWN. The neutral badge (a person's
+ * initials, an agent nobody gave a hue) is the raised rung, which on the
+ * light sheet is a step of 1.03:1, so with its hairline gone it had no edge
+ * at all: a person's initials stood bare between agents' tinted plates and
+ * read as a smaller face. Its hairline is its plate's only edge, and it keeps
+ * it inside the ring.
+ */
+.crewlet-avatar-stack > .crewlet-avatar-stack__member.crewlet-avatar--neutral,
+.crewlet-avatar-stack > .crewlet-avatar-stack__member > .crewlet-avatar--neutral {
+  border-color: var(--color-edge-hairline);
 }
 
 /*

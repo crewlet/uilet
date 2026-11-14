@@ -1,0 +1,60 @@
+/*
+ * A long block folded to a height, with Show more under it (Clamp.tsx).
+ */
+.crewlet-clamp {
+  --crewlet-clamp-height: 20rem;
+  /* How far above the fold the last lines fade out. */
+  --crewlet-clamp-fade: var(--spacing-10);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+/* The body runs the block's width; only the control hugs its words. */
+.crewlet-clamp__body {
+  align-self: stretch;
+  min-width: 0;
+}
+
+/* The fold, measured: an empty box as tall as it, out of the flow and unseen,
+   so the block can tell whether it is long enough to fold. */
+.crewlet-clamp__fold {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: var(--crewlet-clamp-height);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/*
+ * FOLDED, the body stops at the fold and its last lines fade out. The fade is
+ * a MASK: it takes the block's own ground away rather than painting one over
+ * it, so it needs no colour of whatever the block stands on. Any opaque ink
+ * draws a mask; only its alpha is read.
+ */
+.crewlet-clamp[data-state='folded'] > .crewlet-clamp__body {
+  max-height: var(--crewlet-clamp-height);
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to bottom,
+    var(--color-text-primary) calc(100% - var(--crewlet-clamp-fade)),
+    transparent
+  );
+}
+
+@media print {
+  .crewlet-clamp[data-state='folded'] > .crewlet-clamp__body {
+    max-height: none;
+    overflow: visible;
+    mask-image: none;
+  }
+
+  .crewlet-clamp > .crewlet-clamp__toggle {
+    display: none;
+  }
+}

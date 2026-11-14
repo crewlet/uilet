@@ -9,23 +9,21 @@ export interface ThreadSummaryLabels {
   replies: (count: number) => string;
   /** The replies the reader has not read: "2 new". */
   fresh: (count: number) => string;
-  /** When the last reply came, given the caller's words for it: "Last reply 12m ago". */
+  /**
+   * When the last reply came, in the line's accessible name, given the
+   * caller's words for it: "last reply 12m ago". The line itself shows the
+   * caller's words alone ("12m ago"), after the count.
+   */
   last: (when: string) => string;
-  /** At the line's end under the pointer, beside the chevron that says it opens. */
-  view: string;
-  /** Shown in its place while the thread is open beside the room. */
-  open: string;
 }
 
-/** The repliers' faces, in px: side by side, a step apart, in a 34px line. */
-export const THREAD_SUMMARY_FACE = 24;
+/** The repliers' faces, the avatar's smallest step (20px), overlapped on the small control's line. */
+export const THREAD_SUMMARY_FACE = 'xs' as const;
 
 export const THREAD_SUMMARY_LABELS: ThreadSummaryLabels = {
   replies: (count) => (count === 1 ? '1 reply' : `${count.toLocaleString()} replies`),
   fresh: (count) => `${count.toLocaleString()} new`,
-  last: (when) => `Last reply ${when}`,
-  view: 'View thread',
-  open: 'Thread open',
+  last: (when) => `last reply ${when}`,
 };
 
 export interface ThreadSummaryProps {
@@ -48,16 +46,24 @@ export interface ThreadSummaryProps {
 
 /**
  * The line under a message that has replies: the repliers' faces, "4
- * replies" at the medium weight in the accent's ink, and how many are new.
- * It opens the thread, from anywhere on the line.
+ * replies" at the medium weight in the accent's ink, how many are new, and
+ * when the last came: "4 replies · 12m ago". It opens the thread, from
+ * anywhere on the line.
  *
- * QUIET AT REST, so a room of threads stays calm: faces and the count. UNDER
- * THE POINTER OR THE KEYBOARD it is set into the transcript's own ground inside
- * a hairline, when the last reply came fades in, and "View thread" with a
- * chevron stands at its end. Every part is always laid out, so nothing moves.
- * While the thread is open beside the room, the message it hangs off wears the
- * selected surface and the line's end says so. Its faces sit on the content
- * edge: the line's inset and edge are taken back outside it.
+ * AS LONG AS WHAT IT SAYS. It hugs its faces and its words, so a room of
+ * threads reads as short facts under their messages rather than as a column
+ * of bars. Nothing is hidden at rest: under the pointer only the hairline,
+ * its ground and the chevron that says it opens come in, and the chevron's
+ * place is always laid out, so the line never changes length.
+ *
+ * OPEN IS A STATE, NOT WORDS. While the thread is open beside the room the
+ * line wears the selected surface inside its hairline, and the message it
+ * hangs off wears it too; the chevron, which says "opens", is gone. A screen
+ * reader hears the state as the button's `aria-expanded`, and its name keeps
+ * every fact the line shows: "4 replies, 2 new, last reply 12m ago".
+ *
+ * Its faces sit on the content edge: the line's inset and edge are taken back
+ * outside it.
  */
 export function ThreadSummary({
   replies,
@@ -73,33 +79,30 @@ export function ThreadSummary({
   const labels = overrides ? { ...THREAD_SUMMARY_LABELS, ...overrides } : THREAD_SUMMARY_LABELS;
   const count = labels.replies(replies);
   const fresh = unread > 0 ? labels.fresh(unread) : null;
-  const when = labels.last(last);
   return (
     <div className={cx('crewlet-thread-summary-wrap', className)}>
       <button
         type="button"
         className={cx('crewlet-thread-summary', open && 'is-open')}
-        // The words a reader sees, once: the cell that swaps the time for
-        // "View thread" would otherwise name the button differently under the
-        // pointer than at rest.
-        aria-label={[count, fresh, when].filter(Boolean).join(', ')}
+        // Every fact the line shows, once, as words: the time reads as "last
+        // reply 12m ago" rather than a bare "12m ago" after the count.
+        aria-label={[count, fresh, last ? labels.last(last) : null].filter(Boolean).join(', ')}
         aria-expanded={open}
         onClick={onOpen}
       >
-        <AvatarStack members={participants} size={THREAD_SUMMARY_FACE} max={3} spread decorative />
+        <AvatarStack members={participants} size={THREAD_SUMMARY_FACE} max={3} decorative />
         <span className="crewlet-thread-summary__count">{count}</span>
         {fresh ? (
           <Tag size="xs" variant="brand">
             {fresh}
           </Tag>
         ) : null}
-        <span className="crewlet-thread-summary__last" aria-hidden="true">
-          {when}
-        </span>
-        <span className="crewlet-thread-summary__end" aria-hidden="true">
-          <span className="crewlet-thread-summary__view">{open ? labels.open : labels.view}</span>
-          <ChevronRightGlyph size="sm" className="crewlet-thread-summary__chevron" />
-        </span>
+        {last ? (
+          <span className="crewlet-thread-summary__last" aria-hidden="true">
+            {last}
+          </span>
+        ) : null}
+        <ChevronRightGlyph size="sm" className="crewlet-thread-summary__chevron" />
       </button>
       {working}
     </div>

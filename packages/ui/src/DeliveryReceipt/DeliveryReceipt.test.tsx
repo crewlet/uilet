@@ -1,7 +1,8 @@
 /**
  * Who a person's message reached and who answered, under its words, and the
- * same line in the future tense over a composer: one paragraph a screen
- * reader hears at once, quiet except for a message that reached no agent.
+ * same line in the future tense over a composer: one sentence that names
+ * each seat once, which the eye, a screen reader and a copy all read alike,
+ * quiet except for a message that reached no agent.
  */
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
@@ -21,21 +22,81 @@ function spoken(el: Node): string {
 
 const text = (el: Element) => spoken(el).replace(/\s+/g, " ").trim();
 
-test("says whom a message reached, then who answered", () => {
-  const { container } = render(
-    <DeliveryReceipt recipients={[{ id: "pm", name: "pm", answered: true }]} />,
+// ONE SENTENCE, EACH SEAT ONCE, IN EVERY STATE. It used to be two parts
+// with a dot between them, so a seat that answered was named twice and the
+// full stop only a screen reader was meant to hear came out of a copy as
+// ". ·". Mutation: put the answered part back after the reach.
+test.each([
+  {
+    state: "reached, nobody has answered yet",
+    recipients: [{ id: "sre", name: "Site Reliability Engineer" }],
+    said: "Reached Site Reliability Engineer",
+  },
+  {
+    state: "reached, and it answered",
+    recipients: [{ id: "sre", name: "Site Reliability Engineer", answered: true }],
+    said: "Reached Site Reliability Engineer, who answered",
+  },
+  {
+    state: "reached two, and both answered",
+    recipients: [
+      { id: "pm", name: "pm", answered: true },
+      { id: "qa", name: "qa", answered: true },
+    ],
+    said: "Reached pm and qa, who both answered",
+  },
+  {
+    state: "reached three, and all answered",
+    recipients: [
+      { id: "pm", name: "pm", answered: true },
+      { id: "qa", name: "qa", answered: true },
+      { id: "sre", name: "sre", answered: true },
+    ],
+    max: 3,
+    said: "Reached pm, qa and sre, who all answered",
+  },
+  {
+    state: "reached three, one answered",
+    recipients: [
+      { id: "pm", name: "pm" },
+      { id: "qa", name: "qa", answered: true },
+      { id: "sre", name: "sre", reason: "every message" },
+    ],
+    max: 3,
+    said: "qa answered, waiting on pm; sre (every message)",
+  },
+  {
+    state: "reached two, nobody has answered yet",
+    recipients: [
+      { id: "pm", name: "pm" },
+      { id: "qa", name: "qa" },
+    ],
+    said: "Reached pm and qa",
+  },
+])("says it in one sentence when $state", ({ recipients, said, max }) => {
+  const { container } = render(<DeliveryReceipt recipients={recipients} max={max} />);
+  const line = container.querySelector(".crewlet-delivery-receipt")!;
+  expect(text(line)).toBe(said);
+  // What the eye reads is what a screen reader reads.
+  expect(line.textContent!.replace(/\s+/g, " ").trim()).toBe(said);
+  expect(line.querySelector(".crewlet-visually-hidden")).toBeNull();
+  for (const r of recipients) {
+    expect(said.split(r.name).length - 1).toBe(1);
+  }
+});
+
+test("marks an answer with a check, hidden from a screen reader", () => {
+  const { container, rerender } = render(
+    <DeliveryReceipt recipients={[{ id: "pm", name: "pm" }]} />,
   );
   const line = container.querySelector(".crewlet-delivery-receipt")!;
-  // The eye reads a middle dot, a screen reader a full stop.
-  expect(text(line)).toBe("Reached pm. pm answered");
+  expect(line.querySelector(".crewlet-delivery-receipt__mark")).toBeNull();
+  expect(line.classList.contains("crewlet-delivery-receipt--answered")).toBe(false);
+  rerender(<DeliveryReceipt recipients={[{ id: "pm", name: "pm", answered: true }]} />);
+  expect(line.classList.contains("crewlet-delivery-receipt--answered")).toBe(true);
   expect(
-    line
-      .querySelector(".crewlet-delivery-receipt__dot")!
-      .getAttribute("aria-hidden"),
+    line.querySelector(".crewlet-delivery-receipt__mark")!.getAttribute("aria-hidden"),
   ).toBe("true");
-  expect(
-    line.querySelector(".crewlet-delivery-receipt__dot")!.textContent,
-  ).toBe("·");
 });
 
 test("groups the seats by reason, in the order the routing reached them", () => {
@@ -49,10 +110,7 @@ test("groups the seats by reason, in the order the routing reached them", () => 
       max={3}
     />,
   );
-  expect(screen.getByText("Reached pm; qa, sre (every message)")).toBeTruthy();
-  expect(
-    document.querySelector(".crewlet-delivery-receipt__answered"),
-  ).toBeNull();
+  expect(screen.getByText("Reached pm; qa and sre (every message)")).toBeTruthy();
 });
 
 test("warns, with a mark and words, when a message reached no agent", () => {
@@ -89,23 +147,32 @@ test("is no live region in a transcript", () => {
   expect(screen.queryByRole("status")).toBeNull();
 });
 
-test("says when a cap left seats out", () => {
-  render(<DeliveryReceipt truncated recipients={[{ id: "qa", name: "qa" }]} />);
-  expect(screen.getByText("Some seats were not reached")).toBeTruthy();
+test("says when a cap left seats out, as a sentence of its own", () => {
+  const { container } = render(
+    <DeliveryReceipt truncated recipients={[{ id: "qa", name: "qa" }]} />,
+  );
+  expect(text(container.querySelector(".crewlet-delivery-receipt")!)).toBe(
+    "Reached qa. Some seats were not reached",
+  );
 });
 
 test("takes its words from the caller", () => {
   render(
     <DeliveryReceipt
-      recipients={[{ id: "pm", name: "pm", answered: true }]}
+      recipients={[
+        { id: "pm", name: "pm", answered: true },
+        { id: "qa", name: "qa" },
+      ]}
       labels={{
-        reached: (who) => `Erreicht ${who}`,
-        answered: (who) => `${who} hat geantwortet`,
+        partlyAnswered: (answered, waiting) => (
+          <>
+            {answered} hat geantwortet, {waiting} noch nicht
+          </>
+        ),
       }}
     />,
   );
-  expect(screen.getByText("Erreicht pm")).toBeTruthy();
-  expect(screen.getByText("pm hat geantwortet")).toBeTruthy();
+  expect(screen.getByText("pm hat geantwortet, qa noch nicht")).toBeTruthy();
 });
 
 // Quiet: the tertiary ink at the meta step, one raised tone for no agent.
@@ -173,35 +240,39 @@ const FOLLOWERS = [
   answered: i < 3,
 }));
 
-test("prints one name and counts the rest in a button that shows them all", () => {
+test("prints one name of each list and counts the rest in buttons that show them all", () => {
   const { container } = render(<DeliveryReceipt recipients={FOLLOWERS} />);
   const line = container.querySelector(".crewlet-delivery-receipt")!;
   expect(text(line)).toBe(
-    "Reached Senior Web and Mobile App Engineer (every message) and 5 more. " +
-      "Senior Web and Mobile App Engineer and 2 more answered",
+    "Senior Web and Mobile App Engineer and 2 more answered, " +
+      "waiting on Quality Lead (every message) and 2 more",
   );
-  const more = screen.getByRole("button", { name: "and 5 more" });
-  expect(more.getAttribute("aria-expanded")).toBe("false");
+  const [first, second] = screen.getAllByRole("button");
+  expect(first!.textContent).toBe("and 2 more");
+  expect(second!.textContent).toBe("and 2 more");
+  expect(first!.getAttribute("aria-expanded")).toBe("false");
 
-  fireEvent.click(more);
-  expect(more.getAttribute("aria-expanded")).toBe("true");
-  expect(more.textContent).toBe("Show fewer");
-  expect(text(line)).toContain(
-    `Reached ${FOLLOWERS.map((r) => r.name).join(", ")} (every message)`,
-  );
-  expect(text(line)).toContain(
-    `${FOLLOWERS.slice(0, 3).map((r) => r.name).join(", ")} answered`,
+  fireEvent.click(first!);
+  // Every name, each once, and one way back at the end.
+  const fewer = screen.getByRole("button", { name: "Show fewer" });
+  expect(fewer.getAttribute("aria-expanded")).toBe("true");
+  expect(screen.getAllByRole("button")).toHaveLength(1);
+  expect(text(line)).toBe(
+    "Senior Web and Mobile App Engineer, Senior Backend Engineer and Senior Product Designer answered, " +
+      "waiting on Quality Lead, Release Manager and Support Lead (every message) Show fewer",
   );
 
-  fireEvent.click(more);
-  expect(more.getAttribute("aria-expanded")).toBe("false");
+  fireEvent.click(fewer);
+  expect(screen.getAllByRole("button")).toHaveLength(2);
 });
 
 test("prints a single name past the cap rather than counting it", () => {
   render(<DeliveryReceipt recipients={FOLLOWERS.slice(0, 2)} />);
   expect(screen.queryByRole("button")).toBeNull();
   expect(
-    screen.getByText(/Reached Senior Web and Mobile App Engineer, Senior Backend Engineer/),
+    screen.getByText(
+      "Reached Senior Web and Mobile App Engineer and Senior Backend Engineer (every message), who both answered",
+    ),
   ).toBeTruthy();
 });
 
