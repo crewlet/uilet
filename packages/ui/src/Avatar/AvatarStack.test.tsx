@@ -252,22 +252,40 @@ describe('what a stack draws', () => {
     }
   });
 
-  test('the ring is the only edge a stacked face draws, and the chip keeps its own', () => {
-    // A face's hairline inside the ring drew each one as a framed tile. The
-    // border keeps its width, so the face keeps its box.
-    uninstall = installThemed('dark', 'Avatar/Avatar.css', 'Avatar/AvatarStack.css');
-    const palette = themeColours('dark');
+  test('the ring is the only edge a plated face draws, a plateless face keeps its hairline, and the chip keeps its own', () => {
+    // A face's hairline inside the ring drew each plated one as a framed
+    // tile. The neutral badge's plate is a step the light sheet barely shows,
+    // so its hairline is its only edge: without it a person's initials stood
+    // bare between agents' plates. Every border keeps its width, so every face
+    // keeps its box. Mutation: drop the neutral face's hairline again.
+    uninstall = installThemed('light', 'Avatar/Avatar.css', 'Avatar/AvatarStack.css');
+    const palette = themeColours('light');
     const { container } = render(
-      <AvatarStack members={[{ name: 'Jane Founder', kind: 'human' }, { name: 'SWE', character: 'gemlet', hue: 'cyan' }, ...AGENTS]} />,
+      <AvatarStack
+        members={[
+          { name: 'Jane Founder', kind: 'human' },
+          { name: 'SWE', character: 'gemlet', hue: 'cyan' },
+          { name: 'CTO', character: 'crewlet', hue: 'purple' },
+          { name: 'PM', character: 'hexlet', hue: 'rose' },
+        ]}
+        max={5}
+      />,
     );
     const faces = [...container.querySelectorAll('.crewlet-avatar')];
     expect(faces).toHaveLength(4);
-    for (const face of faces) {
-      const drawn = getComputedStyle(face);
-      expect(['transparent', 'rgba(0, 0, 0, 0)'], face.className).toContain(drawn.borderTopColor);
-      expect(drawn.borderTopWidth, face.className).toBe('1px');
+    const [person, ...plated] = faces;
+    expect(person!.classList.contains('crewlet-avatar--neutral')).toBe(true);
+    expect(channels(getComputedStyle(person!).borderTopColor)).toEqual(
+      channels(themeColour('light', property('color-edge-hairline'))),
+    );
+    for (const face of [person!, ...plated]) {
+      expect(getComputedStyle(face).borderTopWidth, face.className).toBe('1px');
     }
-    const more = getComputedStyle(container.querySelector('.crewlet-avatar-stack__more')!);
+    for (const face of plated) {
+      expect(['transparent', 'rgba(0, 0, 0, 0)'], face.className).toContain(getComputedStyle(face).borderTopColor);
+    }
+    const crowded = render(<AvatarStack members={AGENTS} />).container;
+    const more = getComputedStyle(crowded.querySelector('.crewlet-avatar-stack__more')!);
     expect(channels(more.borderTopColor)).toEqual(parseHex(palette.get(property('color-border-strong')) ?? ''));
   });
 
