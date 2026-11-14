@@ -290,13 +290,26 @@
 
 .crewlet-inbox-row__head-text {
   display: block;
+  position: relative;
 }
 
-/* The time (and any status), in the head's own line box, so the time sits on the name's baseline. */
+/* The time (and any status), at the end of the head's first line. */
 .crewlet-inbox-row__head-end {
-  float: inline-end;
   margin-inline-start: var(--spacing-2);
   white-space: nowrap;
+}
+
+/* Its place: a hidden copy floated first, so the name wraps around it. */
+.crewlet-inbox-row__head-end--place {
+  float: inline-end;
+  visibility: hidden;
+}
+
+/* The time as it is read: after the name in the source, laid over its place. */
+.crewlet-inbox-row__head-end--drawn {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
 }
 
 .crewlet-inbox-row__title {

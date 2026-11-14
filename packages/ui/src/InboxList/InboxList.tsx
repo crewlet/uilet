@@ -608,12 +608,17 @@ export function InboxRow({
   }, [gone, onLeft]);
   /*
    * THE NAME IS READ IN THE ORDER THE ROW IS MEANT: "Crewlet-PM coding run 2h
-   * Which ledger". The time and any status come FIRST in the source, because
-   * a float takes the end of the first line only when it precedes the words
-   * that wrap around it (InboxList.css), so the control names itself from its
-   * parts in reading order (`aria-labelledby`) rather than from source order,
-   * which would read the time before the name. Every part is still set apart
-   * by a space where it is drawn, for a reader that walks the content.
+   * Which ledger", and so is its visible text. A float takes the end of the
+   * first line only when it precedes the words that wrap around it
+   * (InboxList.css), so the time used to come FIRST in the source while the
+   * name read it after the title: a control whose visible words and name run
+   * in two orders, which a person speaking what they see cannot say
+   * (WCAG 2.5.3, label in name). Now a hidden copy of the time holds the
+   * float's place, out of the accessibility tree and drawn invisible, and the
+   * time itself follows the name in the source, laid over that place. The
+   * control still names itself from its parts (`aria-labelledby`), in the
+   * order they are drawn, each set apart by a space for a reader that walks
+   * the content.
    */
   const ids = useId();
   const part = (name: string) => `${ids}-${name}`;
@@ -627,8 +632,8 @@ export function InboxRow({
     leading === undefined ? null : part('leading'),
     part('title'),
     hasQualifier ? part('qualifier') : null,
-    where === undefined ? null : part('where'),
     hasStatus || hasMeta ? part('end') : null,
+    where === undefined ? null : part('where'),
     part('text'),
     hasContext ? part('context') : null,
     hasOutcome ? part('outcome') : null,
@@ -637,6 +642,15 @@ export function InboxRow({
   ]
     .filter(Boolean)
     .join(' ');
+  // THE TIME AND ANY STATUS, drawn once where it is read and once, hidden, to
+  // hold the float's place.
+  const headEnd = (
+    <>
+      {hasStatus ? <span className="crewlet-inbox-row__status">{status}</span> : null}
+      {hasStatus && hasMeta ? ' ' : null}
+      {hasMeta ? <span className="crewlet-inbox-row__meta">{meta}</span> : null}
+    </>
+  );
   const contents = (
     <>
       {leading === undefined ? null : (
@@ -650,10 +664,9 @@ export function InboxRow({
         <span className="crewlet-inbox-row__head">
           <span className="crewlet-inbox-row__head-text">
             {hasStatus || hasMeta ? (
-              <span id={part('end')} className="crewlet-inbox-row__head-end">
-                {hasStatus ? <span className="crewlet-inbox-row__status">{status}</span> : null}
-                {hasStatus && hasMeta ? ' ' : null}
-                {hasMeta ? <span className="crewlet-inbox-row__meta">{meta}</span> : null}
+              // THE FLOAT'S PLACE, held by a copy nobody reads or sees.
+              <span aria-hidden className="crewlet-inbox-row__head-end crewlet-inbox-row__head-end--place">
+                {headEnd}
               </span>
             ) : null}
             <span id={part('title')} className="crewlet-inbox-row__title">
@@ -667,6 +680,14 @@ export function InboxRow({
                   className={cx('crewlet-inbox-row__qualifier', qualifierTone === 'danger' && 'crewlet-inbox-row__qualifier--danger')}
                 >
                   {qualifier}
+                </span>
+              </>
+            ) : null}
+            {hasStatus || hasMeta ? (
+              <>
+                {' '}
+                <span id={part('end')} className="crewlet-inbox-row__head-end crewlet-inbox-row__head-end--drawn">
+                  {headEnd}
                 </span>
               </>
             ) : null}

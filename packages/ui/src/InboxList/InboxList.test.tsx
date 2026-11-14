@@ -533,15 +533,19 @@ test('the time floats at the end of the first line of a clamped run of words, an
     const row = screen.getByRole('button', { name: /^Product Manager replied to a thread in #engineering 8h ago Sounds good$/ });
     const head = row.querySelector('.crewlet-inbox-row__head')!;
     const text = head.querySelector('.crewlet-inbox-row__head-text')!;
-    const end = text.querySelector('.crewlet-inbox-row__head-end')!;
+    const place = text.querySelector('.crewlet-inbox-row__head-end--place')!;
+    const end = text.querySelector('.crewlet-inbox-row__head-end--drawn')!;
     const title = text.querySelector('.crewlet-inbox-row__title')!;
     const qualifier = text.querySelector('.crewlet-inbox-row__qualifier')!;
     const meta = end.querySelector('.crewlet-inbox-row__meta')!;
 
-    // The float leads the words it floats beside, and the name leads the words.
+    // The float's place leads the words it floats beside, hidden; the time
+    // itself follows the name in the source, laid over that place.
     expect(text.parentElement).toBe(head);
-    expect(text.firstElementChild).toBe(end);
-    expect(end.nextElementSibling).toBe(title);
+    expect(text.firstElementChild).toBe(place);
+    expect(place.getAttribute('aria-hidden')).toBe('true');
+    expect(place.nextElementSibling).toBe(title);
+    expect(title.compareDocumentPosition(end) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(meta.textContent).toBe('8h ago');
 
     const headStyle = getComputedStyle(head);
@@ -554,9 +558,14 @@ test('the time floats at the end of the first line of a clamped run of words, an
     // A float lays out in every engine inside a block of its own under the clamp.
     expect(getComputedStyle(text).display).toBe('block');
 
+    const placeStyle = getComputedStyle(place);
+    expect(placeStyle.getPropertyValue('float')).toBe('inline-end');
+    expect(placeStyle.visibility).toBe('hidden');
+    expect(placeStyle.whiteSpace).toBe('nowrap');
     const endStyle = getComputedStyle(end);
-    expect(endStyle.getPropertyValue('float')).toBe('inline-end');
+    expect(endStyle.position).toBe('absolute');
     expect(endStyle.whiteSpace).toBe('nowrap');
+    expect(getComputedStyle(text).position).toBe('relative');
 
     // Words in the run, never boxes that shrink or refuse to wrap.
     for (const each of [title, qualifier]) {
@@ -609,7 +618,7 @@ test('the leading slot grows to its mark, and the name keeps its line', () => {
   }
 });
 
-test('where it happened has its own unclamped line, read after the qualifier', () => {
+test('where it happened has its own unclamped line, read after the head', () => {
   // Inside the qualifier, a long name pushed "in #room" past the head's two
   // lines, so a reader could not tell which room was meant.
   const uninstall = installSheets('InboxList/InboxList.css');
@@ -630,7 +639,9 @@ test('where it happened has its own unclamped line, read after the qualifier', (
       </InboxList>,
     );
     const row = screen.getByRole('button', {
-      name: 'Bartholomew Achterberg-Oyelaran replied to a thread in #release-coordination-autumn-study-streaks-web-ios-android 4m The build is green again.',
+      // IN THE ORDER IT IS DRAWN: the time ends the head's first line, and
+      // where it happened is the line under it.
+      name: 'Bartholomew Achterberg-Oyelaran replied to a thread 4m in #release-coordination-autumn-study-streaks-web-ios-android The build is green again.',
     });
     const where = within(row).getByText(/^in #release/);
     expect(where.closest('.crewlet-inbox-row__head')).toBeNull();
@@ -819,4 +830,46 @@ test('the arrow keys walk the rows, and Home and End go to the ends', () => {
   action.focus();
   fireEvent.keyDown(action, { key: 'ArrowDown' });
   expect(document.activeElement).toBe(action);
+});
+
+/*
+ * A ROW'S VISIBLE WORDS AND ITS NAME RUN IN ONE ORDER, so a person who speaks
+ * what they see can name it (WCAG 2.5.3, label in name). The time came first
+ * in the source, to float, while the name read it after the title: the two
+ * orders differed on every row with a time.
+ */
+test('a row reads its visible words in the order of its name', () => {
+  render(
+    <InboxList label="Activity">
+      <InboxGroup label="Activity" hideLabel>
+        <InboxRow
+          title="Product Manager"
+          qualifier="executor"
+          meta="5h"
+          where="on ENG-304"
+          leading={<span>PM</span>}
+          onClick={() => {}}
+        >
+          Merge pull request 90?
+        </InboxRow>
+      </InboxGroup>
+    </InboxList>,
+  );
+  const row = screen.getByRole('button', { name: /Merge pull request 90/ });
+  const visible: string[] = [];
+  const walk = (node: Node) => {
+    if (node instanceof Element && node.getAttribute('aria-hidden') === 'true') return;
+    if (node.nodeType === Node.TEXT_NODE) visible.push(node.textContent ?? '');
+    node.childNodes.forEach(walk);
+  };
+  walk(row);
+  const squash = (words: string) => words.replace(/\s+/g, ' ').trim();
+  const name = squash(
+    (row.getAttribute('aria-labelledby') ?? '')
+      .split(' ')
+      .map((id) => document.getElementById(id)?.textContent ?? '')
+      .join(' '),
+  );
+  expect(name).toBe('PM Product Manager executor 5h on ENG-304 Merge pull request 90?');
+  expect(name).toContain(squash(visible.join(' ')));
 });
