@@ -169,6 +169,31 @@ test('the wide More holds the menu alone', () => {
   expect(within(screen.getByRole('menu')).getAllByRole('menuitem').map((el) => el.textContent)).toEqual(['Copy link']);
 });
 
+// ONE ACTION, ONE ROW: a tool the menu also lists is a button while the bar is
+// wide, and on a narrow bar the menu's own row is its only place in More.
+test('a tool the menu also lists is a button while wide and one row of More when narrow', () => {
+  const open = vi.fn();
+  const set = [...tools(), { key: 'tab', label: 'Open in new tab', icon: <InfoGlyph size="sm" />, onSelect: open }];
+  const menu = [
+    { key: 'tab', label: 'Open in new tab', onSelect: open },
+    { key: 'copy', label: 'Copy link', onSelect: vi.fn() },
+  ];
+  const { container } = render(
+    <LayerHost>
+      <ArtifactBar title="Notes" kind="doc" kindLabel="Doc" tools={set} menu={menu} />
+    </LayerHost>,
+  );
+  const wideTools = [...container.querySelectorAll('.crewlet-artifact-bar__tools.crewlet-artifact-bar__wide')];
+  expect(wideTools.flatMap((el) => within(el as HTMLElement).queryAllByRole('button', { name: 'Open in new tab' }))).toHaveLength(1);
+  const narrow = container.querySelector('.crewlet-artifact-bar__narrow') as HTMLElement;
+  fireEvent.click(within(narrow).getByRole('button', { name: 'More for “Notes”' }));
+  const rows = within(screen.getByRole('menu')).getAllByRole('menuitem').map((el) => el.textContent ?? '');
+  expect(rows.filter((r) => r.includes('Open in new tab'))).toHaveLength(1);
+  expect(rows[0]).toContain('Details');
+  expect(rows[1]).toContain('History');
+  expect(rows.slice(2)).toEqual(['Open in new tab', 'Copy link']);
+});
+
 test("the host's end control comes last, after More, once, and never folds", () => {
   const onAsk = vi.fn();
   const { container } = render(
