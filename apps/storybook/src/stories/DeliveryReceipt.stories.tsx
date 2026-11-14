@@ -9,11 +9,11 @@ import {
 } from "@crewlethq/ui";
 
 /**
- * Who a person's message reached and who answered, in a message's footer:
- * "Reached pm", then "pm answered"; "Reached qa, sre (every message)";
- * "Reached no agent". Over a composer, the same line in the future tense says
- * who a post will reach before it is sent, and warns when it will reach no
- * agent.
+ * Who a person's message reached and who answered, in a message's footer, as
+ * one sentence that names each seat once: "Reached pm"; "Reached pm, who
+ * answered"; "pm answered, waiting on qa and sre (every message)"; "Reached
+ * no agent". Over a composer, the same line in the future tense says who a
+ * post will reach before it is sent, and warns when it will reach no agent.
  */
 const meta: Meta<typeof DeliveryReceipt> = {
   title: "UI/DeliveryReceipt",
@@ -33,7 +33,17 @@ export const Answered: Story = {
   args: { recipients: [{ id: "pm", name: "pm", answered: true }] },
 };
 
-/** Two seats that follow the room in full, beside one that was mentioned. */
+/** Two seats were mentioned and both answered. */
+export const BothAnswered: Story = {
+  args: {
+    recipients: [
+      { id: "pm", name: "pm", answered: true },
+      { id: "sre", name: "Site Reliability Engineer", answered: true },
+    ],
+  },
+};
+
+/** Two seats that follow the room in full, beside one that was mentioned and answered. */
 export const ByReason: Story = {
   args: {
     recipients: [
@@ -41,6 +51,7 @@ export const ByReason: Story = {
       { id: "qa", name: "qa", reason: "every message" },
       { id: "sre", name: "sre", reason: "every message" },
     ],
+    max: 3,
   },
 };
 
