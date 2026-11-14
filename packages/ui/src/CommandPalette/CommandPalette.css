@@ -222,6 +222,13 @@
   padding: var(--spacing-1);
 }
 
+/* A stop while it overflows (CommandPalette.tsx), ringed inside its own box:
+   it runs to the surface's edges, which would clip a ring standing off it. */
+.crewlet-palette__results:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
 /*
  * THE LEAD: an answer on the raised rung above the rows, in the secondary ink
  * at a reading leading, because it is prose read once rather than a row run

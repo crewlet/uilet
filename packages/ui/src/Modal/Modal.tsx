@@ -2,6 +2,7 @@ import {
   useCallback,
   useId,
   useRef,
+  useState,
   type FormEvent,
   type HTMLAttributes,
   type ReactNode,
@@ -13,6 +14,7 @@ import { focusables, useBodyScrollLock, useLayerContainer, useModalLayer } from 
 import { cx } from '../utils/cx.js';
 import { useComposedRef } from '../utils/composedRef.js';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
+import { useScrollerFocus } from '../utils/useScrollerFocus.js';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
 
@@ -321,6 +323,21 @@ function ModalFrame({
   const phone = phoneSheet && variant === 'dialog' && !prompt;
   const frame = useRef<HTMLElement | null>(null);
   const body = useRef<HTMLDivElement | null>(null);
+  // The body as state too, so what it holds is measured once it is drawn.
+  const [bodyElement, setBodyElement] = useState<HTMLDivElement | null>(null);
+  const bodyRef = useCallback((el: HTMLDivElement | null) => {
+    body.current = el;
+    setBodyElement(el);
+  }, []);
+  /*
+   * A BODY OF PLAIN WORDS THAT OVERFLOWS IS A TAB STOP. The body is the one
+   * part of the surface that scrolls, and a keyboard scrolls what holds
+   * focus: a list of keys or a long notice with no control in it could not be
+   * read to its end without a pointer. It is a stop only then
+   * (`useScrollerFocus`), so a form's body, which scrolls as focus moves
+   * through its fields, gains nothing to press past.
+   */
+  const bodyTakesFocus = useScrollerFocus(bodyElement);
   const foot = useRef<HTMLDivElement | null>(null);
   const start = useRef(initialFocus);
   start.current = initialFocus;
@@ -425,7 +442,17 @@ function ModalFrame({
       ) : null}
       {given(children) || (prompt && given(title)) ? (
         <div
-          ref={body}
+          ref={bodyRef}
+          // Named by the surface's own title where it has one, so the stop
+          // says what is being scrolled rather than nothing at all.
+          {...(bodyTakesFocus
+            ? {
+                tabIndex: 0,
+                role: 'group',
+                'aria-labelledby': labelledBy,
+                'aria-label': labelledBy === undefined ? ariaLabel : undefined,
+              }
+            : {})}
           className={cx(
             'crewlet-modal__body',
             stackBody ? 'crewlet-modal__body--stacked' : undefined,

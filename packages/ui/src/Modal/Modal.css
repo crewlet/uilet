@@ -512,6 +512,16 @@
 }
 
 /*
+ * The body takes focus only while it overflows with nothing in it to stop on
+ * (Modal.tsx). Its ring is drawn inside its own box: the body runs to the
+ * surface's edges, and a ring standing off it would be clipped by them.
+ */
+.crewlet-modal__body:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
  * A sheet's body is inset on the head's own line, so a field's label starts
  * where the title above it does. A dialog's tighter square would put the
  * column of fields 8px closer to both edges than the bar naming them.

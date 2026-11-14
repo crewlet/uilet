@@ -24,7 +24,7 @@ import { shadow } from '@crewlethq/tokens';
 import { Modal } from './index.js';
 import { installCss, installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { atDensity, DENSITIES, installSheetsAtDensity } from '../../../../apps/ui-tests/src/density.js';
-import { LayerHost } from '../Layer/index.js';
+import { focusables, LayerHost } from '../Layer/index.js';
 import { HeadingLevelProvider, useHeadingLevel } from '../utils/headingLevel.js';
 
 afterEach(cleanup);
@@ -1035,4 +1035,72 @@ test('without fill a body scrolls its content as it always has', () => {
     </Modal>,
   );
   expect(screen.getByTestId('panel').parentElement!.classList.contains('crewlet-modal__body--fill')).toBe(false);
+});
+
+/*
+ * THE BODY IS THE PART THAT SCROLLS, and a keyboard scrolls what holds focus.
+ * jsdom lays nothing out, so the two sizes a browser reads from layout are
+ * stated: the body's content is 600px in a 300px box.
+ */
+function withBodyOverflowing(run: () => void): void {
+  const remove = installSheets('Modal/Modal.css');
+  const scrollHeight = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollHeight')!;
+  const clientHeight = Object.getOwnPropertyDescriptor(Element.prototype, 'clientHeight')!;
+  const sized = (px: number, other: PropertyDescriptor) =>
+    function (this: Element) {
+      return this.classList.contains('crewlet-modal__body') ? px : (other.get!.call(this) as number);
+    };
+  Object.defineProperty(Element.prototype, 'scrollHeight', { configurable: true, get: sized(600, scrollHeight) });
+  Object.defineProperty(Element.prototype, 'clientHeight', { configurable: true, get: sized(300, clientHeight) });
+  try {
+    run();
+  } finally {
+    Object.defineProperty(Element.prototype, 'scrollHeight', scrollHeight);
+    Object.defineProperty(Element.prototype, 'clientHeight', clientHeight);
+    remove();
+  }
+}
+
+// Mutation: drop the body's tabIndex, and a list of keys longer than the surface cannot be read to its end from a keyboard.
+test('a body of plain words that overflows is a stop, named for the surface it scrolls', () => {
+  withBodyOverflowing(() => {
+    render(
+      <Modal open onClose={() => {}} title="Keyboard shortcuts" showCloseButton={false}>
+        <p>Forty rows of keys.</p>
+      </Modal>,
+    );
+    const body = document.querySelector<HTMLElement>('.crewlet-modal__body')!;
+    expect(body.getAttribute('tabindex')).toBe('0');
+    expect(screen.getByRole('group', { name: 'Keyboard shortcuts' })).toBe(body);
+    // And Tab reaches it: it is the surface's one stop, in the list the
+    // layer's Tab trap walks.
+    expect(focusables(screen.getByRole('dialog', { name: 'Keyboard shortcuts' }))).toEqual([body]);
+  });
+});
+
+test('a body that holds a control is not a stop of its own: focus moving through it scrolls it', () => {
+  withBodyOverflowing(() => {
+    render(
+      <Modal open onClose={() => {}} title="Edit project name">
+        <input aria-label="Name" />
+      </Modal>,
+    );
+    const body = document.querySelector<HTMLElement>('.crewlet-modal__body')!;
+    expect(body.hasAttribute('tabindex')).toBe(false);
+    expect(body.hasAttribute('role')).toBe(false);
+  });
+});
+
+test('a body whose words fit is not a stop', () => {
+  const remove = installSheets('Modal/Modal.css');
+  try {
+    render(
+      <Modal open onClose={() => {}} title="Discard your edits?">
+        <p>One sentence.</p>
+      </Modal>,
+    );
+    expect(document.querySelector('.crewlet-modal__body')!.hasAttribute('tabindex')).toBe(false);
+  } finally {
+    remove();
+  }
 });

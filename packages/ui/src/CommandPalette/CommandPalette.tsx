@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
 import { ChevronLeftGlyph, SearchGlyph } from '@crewlethq/icons/glyphs';
 import { Count } from '../Count/index.js';
 import { Input } from '../Input/index.js';
@@ -9,6 +9,7 @@ import { Modal } from '../Modal/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
+import { useScrollerFocus } from '../utils/useScrollerFocus.js';
 
 export interface CommandPaletteItem {
   /** Stable across a re-query: it keys the row and names its option element. */
@@ -185,6 +186,16 @@ export type CommandPaletteProps = Omit<
  * instead put up to forty tab stops between the field and itself, and the
  * highlight moved in silence.
  *
+ * THE RESULTS ARE SCROLLED FROM THE KEYBOARD, WHATEVER THEY HOLD. The arrows
+ * keep the highlighted row in view, which scrolls the rows and nothing else:
+ * an answer leading them, once the highlight had carried it out of view, could
+ * not be brought back, and one longer than the surface could not be read to
+ * its end. So Page Up and Page Down in the field scroll the results a page,
+ * and while the results overflow they are a stop of their own, named, where
+ * the arrows, Page Up, Page Down, Home and End scroll as they do anywhere:
+ * the keys the field listens to are the field's, so they move no highlight
+ * from there.
+ *
  * THE SCOPES ARE TABS NOBODY TABS TO. Focus never leaves the field, so the
  * scope row is driven FROM it: Tab and Shift+Tab step through the scopes, and
  * so do the left and right arrows while the field is empty (with text in it
@@ -337,7 +348,48 @@ function Palette({
     listbox.setActive(0);
   }
 
+  /*
+   * THE ONE SCROLLER, as state as well as the listbox's own ref, so whether
+   * it has to take focus is measured once it is drawn (`useScrollerFocus`).
+   */
+  const [results, setResults] = useState<HTMLElement | null>(null);
+  // ONE STABLE REF for the element both need. The listbox's own ref may be a
+  // new function on a render, and a ref that set state each time it was
+  // released and attached again would render for ever; so it is handed the
+  // element here, and handed it again only when it really is another ref.
+  const resultsNode = useRef<HTMLElement | null>(null);
+  const attached = useRef(listbox.listRef);
+  const resultsRef = useCallback((el: HTMLElement | null) => {
+    resultsNode.current = el;
+    attached.current(el);
+    setResults(el);
+  }, []);
+  const { listRef } = listbox;
+  useLayoutEffect(() => {
+    if (attached.current === listRef) return;
+    attached.current(null);
+    attached.current = listRef;
+    listRef(resultsNode.current);
+  }, [listRef]);
+  const resultsTakeFocus = useScrollerFocus(results);
+
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (
+      results !== null &&
+      (event.key === 'PageDown' || event.key === 'PageUp') &&
+      !isComposing(event) &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.shiftKey
+    ) {
+      // A PAGE FROM THE FIELD, less a row's worth, so the last line read is
+      // still on the surface after the move.
+      event.preventDefault();
+      const page = Math.max(results.clientHeight - 40, 40);
+      results.scrollTop += event.key === 'PageDown' ? page : -page;
+      return;
+    }
     if (step && !isComposing(event) && !event.altKey && !event.ctrlKey && !event.metaKey) {
       // Prevented, which is also what keeps the layer stack from taking
       // Escape as "close" (see Layer/stack.ts).
@@ -477,13 +529,19 @@ function Palette({
        */}
       <div
         className="crewlet-palette__results"
-        ref={listbox.listRef}
+        ref={resultsRef}
         // THE POINTER LEAVING IS NOWHERE, for a caller previewing the
         // highlight. The highlight itself stays, so the keys carry on.
         onMouseLeave={() => highlight.now(null)}
         {...(scopes
           ? { id: panelId, role: 'tabpanel', 'aria-labelledby': current ? tabId(current.id) : undefined }
-          : {})}
+          : resultsTakeFocus
+            ? { role: 'group', 'aria-label': resultsLabel }
+            : {})}
+        // A STOP ONLY WHILE IT OVERFLOWS: its rows are options the field
+        // drives, never stops, so a keyboard scrolls it by holding it.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scroller a keyboard must hold to scroll
+        tabIndex={resultsTakeFocus ? 0 : undefined}
       >
         {/*
          * MOUNTED EMPTY, so the live region exists before its first words do:
