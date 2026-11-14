@@ -115,7 +115,19 @@
     justify-content: center;
   }
 
-  .crewlet-search-trigger--toolbar .crewlet-search-trigger__label,
+  /* The words are the button's name, so they are clipped out of sight
+     rather than taken out: under `display: none` they would name nothing,
+     and the glyph would be announced as "button". VisuallyHidden's clip. */
+  .crewlet-search-trigger--toolbar .crewlet-search-trigger__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   .crewlet-search-trigger--toolbar .crewlet-search-trigger__shortcut {
     display: none;
   }
