@@ -6,11 +6,12 @@ export {
   GRAPH_CANVAS_FLOW_LIMIT,
   GRAPH_CANVAS_NARROW_WIDTH,
   GRAPH_CANVAS_LABELS,
-  GRAPH_CANVAS_OPEN_ZOOM,
+  GRAPH_CANVAS_FOCUS_ZOOM,
   GRAPH_CANVAS_TILE_ZOOM,
   GRAPH_EDGE_FAMILIES,
   GraphCanvas,
   graphDetail,
+  graphFocusView,
   graphWindow,
 } from './GraphCanvas.js';
 export type {

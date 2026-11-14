@@ -31,10 +31,13 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   GRAPH_CANVAS_DETAIL_ZOOM,
+  GRAPH_CANVAS_FOCUS_ZOOM,
   GRAPH_CANVAS_TILE_ZOOM,
   GRAPH_CANVAS_NARROW_WIDTH,
   GraphCanvas,
   graphDetail,
+  graphFocusView,
+  graphItemKey,
   graphWindow,
   type GraphBand,
   type GraphCanvasProps,
@@ -44,6 +47,8 @@ import {
 } from './index.js';
 
 const WIDE = { width: 1200, height: 800 };
+/** Every card's size, as its probe measures it. */
+const CARD = { width: 216, height: 52 };
 let VIEWPORT = WIDE;
 
 function sizeOf(el: Element): { width: number; height: number } | null {
@@ -55,7 +60,7 @@ function sizeOf(el: Element): { width: number; height: number } | null {
   ) {
     return null;
   }
-  if (el.classList.contains('crewlet-graph-canvas__card')) return { width: 216, height: 52 };
+  if (el.classList.contains('crewlet-graph-canvas__card')) return CARD;
   if (el.classList.contains('crewlet-graph-canvas__gap')) return { width: 64, height: 20 };
   if (el.classList.contains('crewlet-graph-canvas__pad')) return { width: 12, height: 24 };
   if (el.classList.contains('crewlet-graph-canvas__lane-head')) return { width: 120, height: 32 };
@@ -196,6 +201,44 @@ const edgePath = (container: HTMLElement, state: string, family = 'flow') =>
     ?.getAttribute('d') ?? '';
 const routesIn = (d: string) => (d.match(/M/g) ?? []).length;
 const dimmed = (el: HTMLElement) => el.getAttribute('data-state') === 'dim';
+
+/** The view the canvas draws the world at, read off the world's own transform. */
+function viewOf(container: HTMLElement): { x: number; y: number; k: number } {
+  const transform = container.querySelector<HTMLElement>('.crewlet-canvas__world')!.style.transform;
+  const [, x, y, k] = /translate\(([-\d.e]+)px, ([-\d.e]+)px\) scale\(([-\d.e]+)\)/.exec(transform)!;
+  return { x: Number(x), y: Number(y), k: Number(k) };
+}
+
+/** Where the whole map is drawn on screen: its world, which is its layout's bounds, at the view. */
+function mapOnScreen(container: HTMLElement) {
+  const world = container.querySelector<HTMLElement>('.crewlet-graph-canvas__world')!;
+  const { x, y, k } = viewOf(container);
+  return { x, y, width: Number.parseFloat(world.style.width) * k, height: Number.parseFloat(world.style.height) * k };
+}
+
+/** Whether all of the map is drawn inside the viewport. */
+function drawnIn(container: HTMLElement): boolean {
+  const map = mapOnScreen(container);
+  return (
+    map.x >= -0.5 &&
+    map.y >= -0.5 &&
+    map.x + map.width <= VIEWPORT.width + 0.5 &&
+    map.y + map.height <= VIEWPORT.height + 0.5
+  );
+}
+
+/** Where one entry's card has its middle on screen. */
+function middleOf(container: HTMLElement, id: string) {
+  const el = container.querySelector<HTMLElement>(
+    `.crewlet-graph-canvas__items [data-graph-key="${graphItemKey('node', id)}"]`,
+  )!;
+  const [, x, y] = /translate\(([-\d.e]+)px, ([-\d.e]+)px\)/.exec(el.style.transform)!;
+  const { x: vx, y: vy, k } = viewOf(container);
+  return {
+    x: vx + (Number(x) + CARD.width / 2) * k,
+    y: vy + (Number(y) + CARD.height / 2) * k,
+  };
+}
 
 describe('GraphCanvas', () => {
   test('every lane is a named group with its count, and an empty lane says what would fill it', () => {
@@ -546,6 +589,171 @@ describe('GraphCanvas', () => {
   });
 });
 
+describe('the opening view', () => {
+  const lanes = BANDS.flatMap((band) => band.lanes.map((lane) => lane.id));
+  /** A company too large to read whole in the window: it fits at a tile's size. */
+  const large = (count: number, mark = ''): GraphNode[] =>
+    Array.from({ length: count }, (_, i) => ({ id: `n${i}`, lane: lanes[i % lanes.length]!, name: `entry-${i}${mark}` }));
+  const LARGE = large(160);
+
+  // Mutation: open a map that does not fit at half size on its start at three
+  // quarters, as it did, and the map runs off the viewport.
+  test('a map too large to read whole opens fitted, all of it in view, drawn at the level of detail its zoom has', () => {
+    const { container } = render(<GraphCanvas label="Atlas map" bands={BANDS} nodes={LARGE} edges={[]} />);
+    LayoutObserver.settle();
+    const { k } = viewOf(container);
+    expect(k).toBeLessThan(GRAPH_CANVAS_DETAIL_ZOOM);
+    expect(drawnIn(container)).toBe(true);
+    // Centred across, so the whole map stands in the middle of the view.
+    const map = mapOnScreen(container);
+    expect(Math.abs(map.x - (VIEWPORT.width - map.x - map.width))).toBeLessThan(1);
+    const world = container.querySelector<HTMLElement>('.crewlet-graph-canvas__world')!;
+    expect(world.dataset.detail).toBe(graphDetail(k));
+    // Never a blank box: at a tile's zoom each card near the view is an element with its name.
+    if (graphDetail(k) === 'tiles') {
+      const cards = container.querySelectorAll('.crewlet-graph-canvas__items .crewlet-graph-canvas__card');
+      expect(cards.length).toBeGreaterThan(0);
+      for (const card of cards) expect(card.querySelector('.crewlet-graph-canvas__name')!.textContent).not.toBe('');
+    }
+  });
+
+  test('on a phone it opens fitted too, with its legend under the picture', () => {
+    VIEWPORT = { width: 390, height: 640 };
+    const { container } = render(<GraphCanvas label="Atlas map" bands={BANDS} nodes={LARGE} edges={[]} />);
+    LayoutObserver.settle();
+    expect(drawnIn(container)).toBe(true);
+    expect(viewOf(container).k).toBeLessThan(GRAPH_CANVAS_TILE_ZOOM);
+  });
+
+  // Mutation: drop the first entries from what refits, and the map stays at the fit of its empty lanes.
+  test('its first entries fit it again, and a refresh keeps the view a reader made', () => {
+    const { container, rerender } = render(<GraphCanvas label="Atlas map" bands={BANDS} nodes={[]} edges={[]} />);
+    LayoutObserver.settle();
+    const empty = viewOf(container);
+    expect(drawnIn(container)).toBe(true);
+
+    rerender(<GraphCanvas label="Atlas map" bands={BANDS} nodes={LARGE} edges={[]} />);
+    LayoutObserver.settle();
+    expect(viewOf(container)).not.toEqual(empty);
+    expect(drawnIn(container)).toBe(true);
+
+    // A reader zooms in; the next reading of the same map, new objects with a word changed, leaves them there.
+    const viewport = container.querySelector('.crewlet-canvas__viewport')!;
+    fireEvent.keyDown(viewport, { key: '+' });
+    LayoutObserver.settle();
+    const theirs = viewOf(container);
+    rerender(<GraphCanvas label="Atlas map" bands={BANDS} nodes={large(160, '-b')} edges={[]} />);
+    LayoutObserver.settle();
+    expect(viewOf(container)).toEqual(theirs);
+
+    // The Fit control still shows all of it.
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
+    LayoutObserver.settle();
+    expect(drawnIn(container)).toBe(true);
+  });
+
+  test('a new fit key fits again; a resize refits a view nobody moved and keeps one a reader moved', () => {
+    const { container, rerender } = render(
+      <GraphCanvas label="Atlas map" bands={BANDS} nodes={LARGE} edges={[]} fitKey="all" />,
+    );
+    LayoutObserver.settle();
+    // Narrowed by a filter: the map's new shape is fitted.
+    rerender(<GraphCanvas label="Atlas map" bands={BANDS} nodes={LARGE.slice(0, 16)} edges={[]} fitKey="some" />);
+    LayoutObserver.settle();
+    expect(drawnIn(container)).toBe(true);
+    expect(viewOf(container).k).toBeGreaterThanOrEqual(GRAPH_CANVAS_DETAIL_ZOOM);
+
+    // A sheet opens beside the page: the map's box narrows, and the untouched fit follows it.
+    VIEWPORT = { width: 820, height: 800 };
+    LayoutObserver.settle();
+    expect(drawnIn(container)).toBe(true);
+
+    // Once the reader has moved the view, a resize keeps it.
+    const viewport = container.querySelector('.crewlet-canvas__viewport')!;
+    fireEvent.keyDown(viewport, { key: '+' });
+    LayoutObserver.settle();
+    const theirs = viewOf(container);
+    VIEWPORT = WIDE;
+    LayoutObserver.settle();
+    expect(viewOf(container).k).toBe(theirs.k);
+  });
+
+  // Mutation: drop `initialNode` from the opening, and a link to an entry opens on the whole map, the entry a mark in it.
+  test('a map opened on one entry draws it in the middle at a size its card reads, and Fit still shows the whole map', () => {
+    const { container } = render(
+      <GraphCanvas label="Atlas map" bands={BANDS} nodes={LARGE} edges={[]} selectedId="n83" initialNode="n83" />,
+    );
+    LayoutObserver.settle();
+    expect(viewOf(container).k).toBe(GRAPH_CANVAS_FOCUS_ZOOM);
+    expect(container.querySelector<HTMLElement>('.crewlet-graph-canvas__world')!.dataset.detail).toBe('cards');
+    const middle = middleOf(container, 'n83');
+    expect(Math.abs(middle.x - VIEWPORT.width / 2)).toBeLessThan(1);
+    expect(Math.abs(middle.y - VIEWPORT.height / 2)).toBeLessThan(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
+    LayoutObserver.settle();
+    expect(drawnIn(container)).toBe(true);
+  });
+
+  test('an entry in a closed group opens its group where the group stood, in the middle', () => {
+    const grouped = LARGE.map((node) => ({ ...node, group: node.lane === 'runtime' ? 'fleet' : undefined }));
+    const { container } = render(
+      <GraphCanvas
+        label="Atlas map"
+        bands={BANDS}
+        nodes={grouped}
+        groups={[{ id: 'fleet', lane: 'runtime', label: 'Fleet' }]}
+        collapseAbove={100}
+        edges={[]}
+        selectedId="n82"
+        initialNode="n82"
+      />,
+    );
+    LayoutObserver.settle();
+    // The selection opened the group, and the entry stands where its closed group was drawn: in the middle.
+    const middle = middleOf(container, 'n82');
+    expect(Math.abs(middle.x - VIEWPORT.width / 2)).toBeLessThan(VIEWPORT.width / 4);
+    expect(Math.abs(middle.y - VIEWPORT.height / 2)).toBeLessThan(VIEWPORT.height / 4);
+    expect(viewOf(container).k).toBe(GRAPH_CANVAS_FOCUS_ZOOM);
+  });
+
+  test('a map small enough to read whole opens on the fit even when it is opened on one entry', () => {
+    const { container } = render(<Map initialNode="db" selectedId="db" />);
+    LayoutObserver.settle();
+    expect(viewOf(container).k).toBeGreaterThanOrEqual(GRAPH_CANVAS_FOCUS_ZOOM);
+    expect(drawnIn(container)).toBe(true);
+  });
+
+  test('an entry the map does not hold opens on the fit', () => {
+    const { container } = render(<GraphCanvas label="Atlas map" bands={BANDS} nodes={LARGE} edges={[]} initialNode="gone" />);
+    LayoutObserver.settle();
+    expect(drawnIn(container)).toBe(true);
+  });
+});
+
+describe('graphFocusView', () => {
+  const card = { x: 1000, y: 400, width: 200, height: 40 };
+  const room = { x: 0, y: 0, width: 1200, height: 600 };
+
+  test('draws the card in the middle of the room at the focus zoom', () => {
+    const view = graphFocusView(card, room, { x: 0, y: 0, k: 0.1 })!;
+    expect(view.k).toBe(GRAPH_CANVAS_FOCUS_ZOOM);
+    expect(view.x + (card.x + card.width / 2) * view.k).toBe(600);
+    expect(view.y + (card.y + card.height / 2) * view.k).toBe(300);
+  });
+
+  test('takes less in a room narrower than the card and its padding, and keeps clear of a bar at the top', () => {
+    const narrow = graphFocusView(card, { x: 0, y: 48, width: 160, height: 600 }, { x: 0, y: 0, k: 0.1 })!;
+    expect(narrow.k).toBeCloseTo((160 - 48) / card.width);
+    expect(narrow.y + (card.y + card.height / 2) * narrow.k).toBeCloseTo(48 + 300);
+  });
+
+  test('answers nothing where the fit already draws the card as large', () => {
+    expect(graphFocusView(card, room, { x: 0, y: 0, k: GRAPH_CANVAS_FOCUS_ZOOM })).toBeNull();
+    expect(graphFocusView(card, room, { x: 0, y: 0, k: 1 })).toBeNull();
+  });
+});
+
 describe('at two thousand entries', () => {
   const lanes = BANDS.flatMap((band) => band.lanes.map((lane) => lane.id));
   const many: GraphNode[] = Array.from({ length: 2000 }, (_, i) => ({
@@ -555,30 +763,31 @@ describe('at two thousand entries', () => {
   }));
   const chain: GraphEdge[] = many.slice(1).map((node, i) => ({ id: `e${i}`, from: many[i]!.id, to: node.id }));
 
-  test('only the cards near the view are mounted, and zoomed out past a word fitting a card the map draws marks', () => {
+  test('it opens fitted, as marks, and only the cards near the view are mounted once it is zoomed in to read', () => {
     const { container } = render(<GraphCanvas label="Atlas map" bands={BANDS} nodes={many} edges={chain} />);
     LayoutObserver.settle();
-    const mounted = container.querySelectorAll('.crewlet-graph-canvas__items .crewlet-graph-canvas__card');
-    // The map opens on its start at a size that reads, so a screen and its margin are mounted.
-    expect(mounted.length).toBeGreaterThan(20);
-    expect(mounted.length).toBeLessThan(400);
-    expect(container.querySelector('.crewlet-graph-canvas__shapes')).toBeNull();
-    // So are the edges: only the routes near the view are in the path.
+    const cards = () => container.querySelectorAll('.crewlet-graph-canvas__items .crewlet-graph-canvas__card');
     const routes = () => routesIn(edgePath(container, 'rest'));
-    expect(routes()).toBeGreaterThan(0);
-    expect(routes()).toBeLessThan(chain.length);
-
-    // Fitting it whole is far below reading: only the tab stop stays an element.
-    const viewport = container.querySelector('.crewlet-canvas__viewport')!;
-    fireEvent.keyDown(viewport, { key: '0' });
-    LayoutObserver.settle();
-    expect(container.querySelectorAll('.crewlet-graph-canvas__items .crewlet-graph-canvas__card')).toHaveLength(1);
+    // THE WHOLE MAP, far below reading: only the tab stop stays an element.
+    expect(drawnIn(container)).toBe(true);
+    expect(cards()).toHaveLength(1);
     const shapes = container.querySelector('.crewlet-graph-canvas__shapes [data-shape="card"]')!;
     // Every card is a mark, the tab stop too, which is also drawn as itself over its mark.
     expect(shapes.getAttribute('d')!.match(/M/g)).toHaveLength(2000);
     expect(routes()).toBe(chain.length);
     // Far more calls than a reader can follow: the dashes at rest stand still.
     expect(container.querySelector('.crewlet-graph-canvas')!.hasAttribute('data-still')).toBe(true);
+
+    // At actual size a screen and its margin are mounted, and only the routes near the view are in the path.
+    const viewport = container.querySelector('.crewlet-canvas__viewport')!;
+    fireEvent.keyDown(viewport, { key: ')', code: 'Digit0', shiftKey: true });
+    LayoutObserver.settle();
+    expect(viewOf(container).k).toBe(1);
+    expect(cards().length).toBeGreaterThan(20);
+    expect(cards().length).toBeLessThan(400);
+    expect(container.querySelector('.crewlet-graph-canvas__shapes')).toBeNull();
+    expect(routes()).toBeGreaterThan(0);
+    expect(routes()).toBeLessThan(chain.length);
   });
 });
 

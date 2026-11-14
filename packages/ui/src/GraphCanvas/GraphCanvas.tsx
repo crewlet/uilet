@@ -32,6 +32,14 @@
  * whole card; then a tile, its glyph filling the cell and its name held at a
  * size that reads; then a filled mark in its tone, under cluster titles,
  * counts and tallies that hold their size on screen at every zoom.
+ *
+ * IT OPENS ON THE WHOLE MAP, fitted to the view at whatever level of detail
+ * that zoom draws, since every level reads. It fits again when its first
+ * entries arrive (a map placed before them fitted its empty lanes), when the
+ * caller's `fitKey` moves, and when its box is resized while nobody has moved
+ * the view since; a data refresh keeps the reader's view. A map opened on one
+ * entry (`initialNode`, such as the one a link names) draws that entry in the
+ * middle instead, at a size its card reads.
  */
 
 import {
@@ -61,10 +69,10 @@ import {
 import {
   CANVAS_FIT_PADDING,
   Canvas,
-  fitView,
   type CanvasGround,
   type CanvasHandle,
   type CanvasLabels,
+  type CanvasOpening,
   type CanvasPoint,
   type CanvasRect,
   type CanvasSize,
@@ -285,10 +293,30 @@ export function graphDetail(zoom: number): GraphDetail {
 }
 
 /**
- * THE ZOOM A MAP TOO LARGE TO READ WHOLE OPENS AT, on its start: a card's
- * 13px name draws at about 10px, and five lanes still fit across a laptop.
+ * THE MOST A MAP OPENED ON ONE ENTRY ZOOMS IN: a card's 13px name draws at
+ * about 10px, with the entries beside it in view. A narrower window takes
+ * less, so the card and its padding fit across it; a map whose fit already
+ * draws the entry this large opens on the fit, which shows it with the rest.
  */
-export const GRAPH_CANVAS_OPEN_ZOOM = 0.75;
+export const GRAPH_CANVAS_FOCUS_ZOOM = 0.75;
+
+/**
+ * The view a map opened on one entry takes: its card in the middle of `room`
+ * (the part of the viewport the bars leave), at [GRAPH_CANVAS_FOCUS_ZOOM] or
+ * at what fits the card and its padding across a narrower room. Null, which
+ * opens on the fit, where the fit already draws the card as large.
+ */
+export function graphFocusView(item: CanvasRect, room: CanvasRect, fit: CanvasView): CanvasView | null {
+  const across = (room.width - 2 * CANVAS_FIT_PADDING) / item.width;
+  const down = (room.height - 2 * CANVAS_FIT_PADDING) / item.height;
+  const k = Math.min(GRAPH_CANVAS_FOCUS_ZOOM, across, down);
+  if (!(k > fit.k)) return null;
+  return {
+    k,
+    x: room.x + room.width / 2 - (item.x + item.width / 2) * k,
+    y: room.y + room.height / 2 - (item.y + item.height / 2) * k,
+  };
+}
 
 /**
  * THE LOWEST ZOOM A FIT TAKES, so the whole map is one press away however
@@ -396,10 +424,22 @@ export interface GraphCanvasProps {
   labels?: Partial<GraphCanvasLabels> | undefined;
   /** The lowest zoom a fit may take: [GRAPH_CANVAS_FIT_FLOOR] unless named. */
   minZoom?: number | undefined;
-  /** Fits the whole map again whenever this changes. */
+  /**
+   * Fits the whole map again whenever this changes: name what is drawn (the
+   * filters an answer was read with), not the question still being asked, or
+   * the fit lands on the map the answer is about to replace.
+   */
   fitKey?: string | number | undefined;
-  /** The view to open on instead of the opening fit. */
+  /** The view to open on instead of the fit. Read once, when the map is first placed. */
   initialView?: CanvasView | undefined;
+  /**
+   * The entry to open on instead of the fit, such as the one a link names:
+   * drawn in the middle of the view at up to [GRAPH_CANVAS_FOCUS_ZOOM] (its
+   * closed group's card, where it stands in one, which a selection then
+   * opens in place). Read once, when the map is first placed; an entry the
+   * map does not hold opens on the fit.
+   */
+  initialNode?: string | null | undefined;
   onViewChange?: ((view: CanvasView, viewport: CanvasSize) => void) | undefined;
   ref?: Ref<GraphCanvasHandle> | undefined;
   className?: string | undefined;
@@ -463,6 +503,7 @@ export function GraphCanvas({
   minZoom = GRAPH_CANVAS_FIT_FLOOR,
   fitKey,
   initialView,
+  initialNode = null,
   onViewChange,
   ref,
   className,
@@ -775,9 +816,10 @@ export function GraphCanvas({
   };
   useLayoutEffect(() => placeCardNow.current());
 
-  // ---- the opening view: whole when it reads, else the map's start at a size that does ----
+  // ---- the opening view: the whole map, or the entry a link names ----------------
   const root = useRef<HTMLDivElement>(null);
-  const [frame, setFrame] = useState<CanvasSize | null>(null);
+  // THE CANVAS WAITS FOR THE MAP'S OWN BOX, so its first fit is made in the room the map will have.
+  const [sized, setSized] = useState(false);
   // A narrow map has no room to float anything over the picture, so its legend and dock stand under it.
   const [narrow, setNarrow] = useState(false);
   useLayoutEffect(() => {
@@ -786,34 +828,19 @@ export function GraphCanvas({
     const observer = new ResizeObserver((entries) => {
       const box = entries[entries.length - 1]?.contentRect;
       if (!box || box.width <= 0 || box.height <= 0) return;
-      setFrame((was) => was ?? { width: box.width, height: box.height });
+      setSized(true);
       setNarrow(box.width < GRAPH_CANVAS_NARROW_WIDTH);
     });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  // The canvas's own bars along the top edge, which a map opening on its start must clear.
-  const [barsBottom, setBarsBottom] = useState(0);
-  useLayoutEffect(() => {
-    const el = root.current;
-    if (!el || !frame) return;
-    const top = el.getBoundingClientRect().top;
-    let bottom = 0;
-    for (const bar of el.querySelectorAll('.crewlet-canvas__controls')) {
-      const rect = bar.getBoundingClientRect();
-      if (rect.height > 0 && rect.top - top < frame.height / 2) bottom = Math.max(bottom, rect.bottom - top);
-    }
-    setBarsBottom(bottom);
-  }, [frame, controlsStart, controlsPlacement]);
-  const opening = useMemo<CanvasView | undefined>(() => {
+  const openKey = initialNode === null || !layout ? undefined : layout.itemOfNode.get(initialNode);
+  const openOn = openKey === undefined ? undefined : layout?.itemByKey.get(openKey);
+  const opening = useMemo<CanvasView | CanvasOpening | undefined>(() => {
     if (initialView) return initialView;
-    if (!layout || !frame) return undefined;
-    const fit = fitView(layout.bounds, frame, CANVAS_FIT_PADDING, minZoom);
-    if (fit.k >= GRAPH_CANVAS_DETAIL_ZOOM) return undefined;
-    const k = GRAPH_CANVAS_OPEN_ZOOM;
-    const y = Math.max(CANVAS_FIT_PADDING, barsBottom + CANVAS_FIT_PADDING / 2);
-    return { k, x: CANVAS_FIT_PADDING - layout.bounds.x * k, y: y - layout.bounds.y * k };
-  }, [initialView, layout, frame, minZoom, barsBottom]);
+    if (!openOn) return undefined;
+    return (room, fit) => graphFocusView(openOn, room, fit);
+  }, [initialView, openOn]);
 
   // ---- focus: one roving tab stop ----------------------------------------------------
   const [active, setActive] = useState<string | null>(null);
@@ -900,20 +927,28 @@ export function GraphCanvas({
     [focusItem],
   );
 
-  // A new fit key fits again once its layout is placed; the first placement is the canvas's own.
+  // A new fit key fits again once its layout is placed, and so do the map's
+  // first entries: a map placed before them was fitted to its empty lanes.
+  // The first placement is the canvas's own fit, and nothing else refits, so
+  // a refresh of the same map keeps the view a reader has made.
+  const filled = nodes.length > 0;
   const fittedFor = useRef(fitKey);
+  const fittedFilled = useRef(false);
   const placedOnce = useRef(false);
   useLayoutEffect(() => {
     if (!placed) return;
     if (!placedOnce.current) {
       placedOnce.current = true;
       fittedFor.current = fitKey;
+      fittedFilled.current = filled;
       return;
     }
-    if (fitKey === fittedFor.current) return;
+    const firstEntries = filled && !fittedFilled.current;
+    if (fitKey === fittedFor.current && !firstEntries) return;
     fittedFor.current = fitKey;
+    if (filled) fittedFilled.current = true;
     canvas.current?.fit();
-  }, [fitKey, placed]);
+  }, [fitKey, placed, filled]);
 
   // ---- keys and presses ------------------------------------------------------------------
   const typed = useRef<TypeAheadState>({ text: '', at: 0 });
@@ -1186,7 +1221,7 @@ export function GraphCanvas({
       </div>
     ) : null;
 
-  const body = frame ? (
+  const body = sized ? (
     <Canvas
       label={label}
       content={placed ? layout!.bounds : null}
@@ -1203,6 +1238,7 @@ export function GraphCanvas({
       largestItemWidth={metrics?.cardWidth}
       labels={text}
       minZoom={minZoom}
+      refitOnResize
       initialView={opening}
       onViewChange={viewChanged}
     >
@@ -1657,7 +1693,8 @@ function GraphEmptyLane({
       }}
       onKeyDown={onItemKey}
     >
-      {children}
+      {/* What would fill the lane, laid out as the lane's own items: see the stylesheet for when it is drawn. */}
+      <span className="crewlet-graph-canvas__empty-words">{children}</span>
     </div>
   );
 }

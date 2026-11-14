@@ -27,6 +27,7 @@ import { Canvas, gridOf, type CanvasCursor, type CanvasHandle } from './Canvas.j
 const SHEET = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Canvas.css'), 'utf8');
 import {
   CANVAS_ZOOM_STEP,
+  clampPan,
   fitView,
   zoomLimits,
   type CanvasRect,
@@ -854,6 +855,43 @@ test('an initial view opens instead of the fit, held within the zoom range', () 
   );
   resizeAll(SIZE);
   expect(viewOf(far.container).k).toBe(zoomLimits(SMALL, SIZE).max);
+});
+
+/*
+ * AN OPENING THAT DEPENDS ON THE VIEWPORT, such as an item drawn in the middle
+ * of it, cannot be worked out before the canvas has its size: it is asked
+ * then, with the room and the fit. Answering nothing is the fit, which is then
+ * an untouched fit like any other, so a resize refits it.
+ */
+test('an opening worked out from the viewport is asked with its room and the fit, and nothing is the fit', () => {
+  const asked: Array<[CanvasRect, CanvasView]> = [];
+  const { container } = render(
+    <Canvas
+      label="Organization chart"
+      content={WIDE}
+      initialView={(room, fit) => {
+        asked.push([room, fit]);
+        return { x: room.width / 2, y: room.height / 2, k: 1 };
+      }}
+    >
+      <div />
+    </Canvas>,
+  );
+  resizeAll(SIZE);
+  expect(asked).toEqual([[{ x: 0, y: 0, ...SIZE }, fitView(WIDE, SIZE)]]);
+  expect(viewOf(container)).toEqual(clampPan({ x: 400, y: 300, k: 1 }, WIDE, SIZE));
+  cleanup();
+
+  const fitted = render(
+    <Canvas label="Organization chart" content={WIDE} refitOnResize initialView={() => null}>
+      <div />
+    </Canvas>,
+  );
+  resizeAll(SIZE);
+  expect(viewOf(fitted.container)).toEqual(fitView(WIDE, SIZE));
+  const narrow = { width: 500, height: 600 };
+  resizeAll(narrow);
+  expect(viewOf(fitted.container)).toEqual(fitView(WIDE, narrow));
 });
 
 /*
