@@ -102,6 +102,7 @@ import {
 import { Button, type ButtonVariant } from '../Button/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { Tooltip } from '../Tooltip/index.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import { returnFocus } from '../utils/focusModality.js';
 import { useComposedRef } from '../utils/composedRef.js';
@@ -197,6 +198,10 @@ export interface MenuProps {
    * plain values beside it, and it takes the surrounding text's size, weight
    * and ink rather than a button label's, so a writer's row reads as a
    * reader's. Its hover ground and focus ring still say it is a control.
+   *
+   * It is NAMED BY THE VALUE IT SHOWS, then by `label`, which follows it in
+   * words only a screen reader hears ("In progress, Status of ENG-1"): the
+   * name starts with what is on screen. The menu itself is named by `label`.
    */
   valueTrigger?: boolean | undefined;
   /** -1 for a pointer-only trigger whose actions the keyboard reaches another way. */
@@ -673,7 +678,13 @@ export function Menu({
           : withTip(
               <Button
                 {...shared}
-                aria-label={label}
+                // A VALUE TRIGGER IS NAMED BY WHAT IT SHOWS, then by what it
+                // changes: "In progress, Status of ENG-1". Under an aria-label
+                // it showed one thing and was called another, so a person who
+                // says what they see reached nothing, and a column of pickers
+                // read alike. Any other text trigger keeps `label` as its
+                // name ("New" read as "New artifact").
+                aria-label={valueTrigger ? undefined : label}
                 variant={triggerVariant}
                 size="small"
                 flush={valueTrigger}
@@ -682,6 +693,7 @@ export function Menu({
                 trailingIcon={trailingIcon}
               >
                 {trigger}
+                {valueTrigger ? <VisuallyHidden>{`, ${label}`}</VisuallyHidden> : null}
               </Button>,
             )}
       {list && container ? createPortal(list, container) : null}
