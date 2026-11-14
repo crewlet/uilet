@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, Card, DescriptionList, IconButton, List, ListItem, RelativeTime, Tag, Text } from '@crewlethq/ui';
+import { Button, Card, DescriptionList, EmptyState, IconButton, List, ListItem, RelativeTime, Tag, Text } from '@crewlethq/ui';
 import { density } from '@crewlethq/tokens';
 import {
   EllipsisVerticalGlyph,
@@ -224,6 +224,28 @@ export const ContentWithNoBody: Story = {
         Built from what each completion reported, never from a provider's configured name.
       </Text>
     </Card>
+  ),
+};
+
+/**
+ * A CARD WITH NO TITLE IS NO SECTION. Its contents keep the card's own heading
+ * level, so an empty state in it stands where the page puts the card (an h2
+ * under the page's h1 here) rather than a level below a heading that is not
+ * there. A titled card puts its contents one deeper, under its title.
+ */
+export const HeadingsWithAndWithoutATitle: Story = {
+  render: (args) => (
+    <div style={{ display: 'grid', gap: 16, maxWidth: 400 }}>
+      <Card {...args}>
+        <EmptyState title="No brand yet" description="Set up the brand, and every artifact follows it." />
+      </Card>
+      <Card {...args} as="section">
+        <Card.Header>
+          <Card.Title>Brand</Card.Title>
+        </Card.Header>
+        <EmptyState title="No voice yet" description="Describe how the company writes." />
+      </Card>
+    </div>
   ),
 };
 

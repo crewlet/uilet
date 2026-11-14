@@ -14,7 +14,7 @@ import { afterEach, expect, test } from 'vitest';
 import { Card, useCardHeaderSlot } from './index.js';
 import { themes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
-import { HeadingLevelProvider } from '../utils/headingLevel.js';
+import { HeadingLevelProvider, headingTag, useHeadingLevel } from '../utils/headingLevel.js';
 import { channels, inset, installSheets, installThemed, pseudoElement, px } from '../../../../apps/ui-tests/src/cascade.js';
 
 /*
@@ -191,6 +191,59 @@ test('the title takes the level where the card sits, and its contents go one dee
   );
   expect(screen.getByText('Spend').tagName).toBe('H3');
   expect(screen.getByText('By model').tagName).toBe('H4');
+});
+
+/*
+ * A CARD WITH NO TITLE IS NO SECTION. Its contents stay at the card's own
+ * level: deepened anyway, an empty state in a titleless card under a page's
+ * h1 was an h3 with no h2 above it.
+ */
+function LevelProbe({ children }: { children: string }) {
+  const Tag = headingTag(useHeadingLevel());
+  return <Tag>{children}</Tag>;
+}
+
+// Mutation: deepen a card's contents whether or not it has a title, and the probe is an h3.
+test('a card with no title keeps its contents at its own level', () => {
+  render(
+    <HeadingLevelProvider level={2}>
+      <Card>
+        <Card.Body>
+          <LevelProbe>No brand yet</LevelProbe>
+        </Card.Body>
+      </Card>
+    </HeadingLevelProvider>,
+  );
+  expect(screen.getByText('No brand yet').tagName).toBe('H2');
+});
+
+test('a titled card puts its contents one deeper from the first frame, and a title that goes takes that back', () => {
+  function Toggle({ titled }: { titled: boolean }) {
+    return (
+      <HeadingLevelProvider level={2}>
+        <Card>
+          {titled ? (
+            <Card.Header>
+              <Card.Title>Brand</Card.Title>
+            </Card.Header>
+          ) : null}
+          <Card.Body>
+            <LevelProbe>Voice</LevelProbe>
+          </Card.Body>
+        </Card>
+      </HeadingLevelProvider>
+    );
+  }
+  // Once the mount commits, the contents already stand under the title.
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  flushSync(() => root.render(<Toggle titled />));
+  expect(host.querySelector('.crewlet-card__body h3')?.textContent).toBe('Voice');
+  flushSync(() => root.render(<Toggle titled={false} />));
+  expect(host.querySelector('.crewlet-card__body h2')?.textContent).toBe('Voice');
+  root.unmount();
+  host.remove();
 });
 
 test('a card that goes somewhere is a real link, and is reachable', () => {
