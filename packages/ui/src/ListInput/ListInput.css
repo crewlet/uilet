@@ -213,9 +213,11 @@
   text-align: center;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
-  /* The accent's own ink step, which is what the position is: a mark on the
-     card's ground rather than a word in the sentence beside it. */
-  color: var(--color-brand-accent);
+  /* The accent's INK step, never its fill: the position is a number somebody
+     reads at the smallest size, so it clears what text clears (4.5:1) on every
+     ground a list stands on. The fill is held to a mark's 3:1 only, and drawn
+     as this number it measured 4.38:1 in light and 3.99:1 in dark. */
+  color: var(--color-brand-accent-ink);
 }
 
 .crewlet-list-input__actions {
