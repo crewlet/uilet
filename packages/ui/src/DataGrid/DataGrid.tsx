@@ -162,13 +162,21 @@ export interface ColumnChoice {
  * The choices a chooser offers, DERIVED from the columns a grid draws, so a
  * column added to a grid appears in its menu with no second edit. The cell
  * renderers are never called: a name and a flag are properties of the column.
+ *
+ * AN ACTION COLUMN IS NO CHOICE. It holds the row's controls (a Restore, a
+ * row's More), not a fact about the row, so a box for it would offer to take
+ * away what a reader can do to a row in the list of what they read about it,
+ * under a name its empty head does not have. The grid draws it whatever the
+ * set names (see [DataGrid]'s `cols`).
  */
 export function columnChoicesOf<T>(columns: readonly DataGridColumn<T>[]): ColumnChoice[] {
-  return columns.map((column) => ({
-    key: column.key,
-    label: headerWord(column) || column.label || column.key,
-    optional: column.optional,
-  }));
+  return columns
+    .filter((column) => !column.action)
+    .map((column) => ({
+      key: column.key,
+      label: headerWord(column) || column.label || column.key,
+      optional: column.optional,
+    }));
 }
 
 /** One box in a [ChooserList]. */
@@ -492,7 +500,11 @@ export interface DataGridProps<T> {
   onSortChange?: ((sort: string) => void) | undefined;
   /** The rows arrive ordered by their source (a paged answer ordered over the whole set). */
   serverSorted?: boolean | undefined;
-  /** The column set as `key,key`, in the order to draw it; empty for every column not `optional`. */
+  /**
+   * The column set as `key,key`, in the order to draw it; empty for every
+   * column not `optional`. An `action` column is drawn after the set whatever
+   * it names: it is no choice ([columnChoicesOf]).
+   */
   cols?: string | undefined;
   /** The way back from a column set: drawn as "Show every column" while one is set. */
   onColsChange?: ((cols: string) => void) | undefined;
@@ -729,10 +741,18 @@ export function DataGrid<T>({
       .map((c) => c.trim())
       .filter(Boolean);
     if (asked.length === 0) return columns.filter((c) => !c.optional);
-    // THE ORDER THE READER ASKED FOR, not the declaration order.
-    const byKey = new Map(columns.map((c) => [c.key, c]));
+    // THE ORDER THE READER ASKED FOR, not the declaration order, among the
+    // columns a reader chooses: an action column is none of them
+    // ([columnChoicesOf]), so it is drawn after the set, in its declared
+    // order, whatever the set names. Dropped with the facts the reader put
+    // away, a grid of rows somebody acts on lost its Restore the moment a
+    // column was chosen.
+    const byKey = new Map(columns.filter((c) => !c.action).map((c) => [c.key, c]));
     const picked = asked.map((key) => byKey.get(key)).filter((c): c is DataGridColumn<T> => !!c);
-    return picked.length > 0 ? picked : columns.filter((c) => !c.optional);
+    if (picked.length === 0) return columns.filter((c) => !c.optional);
+    // THE SAME ACTION COLUMNS the default set draws, so choosing columns
+    // neither takes one away nor brings in one the default leaves out.
+    return [...picked, ...columns.filter((c) => c.action && !c.optional)];
   }, [columns, colsRaw]);
 
   // STATE, NOT A REF: a grid showing its empty state renders no wrap to
