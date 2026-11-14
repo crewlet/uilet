@@ -151,6 +151,8 @@ export interface GridHeadCellProps {
   onSort: () => void;
   /** The head's word is READ BUT NOT SEEN: a column of controls that name themselves. */
   hidden?: boolean | undefined;
+  /** What an action column's head is called where it carries no `label` of its own. */
+  actionsLabel?: string | undefined;
   /** `aria-colindex`, for a grid that counts its columns (a treegrid). */
   colIndex?: number | undefined;
 }
@@ -164,7 +166,15 @@ export interface GridHeadCellProps {
  * press. A glyph head is still a named column: its `label`, said and shown on
  * hover.
  */
-export function GridHeadCell({ column, sort, sortable, onSort, hidden = false, colIndex }: GridHeadCellProps) {
+export function GridHeadCell({
+  column,
+  sort,
+  sortable,
+  onSort,
+  hidden = false,
+  colIndex,
+  actionsLabel,
+}: GridHeadCellProps) {
   const align = alignOf(column);
   const sorted = sort?.key === column.key;
   const headClass = cx(
@@ -206,9 +216,16 @@ export function GridHeadCell({ column, sort, sortable, onSort, hidden = false, c
     </span>
   );
   if (!sortable) {
-    const named = !headerWord(column) && !column.action ? column.label : undefined;
+    // A HEAD WITH NO WORD IS STILL A NAMED COLUMN. A glyph head says its
+    // label and shows it on hover. An action column's head draws nothing,
+    // since a word over a column of buttons says nothing the buttons do not,
+    // and is still READ: a column header with no name at all is announced as
+    // an unnamed column before every row's controls (axe `empty-table-header`).
+    const word = headerWord(column);
+    const glyph = !word && !column.action ? column.label : undefined;
+    const named = word ? undefined : (glyph ?? (column.action ? (column.label ?? actionsLabel) : undefined));
     return (
-      <div className={headClass} role="columnheader" aria-colindex={colIndex} title={named} aria-sort={ariaSort}>
+      <div className={headClass} role="columnheader" aria-colindex={colIndex} title={glyph} aria-sort={ariaSort}>
         {label}
         {mark}
         {named && <VisuallyHidden>{named}</VisuallyHidden>}

@@ -357,12 +357,15 @@ export interface DataGridLabels extends GridFootLabels {
   selectAll: string;
   /** The position column's head (`ordinal`). */
   ordinal: string;
+  /** An action column's head, read but not drawn, where the column has no `label`. */
+  actions: string;
 }
 
 const LABELS: DataGridLabels = {
   ...GRID_FOOT_LABELS,
   selectAll: 'Select every row',
   ordinal: '#',
+  actions: 'Actions',
 };
 
 /** The grid's own columns' keys: not keys a caller's column takes, and never in a column set. */
@@ -1316,6 +1319,7 @@ export function DataGrid<T>({
             sort={sort}
             sortable={!ordered && sortsBy(column) && onSortChange !== undefined}
             onSort={() => headerClick(column)}
+            actionsLabel={text.actions}
           />
         ))}
       </div>

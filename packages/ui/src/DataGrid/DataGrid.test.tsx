@@ -146,6 +146,28 @@ describe('the columns', () => {
 });
 
 describe('the heads', () => {
+  // A COLUMN HEADER WITH NO NAME is announced as an unnamed column before every
+  // row's controls (axe `empty-table-header`). The action column draws no word
+  // over its buttons and still says what it holds; a label of its own wins.
+  test('name an action column without drawing a word over it', () => {
+    const { container, rerender } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} />);
+    const heads = screen.getAllByRole('columnheader');
+    const actions = heads[heads.length - 1]!;
+    expect(actions.textContent).toBe('Actions');
+    expect(actions.querySelector('.crewlet-data-grid__truncate')).toBeNull();
+    expect(actions.getAttribute('title')).toBeNull();
+    for (const head of heads) expect(head.textContent?.trim(), 'every head is named').not.toBe('');
+    rerender(
+      <DataGrid
+        rows={ROWS}
+        columns={COLUMNS.map((c) => (c.action ? { ...c, label: 'Open' } : c))}
+        rowKey={(r) => r.id}
+        labels={{ actions: 'Row actions' }}
+      />,
+    );
+    expect(container.querySelectorAll('[role="columnheader"]')[4]!.textContent).toBe('Open');
+  });
+
   test('are buttons only where they sort, with the sort said on the column head', () => {
     render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="-tokens" onSortChange={() => {}} />);
     const heads = screen.getAllByRole('columnheader');
@@ -155,7 +177,9 @@ describe('the heads', () => {
     // A glyph head is named by its label; an action head is not.
     expect(heads[3]!.textContent).toBe('Kind');
     expect(heads[3]!.getAttribute('title')).toBe('Kind');
-    expect(heads[4]!.textContent).toBe('');
+    // THE ACTION COLUMN'S HEAD IS READ, NOT SEEN: named, with no hover title.
+    expect(heads[4]!.textContent).toBe('Actions');
+    expect(heads[4]!.getAttribute('title')).toBeNull();
   });
 
   test('cycle the sort ascending, descending, then off', () => {
