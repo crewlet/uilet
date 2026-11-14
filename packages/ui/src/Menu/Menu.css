@@ -66,6 +66,20 @@
   animation: none;
 }
 
+/*
+ * THE MENU ITSELF: the column of items, inside the panel that is placed and
+ * scrolls. It is its own element so a header can stand above it in the same
+ * panel without being one of the things a menu owns. It takes focus only
+ * where a menu opens with nothing to rest on, and never draws a ring there:
+ * the panel around it is what opened.
+ */
+.crewlet-menu__list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  outline: none;
+}
+
 /* Up from under its trigger, which is where it is about to be. */
 @keyframes crewlet-menu-in {
   from {
@@ -169,12 +183,12 @@
 }
 
 /*
- * THE ACTIVE-DESCENDANT MODE (`activeDescendant`). Focus stays on the panel,
+ * THE ACTIVE-DESCENDANT MODE (`activeDescendant`). Focus stays on the list,
  * which draws no ring outside forced colours, and the highlighted row is the one cue: the accent fill
  * under the on-accent ink (3:1 or more on the panel, its words 4.5:1). The
  * pointer moves that highlight, so there is no separate hover fill.
  */
-.crewlet-menu--descendant:focus-visible {
+.crewlet-menu--descendant .crewlet-menu__list:focus-visible {
   outline: 2px solid transparent;
 }
 

@@ -165,7 +165,8 @@ describe('AccountRow', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Lee Park/ }));
     const menu = screen.getByRole('menu', { name: 'Your account' });
-    expect(menu.querySelector('.crewlet-menu__header')?.textContent).toBe('Access: Admin');
+    // The header is the menu's description, standing beside it in the panel.
+    expect(document.getElementById(menu.getAttribute('aria-describedby')!)?.textContent).toBe('Access: Admin');
     fireEvent.click(screen.getByRole('menuitem', { name: 'Sign out' }));
     expect(chosen).toEqual(['out']);
     expect(screen.queryByRole('menu')).toBeNull();
@@ -184,7 +185,9 @@ describe('AccountRow', () => {
         <AccountRow avatar={badge} name="Lee Park" menu={{ items: [{ key: 'out', label: 'Sign out', onSelect: () => {} }] }} />,
       );
       fireEvent.click(screen.getByRole('button', { name: /Lee Park/ }));
-      expect(screen.getByRole('menu', { name: 'Your account' }).style.getPropertyValue('--crewlet-menu-floor')).toBe('232px');
+      // THE PANEL carries the floor: the menu is the list of items inside it.
+      const panel = screen.getByRole('menu', { name: 'Your account' }).closest<HTMLElement>('.crewlet-menu')!;
+      expect(panel.style.getPropertyValue('--crewlet-menu-floor')).toBe('232px');
     } finally {
       Element.prototype.getBoundingClientRect = realRect;
     }
