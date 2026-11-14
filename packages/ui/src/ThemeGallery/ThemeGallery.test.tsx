@@ -15,7 +15,8 @@ import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { themeGroups, themeRegistry } from '@crewlethq/tokens';
-import { channels, installThemed, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
+import { contrast, flatten, OPAQUE_SURFACES } from '@crewlethq/tokens/test/palette';
+import { channels, installThemed, themeColour, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
 import { HIGHLIGHT_REST_MS } from '../Listbox/index.js';
 import { ThemeGallery, type ThemeGalleryTheme } from './index.js';
 
@@ -251,4 +252,51 @@ test('the hover border is never drawn on the chosen card', () => {
   const hover = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([, selector]) => selector!.includes(':hover'));
   expect(hover.length).toBeGreaterThan(0);
   for (const [, selector] of hover) expect(selector, selector).toContain(':not(.is-chosen)');
+});
+
+/*
+ * THE BRAND'S PILL ON THE CHOSEN CARD. The pill's fill and the chosen card's
+ * ground are the same soft tint of the accent, and the palette suite measures
+ * the accent's ink on that tint once, over each opaque rung, never on the tint
+ * laid over itself. So on the chosen card the pill is drawn in its outline
+ * appearance, which drops its fill and keeps its edge, and what its words
+ * then stand on is a ground the palette holds.
+ */
+// Mutation: draw the pill in its soft appearance on the chosen card, and its words stand at 4.47:1 in the light palette.
+test("the brand's pill is outlined on the chosen card, where its own tint would put its words under 4.5:1", () => {
+  const themes: ThemeGalleryTheme[] = [
+    { id: 'brand', name: 'Company brand', tag: 'Your company brand', tagTone: 'brand', group: 'deck' },
+    { id: 'other', name: 'Other brand', tag: 'Another brand', tagTone: 'brand', group: 'deck' },
+  ];
+  const { rerender } = render(
+    <ThemeGallery label="Deck theme" value="brand" onValueChange={() => {}} themes={themes} groups={[]} renderPreview={() => null} />,
+  );
+  const pill = (name: string) => card(name).querySelector<HTMLElement>('.crewlet-tag')!;
+  expect(pill('Company brand, Your company brand').classList.contains('crewlet-tag--outline')).toBe(true);
+  // A card that is not chosen stands on no tint, and keeps the filled pill.
+  expect(pill('Other brand, Another brand').classList.contains('crewlet-tag--soft')).toBe(true);
+  rerender(<ThemeGallery label="Deck theme" value="other" onValueChange={() => {}} themes={themes} groups={[]} renderPreview={() => null} />);
+  expect(pill('Company brand, Your company brand').classList.contains('crewlet-tag--soft')).toBe(true);
+  expect(pill('Other brand, Another brand').classList.contains('crewlet-tag--outline')).toBe(true);
+
+  // The outline draws no fill of its own: the words stand on the card's tint.
+  const tagCss = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../Tag/Tag.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  expect(/\.crewlet-tag--outline\s*\{([^}]*)\}/.exec(tagCss)?.[1] ?? '').toMatch(/background:\s*transparent;/);
+
+  const white = { r: 255, g: 255, b: 255 };
+  let tintOnTint = Infinity;
+  for (const theme of ['light', 'dark'] as const) {
+    const colour = (name: string) => themeColour(theme, token(name));
+    const page = flatten(colour('color-surface-background'), white);
+    for (const rung of OPAQUE_SURFACES) {
+      const ground = flatten(themeColour(theme, rung), page);
+      const chosen = flatten(colour('color-surface-selected'), ground);
+      // What the outlined pill's words stand on: the chosen card's tint alone.
+      expect(contrast(flatten(colour('color-brand-accent-ink'), chosen), chosen)).toBeGreaterThanOrEqual(4.5);
+      const filled = flatten(colour('color-brand-accent-soft'), chosen);
+      tintOnTint = Math.min(tintOnTint, contrast(flatten(colour('color-brand-accent-ink'), filled), filled));
+    }
+  }
+  // And why the fill goes: the pill's own tint over the card's does not clear it.
+  expect(tintOnTint).toBeLessThan(4.5);
 });

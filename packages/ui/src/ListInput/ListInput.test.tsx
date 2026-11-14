@@ -739,3 +739,19 @@ test('with the legend shown or hidden the Add button stands at the end of the bo
   expect(add.closest('legend')).toBeNull();
   expect(add.closest('.crewlet-list-input__add')).toBe(screen.getByLabelText('New policy').closest('.crewlet-list-input__add'));
 });
+
+/*
+ * THE POSITION IS A NUMBER SOMEBODY READS, at the smallest size the control
+ * draws. The accent has two steps: its fill, which the palette holds to a
+ * mark's 3:1, and its ink, held to text's 4.5:1 on every ground. Drawn in the
+ * fill the number measured 4.38:1 in light and 3.99:1 in dark.
+ */
+// Mutation: colour the index with the accent's fill step again.
+test("a row's number is drawn in the accent's ink step, the one held to what text clears", () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ListInput.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const index = /\.crewlet-list-input__index\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(index).toMatch(/(^|[\s;])color:\s*var\(--color-brand-accent-ink\);/);
+});

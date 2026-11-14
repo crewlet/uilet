@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, Kbd, Menu, type MenuEntry } from '@crewlethq/ui';
+import { Button, DescriptionList, Kbd, Menu, Tag, type MenuEntry } from '@crewlethq/ui';
 import { FolderInputGlyph, PencilGlyph, RotateCcwGlyph, TrashGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
 import { BothThemes } from '../BothThemes';
 
@@ -126,6 +126,33 @@ export const WithHeader: Story = {
   args: {
     label: 'Your account',
     header: 'Access: Admin',
+    items: [
+      { key: 'account', label: 'Account settings', icon: <UserGlyph />, onSelect: () => {} },
+      { kind: 'separator', key: 'sep' },
+      { key: 'out', label: 'Sign out', onSelect: () => {} },
+    ],
+  },
+};
+
+/**
+ * A header of more than words: a list of facts and a tag. It stands beside
+ * the menu in the same panel rather than inside it, so the menu owns only its
+ * items and a screen reader still hears the header as its description.
+ */
+export const WithFactsInTheHeader: Story = {
+  args: {
+    label: 'Your account',
+    width: 'trigger',
+    header: (
+      <DescriptionList fit dense>
+        <DescriptionList.Item term="Access">
+          <Tag size="xs" variant="neutral">
+            Admin
+          </Tag>
+        </DescriptionList.Item>
+        <DescriptionList.Item term="Signed in">with the token deploy</DescriptionList.Item>
+      </DescriptionList>
+    ),
     items: [
       { key: 'account', label: 'Account settings', icon: <UserGlyph />, onSelect: () => {} },
       { kind: 'separator', key: 'sep' },

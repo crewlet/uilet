@@ -112,6 +112,8 @@ function entries(overrides: { onEdit?: () => void; onDelete?: () => void } = {})
 
 const trigger = () => screen.getByRole('button', { name: 'Actions for Software Engineer' });
 const item = (name: string) => screen.getByRole('menuitem', { name });
+/** The box that is placed and scrolls: the menu's list of items stands inside it. */
+const panelOf = (menu: HTMLElement) => menu.closest<HTMLElement>('.crewlet-menu')!;
 const press = (key: string, init: Partial<KeyboardEventInit> = {}) =>
   fireEvent.keyDown(document.activeElement ?? document.body, { key, ...init });
 
@@ -397,7 +399,7 @@ test('given a layer host, it renders there, placed from the trigger’s rectangl
   // arrives.
   let visibilityOnFocus: string | null = null;
   host.addEventListener('focusin', (e) => {
-    visibilityOnFocus = (e.target as HTMLElement).closest<HTMLElement>("[role='menu']")!.style.visibility;
+    visibilityOnFocus = (e.target as HTMLElement).closest<HTMLElement>('.crewlet-menu')!.style.visibility;
   });
 
   fireEvent.click(trigger());
@@ -406,15 +408,15 @@ test('given a layer host, it renders there, placed from the trigger’s rectangl
   expect(document.activeElement).toBe(item('Edit'));
   expect(visibilityOnFocus).toBe('');
   // Below the trigger by the gap, lined up with its start, in host coordinates.
-  expect(menu.style.left).toBe('50px');
-  expect(menu.style.top).toBe('58px');
+  expect(panelOf(menu).style.left).toBe('50px');
+  expect(panelOf(menu).style.top).toBe('58px');
 
   anchor = rect(250, 120, 24, 24);
   act(() => {
     host.dispatchEvent(new CustomEvent(LAYER_REPOSITION_EVENT));
   });
-  expect(menu.style.left).toBe('150px');
-  expect(menu.style.top).toBe('98px');
+  expect(panelOf(menu).style.left).toBe('150px');
+  expect(panelOf(menu).style.top).toBe('98px');
 
   // Panned out of the host entirely: the menu closes, and focus goes back.
   anchor = rect(2000, 120, 24, 24);
@@ -574,7 +576,7 @@ test('a menu whose panel changes size while open is placed again', () => {
   try {
     render(<Menu label="Actions for Software Engineer" align="end" items={entries()} />);
     fireEvent.click(trigger());
-    const panel = screen.getByRole('menu');
+    const panel = panelOf(screen.getByRole('menu'));
     expect(observed).toContain(panel);
     const before = panel.style.left;
 
@@ -606,7 +608,7 @@ test('a menu given width="trigger" is never narrower than its trigger', () => {
   try {
     render(<Menu label="Actions for Software Engineer" width="trigger" items={entries()} />);
     fireEvent.click(trigger());
-    const panel = screen.getByRole('menu');
+    const panel = panelOf(screen.getByRole('menu'));
     expect(panel.style.getPropertyValue('--crewlet-menu-floor')).toBe('248px');
   } finally {
     Element.prototype.getBoundingClientRect = realRect;
@@ -616,7 +618,7 @@ test('a menu given width="trigger" is never narrower than its trigger', () => {
 test('a menu left at its content width carries no floor', () => {
   render(<Menu label="Actions for Software Engineer" items={entries()} />);
   fireEvent.click(trigger());
-  expect(screen.getByRole('menu').style.getPropertyValue('--crewlet-menu-floor')).toBe('');
+  expect(panelOf(screen.getByRole('menu')).style.getPropertyValue('--crewlet-menu-floor')).toBe('');
 });
 
 test('a header puts a name and its value on one line', () => {
@@ -630,9 +632,10 @@ test('a header says what the actions are about: never an item, and the menu is d
   render(<Menu label="Actions for Software Engineer" items={entries()} header={<span>Access: Admin</span>} />);
   fireEvent.click(trigger());
   const menu = screen.getByRole('menu');
-  const header = menu.querySelector('.crewlet-menu__header')!;
+  const header = panelOf(menu).querySelector('.crewlet-menu__header')!;
   expect(header.textContent).toBe('Access: Admin');
-  expect(header.getAttribute('role')).toBe('presentation');
+  // Beside the menu in its panel, never inside it: a menu owns only items.
+  expect(menu.contains(header)).toBe(false);
   expect(menu.getAttribute('aria-describedby')).toBe(header.id);
   // The arrows walk the items alone: the header is read, never stopped on.
   expect(document.activeElement).toBe(item('Edit'));
@@ -644,7 +647,7 @@ test('without a header the menu is described by nothing', () => {
   render(<Menu label="Actions for Software Engineer" items={entries()} />);
   fireEvent.click(trigger());
   expect(screen.getByRole('menu').hasAttribute('aria-describedby')).toBe(false);
-  expect(screen.getByRole('menu').querySelector('.crewlet-menu__header')).toBeNull();
+  expect(panelOf(screen.getByRole('menu')).querySelector('.crewlet-menu__header')).toBeNull();
 });
 
 test('the caller’s own trigger opens the menu and keeps every rule of the button', () => {
@@ -682,9 +685,29 @@ test('the caller’s own trigger opens the menu and keeps every rule of the butt
   expect(document.activeElement).toBe(own);
 });
 
-test('a menu with a header carries no axe violation', async () => {
+/*
+ * THE HEADER IS WHAT A CALLER REALLY PASSES: a description list and a tag,
+ * which have roles of their own. A bare span has none, so a menu that owned
+ * one passed `aria-required-children` while a menu that owned a list did not.
+ */
+test('a menu with a header carries no axe violation, whatever the header holds', async () => {
   const { container } = render(
-    <Menu label="Actions for Software Engineer" items={entries()} header={<span>Access: Admin</span>} />,
+    <Menu
+      label="Actions for Software Engineer"
+      items={entries()}
+      header={
+        <dl>
+          <dt>Access</dt>
+          <dd>
+            <ul>
+              <li>Admin</li>
+            </ul>
+          </dd>
+          <dt>Signed in</dt>
+          <dd>with a token</dd>
+        </dl>
+      }
+    />,
   );
   fireEvent.click(trigger());
   const result = await axe.run(document.body, {
@@ -710,7 +733,7 @@ test('an end-aligned menu wider than its trigger\'s right edge opens, held insid
   try {
     render(<Menu label="Actions for Software Engineer" align="end" items={entries()} />);
     fireEvent.click(trigger());
-    const panel = screen.getByRole('menu');
+    const panel = panelOf(screen.getByRole('menu'));
     expect(Number.parseFloat(panel.style.left)).toBeGreaterThanOrEqual(0);
   } finally {
     Element.prototype.getBoundingClientRect = realRect;
@@ -794,7 +817,7 @@ test("in a layer taller than the window, a menu near the window's foot opens upw
   const realRect = Element.prototype.getBoundingClientRect;
   Element.prototype.getBoundingClientRect = function () {
     if (this.classList.contains('crewlet-layer-host')) return rect(0, 0, 900, 3000);
-    if (this.getAttribute('role') === 'menu') return rect(0, 0, 180, 200);
+    if (this.classList.contains('crewlet-menu')) return rect(0, 0, 180, 200);
     if (this.tagName === 'BUTTON' && !this.classList.contains('crewlet-menu__item')) return rect(600, window.innerHeight - 40, 24, 24);
     return realRect.call(this);
   };
@@ -806,7 +829,7 @@ test("in a layer taller than the window, a menu near the window's foot opens upw
     );
     fireEvent.click(trigger());
     const menu = screen.getByRole('menu');
-    const top = Number.parseFloat(menu.style.top);
+    const top = Number.parseFloat(panelOf(menu).style.top);
     // Above the trigger by the gap, and inside the window.
     expect(top).toBe(window.innerHeight - 40 - 4 - 200);
     expect(top + 200).toBeLessThanOrEqual(window.innerHeight);
@@ -837,7 +860,7 @@ test('a menu may grow to the room beside its anchor, not a fixed 360px', () => {
   try {
     render(<Menu label="Actions for Software Engineer" items={entries()} />);
     fireEvent.click(trigger());
-    const panel = screen.getByRole('menu');
+    const panel = panelOf(screen.getByRole('menu'));
     // The window less the gap at its foot, less the anchor and the gap under it.
     expect(panel.style.getPropertyValue('--crewlet-menu-room')).toBe(`${844 - 4 - (80 + 4)}px`);
     expect(Number.parseFloat(panel.style.top)).toBe(84);
@@ -860,7 +883,7 @@ test('an instant menu arrives with no animation; the default rises; reduced moti
     const uninstall = installMotion(preference, 'Menu/Menu.css');
     render(<Menu label="Actions for Software Engineer" items={entries()} entrance={entrance} />);
     fireEvent.click(trigger());
-    const panel = screen.getByRole('menu');
+    const panel = panelOf(screen.getByRole('menu'));
     expect(panel.classList.contains('crewlet-menu--instant'), `${preference} ${entrance}`).toBe(entrance === 'instant');
     // Only the stop and the instant rule write `none`; the rise is left as written.
     expect(getComputedStyle(panel).animation === 'none', `${preference} ${entrance}`).toBe(!moves);
@@ -954,7 +977,7 @@ describe('the active-descendant mode', () => {
   test('draws the highlighted row as the accent fill with no ring, and the panel draws none either', () => {
     const css = menuCss().replace(/\s+/g, ' ');
     expect(css).toContain('.crewlet-menu--descendant .crewlet-menu__item.is-active { background: var(--color-brand-accent); color: var(--color-text-on-accent); }');
-    expect(css).toContain('.crewlet-menu--descendant:focus-visible { outline: 2px solid transparent; }');
+    expect(css).toContain('.crewlet-menu--descendant .crewlet-menu__list:focus-visible { outline: 2px solid transparent; }');
     expect(css).not.toMatch(/\.crewlet-menu--descendant[^{]*is-active[^{]*\{[^}]*outline: 2px solid var/);
   });
 

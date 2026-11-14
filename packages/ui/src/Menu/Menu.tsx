@@ -65,8 +65,10 @@
  *   rather than wrapping into a column of short lines.
  * - A HEADER SAYS WHAT THE ACTIONS ARE ABOUT (`header`): a line of facts
  *   above the items, such as the access a signed-in reader carries. It is
- *   not an item, so the arrows never stop on it, and the menu is described by
- *   it, so a screen reader hears it when the menu opens.
+ *   not an item, so the arrows never stop on it, and it stands OUTSIDE the
+ *   element that is the menu, in the same panel: a menu may own only items,
+ *   and a header is free to be a description list or a tag. The menu is
+ *   described by it, so a screen reader hears it when the menu opens.
  *
  * Ported from the engine dashboard's `ui/Menu.tsx`, with its suite.
  */
@@ -265,6 +267,9 @@ export function Menu({
   const [uncontrolled, setUncontrolled] = useState(false);
   const open = controlled ?? uncontrolled;
   const triggerRef = useRef<HTMLElement | null>(null);
+  // The panel is the box that is placed and scrolls; the menu is the list of
+  // items inside it, which is all a screen reader is told is the menu.
+  const panel = useRef<HTMLDivElement | null>(null);
   const menu = useRef<HTMLDivElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const startAt = useRef<'first' | 'last' | 'none'>('first');
@@ -315,14 +320,14 @@ export function Menu({
     const active = document.activeElement;
     // Not when focus is already inside: an effect that runs twice (React's
     // strict mode does, on mount) would otherwise remember a menu item.
-    if (!(active instanceof Node && menu.current?.contains(active))) {
+    if (!(active instanceof Node && panel.current?.contains(active))) {
       opener.current = active instanceof HTMLElement ? active : null;
     }
   }, [open]);
 
   const position = useCallback(() => {
     const at = triggerRef.current;
-    const box = menu.current;
+    const box = panel.current;
     if (!at || !box || !container) return;
     const inHost = container !== document.body;
     const host = inHost ? container.getBoundingClientRect() : viewportBounds();
@@ -389,7 +394,7 @@ export function Menu({
      * throws and takes the suite with it.
      */
     const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(onLayout) : null;
-    if (menu.current) resize?.observe(menu.current);
+    if (panel.current) resize?.observe(panel.current);
     return () => {
       container?.removeEventListener(LAYER_REPOSITION_EVENT, onLayout);
       window.removeEventListener('resize', onLayout);
@@ -553,6 +558,10 @@ export function Menu({
   );
 
   const list = open ? (
+    // THE PANEL IS NO CONTROL. Its keys are the menu's, bubbled up from the
+    // list or an item, and its presses are stopped so one on the header is
+    // not a press outside that closes the menu.
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={cx(
         'crewlet-menu',
@@ -561,16 +570,8 @@ export function Menu({
         activeDescendant && 'crewlet-menu--descendant',
         className,
       )}
-      id={menuId}
-      role="menu"
-      aria-label={label}
-      aria-describedby={header ? headerId : undefined}
-      aria-activedescendant={activeDescendant && active >= 0 ? itemId(active) : undefined}
-      // Focusable programmatically, never by Tab: focus rests on an item, and
-      // this is where it lands if a menu is ever opened with no items in it.
-      tabIndex={-1}
       ref={(el) => {
-        menu.current = el;
+        panel.current = el;
         popup.panelRef(el);
       }}
       // The floor is a custom property the stylesheet reads, so the content
@@ -591,23 +592,39 @@ export function Menu({
       onClick={(event) => event.stopPropagation()}
     >
       {header ? (
-        // PRESENTATIONAL, so a menu holds only items to a screen reader, and
-        // the menu's description, so what it says is heard when it opens.
-        <div role="presentation" id={headerId} className="crewlet-menu__header">
+        // OUTSIDE THE MENU, beside it in the panel. A menu may own only items,
+        // groups of them and separators, and a presentational wrapper removes
+        // its own role, not its contents': a header holding a description
+        // list or a tag was a menu owning a list. It is still the menu's
+        // description, so what it says is heard when the menu opens.
+        <div id={headerId} className="crewlet-menu__header">
           {header}
         </div>
       ) : null}
-      {runs(items).map((run) =>
-        run.kind === 'separator' ? (
-          <div key={run.key} role="separator" className="crewlet-menu__separator" />
-        ) : run.kind === 'answers' ? (
-          <div key={run.key} role="group" className="crewlet-menu__group">
-            {run.items.map(item)}
-          </div>
-        ) : (
-          item(run.item)
-        ),
-      )}
+      <div
+        className="crewlet-menu__list"
+        id={menuId}
+        role="menu"
+        aria-label={label}
+        aria-describedby={header ? headerId : undefined}
+        aria-activedescendant={activeDescendant && active >= 0 ? itemId(active) : undefined}
+        // Focusable programmatically, never by Tab: focus rests on an item, and
+        // this is where it lands if a menu is ever opened with no items in it.
+        tabIndex={-1}
+        ref={menu}
+      >
+        {runs(items).map((run) =>
+          run.kind === 'separator' ? (
+            <div key={run.key} role="separator" className="crewlet-menu__separator" />
+          ) : run.kind === 'answers' ? (
+            <div key={run.key} role="group" className="crewlet-menu__group">
+              {run.items.map(item)}
+            </div>
+          ) : (
+            item(run.item)
+          ),
+        )}
+      </div>
     </div>
   ) : null;
 

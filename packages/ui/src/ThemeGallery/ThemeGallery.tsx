@@ -190,7 +190,13 @@ export function ThemeGallery<T extends string = ThemeId>({
                       {theme.tag && theme.tagTone ? (
                         theme.tagTone === 'brand' ? (
                           <span className="crewlet-theme-gallery__tag crewlet-theme-gallery__tag--brand">
-                            <Tag size="xs" variant="brand">
+                            {/* OUTLINED ON THE CHOSEN CARD, whose ground is
+                                already the accent's soft tint: the pill's own
+                                tint over it is a ground no palette is measured
+                                on, where its words read under 4.5:1. The
+                                outline keeps the pill's edge and lets its
+                                words stand on the card's tint, which clears it. */}
+                            <Tag size="xs" variant="brand" appearance={chosen ? 'outline' : 'soft'}>
                               {theme.tag}
                             </Tag>
                           </span>

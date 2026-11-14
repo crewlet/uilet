@@ -13,7 +13,7 @@ import axe from 'axe-core';
 import { useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { parseHex } from '@crewlethq/tokens/test/palette';
-import { channels, installForcedColors, installThemed, px, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installForcedColors, installSheets, installThemed, px, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
 import { CommandPalette, type CommandPaletteGroup, type CommandPaletteScope } from './index.js';
 import { Kbd } from '../Kbd/index.js';
 import { layerCount } from '../Layer/index.js';
@@ -941,5 +941,74 @@ describe('a step', () => {
       resultTypes: ['violations'],
     });
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
+});
+
+/*
+ * THE RESULTS ARE THE ONE SCROLLER, and their rows are options the field
+ * drives, never stops. jsdom lays nothing out, so the two sizes a browser reads
+ * from layout are stated: 900px of results in a 400px box.
+ */
+describe('scrolling the results from the keyboard', () => {
+  let restore: () => void = () => {};
+  afterEach(() => restore());
+
+  function overflowing() {
+    const remove = installSheets('Modal/Modal.css', 'CommandPalette/CommandPalette.css');
+    const scrollHeight = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollHeight')!;
+    const clientHeight = Object.getOwnPropertyDescriptor(Element.prototype, 'clientHeight')!;
+    const sized = (size: number, other: PropertyDescriptor) =>
+      function (this: Element) {
+        return this.classList.contains('crewlet-palette__results') ? size : (other.get!.call(this) as number);
+      };
+    Object.defineProperty(Element.prototype, 'scrollHeight', { configurable: true, get: sized(900, scrollHeight) });
+    Object.defineProperty(Element.prototype, 'clientHeight', { configurable: true, get: sized(400, clientHeight) });
+    restore = () => {
+      Object.defineProperty(Element.prototype, 'scrollHeight', scrollHeight);
+      Object.defineProperty(Element.prototype, 'clientHeight', clientHeight);
+      remove();
+      restore = () => {};
+    };
+  }
+
+  // Mutation: leave the scroller out of the Tab order, and a keyboard holds nothing that scrolls it.
+  test('results that overflow are a stop, named, and focus still opens in the field', () => {
+    overflowing();
+    mount();
+    const results = document.querySelector<HTMLElement>('.crewlet-palette__results')!;
+    expect(results.getAttribute('tabindex')).toBe('0');
+    expect(screen.getByRole('group', { name: 'Results' })).toBe(results);
+    expect(document.activeElement).toBe(screen.getByRole('combobox', { name: 'Search' }));
+  });
+
+  test('scoped results stay the tab panel their scope names', () => {
+    overflowing();
+    render(<Scoped />);
+    const results = document.querySelector<HTMLElement>('.crewlet-palette__results')!;
+    expect(results.getAttribute('tabindex')).toBe('0');
+    expect(results.getAttribute('role')).toBe('tabpanel');
+  });
+
+  test('results that fit are no stop', () => {
+    mount({ seats: 2 });
+    const results = document.querySelector<HTMLElement>('.crewlet-palette__results')!;
+    expect(results.hasAttribute('tabindex')).toBe(false);
+    expect(results.hasAttribute('role')).toBe(false);
+  });
+
+  // Mutation: let Page Down fall through, and an answer the highlight carried out of view cannot be brought back.
+  test('Page Down and Page Up in the field scroll the results a page, and the highlight stays', () => {
+    overflowing();
+    mount();
+    const field = screen.getByRole('combobox', { name: 'Search' });
+    const results = document.querySelector<HTMLElement>('.crewlet-palette__results')!;
+    const highlighted = field.getAttribute('aria-activedescendant');
+    expect(results.scrollTop).toBe(0);
+    expect(fireEvent.keyDown(field, { key: 'PageDown' })).toBe(false);
+    expect(results.scrollTop).toBe(360);
+    fireEvent.keyDown(field, { key: 'PageUp' });
+    expect(results.scrollTop).toBe(0);
+    expect(field.getAttribute('aria-activedescendant')).toBe(highlighted);
+    expect(document.activeElement).toBe(field);
   });
 });

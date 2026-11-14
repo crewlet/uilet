@@ -6,8 +6,8 @@ import {
   isValidElement,
   useCallback,
   useContext,
-  useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -96,8 +96,12 @@ interface CardContextValue {
   titleLevel: HeadingLevel;
   /** The id that title takes, so a sectioning card can be named by it. */
   titleId: string;
-  /** Called by a rendered title, so the card knows it has one to point at. */
-  registerTitle: () => void;
+  /**
+   * Called by a rendered title, so the card knows it has one: to point a
+   * sectioning card's name at, and to put its contents a level deeper. Returns
+   * the call that takes it back when the title goes.
+   */
+  registerTitle: () => () => void;
   /**
    * Where the header's own chrome node is handed up, so the panel inside the
    * card can draw its controls onto the header row. See `headerSlot.ts`.
@@ -280,6 +284,10 @@ function cardClass(
  * controls. A grid of cards is a set of records a reader compares; a card with
  * nothing to title is a `div` with a border, and a stack of those is a table
  * that has thrown away its column headers.
+ *
+ * HEADINGS INSIDE: `Card.Title` takes the level the card sits at, and the
+ * contents of a TITLED card go one level deeper. A card with no title is no
+ * section, so what it holds keeps the card's own level.
  */
 const CardRoot = ({
   variant = 'default',
@@ -296,7 +304,10 @@ const CardRoot = ({
 }: CardProps) => {
   const level = useHeadingLevel();
   const titleId = useId();
-  const [hasTitle, setHasTitle] = useState(false);
+  // HOW MANY TITLES ARE DRAWN, counted rather than flagged so a title that
+  // goes takes its level back with it.
+  const [titles, setTitles] = useState(0);
+  const hasTitle = titles > 0;
   const navigates = href !== undefined || asChild;
   const inner = asChild && isValidElement(children)
     ? ((children as ReactElement<Record<string, unknown>>).props['children'] as ReactNode)
@@ -370,22 +381,32 @@ const CardRoot = ({
    * chat thread beneath its composer) those renders counted towards React's
    * nested-update limit until a keystroke was thrown away (error #185).
    */
-  const registerTitle = useCallback(() => setHasTitle(true), []);
+  const registerTitle = useCallback(() => {
+    setTitles((count) => count + 1);
+    return () => setTitles((count) => count - 1);
+  }, []);
   const context = useMemo<CardContextValue>(
     () => ({ titleLevel: level, titleId, registerTitle, hostChrome }),
     [level, titleId, registerTitle, hostChrome],
   );
 
   /*
-   * The card's own title is its heading; everything INSIDE the card is one
-   * level deeper. Without this a card's body headings would repeat the card's
-   * level, and a reader navigating by heading would meet a flat list where
-   * there is a hierarchy.
+   * The card's own title is its heading; everything INSIDE a titled card is
+   * one level deeper. Without this a card's body headings would repeat the
+   * card's level, and a reader navigating by heading would meet a flat list
+   * where there is a hierarchy.
+   *
+   * A CARD WITH NO TITLE IS NO SECTION, so its contents stay at its own
+   * level. Deepening them anyway skipped a level: an empty state in a
+   * titleless card under a page's h1 was an h3 with no h2 above it. The title
+   * registers before paint (`Card.Title`), so a titled card's contents never
+   * show a frame at the shallower level.
    */
+  const inside = hasTitle ? nextHeadingLevel(level) : level;
   const body = (
     <CardContext.Provider value={context}>
       <CardHeaderSlotContext.Provider value={headerSlot}>
-        <HeadingLevelProvider level={nextHeadingLevel(level)}>{content}</HeadingLevelProvider>
+        <HeadingLevelProvider level={inside}>{content}</HeadingLevelProvider>
       </CardHeaderSlotContext.Provider>
     </CardContext.Provider>
   );
@@ -401,7 +422,7 @@ const CardRoot = ({
       { ...rest, className: cx(childEl.props['className'] as string | undefined, classes) },
       <CardContext.Provider value={context}>
         <CardHeaderSlotContext.Provider value={headerSlot}>
-          <HeadingLevelProvider level={nextHeadingLevel(level)}>{content}</HeadingLevelProvider>
+          <HeadingLevelProvider level={inside}>{content}</HeadingLevelProvider>
         </CardHeaderSlotContext.Provider>
       </CardContext.Provider>,
     );
@@ -617,11 +638,12 @@ const CardTitle = ({ as, truncate = false, className, children, ...rest }: CardT
   const fallback = useHeadingLevel();
   const Tag = as ?? headingTag(card?.titleLevel ?? fallback);
   const register = card?.registerTitle;
-  // On mount, so a sectioning card learns it has a name to point at. In an
-  // effect rather than in render, because it sets state on the card above it.
-  useEffect(() => {
-    register?.();
-  }, [register]);
+  // On mount, so a sectioning card learns it has a name to point at and puts
+  // its contents a level under this heading. In an effect rather than in
+  // render, because it sets state on the card above it; a LAYOUT effect, so
+  // that re-render lands before the first paint and no heading inside the
+  // card is ever seen at the shallower level. Taken back on unmount.
+  useLayoutEffect(() => register?.(), [register]);
   return (
     <Tag
       {...rest}
