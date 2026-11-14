@@ -216,12 +216,15 @@ export interface TreeGridLabels extends GridFootLabels {
   /** The pointer-only chevron's tooltip, given the row's own label. */
   expand: (label: string) => string;
   collapse: (label: string) => string;
+  /** An action column's head, read but not drawn, where the column has neither a header nor a `label`. */
+  actions: string;
 }
 
 const LABELS: TreeGridLabels = {
   ...GRID_FOOT_LABELS,
   expand: (label) => `Expand ${label}`,
   collapse: (label) => `Collapse ${label}`,
+  actions: 'Actions',
 };
 
 const NO_DROPS: readonly string[] = [];
@@ -902,6 +905,7 @@ export function TreeGrid({
                     sortable={sortsBy(one) && onSortChange !== undefined}
                     onSort={() => headerClick(one)}
                     hidden={one.headerHidden || one.action}
+                    actionsLabel={text.actions}
                   />
                 ))}
               </div>

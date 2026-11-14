@@ -127,14 +127,18 @@ describe('the columns', () => {
     expect(sheet()).toMatch(/\.crewlet-data-grid__cell:empty \{\s*display: none;/);
   });
 
-  test('draw the set asked for in the order asked, and offer the way back', () => {
+  test('draw the set asked for in the order asked, with the row actions after it, and offer the way back', () => {
     const onCols = vi.fn();
     const { container } = render(
       <DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} cols="tokens,name" onColsChange={onCols} />,
     );
+    // THE ACTION COLUMN IS NO CHOICE: a set that does not name it still
+    // draws it, last, so choosing what to read never takes away what a row
+    // can be asked to do.
     expect([...container.querySelector('.crewlet-data-grid__row')!.children].map((c) => c.textContent)).toEqual([
       '30',
       'Bravo',
+      'Open Bravo',
     ]);
     fireEvent.click(screen.getByRole('button', { name: 'Show every column' }));
     expect(onCols).toHaveBeenCalledWith('');
@@ -142,6 +146,41 @@ describe('the columns', () => {
 });
 
 describe('the heads', () => {
+  // A COLUMN HEADER WITH NO NAME is announced as an unnamed column before every
+  // row's controls (axe `empty-table-header`). The action column draws no word
+  // over its buttons and still says what it holds; a label of its own wins.
+  test('name an action column without drawing a word over it', () => {
+    const { container, rerender } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} />);
+    const heads = screen.getAllByRole('columnheader');
+    const actions = heads[heads.length - 1]!;
+    expect(actions.textContent).toBe('Actions');
+    expect(actions.querySelector('.crewlet-data-grid__truncate')).toBeNull();
+    expect(actions.getAttribute('title')).toBeNull();
+    for (const head of heads) expect(head.textContent?.trim(), 'every head is named').not.toBe('');
+    rerender(
+      <DataGrid
+        rows={ROWS}
+        columns={COLUMNS.map((c) => (c.action ? { ...c, label: 'Open' } : c))}
+        rowKey={(r) => r.id}
+        labels={{ actions: 'Row actions' }}
+      />,
+    );
+    expect(container.querySelectorAll('[role="columnheader"]')[4]!.textContent).toBe('Open');
+    // A HEAD WHOSE CONTENT IS A CONTROL is named by it alone: the select-all
+    // box's head is not also called "Actions".
+    rerender(
+      <DataGrid
+        rows={ROWS}
+        columns={COLUMNS}
+        rowKey={(r) => r.id}
+        selection={{ selected: new Set(), onChange: () => {}, rowLabel: (r) => `Select ${r.name}` }}
+      />,
+    );
+    const box = screen.getAllByRole('columnheader')[0]!;
+    expect(box.textContent).not.toContain('Actions');
+    expect(box.querySelector('input[type="checkbox"]')).not.toBeNull();
+  });
+
   test('are buttons only where they sort, with the sort said on the column head', () => {
     render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="-tokens" onSortChange={() => {}} />);
     const heads = screen.getAllByRole('columnheader');
@@ -151,7 +190,9 @@ describe('the heads', () => {
     // A glyph head is named by its label; an action head is not.
     expect(heads[3]!.textContent).toBe('Kind');
     expect(heads[3]!.getAttribute('title')).toBe('Kind');
-    expect(heads[4]!.textContent).toBe('');
+    // THE ACTION COLUMN'S HEAD IS READ, NOT SEEN: named, with no hover title.
+    expect(heads[4]!.textContent).toBe('Actions');
+    expect(heads[4]!.getAttribute('title')).toBeNull();
   });
 
   test('cycle the sort ascending, descending, then off', () => {
@@ -754,13 +795,14 @@ test('an application drives the cursor through the handle, and Enter activates t
 test('a chooser writes the declaration order whatever the order of the ticks, and an empty value is the default set', () => {
   const onChange = vi.fn();
   const choices = columnChoicesOf([...COLUMNS, { key: 'extra', header: 'Extra', cell: () => '', optional: true }]);
-  expect(choices.map((c) => c.label)).toEqual(['Name', 'Seat', 'Tokens', 'Kind', 'go', 'Extra']);
+  // NO BOX FOR THE ACTION COLUMN (`go`): it is drawn whatever is chosen.
+  expect(choices.map((c) => c.label)).toEqual(['Name', 'Seat', 'Tokens', 'Kind', 'Extra']);
   render(<ColumnChooser choices={choices} value="" onChange={onChange} />);
   const box = (name: string) => screen.getByRole('checkbox', { name });
   expect((box('Name') as HTMLInputElement).checked).toBe(true);
   expect((box('Extra') as HTMLInputElement).checked).toBe(false);
   fireEvent.click(box('Extra'));
-  expect(onChange).toHaveBeenLastCalledWith('name,seat,tokens,mark,go,extra');
+  expect(onChange).toHaveBeenLastCalledWith('name,seat,tokens,mark,extra');
 });
 
 test('a chooser list is one group named by its heading, and a box says which item it toggles', () => {

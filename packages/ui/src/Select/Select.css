@@ -284,6 +284,14 @@ svg.crewlet-select__chevron {
   z-index: var(--z-index-popover);
 }
 
+/* SIX ROWS OF THE LIST'S OWN HEIGHT. A row with a second line (an option's
+   description) is twice a one-line row, so the same six rows need twice the
+   room: at 12rem a list of four described answers scrolled, and the first or
+   the last of them was cut at the panel's edge. */
+.crewlet-select__menu--described {
+  --crewlet-select-menu-max-height: 24rem;
+}
+
 /* Inside a layer host the panel is placed against the host's own box. */
 .crewlet-select__menu--in-host {
   position: absolute;
