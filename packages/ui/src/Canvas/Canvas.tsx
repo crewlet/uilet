@@ -136,6 +136,16 @@ import {
  */
 export type CanvasEase = 'near' | 'travel';
 
+/**
+ * AN OPENING WORKED OUT FROM THE VIEWPORT, for a view that cannot be known
+ * before the canvas has its size, such as one item drawn in the middle of it.
+ * Asked once, when the first content is placed, with `room` (the part of the
+ * viewport the canvas's own bars leave, in viewport coordinates) and `fit`
+ * (the view that shows all of the content there). Answering null opens on the
+ * fit, which then counts as one: see `refitOnResize`.
+ */
+export type CanvasOpening = (room: CanvasRect, fit: CanvasView) => CanvasView | null;
+
 /** What a screen can ask of a canvas it holds a ref to. */
 export interface CanvasHandle {
   /** Show all of the content. Eases, unless reduced motion is set. */
@@ -414,8 +424,10 @@ export interface CanvasProps {
   /**
    * The view to open on instead of the fit, such as one a reader left and came
    * back to: read once, when the first content is placed, and kept reachable.
+   * An opening that depends on the viewport's size is a [CanvasOpening],
+   * asked at that moment.
    */
-  initialView?: CanvasView | undefined;
+  initialView?: CanvasView | CanvasOpening | undefined;
   ref?: Ref<CanvasHandle> | undefined;
   className?: string | undefined;
 }
@@ -594,15 +606,19 @@ export function Canvas({
   announceReady.current = onReady;
   useLayoutEffect(() => {
     if (ready || !content || size.width <= 0 || size.height <= 0) return;
-    const opening = initialNow.current;
+    const fit = fitOf(content, size);
+    const asked = initialNow.current;
+    const { top, bottom } = bandNow.current;
+    const room = { x: 0, y: top, width: size.width, height: Math.max(0, size.height - top - bottom) };
+    const opening = typeof asked === 'function' ? asked(room, fit) : asked;
     // A saved view comes back within this content's zoom range, still reachable.
     const first = opening
       ? clampPan(
-          { ...opening, k: Math.min(limits.max, Math.max(Math.min(limits.min, fitOf(content, size).k), opening.k)) },
+          { ...opening, k: Math.min(limits.max, Math.max(Math.min(limits.min, fit.k), opening.k)) },
           content,
           size,
         )
-      : fitOf(content, size);
+      : fit;
     viewNow.current = first;
     fitted.current = opening ? null : first;
     setView(first);
