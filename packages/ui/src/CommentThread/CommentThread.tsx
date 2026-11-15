@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { MessageSquareGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { Composer } from '../Composer/index.js';
@@ -23,6 +23,17 @@ export interface CommentThreadComment {
   editedAt?: TimeValue | undefined;
   /** The id of the remark this one answers. */
   replyTo?: string | undefined;
+  /** The remark's own words as its author wrote them (its markdown), which an edit starts from. */
+  source?: string | undefined;
+  /** The reader may rewrite this remark, which is theirs. Offered only with `onEdit` and a `source`. */
+  editable?: boolean | undefined;
+  /** The reader may take this remark down. Offered only with `onRemove`. */
+  removable?: boolean | undefined;
+  /**
+   * Taken down: its words are gone. It keeps its place, author and time, so a
+   * reply to it still reads in order, and offers nothing.
+   */
+  removed?: boolean | undefined;
 }
 
 /**
@@ -50,6 +61,23 @@ export interface CommentThreadLabels {
   submitReply: string;
   /** Why the submit control waits while the field is empty. */
   emptyDraft: string;
+  /** Edit on one of the reader's own remarks, and its accessible name. */
+  edit: string;
+  editOwn: string;
+  /** The field an edit is made in. */
+  editField: string;
+  save: string;
+  cancel: string;
+  /** Why Save waits while the edited words are empty: an empty remark is taken down instead. */
+  emptyEdit: string;
+  /** Delete on a remark, its accessible name, and the question it asks before it acts. */
+  remove: string;
+  removeOwn: (name: string) => string;
+  removeAsk: string;
+  removeConfirm: string;
+  keep: string;
+  /** What a remark that was taken down reads as. */
+  removed: string;
 }
 
 export const COMMENT_THREAD_LABELS: CommentThreadLabels = {
@@ -72,6 +100,18 @@ export const COMMENT_THREAD_LABELS: CommentThreadLabels = {
   submit: 'Comment',
   submitReply: 'Reply',
   emptyDraft: 'Write the comment first.',
+  edit: 'Edit',
+  editOwn: 'Edit your comment',
+  editField: 'Edit your comment',
+  save: 'Save',
+  cancel: 'Cancel',
+  emptyEdit: 'A comment needs words. Delete it instead.',
+  remove: 'Delete',
+  removeOwn: (name) => `Delete the comment by ${name}`,
+  removeAsk: 'Delete this comment? Its words are gone for everybody; replies to it stay.',
+  removeConfirm: 'Delete',
+  keep: 'Keep it',
+  removed: 'Comment removed.',
 };
 
 export interface CommentThreadProps {
@@ -90,6 +130,22 @@ export interface CommentThreadProps {
   disabledReason?: string | undefined;
   /** A post in flight that the host is tracking. The thread also tracks its own. */
   busy?: boolean | undefined;
+  /**
+   * Rewrites one of the reader's own remarks (`editable`, with its `source`).
+   * Without it no remark offers Edit. Resolve to `false` to keep the editor
+   * open with what was typed, such as when the server refused the write.
+   */
+  onEdit?:
+    | ((comment: CommentThreadComment, body: string) => CommentThreadSubmitResult | Promise<CommentThreadSubmitResult>)
+    | undefined;
+  /**
+   * Takes a remark down (`removable`), once the reader has confirmed it in
+   * place. Without it no remark offers Delete. Resolve to `false` to keep the
+   * question open, such as when the server refused the write.
+   */
+  onRemove?:
+    | ((comment: CommentThreadComment) => CommentThreadSubmitResult | Promise<CommentThreadSubmitResult>)
+    | undefined;
   /** A line beside the submit control: who is told, how the remark is shared. */
   hint?: ReactNode;
   /** Under the field: the server's refusal of the last post, as the host words it. */
@@ -117,11 +173,20 @@ export interface CommentThreadProps {
  * A SUBMIT IS ONE AT A TIME. The submit control is disabled while a post is in
  * flight, so a second press cannot send the same remark twice, and the draft
  * is cleared only once the host says the post landed.
+ *
+ * THE READER'S OWN REMARKS ARE EDITED AND TAKEN DOWN IN PLACE. Edit swaps the
+ * remark's words for a field holding what was written (`source`), saved or
+ * left with Cancel; Delete asks in place before it acts, since the words go
+ * for everybody. Which remarks offer either is the host's to say (`editable`,
+ * `removable`): who may is the server's rule. A remark taken down keeps its
+ * row, so a reply to it still reads in order.
  */
 export function CommentThread({
   comments,
   subject,
   onSubmit,
+  onEdit,
+  onRemove,
   disabledReason,
   busy = false,
   hint,
@@ -166,6 +231,42 @@ export function CommentThread({
     field.current?.focus();
   };
 
+  // ONE REMARK AT A TIME is edited or asked about, in place: a second press
+  // elsewhere moves the question rather than stacking two.
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [acting, setActing] = useState(false);
+  const editField = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (editing !== null) editField.current?.focus();
+  }, [editing]);
+
+  const startEdit = (comment: CommentThreadComment) => {
+    setConfirming(null);
+    setEditing(comment.id);
+    setEditDraft(comment.source ?? '');
+  };
+  const saveEdit = async (comment: CommentThreadComment) => {
+    const words = editDraft.trim();
+    if (!onEdit || acting || words === '') return;
+    setActing(true);
+    try {
+      if ((await onEdit(comment, words)) !== false) setEditing(null);
+    } finally {
+      setActing(false);
+    }
+  };
+  const confirmRemove = async (comment: CommentThreadComment) => {
+    if (!onRemove || acting) return;
+    setActing(true);
+    try {
+      if ((await onRemove(comment)) !== false) setConfirming(null);
+    } finally {
+      setActing(false);
+    }
+  };
+
   return (
     <section
       className={cx('crewlet-comment-thread', className)}
@@ -191,6 +292,13 @@ export function CommentThread({
             const created = toInstant(comment.createdAt);
             const edited = toInstant(comment.editedAt);
             const name = nameOf(comment);
+            // A REMARK TAKEN DOWN OFFERS NOTHING: no words to answer, rewrite or remove.
+            const live = !comment.removed;
+            const canReply = !!onSubmit && live;
+            const canEdit = !!onEdit && live && !!comment.editable && comment.source !== undefined;
+            const canRemove = !!onRemove && live && !!comment.removable;
+            const isEditing = canEdit && editing === comment.id;
+            const isConfirming = canRemove && confirming === comment.id;
             return (
               <li key={comment.id} className="crewlet-comment-thread__comment">
                 <div className="crewlet-comment-thread__head">
@@ -203,7 +311,7 @@ export function CommentThread({
                     <span className="crewlet-comment-thread__name">{labels.system}</span>
                   )}
                   <RelativeTime value={comment.createdAt} now={now} className="crewlet-comment-thread__meta" />
-                  {edited !== null && edited !== created && (
+                  {live && edited !== null && edited !== created && (
                     <time
                       className="crewlet-comment-thread__meta"
                       dateTime={toISO(comment.editedAt) ?? undefined}
@@ -213,21 +321,94 @@ export function CommentThread({
                     </time>
                   )}
                   {parent && <span className="crewlet-comment-thread__meta">{labels.inReplyTo(nameOf(parent))}</span>}
-                  {onSubmit && (
-                    <Button
-                      size="small"
-                      variant="ghost"
-                      className="crewlet-comment-thread__reply"
-                      aria-label={labels.replyTo(name)}
-                      onClick={() => startReply(comment)}
-                    >
-                      {labels.reply}
-                    </Button>
+                  {(canReply || canEdit || canRemove) && (
+                    <span className="crewlet-comment-thread__actions">
+                      {canEdit && (
+                        <Button
+                          size="small"
+                          variant="ghost"
+                          aria-label={labels.editOwn}
+                          disabled={acting}
+                          onClick={() => startEdit(comment)}
+                        >
+                          {labels.edit}
+                        </Button>
+                      )}
+                      {canRemove && (
+                        <Button
+                          size="small"
+                          variant="ghost"
+                          aria-label={labels.removeOwn(name)}
+                          disabled={acting}
+                          onClick={() => {
+                            setEditing(null);
+                            setConfirming(comment.id);
+                          }}
+                        >
+                          {labels.remove}
+                        </Button>
+                      )}
+                      {canReply && (
+                        <Button
+                          size="small"
+                          variant="ghost"
+                          className="crewlet-comment-thread__reply"
+                          aria-label={labels.replyTo(name)}
+                          onClick={() => startReply(comment)}
+                        >
+                          {labels.reply}
+                        </Button>
+                      )}
+                    </span>
                   )}
                 </div>
-                <Document size="sm" measure="none">
-                  {comment.body}
-                </Document>
+                {comment.removed ? (
+                  <p className="crewlet-comment-thread__removed">{labels.removed}</p>
+                ) : isEditing ? (
+                  <Composer
+                    ref={editField}
+                    value={editDraft}
+                    onChange={setEditDraft}
+                    onSubmit={() => void saveEdit(comment)}
+                    label={labels.editField}
+                    actions={
+                      <>
+                        <Button size="small" variant="ghost" disabled={acting} onClick={() => setEditing(null)}>
+                          {labels.cancel}
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          loading={acting}
+                          disabledReason={acting || editDraft.trim() !== '' ? undefined : labels.emptyEdit}
+                          onClick={() => void saveEdit(comment)}
+                        >
+                          {labels.save}
+                        </Button>
+                      </>
+                    }
+                  />
+                ) : (
+                  <Document size="sm" measure="none">
+                    {comment.body}
+                  </Document>
+                )}
+                {isConfirming && (
+                  <div className="crewlet-comment-thread__confirm" role="group" aria-label={labels.removeAsk}>
+                    <span>{labels.removeAsk}</span>
+                    <Button size="small" variant="ghost" disabled={acting} onClick={() => setConfirming(null)}>
+                      {labels.keep}
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="danger"
+                      loading={acting}
+                      onClick={() => void confirmRemove(comment)}
+                    >
+                      {labels.removeConfirm}
+                    </Button>
+                  </div>
+                )}
               </li>
             );
           })}

@@ -73,12 +73,36 @@
   font-size: var(--font-size-xs);
 }
 
-/* Reply sits at the row's far end, wherever the head wraps, its padding and
-   edge pulled out as a card foot's ghost is (StatusCard.css), so the word ends
-   on the line the hairline under the remark ends on rather than 9px inside. */
-.crewlet-comment-thread__reply {
+/* The remark's controls (Edit, Delete, Reply) sit at the row's far end,
+   wherever the head wraps, the last one's padding and edge pulled out as a
+   card foot's ghost is (StatusCard.css), so the word ends on the line the
+   hairline under the remark ends on rather than 9px inside. */
+.crewlet-comment-thread__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
   margin-inline-start: auto;
   margin-inline-end: calc(-1 * (var(--spacing-2) + 1px));
+}
+
+.crewlet-comment-thread__removed {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-compact);
+  font-style: italic;
+}
+
+.crewlet-comment-thread__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-comment-thread__confirm > span {
+  margin-inline-end: auto;
 }
 
 .crewlet-comment-thread__compose {

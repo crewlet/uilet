@@ -69,6 +69,43 @@ export const Interactive: Story = {
   },
 };
 
+/**
+ * The reader's own remarks offer Edit and Delete. Edit swaps the words for a
+ * field holding what was written; Delete asks in place, and a remark taken
+ * down keeps its row so the reply to it still reads in order.
+ */
+export const OwnRemarks: Story = {
+  render: function Render() {
+    const [comments, setComments] = useState<CommentThreadComment[]>(
+      THREAD.map((c) =>
+        c.author === MAYA
+          ? { ...c, source: 'Should the rollout wait for the security review?', editable: true, removable: true }
+          : c,
+      ),
+    );
+    return (
+      <div style={{ maxWidth: 640 }}>
+        <CommentThread
+          comments={comments}
+          subject="Onboarding"
+          now={NOW}
+          onSubmit={() => true}
+          onEdit={(comment, body) => {
+            setComments((list) =>
+              list.map((c) => (c.id === comment.id ? { ...c, body: <p>{body}</p>, source: body, editedAt: NOW } : c)),
+            );
+            return true;
+          }}
+          onRemove={(comment) => {
+            setComments((list) => list.map((c) => (c.id === comment.id ? { ...c, body: null, removed: true } : c)));
+            return true;
+          }}
+        />
+      </div>
+    );
+  },
+};
+
 /** A reader who cannot post sees the thread and the reason, in the open. */
 export const ReadOnlyWithReason: Story = {
   args: {
