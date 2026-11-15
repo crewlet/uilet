@@ -75,9 +75,22 @@
   font-size: var(--font-size-sm);
 }
 
-/* Set inside a sentence: the sentence's own size, whatever it is. */
+/*
+ * Set inside a sentence: the sentence's own size, whatever it is, and
+ * UNDERLINED AT REST. Among other words its ink alone does not set it apart:
+ * the accent ink against secondary text is 1.18:1 in the dark palette, where a
+ * link in running text needs 3:1 against the words around it or a mark that is
+ * not colour. The underline is that mark, in every palette. A quiet reference
+ * keeps its own rule (never underlined), and a plain one its own ink.
+ */
 .crewlet-link--inherit {
   font-size: inherit;
+}
+
+.crewlet-link--inherit:is(.crewlet-link--default, .crewlet-link--subtle) {
+  text-decoration: underline;
+  text-decoration-thickness: from-font;
+  text-underline-offset: 0.15em;
 }
 
 /*

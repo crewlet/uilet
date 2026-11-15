@@ -11,10 +11,12 @@
  * THREE FAMILIES OF LINE. `flow` is the path a request takes: drawn at rest,
  * with dashes moving along it that say which way it points (direction, never
  * volume). `support` is what something runs on: at rest it is one trunk per
- * pair of clusters, with its count. `context` is everything around (an
- * account, a repository, a monitor). The last two are drawn line by line for
- * the entry a reader stands on, or when the legend turns them on, which is
- * what keeps a few hundred entries from being a tangle.
+ * pair of clusters, with its count, never a line per entry. `context` is
+ * everything around (an account, a repository, a monitor), drawn when the
+ * legend turns it on. Each legend switch says whether its family is drawn, so
+ * one that reads on draws it and one that reads off draws none of it. The last
+ * two are drawn line by line for the entry a reader stands on, which is what
+ * keeps a few hundred entries from being a tangle.
  *
  * ONE LOOK, INSIDE THE WORLD ONLY. Outlined boxes on a fine grid, a ruled
  * glyph cell, square corners and mono labels are the drawing of clusters,
@@ -89,6 +91,7 @@ import {
   graphItemKey,
   graphTrunks,
   layoutGraph,
+  placeTrunkLabels,
   routeGraphEdges,
   type GraphItem,
   type GraphLayout,
@@ -232,6 +235,8 @@ const relationWords = (list: readonly GraphRelationText[]) =>
 export const GRAPH_CANVAS_LABELS: GraphCanvasLabels = {
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
+  zoomOutHeld: 'All of the map is in view',
+  zoomInHeld: 'Zoomed in as far as it goes',
   fit: 'Fit to view',
   actualSize: 'Zoom to 100%',
   zoom: (percent) => `Zoom is ${percent} percent. Set a zoom level`,
@@ -390,7 +395,11 @@ export interface GraphCanvasProps {
   renderCard?: ((id: string) => ReactNode) | undefined;
   /** Drawn over the map's lower edge, such as what is selected and what can be done with it. */
   dock?: ReactNode;
-  /** The families of line drawn at rest, when the caller holds them. Calls alone unless named. */
+  /**
+   * The families of line drawn at rest, when the caller holds them: calls and
+   * what things run on unless named. With the chrome on, what things run on is
+   * drawn as trunks, one per pair of clusters; without it, line by line.
+   */
   families?: ReadonlySet<GraphEdgeFamily> | undefined;
   /** Called with the families drawn at rest whenever the legend switches one. */
   onFamiliesChange?: ((families: ReadonlySet<GraphEdgeFamily>) => void) | undefined;
@@ -454,7 +463,7 @@ const PROBES = [CARD_PROBE, GAP_PROBE, PAD_PROBE, HEAD_PROBE, BAND_PROBE];
 const emptyProbe = (lane: string) => `crewlet:graph-canvas-empty:${lane}`;
 
 const NO_GROUPS: readonly GraphGroup[] = [];
-const AT_REST: ReadonlySet<GraphEdgeFamily> = new Set<GraphEdgeFamily>(['flow']);
+const AT_REST: ReadonlySet<GraphEdgeFamily> = new Set<GraphEdgeFamily>(['flow', 'support']);
 const FAMILY_RANK: Record<GraphEdgeFamily, number> = { context: 0, support: 1, flow: 2 };
 const TONES: readonly GraphAttentionTone[] = ['danger', 'warning', 'info'];
 type EdgeState = 'dim' | 'rest' | 'lit';
@@ -528,7 +537,17 @@ export function GraphCanvas({
     },
     [shown, families, onFamiliesChange],
   );
-  const restEdges = useMemo(() => edges.filter((edge) => shown.has(edge.family ?? 'flow')), [edges, shown]);
+  // WHAT THINGS RUN ON IS A TRUNK AT REST, wherever the chrome draws trunks:
+  // its switch says whether the trunks are drawn, and a line per entry is
+  // drawn only for the entry a reader stands on.
+  const restEdges = useMemo(
+    () =>
+      edges.filter((edge) => {
+        const family = edge.family ?? 'flow';
+        return shown.has(family) && !(chrome && family === 'support');
+      }),
+    [edges, shown, chrome],
+  );
   // WHAT RELIES ON WHAT: a call and a "runs on" both carry a failure upstream; what stands around does not.
   const carrying = useMemo(() => edges.filter((edge) => (edge.family ?? 'flow') !== 'context'), [edges]);
   const groupOf = useCallback((id: string) => nodeById.get(id)?.group, [nodeById]);
@@ -724,13 +743,54 @@ export function GraphCanvas({
   // TRUNKS: while what things run on is not drawn line by line, each pair of clusters it joins is one line with its count.
   const laneOfNode = useCallback((id: string) => nodeById.get(id)?.lane, [nodeById]);
   const trunks = useMemo(() => {
-    if (!layout || !chrome || shown.has('support')) return [];
+    if (!layout || !chrome || !shown.has('support')) return [];
     return graphTrunks(
       layout,
       edges.filter((edge) => edge.family === 'support'),
       laneOfNode,
     );
   }, [layout, chrome, shown, edges, laneOfNode]);
+
+  // EACH TRUNK'S COUNT WHERE NOTHING ELSE IS: measured as drawn at this zoom
+  // (a count and a cluster's title both hold their size on screen) and
+  // written on the elements themselves, as the card beside an entry is, so a
+  // pinch never re-renders the map to move them. See [placeTrunkLabels].
+  const placeTrunksNow = useRef<() => void>(() => {});
+  placeTrunksNow.current = () => {
+    const world = worldEl.current;
+    if (!world || !layout || trunks.length === 0) return;
+    const labels = [...world.querySelectorAll<HTMLElement>('.crewlet-graph-canvas__trunk-label')];
+    const sizes = new Map<string, { width: number; height: number }>();
+    for (const el of labels) sizes.set(el.dataset.trunk ?? '', { width: el.offsetWidth, height: el.offsetHeight });
+    // Nothing laid out (no layout engine): the counts stay where they were drawn.
+    if (labels.every((el) => el.offsetWidth === 0)) return;
+    const obstacles: CanvasRect[] = [...layout.itemByKey.values()];
+    const words = (el: Element | null, x: number, y: number, centred: boolean) => {
+      if (!(el instanceof HTMLElement) || el.offsetWidth === 0) return;
+      const top = y + el.offsetTop - (centred ? el.offsetHeight / 2 : 0);
+      obstacles.push({ x: x + el.offsetLeft, y: top, width: el.offsetWidth, height: el.offsetHeight });
+    };
+    for (const lane of layout.lanes) {
+      const head = world.querySelector(`.crewlet-graph-canvas__lane-head[data-lane="${CSS.escape(lane.id)}"]`);
+      // The title is set into its cluster's outline, its middle on the head's top edge.
+      words(head?.firstElementChild ?? null, lane.head.x, lane.head.y, true);
+    }
+    for (const band of layout.bands) {
+      if (!band.title) continue;
+      const title = world.querySelector(`.crewlet-graph-canvas__band-title[data-band="${CSS.escape(band.id)}"]`);
+      words(title?.firstElementChild ?? null, band.title.x, band.title.y, false);
+    }
+    const at = placeTrunkLabels(trunks, sizes, obstacles);
+    for (const el of labels) {
+      const point = at.get(el.dataset.trunk ?? '');
+      if (point) {
+        el.style.transform = `translate(${point.x}px, ${point.y}px) translate(-50%, -50%)`;
+        el.style.removeProperty('visibility');
+      } else {
+        el.style.visibility = 'hidden';
+      }
+    }
+  };
 
   // ---- what each card says about its relations -------------------------------------
   const relationsOf = useMemo(() => {
@@ -775,6 +835,7 @@ export function GraphCanvas({
         worldEl.current?.style.setProperty(ZOOM_PROPERTY, String(view.k));
       }
       placeCardNow.current();
+      placeTrunksNow.current();
       const next = graphWindow(mountedNow.current, view, size);
       if (next !== mountedNow.current) setMounted(next);
     },
@@ -815,6 +876,8 @@ export function GraphCanvas({
     el.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
   };
   useLayoutEffect(() => placeCardNow.current());
+  // A new layout, new trunks or a new level of detail places the counts again; a zoom does in `viewChanged`.
+  useLayoutEffect(() => placeTrunksNow.current(), [layout, trunks, mounted]);
 
   // ---- the opening view: the whole map, or the entry a link names ----------------
   const root = useRef<HTMLDivElement>(null);
@@ -1295,9 +1358,10 @@ export function GraphCanvas({
                 key={band.id}
                 className="crewlet-graph-canvas__band-title"
                 aria-hidden="true"
+                data-band={band.id}
                 style={placedStyle(band.title)}
               >
-                {bands[band.index]!.label}
+                <span>{bands[band.index]!.label}</span>
               </div>
             ) : null,
           )}
@@ -1333,6 +1397,7 @@ export function GraphCanvas({
               key={trunk.key}
               className="crewlet-graph-canvas__trunk-label"
               aria-hidden="true"
+              data-trunk={trunk.key}
               style={{ transform: `translate(${trunk.label.x}px, ${trunk.label.y}px) translate(-50%, -50%)` }}
             >
               {text.trunk(trunk.count)}
@@ -1345,6 +1410,7 @@ export function GraphCanvas({
                 key={lane.id}
                 className="crewlet-graph-canvas__lane-head"
                 aria-hidden="true"
+                data-lane={lane.id}
                 style={placedStyle(lane.head)}
               >
                 <span className="crewlet-graph-canvas__lane-title">

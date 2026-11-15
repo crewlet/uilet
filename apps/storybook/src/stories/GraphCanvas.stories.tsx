@@ -165,7 +165,10 @@ export const PointedAt: Story = {
   render: () => <AtlasMapScreen map={grownCompany()} hoveredId="orders-db" />,
 };
 
-/** Every family drawn line by line, as the legend's three switches leave it. */
+/**
+ * Every family switched on: calls and what stands around drawn line by line,
+ * what things run on as its trunks, each count where nothing else is.
+ */
 export const EveryLine: Story = {
   render: () => (
     <AtlasMapScreen map={grownCompany()} families={new Set(['flow', 'support', 'context'] as const)} />

@@ -78,6 +78,11 @@ export interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
  * every surface and pressed row, so it is still found by colour and by its
  * place, and it keeps the focus ring. It draws no underline even on hover:
  * the ink stepping up to the accent is the signal that it is live.
+ *
+ * `size="inherit"` sets a link inside a sentence, and there a navigation or an
+ * identity is UNDERLINED AT REST: among other words its ink alone does not set
+ * it apart (the accent ink against secondary text is 1.18:1 in the dark
+ * palette, where running text asks 3:1 or a mark that is not colour).
  */
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   {

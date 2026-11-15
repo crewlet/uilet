@@ -31,7 +31,7 @@ export type {
   GraphTrace,
   GraphWindow,
 } from './GraphCanvas.js';
-export { GRAPH_ORDER_SWEEPS, graphItemKey, graphTrunks, layoutGraph, routeGraphEdges } from './layout.js';
+export { GRAPH_ORDER_SWEEPS, graphItemKey, graphTrunks, layoutGraph, placeTrunkLabels, routeGraphEdges } from './layout.js';
 export type {
   GraphBandPlaced,
   GraphGrid,

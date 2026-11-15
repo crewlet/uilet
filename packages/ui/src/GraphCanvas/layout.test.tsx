@@ -14,6 +14,7 @@ import { describe, expect, test } from 'vitest';
 import {
   graphItemKey,
   graphTrunks,
+  placeTrunkLabels,
   layoutGraph,
   routeGraphEdges,
   type GraphLayout,
@@ -24,6 +25,7 @@ import {
   type GraphLayoutNode,
   type GraphMetrics,
   type GraphRoute,
+  type GraphTrunk,
 } from './layout.js';
 import { graphNeighbourhood, graphReach } from './reach.js';
 import { graphStep } from './walk.js';
@@ -512,6 +514,97 @@ function unswept(input: GraphLayoutInput): GraphLayout {
   const placed = layoutGraph({ ...input, edges: [] }, METRICS);
   return { ...placed, routes: routeGraphEdges(placed, input.edges) };
 }
+
+describe('placeTrunkLabels', () => {
+  /** A trunk across a gap from y 100 to 132, its level run at 116. */
+  const trunk = (key: string, x1: number, x2: number, count = 1): GraphTrunk => ({
+    key,
+    from: 'upper',
+    to: 'lower',
+    count,
+    d: '',
+    label: { x: (x1 + x2) / 2, y: 116 },
+    run: { x1, x2, y: 116, top: 100, bottom: 132 },
+    box: { x: Math.min(x1, x2), y: 100, width: Math.abs(x2 - x1), height: 32 },
+  });
+  const size = { width: 60, height: 18 };
+  const boxOf = (at: { x: number; y: number }) => ({ x: at.x - 30, y: at.y - 9, width: 60, height: 18 });
+  const meet = (a: { x: number; y: number; width: number; height: number }, b: typeof a) =>
+    a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+
+  test('a count with nothing in its way is written at the middle of its run', () => {
+    const at = placeTrunkLabels([trunk('a', 200, 400)], new Map([['a', size]]), []);
+    expect(at.get('a')).toEqual({ x: 300, y: 116 });
+  });
+
+  // Mutation: place every count at its middle and the two leaving one cluster sit on each other.
+  test('two trunks leaving one cluster write their counts apart, the larger first', () => {
+    // Their middles stand 60 apart, as wide as one count.
+    const at = placeTrunkLabels(
+      [trunk('a', 300, 240), trunk('b', 300, 360, 6)],
+      new Map([
+        ['a', size],
+        ['b', size],
+      ]),
+      [],
+    );
+    const a = at.get('a')!;
+    const b = at.get('b')!;
+    expect(b).toEqual({ x: 330, y: 116 });
+    expect(a).toEqual({ x: 255, y: 116 });
+    expect(meet(boxOf(a), boxOf(b))).toBe(false);
+  });
+
+  // Mutation: place the larger count first whatever its run, and the long run
+  // takes the only place the straight trunk had.
+  test('a trunk that drops straight down is placed before a longer run takes its place', () => {
+    const at = placeTrunkLabels(
+      [trunk('long', 200, 440, 6), trunk('straight', 300, 300, 3)],
+      new Map([
+        ['long', size],
+        ['straight', size],
+      ]),
+      [],
+    );
+    expect(at.get('straight')).toEqual({ x: 300, y: 116 });
+    const long = at.get('long')!;
+    expect(long).not.toBeNull();
+    expect(meet(boxOf(long), boxOf(at.get('straight')!))).toBe(false);
+  });
+
+  // Mutation: try counts only along their runs, and of two trunks that cross
+  // (sharing one short run) the second is not written.
+  test('two trunks that cross write both counts, one just past the end of the shared run', () => {
+    const at = placeTrunkLabels(
+      [trunk('down-right', 605, 709, 3), trunk('down-left', 709, 605, 6)],
+      new Map([
+        ['down-right', size],
+        ['down-left', size],
+      ]),
+      [],
+    );
+    const a = at.get('down-right');
+    const b = at.get('down-left');
+    expect(a).not.toBeNull();
+    expect(b).not.toBeNull();
+    expect(meet(boxOf(a!), boxOf(b!))).toBe(false);
+  });
+
+  // Mutation: drop the titles from what is in the way and the count stands on the lower cluster's title.
+  test('a count never covers a title or a card, moving along its run or hanging from the upper cluster', () => {
+    const title = { x: 250, y: 123, width: 140, height: 18 };
+    const at = placeTrunkLabels([trunk('a', 300, 300)], new Map([['a', size]]), [title]);
+    const placed = at.get('a')!;
+    expect(placed).toEqual({ x: 300, y: 110 });
+    expect(meet(boxOf(placed), title)).toBe(false);
+  });
+
+  test('a count with nowhere clear is not written', () => {
+    const wide = { x: 0, y: 90, width: 1000, height: 60 };
+    const at = placeTrunkLabels([trunk('a', 200, 400)], new Map([['a', size]]), [wide]);
+    expect(at.get('a')).toBeNull();
+  });
+});
 
 describe('graphStep', () => {
   const layout = layoutGraph(

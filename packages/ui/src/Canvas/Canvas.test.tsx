@@ -660,6 +660,34 @@ test('the floor is the fit and the ceiling is one item filling the viewport', ()
   expect(viewOf(big).k).toBeCloseTo(bigFit.k);
 });
 
+/*
+ * A STEPPER AT ITS LIMIT SAYS SO. Every zoom is clamped to the limits, so at
+ * the fit Zoom out moved nothing however often it was pressed, and it still
+ * looked live. It is held there with its reason, softly so a reader whose
+ * focus is on it keeps it, and Zoom in is held the same at the ceiling.
+ */
+test('Zoom out is held at the fit and Zoom in at the ceiling, each with its reason', () => {
+  const { handle } = mount({ x: 0, y: 0, width: 4000, height: 3000 });
+  const out = screen.getByRole('button', { name: 'Zoom out' });
+  const zoomIn = screen.getByRole('button', { name: 'Zoom in' });
+  const reason = (el: HTMLElement) => document.getElementById(el.getAttribute('aria-describedby') ?? '')?.textContent;
+  expect(out.getAttribute('aria-disabled')).toBe('true');
+  expect(reason(out)).toBe('All of it is in view');
+  expect(zoomIn.getAttribute('aria-disabled')).toBeNull();
+  // Held softly: it keeps focus.
+  out.focus();
+  expect(document.activeElement).toBe(out);
+
+  act(() => handle.current!.zoomBy(CANVAS_ZOOM_STEP));
+  expect(out.getAttribute('aria-disabled')).toBeNull();
+  act(() => {
+    for (let press = 0; press < 60; press++) handle.current!.zoomBy(CANVAS_ZOOM_STEP);
+  });
+  expect(zoomIn.getAttribute('aria-disabled')).toBe('true');
+  expect(reason(zoomIn)).toBe('Zoomed in as far as it goes');
+  expect(out.getAttribute('aria-disabled')).toBeNull();
+});
+
 test('the ceiling follows the largest item the content says it draws', () => {
   const handle = createRef<CanvasHandle>();
   const { container } = render(
