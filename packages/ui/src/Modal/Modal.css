@@ -472,6 +472,15 @@
   color: var(--color-text-secondary);
 }
 
+/* A sheet's subtitle, as its body's first line: the subtitle's register, at
+   the body's own inset and on its rhythm, above the first field. */
+.crewlet-modal__lead {
+  margin: 0;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-secondary);
+}
+
 /*
  * Pulled out on its inline end by the glyph's own inset, as the step back is
  * on its start, so the X stands on the line the body's fields and the foot's
