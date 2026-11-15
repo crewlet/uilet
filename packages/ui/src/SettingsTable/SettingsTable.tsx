@@ -1,6 +1,9 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 import { StatusDot } from '../StatusDot/index.js';
+import { IconButton } from '../IconButton/index.js';
+import { CopyStatus, copyGlyph } from '../Copyable/CopyButton.js';
+import { useClipboard } from '../utils/useClipboard.js';
 
 /** The words the three columns are named by, for assistive technology and the optional header row. */
 export interface SettingsTableColumns {
@@ -81,8 +84,9 @@ export interface SettingsTableRowProps extends HTMLAttributes<HTMLDivElement> {
   label: ReactNode;
   /**
    * The setting's address in the document it is written in
-   * (`turn_engine.max_iterations`), drawn quietly under its name in the
-   * monospace face. For the reader who will go and change it there.
+   * (`turn_engine.max_iterations`), for the reader who will go and change it
+   * there. It is not drawn as words: a copy control after the name shows it
+   * on hover and focus and puts it on the clipboard.
    */
   settingKey?: string | undefined;
   /** The value in force, in its own unit. Drawn in tabular figures. */
@@ -112,7 +116,7 @@ export function SettingsTableRow({
     >
       <span role="rowheader" className="crewlet-settings-table__setting">
         <span className="crewlet-settings-table__label">{label}</span>
-        {settingKey === undefined ? null : <code className="crewlet-settings-table__key">{settingKey}</code>}
+        {settingKey === undefined ? null : <SettingKey settingKey={settingKey} />}
       </span>
       <span role="cell" className="crewlet-settings-table__value">
         {children}
@@ -129,3 +133,41 @@ export function SettingsTableRow({
 }
 
 SettingsTable.Row = SettingsTableRow;
+
+/**
+ * A setting's key, behind the control that copies it.
+ *
+ * THE NAME IS THE READER'S, THE KEY IS THE DOCUMENT'S. Drawn as a monospace
+ * line under every name, the key made a settings page read as its
+ * configuration file: `turn_engine.max_iterations` under "Review rounds per
+ * turn" on every row, for the one reader in many who will edit the document
+ * by hand. That reader still has it, one press away and on the clipboard;
+ * everybody else reads the setting by its name.
+ *
+ * THE TOOLTIP SHOWS THE KEY and the control's name says it, so the key is
+ * reached by pointer, keyboard and screen reader alike, and the copy says
+ * whether it landed, as every copy control in the kit does.
+ */
+function SettingKey({ settingKey }: { settingKey: string }) {
+  const { state, attempt, copy } = useClipboard({ failedResetMs: null });
+  return (
+    <span className="crewlet-settings-table__key">
+      <IconButton
+        size="sm"
+        variant="ghost"
+        icon={copyGlyph(state)}
+        label={`Copy the setting's key, ${settingKey}`}
+        tooltip={settingKey}
+        onClick={() => {
+          void copy(settingKey);
+        }}
+      />
+      <CopyStatus
+        state={state}
+        attempt={attempt}
+        copiedMessage={`${settingKey} copied to the clipboard`}
+        failedMessage="the browser refused the clipboard"
+      />
+    </span>
+  );
+}

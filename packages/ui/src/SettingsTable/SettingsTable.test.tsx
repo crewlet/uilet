@@ -3,11 +3,29 @@
  * rows are headed by the setting's name.
  */
 
-import { cleanup, render, screen, within } from '@testing-library/react';
-import { afterEach, expect, test } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, expect, test, vi } from 'vitest';
 import { SettingsTable } from './index.js';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+/** Give the table the Clipboard API, and report what it was handed. */
+function withClipboard(): { written: string[] } {
+  const state: { written: string[] } = { written: [] };
+  vi.stubGlobal('navigator', {
+    ...globalThis.navigator,
+    clipboard: {
+      writeText: (text: string) => {
+        state.written.push(text);
+        return Promise.resolve();
+      },
+    },
+  });
+  return state;
+}
 
 function limits(header?: boolean) {
   return render(
@@ -40,17 +58,38 @@ test('is a table named by its caller, with three named columns', () => {
 test('heads each row with the setting, and gives its value and source as cells', () => {
   limits();
   const row = screen.getByRole('row', { name: /Tool rounds per run/ });
-  expect(within(row).getByRole('rowheader').textContent).toBe('Tool rounds per runturn_engine.max_tool_rounds');
+  expect(within(row).getByRole('rowheader').textContent).toBe('Tool rounds per run');
   expect(within(row).getAllByRole('cell').map((cell) => cell.textContent)).toEqual([
     '32',
     'Set in the company document',
   ]);
 });
 
-test('draws the key in the monospace element, under the name', () => {
+test('speaks the setting by its name, and keeps the key behind a control that copies it', async () => {
+  // The key was a monospace line under every name, so a settings page read
+  // as its configuration file. It is a control now: named with the key, its
+  // tooltip the key, and nothing of the document's spelling drawn as words.
+  const clipboard = withClipboard();
   const { container } = limits();
-  const keys = [...container.querySelectorAll('code.crewlet-settings-table__key')].map((key) => key.textContent);
-  expect(keys).toEqual(['turn_engine.max_iterations', 'turn_engine.max_tool_rounds']);
+  expect(container.querySelector('code')).toBeNull();
+  expect(container.textContent).not.toContain('turn_engine.max_iterations');
+  const row = screen.getByRole('row', { name: /Review rounds per turn/ });
+  const copy = within(row).getByRole('button', { name: "Copy the setting's key, turn_engine.max_iterations" });
+  await act(async () => {
+    fireEvent.click(copy);
+  });
+  expect(clipboard.written).toEqual(['turn_engine.max_iterations']);
+  // The copy says it landed, in words a screen reader hears.
+  expect(within(row).getByRole('status').textContent).toBe('turn_engine.max_iterations copied to the clipboard');
+});
+
+test('draws no copy control for a setting with no key', () => {
+  render(
+    <SettingsTable aria-label="Retention">
+      <SettingsTable.Row label="Events kept">30 days</SettingsTable.Row>
+    </SettingsTable>,
+  );
+  expect(screen.queryByRole('button')).toBeNull();
 });
 
 test('marks only the row whose value differs from its default', () => {

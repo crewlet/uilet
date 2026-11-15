@@ -89,7 +89,9 @@
 
 .crewlet-settings-table__setting {
   display: flex;
-  flex-direction: column;
+  /* The name first and on top, so the cell's baseline is the name's first
+     line, the one the row's value and source sit on. */
+  align-items: flex-start;
   gap: var(--spacing-1);
   min-width: 0;
 }
@@ -100,16 +102,18 @@
 }
 
 /*
- * THE KEY IS FOR THE READER WHO WILL GO AND CHANGE IT, so it is there and
- * quiet: the monospace face at the smallest step, in the tertiary ink, and
- * free to break anywhere, since a dotted path is one word to a line breaker.
+ * THE KEY IS FOR THE READER WHO WILL GO AND CHANGE IT, so it is a control
+ * after the name rather than a line under it: one quiet square that copies
+ * the key and shows it on hover and focus. Its box is the name's first line,
+ * so the square centres on that line, and the control's height never sets the
+ * row's: a row with a key is as tall as one without.
  */
 .crewlet-settings-table__key {
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-2xs);
-  line-height: var(--font-line-height-snug);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: calc(1em * var(--font-line-height-snug));
   color: var(--color-text-tertiary);
-  overflow-wrap: anywhere;
 }
 
 /* Tabular figures, so a column of numbers reads down its digits. */
