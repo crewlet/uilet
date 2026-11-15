@@ -1,9 +1,10 @@
 /**
- * A GRID'S FLEXIBLE COLUMNS ARE SIZED BY WHAT THEY HOLD, measured: where the
- * values do not all fit, a short column takes what it holds and the long ones
- * share the rest; where they all fit, the room left still stretches the
- * columns to fill the grid. Each flexible column took an equal share whatever
- * it held, so a long name was cut beside a short column with room to spare.
+ * A FLEXIBLE COLUMN OF SHORT VALUES TAKES WHAT IT HOLDS, measured: where the
+ * values do not all fit, a short column keeps exactly its widest value and the
+ * long ones share the rest; a shrink column keeps its place ahead of them; and
+ * where everything fits, the grid still fills its box. Each flexible column
+ * took an equal share whatever it held, so a long name was cut beside a short
+ * column with room to spare.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';
@@ -94,6 +95,7 @@ test('where the values do not fit, a short column takes what it holds and the lo
   expect(values(at, 0).some(cut), `the long name is cut (${say})`).toBe(true);
   expect(values(at, 1).some(cut), `the short team column is not (${say})`).toBe(false);
   expect(spare(at, 1), `the team column keeps no empty room while a name is cut (${say})`).toBeLessThanOrEqual(2);
+  expect(values(at, 2).some(cut), `the shrink column keeps its values whole (${say})`).toBe(false);
   expect(head(at, 0).getBoundingClientRect().width, say).toBeGreaterThan(head(at, 1).getBoundingClientRect().width * 2);
 });
 

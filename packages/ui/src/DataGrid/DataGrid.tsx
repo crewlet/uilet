@@ -23,7 +23,7 @@ import { useReorder, type ReorderLabels } from '../Reorder/index.js';
 import { Skeleton } from '../Skeleton/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
-import { tableTrack } from '../utils/tableTrack.js';
+import { SHORT_COLUMN_PX, tableTrack } from '../utils/tableTrack.js';
 import { titleWhenCut } from '../utils/titleIfCut.js';
 import {
   GRID_FOOT_LABELS,
@@ -131,10 +131,10 @@ export interface DataGridColumn<T> {
   optional?: boolean | undefined;
   /**
    * The narrowest a FLEXIBLE column may be drawn: its track is
-   * `minmax(floor, auto)` rather than `minmax(0, auto)`. For the column that is
+   * `minmax(floor, 1fr)` rather than `minmax(0, 1fr)`. For the column that is
    * the point of the list (a title, a name), which at zero gave way to every
-   * content-sized column beside it. Above its floor a flexible column is
-   * sized by what it holds (`tableTrack`).
+   * content-sized column beside it. A flexible column whose widest value is
+   * short takes what it holds instead, never under its floor ([DataGrid]).
    */
   floor?: string | undefined;
   /**
@@ -617,6 +617,92 @@ export function fitGridColumns({
   return null;
 }
 
+const NO_WIDTHS: Readonly<Record<string, number>> = {};
+
+/** How many rows a column's widest value is read over: the first screen and more. */
+const WIDEST_SAMPLE_ROWS = 40;
+
+/** Whether a column is FLEXIBLE: no exact track, not content-sized, not a mark or a row's controls. */
+function flexible<T>(column: DataGridColumn<T>): boolean {
+  return !column.width && !column.shrink && !column.icon && !column.action;
+}
+
+/**
+ * The width a cell's content takes laid out on one line: each line of its
+ * words and marks from its first to its last, the lines added up, and the
+ * cell's inset. Read off the text itself (a clipped run is laid out whole),
+ * so a cut cell reads as wide as its words. 0 where nothing is laid out.
+ */
+function contentWidth(cell: Element): number {
+  const lines = new Map<number, [number, number]>();
+  const take = (rect: DOMRect) => {
+    if (rect.width <= 0) return;
+    const top = Math.round(rect.top);
+    const line = lines.get(top);
+    lines.set(top, line ? [Math.min(line[0], rect.left), Math.max(line[1], rect.right)] : [rect.left, rect.right]);
+  };
+  if (typeof document.createRange !== 'function') return 0;
+  const walk = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+  for (let node = walk.nextNode(); node; node = walk.nextNode()) {
+    if (!node.textContent?.trim() || node.parentElement?.closest('.crewlet-visually-hidden')) continue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    if (typeof range.getClientRects !== 'function') return 0;
+    for (const rect of range.getClientRects()) take(rect);
+  }
+  for (const mark of cell.querySelectorAll('svg, img')) take(mark.getBoundingClientRect());
+  if (lines.size === 0) return 0;
+  let words = 0;
+  for (const [left, right] of lines.values()) words += right - left;
+  const style = getComputedStyle(cell);
+  return Math.ceil(words + (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0));
+}
+
+/**
+ * The widest value of each flexible column the grid draws, its head
+ * included, read over the head and the first rows. A column nothing in could
+ * be measured is left out.
+ */
+export function widestValues<T>(wrap: HTMLElement, visible: readonly DataGridColumn<T>[], leading = 0): Record<string, number> {
+  const head = wrap.querySelector(':scope > .crewlet-data-grid__head');
+  if (!head) return {};
+  const rows = [...wrap.querySelectorAll(':scope > .crewlet-data-grid__body .crewlet-data-grid__row')].slice(0, WIDEST_SAMPLE_ROWS);
+  const out: Record<string, number> = {};
+  visible.forEach((column, i) => {
+    if (!flexible(column)) return;
+    let most = 0;
+    const cells = [head.children[i + leading], ...rows.map((row) => row.querySelectorAll(':scope > .crewlet-data-grid__cell')[i + leading])];
+    for (const cell of cells) if (cell) most = Math.max(most, contentWidth(cell));
+    if (most > 0) out[column.key] = most;
+  });
+  return out;
+}
+
+function sameWidths(a: Readonly<Record<string, number>>, b: Readonly<Record<string, number>>): boolean {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((key) => Math.abs((a[key] ?? 0) - (b[key] ?? -1)) < 1);
+}
+
+/**
+ * The flexible columns drawn at what they hold: those measured no wider than
+ * `SHORT_COLUMN_PX`, never the widest flexible column, which keeps its share
+ * so the grid fills its box. PURE, so the rule is held without a layout
+ * engine; nothing measured, nothing is short.
+ */
+export function shortColumns<T>(
+  visible: readonly Pick<DataGridColumn<T>, 'key' | 'width' | 'shrink' | 'icon' | 'action'>[],
+  widest: Readonly<Record<string, number>>,
+): Set<string> {
+  const all = visible.filter((c) => flexible(c as DataGridColumn<T>));
+  const measured = all.filter((c) => (widest[c.key] ?? 0) > 0);
+  if (measured.length === 0) return new Set();
+  // A column nothing in could be measured may be the long one, and keeps its
+  // share; otherwise the widest measured column keeps it.
+  const keeper =
+    measured.length < all.length ? null : measured.reduce((a, b) => (widest[b.key]! > widest[a.key]! ? b : a));
+  return new Set(measured.filter((c) => c !== keeper && widest[c.key]! <= SHORT_COLUMN_PX).map((c) => c.key));
+}
+
 /**
  * Whether a content-sized column has been squeezed: see [squeezedCells]. Read
  * off the grid's head and the first screen of its rows.
@@ -650,13 +736,19 @@ export function squeezed<T>(
  * cells alone, and no value sat under the head that named it.
  *
  * A SHRINK COLUMN IS CAPPED (`fit-content(20%)`): `max-content` grows without
- * a ceiling, so one long value starved the title to zero and still overflowed.
+ * a ceiling and grid resolves it before any flexible column, so one long value
+ * starved the title to zero and still overflowed.
  *
- * A FLEXIBLE COLUMN IS SIZED BY WHAT IT HOLDS (`minmax(floor, auto)`, see
- * `tableTrack`): the room is handed out evenly and each column stops at its
- * widest value, so a short one takes what it holds and the long ones share the
- * rest, rather than every flexible column taking an equal share whatever it
- * held and a name being cut beside a column of empty room.
+ * A FLEXIBLE COLUMN OF SHORT VALUES TAKES WHAT IT HOLDS. Its widest value is
+ * measured after layout (the head and the rows on screen, off their words
+ * rather than off the cells that cut them), and one no wider than
+ * `SHORT_COLUMN_PX` is drawn at its content, with the shrink columns, while
+ * the long ones share what is left at `1fr`. At an equal share every flexible
+ * column took the same width whatever it held, so a seat's handle sat in a
+ * third of a column of empty room beside a name cut short. The widest
+ * flexible column always keeps its share, so the grid still fills its box,
+ * and a grid that cannot be measured (no layout) draws every flexible column
+ * at its share, as before.
  *
  * COLUMNS THAT DO NOT FIT GIVE WAY IN ORDER (`drop`), measured after every
  * commit in a layout effect so the intermediate shapes never paint, and the
@@ -975,6 +1067,17 @@ export function DataGrid<T>({
     watch.observe(wrap);
     return () => watch.disconnect();
   }, [wrap]);
+  // THE WIDEST VALUE OF EACH FLEXIBLE COLUMN, measured after layout and kept
+  // only when it changes, so the tracks it decides cannot feed back into it:
+  // words are measured whole, however narrow the cell that cuts them.
+  const [widest, setWidest] = useState<Readonly<Record<string, number>>>(NO_WIDTHS);
+  useLayoutEffect(() => {
+    const el = wrap;
+    if (!el || phone) return;
+    const next = widestValues(el, visibleColumns, leading);
+    if (!sameWidths(next, widest)) setWidest(next);
+  }, [wrap, phone, visibleColumns, leading, flat, boxWidth, widest]);
+
   // AFTER WHATEVER CAN CHANGE WHAT FITS: the rows (`flat`), the sort, the
   // columns, the width. The decision is one compare, and a pass that changes
   // nothing returns null, so the chain ends.
@@ -1042,8 +1145,11 @@ export function DataGrid<T>({
     onSortChange(nextGridSort(column.key, sortRaw, defaultSort));
   }
 
+  const short = shortColumns(visibleColumns, widest);
   const template = drawnColumns
-    .map((c) => tableTrack({ ...c, width: c.width ?? (c.icon ? DATA_GRID_ICON_TRACK : undefined) }))
+    .map((c) =>
+      tableTrack({ ...c, width: c.width ?? (c.icon ? DATA_GRID_ICON_TRACK : undefined), short: short.has(c.key) }),
+    )
     .join(' ');
 
   // A GROUPED ANSWER WITH NO ROWS ON THIS PAGE IS NOT AN EMPTY ANSWER: a band

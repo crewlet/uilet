@@ -864,7 +864,7 @@ describe('the table rules it shares with the data grid', () => {
     );
     expect(
       container.querySelector<HTMLElement>('[role="treegrid"]')!.style.getPropertyValue('--crewlet-tree-grid-columns'),
-    ).toBe('minmax(14rem, auto) fit-content(20%) 12rem minmax(0, auto)');
+    ).toBe('minmax(14rem, 1fr) fit-content(20%) 12rem minmax(0, 1fr)');
   });
 
   test('its cells and heads take the same inset, at the same outer edge, as a data grid', () => {
