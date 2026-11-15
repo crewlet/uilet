@@ -59,7 +59,7 @@ describe('a product mark', () => {
   it('is decoration until it is named', () => {
     const plain = render(ProductMark, { product: 'worklet' });
     assert.equal(attribute(plain, 'aria-hidden'), 'true');
-    for (const [product, title] of [['worklet', 'Worklet'], ['doclet', 'Doclet']]) {
+    for (const [product, title] of [['worklet', 'Worklet'], ['doclet', 'Doclet'], ['gitlet', 'Gitlet']]) {
       const named = render(ProductMark, { product, title });
       assert.equal(attribute(named, 'role'), 'img', product);
       assert.equal(attribute(named, 'aria-label'), title, product);
@@ -283,7 +283,7 @@ describe('the app tile', () => {
     }
   });
 
-  it('shares one frame across the four products', async () => {
+  it('shares one frame across every product', async () => {
     const frame = async (product) =>
       paths(await source('tile', product))
         .filter((path) => path['data-part'] !== 'detail')
