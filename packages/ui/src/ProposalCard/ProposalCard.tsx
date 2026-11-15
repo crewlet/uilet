@@ -1,11 +1,20 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type HTMLAttributes, type ReactNode } from 'react';
-import { BanGlyph, CircleAlertGlyph, CircleCheckGlyph, ClockGlyph, LockGlyph, RefreshCwGlyph } from '@crewlethq/icons/glyphs';
+import {
+  BanGlyph,
+  CircleAlertGlyph,
+  CircleCheckGlyph,
+  ClockGlyph,
+  LockGlyph,
+  RefreshCwGlyph,
+} from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
+import { Callout } from '../Callout/index.js';
 import { ChangeList, type ChangeListLabels, type ChangeListRow } from '../ChangeList/index.js';
 import { Checkbox } from '../Checkbox/index.js';
 import type { DiffListLabels } from '../DiffList/index.js';
 import { Disclosure } from '../Disclosure/index.js';
 import { ReceiptStrip, RefusalStrip } from '../ReceiptStrip/index.js';
+import { formatExact, formatUntil, toISO, useNow, type TimeValue } from '../RelativeTime/index.js';
 import { Spinner } from '../Spinner/index.js';
 import { StatusCard, type StatusCardStatus } from '../StatusCard/index.js';
 import { cx } from '../utils/cx.js';
@@ -120,6 +129,12 @@ export interface ProposalCardLabels {
   confirmationNeeded: string;
   /** The title of the collapsed `details` section. */
   details: string;
+  /** Said in the foot of a card with `stepUp` while it waits: the approval asks for a fresh sign-in. */
+  stepUpAhead: string;
+  /** What leads the time left on a card with `expiresAt`: "Expires" followed by "in 12m". */
+  expires: string;
+  /** Said in place of the time left once `expiresAt` has passed and the card still waits. */
+  lapsed: string;
 }
 
 export const PROPOSAL_CARD_LABELS: ProposalCardLabels = {
@@ -152,6 +167,9 @@ export const PROPOSAL_CARD_LABELS: ProposalCardLabels = {
   busy: 'The approved change is being carried out',
   confirmationNeeded: 'Check the confirmation above first',
   details: 'Technical details',
+  stepUpAhead: 'Approving asks you to confirm it’s you',
+  expires: 'Expires',
+  lapsed: 'Past its time, so it can no longer be approved',
 };
 
 export interface ProposalCardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
@@ -246,6 +264,27 @@ export interface ProposalCardProps extends Omit<HTMLAttributes<HTMLElement>, 'ti
    * Ignored in every other state, where the strip says what happened.
    */
   decisionRefusal?: ProposalDecisionRefusal | undefined;
+  /**
+   * Why this change deserves a closer read before it is decided, in the
+   * host's words: it was prepared after reading text somebody outside the
+   * organisation wrote, which may have asked for it. A warning callout at the
+   * head of the body, before the summary, while the card can still be decided
+   * or is being carried out. A settled card drops it with its decision.
+   */
+  caution?: ReactNode;
+  /**
+   * Whether approving asks the person to confirm it is them first. While the
+   * card waits (`pending`) its foot says so (`labels.stepUpAhead`), so the
+   * sign-in check is no surprise; in `stepup` the strip already says it.
+   */
+  stepUp?: boolean | undefined;
+  /**
+   * When the proposal stops waiting. While the card can be decided its foot
+   * counts down to it ("Expires in 12m") on the shared clock, with the exact
+   * instant on hover, and says `labels.lapsed` once it has passed. An
+   * unparseable value draws nothing.
+   */
+  expiresAt?: TimeValue;
   /** Replaces the default sentence of a step-up, declined, expired or stale card. */
   notice?: ReactNode;
   labels?: Partial<ProposalCardLabels> | undefined;
@@ -351,6 +390,12 @@ function headingOf(state: ProposalState, kind: ProposalKind, labels: ProposalCar
  *
  * THE PRECISE REQUEST IS THERE, FOLDED (`details`): a compact disclosure,
  * collapsed by default, for a reader who wants the method, path and body.
+ *
+ * WHAT DECIDING INVOLVES IS SAID BEFORE THE PRESS. A change prepared from
+ * somebody else's words says so first (`caution`), and the foot says whether
+ * approving asks for a fresh sign-in (`stepUp`) and how long the decision
+ * stays open (`expiresAt`), each with its glyph, so neither the sign-in check
+ * nor a refusal for lateness comes as a surprise.
  */
 export function ProposalCard({
   title,
@@ -376,6 +421,9 @@ export function ProposalCard({
   failureHint,
   approveBlocked,
   decisionRefusal,
+  caution,
+  stepUp = false,
+  expiresAt,
   notice,
   labels: overrides,
   changeLabels,
@@ -421,6 +469,36 @@ export function ProposalCard({
   // carried out; a settled card steps back with the rest of its body.
   const danger = tone === 'danger' && !settled;
 
+  // WHAT APPROVING INVOLVES, while it can still be pressed: a fresh sign-in
+  // (said by the strip itself once the card is in `stepup`) and the time
+  // left, counted on the shared clock so every card in a thread agrees.
+  const now = useNow();
+  const until = deciding && expiresAt !== undefined ? formatUntil(expiresAt, now) : null;
+  const signIn = state === 'pending' && stepUp;
+  const terms =
+    signIn || until !== null ? (
+      <p className="crewlet-proposal-card__terms">
+        {signIn ? (
+          <span className="crewlet-proposal-card__term">
+            <LockGlyph size="xs" />
+            {labels.stepUpAhead}
+          </span>
+        ) : null}
+        {until === null ? null : (
+          <span className="crewlet-proposal-card__term">
+            <ClockGlyph size="xs" />
+            {until === 'due' ? (
+              labels.lapsed
+            ) : (
+              <time dateTime={toISO(expiresAt) ?? undefined} title={formatExact(expiresAt) ?? undefined}>
+                {labels.expires} {until}
+              </time>
+            )}
+          </span>
+        )}
+      </p>
+    ) : null;
+
   // WHICH PROPOSAL THIS IS, as far as the card can tell: a host that hands
   // the same card a different proposal in place (rather than keying it) gives
   // it another action or another primary, and neither the tick nor the
@@ -456,6 +534,7 @@ export function ProposalCard({
   const decision =
     deciding || state === 'applying' ? (
       <>
+        {terms}
         {/* ONE LIVE REGION, KEPT for as long as the foot holds a decision
             (through the applying that an approval passes through on its way
             back to a refusal) and hidden while it is empty, so a refusal that
@@ -577,6 +656,11 @@ export function ProposalCard({
       data-tone={danger ? 'danger' : undefined}
       data-outcome={state === 'failed' ? failureOutcome : undefined}
     >
+      {caution === undefined || caution === null || settled ? null : (
+        <Callout className="crewlet-proposal-card__caution" variant="warning">
+          {caution}
+        </Callout>
+      )}
       {summary === undefined || summary === null ? null : <p className="crewlet-proposal-card__summary">{summary}</p>}
       <ChangeList
         rows={changes}
