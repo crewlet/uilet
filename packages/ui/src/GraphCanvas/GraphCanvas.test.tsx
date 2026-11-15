@@ -3,7 +3,7 @@
  *
  * What these protect:
  * - the three families of line: calls drawn at rest, what things run on as a
- *   trunk with its count until the legend draws them, and what stands around
+ *   trunk with its count under a switch that reads on, and what stands around
  *   only for the entry a reader stands on;
  * - the pointer and focus light an entry's neighbours and open its card, and
  *   an entry another surface points at is lit the same way;
@@ -388,7 +388,10 @@ describe('GraphCanvas', () => {
     expect(container.querySelector("[data-state='dim'] .crewlet-graph-canvas__flow")).toBeNull();
   });
 
-  test('what things run on is a trunk with its count until the legend draws the lines', () => {
+  // THE SWITCH SAYS WHAT THE MAP DRAWS: it read off while the trunks were
+  // drawn, and pressing it drew every line. Mutation: draw trunks while the
+  // family is off and the switch reads off over them.
+  test('what things run on is a trunk with its count under a switch that reads on, and pressing it hides them', () => {
     const changes: string[][] = [];
     const edges: GraphEdge[] = [
       ...EDGES,
@@ -406,15 +409,21 @@ describe('GraphCanvas', () => {
     const calls = within(legend).getByRole('button', { name: 'Calls' });
     const runsOn = within(legend).getByRole('button', { name: 'Runs on' });
     expect(calls.getAttribute('aria-pressed')).toBe('true');
+    expect(runsOn.getAttribute('aria-pressed')).toBe('true');
+    // Never a line per entry at rest: the trunks stand for them.
+    expect(edgePath(container, 'rest', 'support')).toBe('');
+    fireEvent.click(runsOn);
+    LayoutObserver.settle();
     expect(runsOn.getAttribute('aria-pressed')).toBe('false');
+    expect(changes).toEqual([['flow']]);
+    // Switched off, nothing of it is drawn.
+    expect(edgePath(container, 'rest', 'support')).toBe('');
+    expect(container.querySelector('.crewlet-graph-canvas__trunk')).toBeNull();
+    expect(container.querySelector('.crewlet-graph-canvas__trunk-label')).toBeNull();
     fireEvent.click(runsOn);
     LayoutObserver.settle();
     expect(runsOn.getAttribute('aria-pressed')).toBe('true');
-    expect(changes).toEqual([['flow', 'support']]);
-    // Drawn line by line, the trunks go.
-    expect(routesIn(edgePath(container, 'rest', 'support'))).toBe(3);
-    expect(container.querySelector('.crewlet-graph-canvas__trunk')).toBeNull();
-    expect(container.querySelector('.crewlet-graph-canvas__trunk-label')).toBeNull();
+    expect(container.querySelectorAll('.crewlet-graph-canvas__trunk-label')).toHaveLength(2);
     // Hiding a family moves no card: the order inside a lane never reads what is shown.
     const before = card('orders-db').style.transform;
     fireEvent.click(calls);
@@ -504,8 +513,9 @@ describe('GraphCanvas', () => {
     expect(canvasOf(container).contains(foot)).toBe(false);
     expect(canvasOf(container).compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // The legend still switches a family, and a press under the map is not a press on the ground.
-    fireEvent.click(within(legend as HTMLElement).getByRole('button', { name: /Runs on/ }));
-    expect(container.querySelector(".crewlet-graph-canvas__edge-layer[data-family='support']")).not.toBeNull();
+    const runsOn = within(legend as HTMLElement).getByRole('button', { name: /Runs on/ });
+    fireEvent.click(runsOn);
+    expect(runsOn.getAttribute('aria-pressed')).toBe('false');
     fireEvent.pointerDown(details, { clientX: 10, clientY: 10 });
     fireEvent.click(details, { clientX: 10, clientY: 10 });
     expect(picks).toEqual([]);

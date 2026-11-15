@@ -219,6 +219,10 @@ export type CanvasCursor = 'hand' | 'pointer' | 'crosshair' | 'text';
 export interface CanvasLabels {
   zoomIn: string;
   zoomOut: string;
+  /** Why Zoom out is held at the fit, the farthest out a view goes. */
+  zoomOutHeld: string;
+  /** Why Zoom in is held at the ceiling, the farthest in a view goes. */
+  zoomInHeld: string;
   fit: string;
   /** The control that shows the content at actual size. */
   actualSize: string;
@@ -238,6 +242,8 @@ export interface CanvasLabels {
 const LABELS: CanvasLabels = {
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
+  zoomOutHeld: 'All of it is in view',
+  zoomInHeld: 'Zoomed in as far as it goes',
   fit: 'Fit to view',
   actualSize: 'Zoom to 100%',
   zoom: (percent) => `Zoom is ${percent} percent. Set a zoom level`,
@@ -514,6 +520,11 @@ export function Canvas({
   const limits = zoomLimits(content, room, largestItemWidth, CANVAS_FIT_PADDING, minZoom);
   const limitsNow = useRef(limits);
   limitsNow.current = limits;
+  // A STEPPER AT ITS LIMIT IS HELD, with the reason, where it stayed live and
+  // did nothing: every zoom is clamped to the limits, so a press past them
+  // moves nothing. Held softly, so a reader whose focus is on it keeps it.
+  const atFloor = view.k <= limits.min * (1 + 1e-9);
+  const atCeiling = view.k >= limits.max * (1 - 1e-9);
   const floorNow = useRef(minZoom);
   floorNow.current = minZoom;
 
@@ -1052,6 +1063,7 @@ export function Canvas({
                       icon={<ZoomOutGlyph />}
                       onClick={() => centreZoom(1 / CANVAS_ZOOM_STEP)}
                       disabled={!ready}
+                      disabledReason={ready && atFloor ? text.zoomOutHeld : undefined}
                     />
                   </ShortcutTip>
                   <ZoomReadout
@@ -1069,6 +1081,7 @@ export function Canvas({
                       icon={<ZoomInGlyph />}
                       onClick={() => centreZoom(CANVAS_ZOOM_STEP)}
                       disabled={!ready}
+                      disabledReason={ready && atCeiling ? text.zoomInHeld : undefined}
                     />
                   </ShortcutTip>
                   {controlsActualSize && (

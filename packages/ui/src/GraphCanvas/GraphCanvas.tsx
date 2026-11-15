@@ -11,10 +11,12 @@
  * THREE FAMILIES OF LINE. `flow` is the path a request takes: drawn at rest,
  * with dashes moving along it that say which way it points (direction, never
  * volume). `support` is what something runs on: at rest it is one trunk per
- * pair of clusters, with its count. `context` is everything around (an
- * account, a repository, a monitor). The last two are drawn line by line for
- * the entry a reader stands on, or when the legend turns them on, which is
- * what keeps a few hundred entries from being a tangle.
+ * pair of clusters, with its count, never a line per entry. `context` is
+ * everything around (an account, a repository, a monitor), drawn when the
+ * legend turns it on. Each legend switch says whether its family is drawn, so
+ * one that reads on draws it and one that reads off draws none of it. The last
+ * two are drawn line by line for the entry a reader stands on, which is what
+ * keeps a few hundred entries from being a tangle.
  *
  * ONE LOOK, INSIDE THE WORLD ONLY. Outlined boxes on a fine grid, a ruled
  * glyph cell, square corners and mono labels are the drawing of clusters,
@@ -232,6 +234,8 @@ const relationWords = (list: readonly GraphRelationText[]) =>
 export const GRAPH_CANVAS_LABELS: GraphCanvasLabels = {
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
+  zoomOutHeld: 'All of the map is in view',
+  zoomInHeld: 'Zoomed in as far as it goes',
   fit: 'Fit to view',
   actualSize: 'Zoom to 100%',
   zoom: (percent) => `Zoom is ${percent} percent. Set a zoom level`,
@@ -390,7 +394,11 @@ export interface GraphCanvasProps {
   renderCard?: ((id: string) => ReactNode) | undefined;
   /** Drawn over the map's lower edge, such as what is selected and what can be done with it. */
   dock?: ReactNode;
-  /** The families of line drawn at rest, when the caller holds them. Calls alone unless named. */
+  /**
+   * The families of line drawn at rest, when the caller holds them: calls and
+   * what things run on unless named. With the chrome on, what things run on is
+   * drawn as trunks, one per pair of clusters; without it, line by line.
+   */
   families?: ReadonlySet<GraphEdgeFamily> | undefined;
   /** Called with the families drawn at rest whenever the legend switches one. */
   onFamiliesChange?: ((families: ReadonlySet<GraphEdgeFamily>) => void) | undefined;
@@ -454,7 +462,7 @@ const PROBES = [CARD_PROBE, GAP_PROBE, PAD_PROBE, HEAD_PROBE, BAND_PROBE];
 const emptyProbe = (lane: string) => `crewlet:graph-canvas-empty:${lane}`;
 
 const NO_GROUPS: readonly GraphGroup[] = [];
-const AT_REST: ReadonlySet<GraphEdgeFamily> = new Set<GraphEdgeFamily>(['flow']);
+const AT_REST: ReadonlySet<GraphEdgeFamily> = new Set<GraphEdgeFamily>(['flow', 'support']);
 const FAMILY_RANK: Record<GraphEdgeFamily, number> = { context: 0, support: 1, flow: 2 };
 const TONES: readonly GraphAttentionTone[] = ['danger', 'warning', 'info'];
 type EdgeState = 'dim' | 'rest' | 'lit';
@@ -528,7 +536,17 @@ export function GraphCanvas({
     },
     [shown, families, onFamiliesChange],
   );
-  const restEdges = useMemo(() => edges.filter((edge) => shown.has(edge.family ?? 'flow')), [edges, shown]);
+  // WHAT THINGS RUN ON IS A TRUNK AT REST, wherever the chrome draws trunks:
+  // its switch says whether the trunks are drawn, and a line per entry is
+  // drawn only for the entry a reader stands on.
+  const restEdges = useMemo(
+    () =>
+      edges.filter((edge) => {
+        const family = edge.family ?? 'flow';
+        return shown.has(family) && !(chrome && family === 'support');
+      }),
+    [edges, shown, chrome],
+  );
   // WHAT RELIES ON WHAT: a call and a "runs on" both carry a failure upstream; what stands around does not.
   const carrying = useMemo(() => edges.filter((edge) => (edge.family ?? 'flow') !== 'context'), [edges]);
   const groupOf = useCallback((id: string) => nodeById.get(id)?.group, [nodeById]);
@@ -724,13 +742,14 @@ export function GraphCanvas({
   // TRUNKS: while what things run on is not drawn line by line, each pair of clusters it joins is one line with its count.
   const laneOfNode = useCallback((id: string) => nodeById.get(id)?.lane, [nodeById]);
   const trunks = useMemo(() => {
-    if (!layout || !chrome || shown.has('support')) return [];
+    if (!layout || !chrome || !shown.has('support')) return [];
     return graphTrunks(
       layout,
       edges.filter((edge) => edge.family === 'support'),
       laneOfNode,
     );
   }, [layout, chrome, shown, edges, laneOfNode]);
+
 
   // ---- what each card says about its relations -------------------------------------
   const relationsOf = useMemo(() => {
