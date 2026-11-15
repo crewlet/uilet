@@ -2,7 +2,7 @@
  * The runner for the real-browser layout suite: a headless browser, for what
  * jsdom cannot answer because it lays nothing out.
  */
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { playwright } from '@vitest/browser-playwright';
 import { readFileSync } from 'node:fs';
@@ -15,6 +15,14 @@ const ui = JSON.parse(readFileSync(new URL('../../packages/ui/package.json', imp
 };
 const runtime = Object.keys(ui.dependencies).filter((name) => !name.startsWith('@crewlethq/'));
 
+// THE FILES THAT MEASURE WHAT A SCROLLBAR TAKES run on a browser that draws
+// scrollbars in the layout, as a reader's does. The runner launches its
+// headless browser with them hidden, and there a scroller that overflows gives
+// up no width, so a box that loses the bar's width in every reader's browser
+// measured whole. The rest of the suite keeps the default, whose fixtures are
+// sized for it.
+const SCROLLBARS = 'src/**/*.scrollbars.test.tsx';
+
 export default defineConfig({
   plugins: [react()],
   resolve: { alias: sourceAliases },
@@ -26,7 +34,15 @@ export default defineConfig({
       enabled: true,
       headless: true,
       provider: playwright(),
-      instances: [{ browser: 'chromium' }],
+      instances: [
+        { browser: 'chromium', exclude: [...configDefaults.exclude, SCROLLBARS] },
+        {
+          browser: 'chromium',
+          name: 'chromium-scrollbars',
+          include: [SCROLLBARS],
+          provider: playwright({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } }),
+        },
+      ],
     },
   },
 });

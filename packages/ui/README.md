@@ -208,6 +208,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.129.2
+
+### The application rail
+
+**The rail's field and rows keep their width when its middle scrolls** (`AppShell.Rail`). The middle (the field and the nav) is the rail's scroller and reserved nothing, so when a long group grew it past the window, a scrollbar drawn in the layout took its width out of the content: the field and every row ended 6px earlier, and a field's words were cut beside its shortcut ("Search everythi..."). The full rail's middle now reserves its scrollbar's gutter at every height, and the field's slot and a `SidebarNav` in the middle give that width back from their end inset, so the field and the rows are as wide as before at rest and keep that width while the middle scrolls, beside a scrolling screen or a flush one. The rail measures its middle's own bar (`--crewlet-rail-scrollbar` on the middle, 0 with overlay scrollbars), and the end inset is `--crewlet-rail-body-end`, the nav's gutter less that bar. The compact rail is unchanged. Props are unchanged.
+
 ## Changes in 0.129.0
 
 ### A map's trunks, legend and zoom bar say what they draw

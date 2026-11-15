@@ -1696,6 +1696,75 @@ describe('the rail head, its field and the scroller', () => {
     expect(head).toContain('min-width: 0;');
   });
 
+  // THE MIDDLE KEEPS ITS WIDTH WHEN IT SCROLLS. It is the rail's scroller,
+  // and it reserved nothing, so when a long group grew it past the window the
+  // scrollbar took its width out of the field and every row ("Search
+  // everythi..." beside the shortcut). The full rail's middle reserves the
+  // bar's gutter at every height, and the field and the nav give exactly that
+  // width back from their end inset, so they stand where they stood before,
+  // scrolling or not. The compact column reserves nothing and gives nothing
+  // back: its tiles are centred in 76px.
+  test("the full rail's middle reserves its scrollbar, and the field and the nav give it back at their end", () => {
+    const middle = rule('.crewlet-app-shell__rail-body');
+    expect(middle).toContain('overflow-y: auto;');
+    expect(middle).toContain('scrollbar-gutter: stable;');
+    expect(middle).toContain(
+      '--crewlet-rail-body-end: max(0px, calc(var(--size-nav-gutter) - var(--crewlet-rail-scrollbar, 0px)));',
+    );
+    // The field's start is unchanged; its end is the gutter less the bar.
+    expect(rule('.crewlet-app-shell__rail-search')).toMatch(
+      /padding-inline-end: calc\(\s*var\(--crewlet-rail-body-end\) \+ var\(--size-nav-row-pad\) - var\(--crewlet-rail-field-pad\) - 1px\s*\);/,
+    );
+    expect(rule('.crewlet-app-shell__rail-body .crewlet-sidebar-nav')).toContain(
+      'padding-inline-end: var(--crewlet-rail-body-end);',
+    );
+    // The compact middle's own rule, not its Firefox bar inside `@supports`.
+    const compact = (
+      /\n\.crewlet-app-shell\[data-rail='compact'\] \.crewlet-app-shell__rail-body \{([^}]*)\}/.exec(sheet)?.[1] ?? ''
+    ).replace(/\s+/g, ' ');
+    expect(compact).toContain('scrollbar-gutter: auto;');
+    expect(compact).toContain('--crewlet-rail-body-end: var(--size-nav-gutter);');
+  });
+
+  // THE BAR'S WIDTH IS THE MIDDLE'S OWN, measured off the middle rather than
+  // borrowed from the screen's scroller: the screen's gutter is 0 beside a
+  // flush screen, where the middle still reserves its bar, and the field and
+  // the rows would have stood a bar narrower there than beside a scrolling
+  // screen. CSS cannot read a scrollbar's width, so the rail reads it as the
+  // middle's border box less its client box.
+  test("the rail measures its middle's scrollbar and hands it to the stylesheet", () => {
+    const offset = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
+    const client = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
+    const middle = (element: Element) => element.classList.contains('crewlet-app-shell__rail-body');
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return middle(this) ? 236 : 0;
+      },
+    });
+    Object.defineProperty(Element.prototype, 'clientWidth', {
+      configurable: true,
+      get(this: Element) {
+        return middle(this) ? 230 : 0;
+      },
+    });
+    try {
+      for (const fill of [false, 'flush'] as const) {
+        const { container } = render(<Console fill={fill} />);
+        const body = container.querySelector<HTMLElement>('.crewlet-app-shell__rail-body')!;
+        expect(body.style.getPropertyValue('--crewlet-rail-scrollbar'), String(fill)).toBe('6px');
+        cleanup();
+      }
+    } finally {
+      if (offset) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', offset);
+      if (client) Object.defineProperty(Element.prototype, 'clientWidth', client);
+    }
+    // jsdom draws no scrollbar, as a platform with overlay scrollbars does not.
+    const { container } = render(<Console />);
+    const body = container.querySelector<HTMLElement>('.crewlet-app-shell__rail-body')!;
+    expect(body.style.getPropertyValue('--crewlet-rail-scrollbar')).toBe('0px');
+  });
+
   // THE SCROLLER IS A SIZE CONTAINER, so a column beside the screen can be the
   // view's height. A FILL SCREEN'S SCROLLER RESERVES NO GUTTER: its column
   // pads its end by the inset and the gutter instead, which holds the content
