@@ -271,10 +271,25 @@
   white-space: nowrap;
 }
 
+/* WHO CAN OPEN IT: the glyph and its word. The word gives way before the
+   time does, cut with an ellipsis (its whole word on hover, the span's
+   title); the glyph never does. */
 .crewlet-artifact-card__access {
   display: inline-flex;
-  flex: none;
+  flex: 0 1 auto;
   align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-artifact-card__access > svg {
+  flex: none;
+}
+
+.crewlet-artifact-card__access-word {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .crewlet-artifact-card__meta > .crewlet-artifact-card__owner {

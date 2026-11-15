@@ -174,12 +174,16 @@ describe('measured from what it holds', () => {
   });
 });
 
-test('the stylesheet floors the trail and gives the cut to the ancestors before the page', () => {
+test('the stylesheet floors the trail, keeps what each ancestor keeps of its words, and stubs it on a phone', () => {
   const trailRule = /\.crewlet-breadcrumb\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(trailRule).toMatch(/flex:\s*1 100 0/);
   expect(trailRule).toMatch(/min-width:\s*min\(100%,\s*max\(20ch,\s*var\(--crewlet-breadcrumb-floor,\s*0px\)\)\)/);
   expect(trailRule).toMatch(/overflow-x:\s*auto/);
-  expect(css).toMatch(/\.crewlet-breadcrumb__part:not\(:last-child\)\s*\{[^}]*flex:\s*0 1 auto;\s*min-width:\s*2ch/);
+  // An ancestor keeps what the component measured (its first twenty characters), a 2ch stub until then.
+  expect(css).toMatch(/\.crewlet-breadcrumb__part:not\(:last-child\)\s*\{[^}]*flex:\s*0 1 auto;\s*min-width:\s*var\(--crewlet-breadcrumb-keep,\s*2ch\)/);
+  // On a phone the stub again, so the page keeps the line beside the drawer toggle.
+  const phone = /@media \(width < 640px\)\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+  expect(phone).toMatch(/\.crewlet-breadcrumb__part:not\(:last-child\)\s*\{\s*min-width:\s*2ch;\s*\}/);
   expect(css).toMatch(/\.crewlet-breadcrumb__part:last-child\s*\{[^}]*flex:\s*0 1 auto/);
   // The page keeps 24ch of its words before it gives way past them.
   expect(css).toMatch(/\.crewlet-breadcrumb__part:last-child > \.crewlet-breadcrumb__here\s*\{[^}]*min-width:\s*24ch/);

@@ -8,8 +8,8 @@
  * `flex-shrink: 100` puts it ahead of anything else on the bar that can give.
  *
  * ITS FLOOR IS THE WAY BACK OUT, measured by the component
- * (`--crewlet-breadcrumb-floor`): the ancestors at their width and the last
- * crumb's stub, at least 20ch, and never more than the whole bar. A fixed 20ch
+ * (`--crewlet-breadcrumb-floor`): each ancestor at what it keeps of its words
+ * and the last crumb's stub, at least 20ch, and never more than the whole bar. A fixed 20ch
  * alone let a seat's trail share a phone's line with its one button and cut
  * "Engineering · Co" mid-letter under it; measured, a trail that cannot show
  * its ancestry beside the controls makes the bar break a line instead.
@@ -63,16 +63,24 @@
 /*
  * THE OBJECT'S OWN NAME TAKES THE CUT, never the way back out. The reader
  * knows which object they are on, because the page below says so; what they
- * cannot reconstruct is the links out of it. So the ancestors keep their width
- * and the last part is the one that ellipsises.
+ * cannot reconstruct is the links out of it. So an ancestor keeps a readable
+ * minimum of its words while the page's own name gives way to its stub.
  */
 /* EVERY CRUMB GIVES WAY, in proportion to its length: the page down to a
-   floor of 24ch and each ancestor to a 2ch stub, each cut with an ellipsis and
-   titled on hover. Kept whole, one long parent cut the page itself to "Pri..."
-   at 1440 and pushed it off a phone. */
+   floor of 24ch and each ancestor to what it keeps of its words, each cut with
+   an ellipsis and titled on hover. Kept whole, one long parent cut the page
+   itself to "Pri..." at 1440 and pushed it off a phone.
+
+   AN ANCESTOR KEEPS A READABLE MINIMUM (`--crewlet-breadcrumb-keep`): its
+   first twenty characters, or all of them where it has fewer, measured by the
+   component (Breadcrumb.tsx, `KEEP_CHARACTERS`), and counted in the trail's
+   floor, so a bar too busy to hold them breaks a line rather than cutting the
+   way back out. A stub of 2ch beside a busy page bar read "D..." and "Product
+   Man...", and nothing at all where the crumb leads with a glyph. Until it is
+   measured, and on a phone (below), the stub is 2ch. */
 .crewlet-breadcrumb__part:not(:last-child) {
   flex: 0 1 auto;
-  min-width: 2ch;
+  min-width: var(--crewlet-breadcrumb-keep, 2ch);
 }
 
 .crewlet-breadcrumb__part:last-child {
@@ -179,7 +187,7 @@ a.crewlet-breadcrumb__crumb:focus-visible {
 /*
  * AND IT NEVER COLLAPSES TO NOTHING: a floor of a few characters keeps an
  * ellipsised stub, which is what tells a reader the trail has a last part at
- * all. The floor is the last part's alone; an ancestor never shrinks.
+ * all. This stub is the last part's; an ancestor keeps its own minimum.
  */
 .crewlet-breadcrumb__part:last-child > .crewlet-breadcrumb__here {
   min-width: 24ch;
@@ -208,6 +216,13 @@ a.crewlet-breadcrumb__crumb:focus-visible {
  * the crumb is still named.
  */
 @media (width < 640px) {
+  /* ON A PHONE AN ANCESTOR GIVES WAY TO ITS STUB: the trail shares its line
+     with the drawer toggle and nothing else, and an ancestry kept at twenty
+     characters a crumb would push the page itself off the screen. */
+  .crewlet-breadcrumb__part:not(:last-child) {
+    min-width: 2ch;
+  }
+
   .crewlet-breadcrumb__part:not(:last-child) > .crewlet-breadcrumb__crumb:has(> .crewlet-breadcrumb__icon) > .crewlet-breadcrumb__text {
     position: absolute;
     width: 1px;

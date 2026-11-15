@@ -1,5 +1,6 @@
 import { Children, type HTMLAttributes, type ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
+import { pathBreaks } from '../utils/pathBreaks.js';
 
 export type InlineCodeVariant =
   /** An identifier, a path, a config key, a header name. */
@@ -66,11 +67,21 @@ function referenceRuns(children: ReactNode): readonly [string, string, string] |
 /**
  * One identifier inside a sentence.
  *
- * IT WRAPS ANYWHERE, and that is the whole reason it is a component rather
- * than a `code` element with a class. These chips carry public base URLs and
- * config paths, and a URL is ONE UNBREAKABLE WORD to a line breaker: without
- * an explicit break opportunity the chip is pushed whole onto its own line and
+ * IT WRAPS, and that is the whole reason it is a component rather than a
+ * `code` element with a class. These chips carry public base URLs and config
+ * paths, and a URL is ONE UNBREAKABLE WORD to a line breaker: without an
+ * explicit break opportunity the chip is pushed whole onto its own line and
  * the sentence around it is torn into fragments.
+ *
+ * A PATH BREAKS AT ITS SEPARATORS (`pathBreaks`): a break opportunity follows
+ * every `/`, so a line ends at "…/v1/" rather than at "…/v1/report" with an
+ * "s" carried over. Breaking at any character is the last resort, for one
+ * run between separators that no line can hold.
+ *
+ * ITS GROUND HUGS THE PUNCTUATION AROUND IT. Where a caller hands over the
+ * marks that open and close around the chip (`open`, `close`), the ground
+ * gives up its inset on that side, so "set." does not read as "set ." with a
+ * space before the full stop.
  *
  * For a block of code, several lines of it, use `CodeBlock`.
  */
@@ -95,11 +106,17 @@ export function InlineCode({
         tone === 'inherit' && 'crewlet-inline-code--inherit',
         truncate && 'crewlet-inline-code--truncate',
         whole && 'crewlet-inline-code--whole',
+        open && 'crewlet-inline-code--opened',
+        close && 'crewlet-inline-code--closed',
         className,
       )}
     >
       {runs === null ? (
-        children
+        variant === 'default' ? (
+          pathBreaks(children)
+        ) : (
+          children
+        )
       ) : (
         <>
           <span className="crewlet-inline-code__end">{runs[0]}</span>

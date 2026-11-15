@@ -34,7 +34,7 @@ export interface ArtifactCardLabels {
   present: (count: number) => string;
   /** The change's time, opening the line: "Edited" before "4m ago". */
   updated: string;
-  /** Who can open it, said to assistive technology beside its glyph. */
+  /** Who can open it, printed beside its glyph. */
   access: Record<ArtifactAccess, string>;
   /** Who made it, after the time: "by Maya". */
   by: (name: string) => string;
@@ -91,7 +91,7 @@ export interface ArtifactCardProps {
   version?: number | undefined;
   /** The project or task it belongs to, as its key ("OPS", "ENG-412"). */
   project?: string | undefined;
-  /** Who can open it, drawn as a glyph opening the card's line. Left out, nothing is said about it. */
+  /** Who can open it, drawn as a glyph and its word opening the card's line. Left out, nothing is said about it. */
   access?: ArtifactAccess | undefined;
   /**
    * The card's own controls (a More menu), drawn OUTSIDE its link in the
@@ -280,10 +280,14 @@ export function ArtifactCard({
             {pinned ? `, ${text.pinned}` : ''}
           </VisuallyHidden>
           <span className="crewlet-artifact-card__line crewlet-artifact-card__meta">
+            {/* WHO CAN OPEN IT, IN WORDS beside its glyph. Said only to
+                assistive technology, a sighted reader saw a lone lock before
+                "Edited 11m ago". The word gives way with an ellipsis on a
+                narrow card; the glyph stays. */}
             {access ? (
               <span className="crewlet-artifact-card__access" title={text.access[access]}>
                 <ArtifactAccessGlyph access={access} />
-                <VisuallyHidden>{text.access[access]}</VisuallyHidden>
+                <span className="crewlet-artifact-card__access-word">{text.access[access]}</span>
               </span>
             ) : null}
             {owner ? (

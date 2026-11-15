@@ -127,6 +127,19 @@
   flex: 1;
 }
 
+/*
+ * A PATH OR AN ADDRESS BREAKS AT ITS SEPARATORS: the component offers a break
+ * after every `/`, and `overflow-wrap: anywhere` above is the last resort for
+ * a run between them no line can hold. AN OPAQUE VALUE (a token, an id, a key:
+ * one run with no space and no `/`) means nothing in its pieces, so it breaks
+ * at any character and fills each line; left to the line breaker it broke
+ * after a hyphen, and a token read "cwl_pat_01a1dc5f-3ec7-7cf4-a60d-" over a
+ * ragged first line, as if it ended there.
+ */
+.crewlet-copyable--opaque .crewlet-copyable__value {
+  word-break: break-all;
+}
+
 /* A panel's control is always drawn: there is nothing else in the panel. */
 .crewlet-copyable--block .crewlet-copyable__button {
   opacity: 1;

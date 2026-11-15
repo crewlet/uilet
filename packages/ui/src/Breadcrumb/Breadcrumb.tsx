@@ -28,11 +28,12 @@
  * that fits has nowhere for the arrows to go, so the stop is there only while
  * `scrollWidth` exceeds `clientWidth`.
  *
- * ITS FLOOR IS THE WAY BACK OUT (`--crewlet-breadcrumb-floor`): the ancestors
- * at their width and the last crumb at its stub, measured. The bar around it
- * breaks a line when that floor cannot sit beside its controls, so a trail
- * that cannot show its ancestry takes a line of its own, and it scrolls only
- * when its ancestry alone is wider than the whole bar.
+ * ITS FLOOR IS THE WAY BACK OUT (`--crewlet-breadcrumb-floor`): every ancestor
+ * at a readable minimum of its words (its first twenty characters, all of
+ * them where it has fewer) and the last crumb at its stub, measured. The bar
+ * around it breaks a line when that floor cannot sit beside its controls, so
+ * a trail that cannot show its ancestry takes a line of its own, and it
+ * scrolls only when its ancestry alone is wider than the whole bar.
  *
  * Ported from the engine dashboard's `app/header/PageHeader.tsx`.
  */
@@ -160,9 +161,20 @@ export function Breadcrumb({ crumbs, current, label = 'Breadcrumb', className, s
 }
 
 /**
+ * How much of an ancestor's words it keeps before it gives way: its first
+ * twenty characters, or all of them where it has fewer. A space's name and a
+ * parent page's title read from that much ("Product Management", "ADR 1: Add
+ * GPU-awar..."); at a 2ch stub a busy bar cut them to "D..." and "Product
+ * Man...", or to nothing where the crumb leads with a glyph.
+ */
+const KEEP_CHARACTERS = 20;
+
+/**
  * The narrowest the trail can be and still show the way back out: where the
- * last crumb starts, measured from the trail's own start, plus the stub that
- * part keeps (its `min-width`), or 0 before anything is laid out.
+ * trail's first part starts, every ancestor at what it keeps of its words (its
+ * `min-width`, `--crewlet-breadcrumb-keep`, measured here), the last part's
+ * separator, and the stub the last crumb keeps; or 0 before anything is laid
+ * out.
  *
  * NEVER MORE THAN THE ROOM BESIDE WHAT LEADS THE BAR. Below the shell
  * breakpoint the drawer toggle opens the bar's first line, and a floor wider
@@ -170,12 +182,14 @@ export function Breadcrumb({ crumbs, current, label = 'Breadcrumb', className, s
  * toggle alone, then the trail, then the controls. Capped at that room, a trail
  * whose ancestry is wider still scrolls beside the toggle.
  *
- * STABLE UNDER ITS OWN EFFECT. The ancestors never shrink, so where the last
- * part starts does not depend on how wide the trail is drawn, and neither the
- * bar's width nor the toggle's does either: the floor it sets cannot move what
- * it was measured from. Measured again whenever a crumb or the bar changes
- * size: a screen publishing its object's name, a font finishing loading, the
- * window.
+ * STABLE UNDER ITS OWN EFFECT. Nothing it reads depends on how wide the trail
+ * is drawn: an ancestor's words are measured whole, off their own text rather
+ * than off the box that cuts them, and the rest of a part (its separator, its
+ * glyph) never gives way. Read off the live layout instead, the floor measured
+ * ancestors a busy bar had already cut to stubs, so it allowed exactly the cut
+ * it saw and the bar never broke a line. Measured again whenever a crumb or
+ * the bar changes size: a screen publishing its object's name, a font
+ * finishing loading, the window.
  */
 function useFloor(el: RefObject<HTMLElement | null>, content: string): number {
   const [floor, setFloor] = useState(0);
@@ -184,12 +198,20 @@ function useFloor(el: RefObject<HTMLElement | null>, content: string): number {
     if (!node) return;
     const bar = node.parentElement;
     const measure = () => {
-      const last = node.querySelector('.crewlet-breadcrumb__part:last-child > .crewlet-breadcrumb__here');
-      if (!last) return setFloor(0);
+      const parts = [...node.querySelectorAll<HTMLElement>(':scope > .crewlet-breadcrumb__part')];
+      const lastPart = parts[parts.length - 1];
+      const last = lastPart?.querySelector(':scope > .crewlet-breadcrumb__here');
+      if (!lastPart || !last) return setFloor(0);
       const start = node.getBoundingClientRect().left - node.scrollLeft;
-      const offset = last.getBoundingClientRect().left - start;
-      const stub = parseFloat(getComputedStyle(last).minWidth) || 0;
-      const wanted = Math.max(0, Math.ceil(offset + stub));
+      const gap = parseFloat(getComputedStyle(node).columnGap) || 0;
+      let wanted = parts[0]!.getBoundingClientRect().left - start;
+      for (const part of parts.slice(0, -1)) {
+        part.style.setProperty('--crewlet-breadcrumb-keep', `${Math.ceil(keptWidth(part))}px`);
+        wanted += (parseFloat(getComputedStyle(part).minWidth) || 0) + gap;
+      }
+      wanted += last.getBoundingClientRect().left - lastPart.getBoundingClientRect().left;
+      wanted += parseFloat(getComputedStyle(last).minWidth) || 0;
+      wanted = Math.max(0, Math.ceil(wanted));
       setFloor(bar ? Math.min(wanted, roomBeside(bar, node)) : wanted);
     };
     measure();
@@ -202,6 +224,37 @@ function useFloor(el: RefObject<HTMLElement | null>, content: string): number {
     return () => watch.disconnect();
   }, [el, content]);
   return floor;
+}
+
+/**
+ * How wide an ancestor's part is while it keeps `KEEP_CHARACTERS` of its
+ * words: the part as drawn, less its label as drawn, plus what the label
+ * keeps. Only the label gives way inside a part, so the rest (the separator,
+ * a glyph, a key chip) is the part's width less the label's, however cut.
+ */
+function keptWidth(part: HTMLElement): number {
+  const label = part.querySelector<HTMLElement>('.crewlet-breadcrumb__text');
+  const drawn = part.getBoundingClientRect().width;
+  // A label out of the flow (a phone's crumb that is its glyph, its words
+  // kept for a screen reader alone) takes no width to keep.
+  if (!label || getComputedStyle(label).position === 'absolute') return drawn;
+  return drawn - label.getBoundingClientRect().width + labelKeeps(label);
+}
+
+/**
+ * The width of a label's first `KEEP_CHARACTERS`, or of all of it where it is
+ * shorter: measured over its text, which is laid out whole on its line however
+ * narrow the box that clips it. A layout with no ranges (jsdom) reads the
+ * label's whole width instead.
+ */
+function labelKeeps(label: HTMLElement): number {
+  const text = label.firstChild;
+  if (!text || text.nodeType !== Node.TEXT_NODE || typeof document.createRange !== 'function') return label.scrollWidth;
+  const range = document.createRange();
+  if (typeof range.getBoundingClientRect !== 'function') return label.scrollWidth;
+  range.setStart(text, 0);
+  range.setEnd(text, Math.min((text.textContent ?? '').length, KEEP_CHARACTERS));
+  return range.getBoundingClientRect().width;
 }
 
 /**

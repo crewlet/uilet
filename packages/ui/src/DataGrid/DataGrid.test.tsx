@@ -22,7 +22,8 @@ import {
   type DataGridColumn,
   type DataGridHandle,
 } from './index.js';
-import { squeezed } from './DataGrid.js';
+import { shortColumns, squeezed } from './DataGrid.js';
+import { tableTrack } from '../utils/tableTrack.js';
 import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(cleanup);
@@ -929,4 +930,37 @@ test('the handle follows a row that only links, as a click on it would', () => {
   expect(followed).toBe(true);
   // The first step lands on the first row.
   expect(clicks).toEqual([{ href: '#/x/a', meta: true }]);
+});
+
+describe('a flexible column of short values', () => {
+  const COLS = [
+    { key: 'name' },
+    { key: 'team' },
+    { key: 'access' },
+    { key: 'stage', shrink: true },
+    { key: 'open', action: true },
+  ];
+
+  test('takes what it holds once measured, while the widest keeps its share', () => {
+    expect([...shortColumns(COLS, { name: 300, team: 54, access: 330 })]).toEqual(['team']);
+  });
+
+  test('is nothing short while nothing is measured, so every column keeps its share', () => {
+    expect([...shortColumns(COLS, {})]).toEqual([]);
+  });
+
+  test('leaves the widest its share even when every flexible column is short, so the grid fills its box', () => {
+    expect([...shortColumns(COLS, { name: 120, team: 54, access: 90 })].sort()).toEqual(['access', 'team']);
+  });
+
+  test('leaves every measured column short where one could not be measured, which keeps the share', () => {
+    expect([...shortColumns(COLS, { team: 54, access: 90 })].sort()).toEqual(['access', 'team']);
+  });
+
+  test('is drawn at its content, never under its floor', () => {
+    expect(tableTrack({ short: true })).toBe('max-content');
+    expect(tableTrack({ short: true, floor: '8rem' })).toBe('minmax(8rem, max-content)');
+    expect(tableTrack({ floor: '8rem' })).toBe('minmax(8rem, 1fr)');
+    expect(tableTrack({ short: true, shrink: true })).toBe('fit-content(20%)');
+  });
 });

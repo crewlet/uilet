@@ -208,6 +208,18 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.130.1
+
+### Columns, trails and identifiers that keep their words
+
+- **A flexible grid column of short values takes what it holds.** `DataGrid` measures each flexible column's widest value after layout (its head and the rows on screen, off their words rather than off the cells that cut them), and a column no wider than `SHORT_COLUMN_PX` (192px: a handle, a kind, a date) is drawn at its content, never under its floor, with the shrink columns, while the long ones (a name, a login, an access list) share what is left at `1fr`. At an equal share a seat's handle sat in a third of a column of empty room beside a name cut short. The widest flexible column always keeps its share, so the grid still fills its box, and a grid that cannot be measured draws every flexible column at its share as before.
+- **A breadcrumb's ancestors keep a readable minimum.** Each ancestor keeps its first twenty characters, or all of them where it has fewer (`--crewlet-breadcrumb-keep`, measured), and the trail's floor counts them, so a bar too busy to hold them breaks a line instead of cutting "Doclet" to "D..." or, where the crumb leads with a glyph, to nothing. The floor was measured off the trail as drawn, after a busy bar had already cut the ancestors, so it allowed whatever cut it saw. On a phone an ancestor still gives way to a 2ch stub.
+- **A path breaks at its separators.** `InlineCode` and a wrapping `Copyable` offer a break after every `/`, so an address ends a line at "/v1/" rather than at "/v1/report" with an "s" carried over; breaking at any character is the last resort for one name no line can hold. A copy of the words is unchanged.
+- **An opaque value in a copy panel fills its lines.** A `Copyable` block whose value is one run with no space and no `/` (a token, an id, a key) breaks at any character, rather than after a hyphen with a ragged first line that read as if the token ended there.
+- **A chip hugs the punctuation handed to it.** `InlineCode` with `open` or `close` keeps a hair of its inset on that side, so "set." no longer reads as "set ." with a space before the full stop.
+- **An artifact card prints who can open it.** `ArtifactCard` draws its access as the glyph and its word ("Private", "Shared", "Shared with the company") rather than a lone glyph with the word for assistive technology alone; on a narrow card the word gives way with an ellipsis.
+- **A brand sample's small words can be read in a preview.** `BrandSample` draws its sentence, its quiet line, its wordmark and a slide's footer at their share of the width or at the product's small step, whichever is larger (the step capped at a share the frame can hold, `--crewlet-brand-sample-floor`), so a 285px preview reads at 12px and 11px rather than 8px and 6px, and a thumbnail still fits its frame. Its link is drawn in the accent taken toward the ink that clears more on its ground, only as far as 4.5:1 needs: the product's own accent read 4.38:1.
+
 ## Changes in 0.129.2
 
 ### The application rail

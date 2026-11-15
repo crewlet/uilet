@@ -53,6 +53,17 @@
  * ink, soft fills, selected edge, deep stop and glow are mixed from it with
  * `color-mix()` in each mode, and the label on it is whichever of black and
  * white clears more contrast on it. A body face alone sets the headings too.
+ *
+ * THE INK IS TEXT, SO IT CLEARS 4.5:1. The accent's ink (the accent written as
+ * words: a link, a sample's link) is the accent mixed toward the ink that
+ * clears more on the mode's ground, then taken further toward it only where
+ * that is still short of 4.5:1, in linear light, where a colour's WCAG
+ * luminance is the weighted sum of its channels: on a light ground its
+ * channels are scaled until its luminance is at most 0.15 (4.5:1 on any
+ * ground of 0.85 or lighter), on a dark ground lifted toward white until it
+ * is at least 0.265 (4.5:1 on any ground of 0.02 or darker). Mixed alone, a
+ * light brand colour wrote a 3.3:1 ink. An ink that already clears is the mix
+ * as it was.
  * The focus ring stays the theme's: its 3:1 floor is measured for every theme,
  * and a mix of an arbitrary colour cannot be. `--color-brand-accent-rgb` stays
  * the theme's too, because a channel triple cannot be derived in CSS; a page
@@ -62,7 +73,12 @@
 /* Dark, the bare root's mode, as the theme contract has it. */
 :root {
   --crewlet-brand-accent: var(--brand-primary-on-dark, var(--brand-primary));
-  --crewlet-brand-ink: color-mix(in oklab, var(--crewlet-brand-accent) 55%, white);
+  --crewlet-brand-ink: color(
+    from color-mix(in oklab, var(--crewlet-brand-accent) 55%, white) srgb-linear
+      calc(r + (1 - r) * max(0, (0.265 - (0.2126 * r + 0.7152 * g + 0.0722 * b)) / (1 - (0.2126 * r + 0.7152 * g + 0.0722 * b))))
+      calc(g + (1 - g) * max(0, (0.265 - (0.2126 * r + 0.7152 * g + 0.0722 * b)) / (1 - (0.2126 * r + 0.7152 * g + 0.0722 * b))))
+      calc(b + (1 - b) * max(0, (0.265 - (0.2126 * r + 0.7152 * g + 0.0722 * b)) / (1 - (0.2126 * r + 0.7152 * g + 0.0722 * b))))
+  );
   --crewlet-brand-soft: color-mix(in srgb, var(--crewlet-brand-accent) 16%, transparent);
   --crewlet-brand-ground: var(--brand-dark-ground);
   /* The brand's text is written for its light ground; on a dark one the
@@ -117,7 +133,12 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     --crewlet-brand-accent: var(--brand-primary);
-    --crewlet-brand-ink: color-mix(in oklab, var(--crewlet-brand-accent) 70%, black);
+    --crewlet-brand-ink: color(
+      from color-mix(in oklab, var(--crewlet-brand-accent) 70%, black) srgb-linear
+        calc(r * min(1, 0.15 / (0.2126 * r + 0.7152 * g + 0.0722 * b)))
+        calc(g * min(1, 0.15 / (0.2126 * r + 0.7152 * g + 0.0722 * b)))
+        calc(b * min(1, 0.15 / (0.2126 * r + 0.7152 * g + 0.0722 * b)))
+    );
     --crewlet-brand-soft: color-mix(in srgb, var(--crewlet-brand-accent) 12.5%, transparent);
     --crewlet-brand-ground: var(--brand-light-ground);
     --crewlet-brand-text: var(--brand-text);
@@ -126,7 +147,12 @@
 
 :root[data-theme="light"] {
   --crewlet-brand-accent: var(--brand-primary);
-  --crewlet-brand-ink: color-mix(in oklab, var(--crewlet-brand-accent) 70%, black);
+  --crewlet-brand-ink: color(
+    from color-mix(in oklab, var(--crewlet-brand-accent) 70%, black) srgb-linear
+      calc(r * min(1, 0.15 / (0.2126 * r + 0.7152 * g + 0.0722 * b)))
+      calc(g * min(1, 0.15 / (0.2126 * r + 0.7152 * g + 0.0722 * b)))
+      calc(b * min(1, 0.15 / (0.2126 * r + 0.7152 * g + 0.0722 * b)))
+  );
   --crewlet-brand-soft: color-mix(in srgb, var(--crewlet-brand-accent) 12.5%, transparent);
   --crewlet-brand-ground: var(--brand-light-ground);
   --crewlet-brand-text: var(--brand-text);
