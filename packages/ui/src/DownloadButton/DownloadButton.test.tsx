@@ -9,6 +9,7 @@
 
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { ArrowDownToLineGlyph } from '@crewlethq/icons/glyphs';
 import { downloadBlob, downloadText, safeFilename } from '@crewlethq/ui';
 import { DownloadButton } from './index.js';
 
@@ -88,6 +89,13 @@ describe('DownloadButton', () => {
       else await new Promise((resolve) => setTimeout(resolve, 0));
     });
     document.removeEventListener('click', watchAnchors, true);
+  });
+
+  test('draws the download arrow at rest, the mark the product downloads with', () => {
+    const glyph = render(<ArrowDownToLineGlyph size="sm" />).container.innerHTML;
+    cleanup();
+    render(<DownloadButton text="body" filename="x.txt" />);
+    expect(screen.getByRole('button', { name: 'Download' }).querySelector('svg')?.outerHTML).toBe(glyph);
   });
 
   test('hands the browser the text, under the name it was given', async () => {
