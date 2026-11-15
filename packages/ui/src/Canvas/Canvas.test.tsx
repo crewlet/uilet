@@ -1054,6 +1054,107 @@ test('the view given back is the one the first region was left from', () => {
 });
 
 /*
+ * A FIT IS GIVEN BACK AS A FIT. The fit says "all of the content", which is a
+ * statement about the content rather than a transform: a surface that changed
+ * the content while it was open (a node added, a branch opened for it) and
+ * then gave back the old fit's zoom and pan left the new content cut off at
+ * the edges. A view the reader moved is theirs, and comes back as it was.
+ */
+test('a view given back that was the untouched fit is the fit of the content as it now stands', () => {
+  const grown: CanvasRect = { x: 0, y: 0, width: 1600, height: 900 };
+  const larger: CanvasRect = { x: 0, y: 0, width: 2400, height: 1200 };
+  const { container, rerender, handle } = mount();
+  act(() => handle.current!.rememberView());
+  act(() => handle.current!.focusRegion({ x: 300, y: 200, width: 100, height: 50 }));
+  rerender(<Harness content={grown} handle={handle} />);
+  act(() => handle.current!.restoreView());
+  expect(viewOf(container)).toEqual(fitView(grown, SIZE));
+
+  fireEvent.keyDown(viewport(), { key: '+' });
+  const moved = viewOf(container);
+  act(() => handle.current!.focusRegion({ x: 300, y: 200, width: 100, height: 50 }));
+  rerender(<Harness content={larger} handle={handle} />);
+  act(() => handle.current!.restoreView());
+  expect(viewOf(container)).toEqual(moved);
+});
+
+/*
+ * A READER SENT TO AN ITEM SOMEWHERE ELSE FINDS IT IN THE MIDDLE. The least
+ * pan is right for a step to the next item, which is beside the one before;
+ * for an item the view does not show at all it put the item against the edge,
+ * with nothing of the chart around it on one side. One already partly in view
+ * still moves the least distance.
+ */
+test('a reveal asked to centre brings an item wholly outside the view to the middle, and one partly in it the least distance', () => {
+  const content: CanvasRect = { x: 0, y: 0, width: 3000, height: 2000 };
+  const handle = createRef<CanvasHandle>();
+  const { container } = render(
+    <Canvas label="Organization chart" content={content} ref={handle} initialView={{ x: 0, y: 0, k: 1 }}>
+      <div />
+    </Canvas>,
+  );
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
+  const far = { x: 2000, y: 1500, width: 100, height: 40 };
+  act(() => handle.current!.reveal(far, 'centre'));
+  const centred = viewOf(container);
+  expect(centred.k).toBe(1);
+  expect(centred.x + (far.x + far.width / 2) * centred.k).toBeCloseTo(SIZE.width / 2);
+  expect(centred.y + (far.y + far.height / 2) * centred.k).toBeCloseTo(SIZE.height / 2);
+  // Going somewhere else, so it travels rather than corrects.
+  expect(container.querySelector('.crewlet-canvas')!.getAttribute('data-animate')).toBe('travel');
+
+  // Partly in view: the least pan, to just inside the right edge.
+  const edge = { x: far.x + 400, y: far.y, width: 100, height: 40 };
+  act(() => handle.current!.reveal(edge, 'centre'));
+  const nudged = viewOf(container);
+  expect(nudged.x + (edge.x + edge.width) * nudged.k).toBeCloseTo(SIZE.width - 24);
+  expect(nudged.y).toBe(centred.y);
+
+  // Not asked to centre, an item wholly outside is brought just inside the nearest edge, as before.
+  act(() => handle.current!.reveal({ x: 100, y: 100, width: 100, height: 40 }));
+  expect(viewOf(container).x + 100).toBeCloseTo(24);
+});
+
+/*
+ * AND NOTHING IS REVEALED UNDER THE END BAR. A fit is made in the room the
+ * bar leaves; a reveal measured against the whole viewport stopped an item
+ * at the foot of the pane, under the legend drawn there.
+ */
+test('a reveal keeps the item clear of the end bar, and centres it in the room the bar leaves', () => {
+  const content: CanvasRect = { x: 0, y: 0, width: 800, height: 2000 };
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    const box = (top: number, height: number) => ({ top, bottom: top + height, left: 0, right: 800, width: 800, height, x: 0, y: top }) as DOMRect;
+    if (this.classList.contains('crewlet-canvas__viewport')) return box(0, 600);
+    if (this.parentElement?.classList.contains('crewlet-canvas__controls--end')) return box(540, 48);
+    return realRect.call(this);
+  };
+  try {
+    const handle = createRef<CanvasHandle>();
+    const { container } = render(
+      <Canvas
+        label="Organization chart"
+        content={content}
+        ref={handle}
+        controlsPlacement="top-right"
+        overlayEnd={<span>Legend</span>}
+        initialView={{ x: 0, y: 0, k: 1 }}
+      >
+        <div />
+      </Canvas>,
+    );
+    resizeAll(SIZE);
+    // Drawn from 520 to 560: inside the pane, and its foot under the bar, whose top is at 540.
+    act(() => handle.current!.reveal({ x: 100, y: 520, width: 100, height: 40 }));
+    expect(viewOf(container).y + 560).toBeCloseTo(540 - 24);
+    act(() => handle.current!.reveal({ x: 100, y: 1500, width: 100, height: 40 }, 'centre'));
+    expect(viewOf(container).y + 1520).toBeCloseTo(540 / 2);
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+  }
+});
+
+/*
  * A NOTE UNDER THE CONTROLS, about a key or a state the canvas is in: it is a
  * `status` region, so entering a state a reader cannot see out of is said to a
  * reader who cannot see it either, and it is inert, so a press meant for the

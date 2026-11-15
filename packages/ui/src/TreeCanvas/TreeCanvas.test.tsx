@@ -522,6 +522,12 @@ function mount(props: Parameters<typeof Harness>[0] = {}) {
       utils.rerender(<Harness {...props} {...next} handle={handle} />);
       LayoutObserver.settle(false);
     },
+    /** Re-renders and measures nothing: a card the render added is drawn
+        and not laid out yet, as it is for the frame before a browser
+        measures it. */
+    rerenderUnmeasured: (next: Parameters<typeof Harness>[0] = {}) => {
+      utils.rerender(<Harness {...props} {...next} handle={handle} />);
+    },
   };
 }
 
@@ -773,6 +779,22 @@ describe('focus', () => {
     const { handle, rerender } = mount();
     rerender({ extra: [ADVISOR] });
     act(() => handle.current!.focusNode(ADVISOR));
+    LayoutObserver.settle();
+    expect(focused()).toBe(ADVISOR);
+  });
+
+  /*
+   * AND ASKED BEFORE IT IS MEASURED, it lands once the card is DRAWN, which is
+   * a commit after the layout first places it: until the frame being drawn
+   * catches up, a new card is drawn hidden, and a browser refuses focus inside
+   * it. Taken on the layout's commit, the request was spent there and focus
+   * stayed on whatever held it, which after an add is the node added to.
+   */
+  test('a focus request made before a new card is measured lands once the card is drawn', () => {
+    const view = mount();
+    item('Engineering').focus();
+    view.rerenderUnmeasured({ extra: [ADVISOR] });
+    act(() => view.handle.current!.focusNode(ADVISOR));
     LayoutObserver.settle();
     expect(focused()).toBe(ADVISOR);
   });
@@ -1644,6 +1666,32 @@ function positions(container: HTMLElement): Map<string, { x: number; y: number }
   return out;
 }
 
+/** The view the canvas's world is drawn at. */
+function worldView(container: HTMLElement): { x: number; y: number; k: number } {
+  const world = container.querySelector<HTMLElement>('.crewlet-canvas__world')!;
+  const found = /translate\((-?[\d.e+-]+)px, (-?[\d.e+-]+)px\) scale\(([\d.e+-]+)\)/.exec(world.style.transform)!;
+  return { x: Number(found[1]), y: Number(found[2]), k: Number(found[3]) };
+}
+
+/** Where every node's card is drawn in the viewport, by the node's id: the view applied to its place and its measured size. */
+function cardsOnScreen(container: HTMLElement): Map<string, { left: number; top: number; right: number; bottom: number }> {
+  const view = worldView(container);
+  const out = new Map<string, { left: number; top: number; right: number; bottom: number }>();
+  for (const card of container.querySelectorAll<HTMLElement>('.crewlet-tree-canvas__card')) {
+    const id = card.querySelector<HTMLElement>("[role='treeitem']")?.getAttribute('data-tree-id');
+    const size = sizeOf(card);
+    if (!id || !size || card.style.transform === '') continue;
+    const at = translateOf(card);
+    out.set(id, {
+      left: view.x + at.x * view.k,
+      top: view.y + at.y * view.k,
+      right: view.x + (at.x + size.width) * view.k,
+      bottom: view.y + (at.y + size.height) * view.k,
+    });
+  }
+  return out;
+}
+
 describe('where the ranks sit', () => {
   /*
    * THE `node` APPEARANCE IS AN ORG CHART, and a rank of an organization is a
@@ -2193,6 +2241,74 @@ describe('a node being composed', () => {
     expect(world()).not.toBe(before);
     view.rerender({ extra: wide, anchorNode: COMPANY, composing: null });
     expect(world()).toBe(before);
+  });
+
+  /*
+   * AN ADD ENDS ON THE CHART IT MADE. A composition is left by the node
+   * arriving in the data and the ghost going, in one commit, and the caller
+   * then sends focus to the node it made, as a builder does after every
+   * operation. That commit still holds the ghost's layout: the new card is
+   * drawn and not measured yet, which in a browser is a frame.
+   *
+   * Six more seats at the root make the chart wider than this suite's 1200px
+   * pane at actual size, so its fit is a zoom of its own width, and one more
+   * widens it again. Given back as a transform, the narrower chart's fit left
+   * the new seat past the right edge, and the reveal that focused it then cut
+   * the CEO off at the left.
+   */
+  const sixMore = Array.from({ length: 6 }, (_, at) => `seat:extra${at}`);
+  const sevenMore = [...sixMore, ADVISOR];
+
+  test('an add on the fitted chart ends on the fit of the chart it made, with every card inside', () => {
+    const view = mount({ extra: sixMore });
+    const fitted = worldView(view.container);
+    view.rerender({ composing: ghost(COMPANY) });
+    view.rerenderUnmeasured({ extra: sevenMore, anchorNode: ADVISOR, composing: null });
+    act(() => view.handle.current!.focusNode(ADVISOR));
+    LayoutObserver.settle();
+
+    const now = worldView(view.container);
+    // The wider chart's own fit: pressing Fit moves nothing.
+    expect(now.k).toBeLessThan(fitted.k);
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
+    expect(worldView(view.container)).toEqual(now);
+    const cut = [...cardsOnScreen(view.container)]
+      .filter(([, box]) => box.left < 0 || box.top < 0 || box.right > VIEWPORT.width || box.bottom > VIEWPORT.height)
+      .map(([id]) => id);
+    expect(cut).toEqual([]);
+    expect(focused()).toBe(ADVISOR);
+  });
+
+  /*
+   * AND A VIEW THE READER MOVED IS THEIRS: it keeps its zoom, and the node
+   * the caller sends focus to, which that view does not show at all, is
+   * brought to the middle of it rather than to the nearest edge.
+   */
+  test('an add on a view the reader moved keeps their zoom and brings the new node to the middle', () => {
+    const view = mount({ extra: sixMore });
+    for (let press = 0; press < 4; press++) fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    const moved = worldView(view.container);
+    view.rerender({ composing: ghost(COMPANY) });
+    view.rerenderUnmeasured({ extra: sevenMore, anchorNode: ADVISOR, composing: null });
+    act(() => view.handle.current!.focusNode(ADVISOR));
+    LayoutObserver.settle();
+
+    expect(worldView(view.container).k).toBe(moved.k);
+    const box = cardsOnScreen(view.container).get(ADVISOR)!;
+    expect((box.left + box.right) / 2).toBeCloseTo(VIEWPORT.width / 2);
+    expect((box.top + box.bottom) / 2).toBeCloseTo(VIEWPORT.height / 2);
+    expect(focused()).toBe(ADVISOR);
+  });
+
+  /* A CANCEL GIVES A VIEW THE READER MOVED BACK TO THE PIXEL: only a fit is worked out again. */
+  test('a cancel gives back the view the reader moved, to the pixel', () => {
+    const view = mount({ extra: sixMore });
+    for (let press = 0; press < 2; press++) fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    const moved = worldView(view.container);
+    view.rerender({ composing: ghost(COMPANY) });
+    expect(worldView(view.container)).not.toEqual(moved);
+    view.rerender({ composing: null });
+    expect(worldView(view.container)).toEqual(moved);
   });
 
   /* A CHART THAT MUST OPEN WHOLE names a floor under the canvas's own 25%. */

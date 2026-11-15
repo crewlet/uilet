@@ -222,6 +222,19 @@ export interface TreeCardContext {
  */
 export interface TreeCanvasHandle extends TreeViewHandle {
   /**
+   * Open every collapsed ancestor of a node, focus it, and bring it into view.
+   *
+   * A CALLER SENDING FOCUS IS SENDING THE READER SOMEWHERE: to the node an
+   * operation made or moved, to the one an undo or a search names. So a node
+   * that the view does not show at all is brought to the MIDDLE of the view,
+   * at the reader's zoom, with the chart around it on every side; the least
+   * pan left it against the edge it came in by, which after an add was the
+   * edge of the pane with nothing of the chart beyond it. A node partly in
+   * view moves the least distance, and one in view does not move. The tree's
+   * own arrow keys keep the least pan: a step lands beside the node before.
+   */
+  focusNode(id: string): void;
+  /**
    * Ease onto one node's own card, remembering the view it left.
    *
    * For a surface opened ABOUT that node: the view moves to it with room
@@ -257,9 +270,19 @@ export interface TreeCanvasHandle extends TreeViewHandle {
  * WHAT THE CHART DOES ABOUT IT. It opens `parent` if it is closed, eases onto
  * the ghost with the room a form needs rather than the room a label needs
  * ([CANVAS_COMPOSE_CONTEXT]), moves focus to the first control inside it, and
- * on Escape calls `onCancel`. When it goes, the view the reader left is given
- * back and focus returns to `parent`. Under `prefers-reduced-motion` every
+ * on Escape calls `onCancel`. When it goes, focus returns to `parent` and the
+ * view the reader left is given back. Under `prefers-reduced-motion` every
  * part of that still happens; only the animations do not.
+ *
+ * THE VIEW COMES BACK ON THE CHART THE COMPOSITION LEFT. An add ends with the
+ * node it made in `nodes` and the ghost gone, in one commit, and the new card
+ * is measured a frame later; the view is given back on the first layout that
+ * places it, not on the ghost's. A reader who had not moved the fit gets the
+ * fit of the chart as it now stands, with the new node and anything the
+ * composition opened for it inside; a reader who had moved the view gets it
+ * back exactly. A caller that then sends focus to the node it made
+ * (`focusNode`, as it does after any operation) has it brought to the middle
+ * of that view when the view does not show it.
  */
 export interface TreeComposing {
   /**
@@ -602,10 +625,18 @@ export function TreeCanvas({
    */
   const composeId = composing?.id ?? null;
   const composeParent = composing?.parent ?? null;
-  /** The ghost the chart has eased onto, until the view has been given back. */
+  /** The ghost the chart has eased onto, until the composition ends. */
   const eased = useRef<string | null>(null);
-  /** The node focus goes back to when it is. */
+  /** The node focus goes back to when it does. */
   const returnTo = useRef<string | null>(null);
+  /** Set while a composition holds a view the canvas has been asked to remember. */
+  const remembered = useRef(false);
+  /**
+   * Set from the commit a composition ends on until the layout that places
+   * what it left, which is where the view is given back. A focus asked for in
+   * between waits for it, so its reveal starts from the view given back.
+   */
+  const restoring = useRef(false);
   /** Set when the ghost has been eased onto and the form has yet to be focused. */
   const takeFocus = useRef(false);
   const composeEl = useRef<HTMLDivElement | null>(null);
@@ -734,6 +765,39 @@ export function TreeCanvas({
     shownPositions.current = positions;
   }, [positions]);
 
+  /*
+   * THE VIEW A COMPOSITION LEFT IS GIVEN BACK ON THE LAYOUT THAT PLACES WHAT
+   * IT LEFT, not on the commit it ends on.
+   *
+   * An add ends with the node it made in `nodes` and the ghost gone, in one
+   * commit, and on that commit the new card is drawn but not measured: the
+   * layout is still the GHOST's. Given back there, the view was decided
+   * against a chart that no longer exists, and a fit was the old fit's zoom
+   * and pan over a chart the add had widened (and the composition may have
+   * opened a branch of), so cards were cut off at both edges. Waiting for
+   * `placed` is a frame for an add and nothing for a cancel, whose cards are
+   * all measured already.
+   *
+   * BEFORE THE FIT KEY AND THE FOCUS, which are declared after it: a refit or
+   * a focus asked for on the same layout is carried out from the view given
+   * back, rather than overridden by it.
+   */
+  useLayoutEffect(() => {
+    if (composeId !== null) {
+      // A new composition before the last one's view came back: it is still
+      // remembered, and this one gives it back when it ends.
+      restoring.current = false;
+      return;
+    }
+    if (remembered.current) {
+      remembered.current = false;
+      restoring.current = true;
+    }
+    if (!restoring.current || !placed || !layout) return;
+    restoring.current = false;
+    canvas.current?.restoreView();
+  }, [composeId, placed, layout]);
+
   /* A NEW FIT KEY FITS AGAIN once the layout it asks for is placed, after the
      anchor above. The first placement is the canvas's own fit, or its initial view. */
   const fittedFor = useRef(fitKey);
@@ -765,12 +829,25 @@ export function TreeCanvas({
     return callback;
   };
 
-  const pendingFocus = useRef<string | null>(null);
+  /*
+   * A focus not carried out yet, and how a node it lands on wholly outside the
+   * view is brought in: to the nearest edge for a step of the tree's own keys,
+   * to the middle for a caller sending the reader there ([TreeCanvasHandle]).
+   */
+  const pendingFocus = useRef<{ id: string; outside: 'edge' | 'centre' } | null>(null);
   const focusNow = useCallback(
-    (id: string): boolean => {
+    (id: string, outside: 'edge' | 'centre'): boolean => {
       const el = items.current.get(id);
       const placed = layout?.byId.get(cardOf(id));
-      if (!el || !el.isConnected || !placed) return false;
+      /*
+       * NOT UNTIL THE CARD IS DRAWN, which for a card new to the chart is a
+       * commit after the layout places it: the frame being drawn (`drawn`)
+       * catches up with the layout in its own effect, and until then the card
+       * is drawn hidden. `focus()` inside a hidden element moves nothing, so
+       * the request made on that commit (a caller focusing the node it just
+       * added) was spent having left focus where it was.
+       */
+      if (!el || !el.isConnected || !placed || !drawn?.byId.has(cardOf(id))) return false;
       el.focus({ preventScroll: true });
       // A row's rectangle is the card's, moved down to the row: `offsetTop` is
       // a layout value, unaffected by the canvas's transform.
@@ -782,27 +859,28 @@ export function TreeCanvas({
         width: placed.width,
         height: el.offsetHeight > 0 && top > 0 ? el.offsetHeight : placed.height,
       };
-      canvas.current?.reveal(rect);
+      canvas.current?.reveal(rect, outside);
       return true;
     },
-    [layout, cardOf],
+    [layout, drawn, cardOf],
   );
 
   const focusNode = useCallback(
-    (id: string) => {
+    (id: string, outside: 'edge' | 'centre' = 'edge') => {
       if (!model.parent.has(id)) return;
       const opened = tree.open(id);
       setActive(id);
-      if (opened || !focusNow(id)) pendingFocus.current = id;
+      if (opened || restoring.current || !focusNow(id, outside)) pendingFocus.current = { id, outside };
     },
     [model, tree, setActive, focusNow],
   );
 
   // A node that was not on screen yet (inside a card just opened, or a card
-  // not measured yet) takes focus as soon as it is laid out.
+  // not measured yet) takes focus as soon as it is laid out, and once the view
+  // a composition left has been given back.
   useLayoutEffect(() => {
-    const id = pendingFocus.current;
-    if (id !== null && focusNow(id)) pendingFocus.current = null;
+    const want = pendingFocus.current;
+    if (want !== null && !restoring.current && focusNow(want.id, want.outside)) pendingFocus.current = null;
   });
 
   // Read through a ref, so the handle itself is stable: a caller that keeps it
@@ -819,7 +897,8 @@ export function TreeCanvas({
   useImperativeHandle(
     ref,
     () => ({
-      focusNode: (id: string) => focusRef.current(id),
+      // A CALLER SENDS THE READER SOMEWHERE: see [TreeCanvasHandle.focusNode].
+      focusNode: (id: string) => focusRef.current(id, 'centre'),
       expandAll,
       collapseAll,
       focusRegion: (id: string) => {
@@ -879,6 +958,7 @@ export function TreeCanvas({
        * they had been (measured on the engine's own builder).
        */
       canvas.current?.rememberView();
+      remembered.current = true;
       /*
        * THE FORM IS WANTED FROM THE MOMENT THE COMPOSITION OPENS, which is
        * before the ghost has been measured and so before it can be focused at
@@ -912,15 +992,16 @@ export function TreeCanvas({
     const back = returnTo.current;
     eased.current = null;
     returnTo.current = null;
-    canvas.current?.restoreView();
     /*
-     * FOCUS GOES BACK WITHOUT A REVEAL, which is why this is not `focusNode`.
-     * Focusing a node also pans the chart the least distance that brings it
-     * into view, and that is exactly the wrong thing one line after the view
-     * the reader left has been given back: on a chart wider than its pane the
-     * reveal won, and the reader was put somewhere they had never been. The
-     * restored view is the one they were standing on, so whatever they were
-     * looking at is already on screen.
+     * FOCUS GOES BACK AT ONCE AND WITHOUT A REVEAL, which is why this is not
+     * `focusNode`. At once, because the form that held it has just gone; the
+     * view comes back on the layout that places what the composition left
+     * (the effect before the fit key's), which for an add is a frame later.
+     * Without a reveal, because focusing a node also pans the chart, and that
+     * is the wrong thing beside a view being given back: on a chart wider
+     * than its pane the reveal won, and the reader was put somewhere they had
+     * never been. The parent is beside the ghost the chart is still on, and
+     * the view given back is the reader's own or the fit.
      */
     if (back !== null) {
       setActive(back);

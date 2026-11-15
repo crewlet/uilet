@@ -25,7 +25,9 @@
  *   fit even at the smallest zoom it aligns to the TOP, where a tree's root
  *   is, rather than centring the root off screen.
  * - A REVEAL MOVES AS LITTLE AS IT CAN: nothing when the target is already in
- *   view, otherwise just enough to bring it inside the padding.
+ *   view, otherwise just enough to bring it inside the padding. The one
+ *   exception is asked for by name: a target a reader is SENT to that none of
+ *   the view shows is drawn in its middle (see [revealView]).
  */
 
 export interface CanvasPoint {
@@ -293,19 +295,36 @@ export function fitView(
   return { x, y, k };
 }
 
-/** The smallest pan that brings world rectangle `target` inside the padded viewport. */
+/**
+ * The smallest pan that brings world rectangle `target` inside the padded
+ * viewport, at the same zoom.
+ *
+ * `outside` is where a target lying WHOLLY outside the viewport is brought.
+ * `edge`, the default, is the least pan, which leaves it just inside the edge
+ * it came in by: right for a reader stepping to the next item, which is
+ * beside the one before. `centre` draws its middle on the viewport's middle:
+ * for a reader SENT to an item somewhere else (after an operation, an undo or
+ * a search), whom the least pan left against the edge with nothing of the
+ * content around it on that side. A target partly in view moves the least
+ * distance either way, and one in view does not move.
+ */
 export function revealView(
   view: CanvasView,
   target: CanvasRect,
   viewport: CanvasSize,
   padding: number = CANVAS_REVEAL_PADDING,
+  outside: 'edge' | 'centre' = 'edge',
 ): CanvasView {
   const drawn = screenRect(view, target);
+  const off = (start: number, length: number, room: number) => start + length <= 0 || start >= room;
+  const centre =
+    outside === 'centre' && (off(drawn.x, drawn.width, viewport.width) || off(drawn.y, drawn.height, viewport.height));
   const axis = (offset: number, start: number, length: number, room: number): number => {
     const low = padding;
     const high = room - padding;
     // Larger than the room: show its start, which is where its label is.
     if (length > high - low) return offset + (low - start);
+    if (centre) return offset + (room / 2 - (start + length / 2));
     if (start < low) return offset + (low - start);
     if (start + length > high) return offset - (start + length - high);
     return offset;
