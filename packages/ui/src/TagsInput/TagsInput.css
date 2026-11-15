@@ -176,6 +176,18 @@
   color: var(--color-brand-accent-ink);
 }
 
+/* An option's own mark (an avatar, a swatch), between the tick and the label. */
+.crewlet-tags-input__option-leading {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+/* A chip's description, quieter than its label: a seat's handle beside its name. */
+.crewlet-tags-input__chip-description {
+  color: var(--color-text-tertiary);
+}
+
 .crewlet-tags-input__option-label {
   overflow: hidden;
   text-overflow: ellipsis;

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Announcer, FormField, TagsInput, type TagsInputOption } from '@crewlethq/ui';
+import { Announcer, Avatar, FormField, TagsInput, type TagsInputOption } from '@crewlethq/ui';
 
 const meta: Meta<typeof TagsInput> = {
   title: 'UI/TagsInput',
@@ -71,6 +71,48 @@ export const Options: Story = {
           <p style={{ marginTop: 12, fontSize: 13 }}>
             "Former Unit" is not offered any more, and is still held.
           </p>
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/** Seats with their faces, each chip naming the seat and its handle. */
+const FACES: TagsInputOption[] = [
+  {
+    value: 'release-manager',
+    label: 'Release Manager',
+    leading: <Avatar name="Release Manager" kind="agent" character="hexlet" hue="purple" size="text" decorative />,
+  },
+  {
+    value: 'security-engineer',
+    label: 'Security Engineer',
+    leading: <Avatar name="Security Engineer" kind="agent" character="peaklet" hue="cyan" size="text" decorative />,
+  },
+  { value: 'riley', label: 'Riley Chen', leading: <Avatar name="Riley Chen" kind="human" size="text" decorative /> },
+].map((option) => ({ ...option, description: option.value }));
+
+export const WithFaces: Story = {
+  render: () => {
+    function Demo() {
+      const [value, setValue] = useState(['release-manager']);
+      return (
+        <div style={{ width: 460 }}>
+          <Announcer />
+          <FormField label="Delegates">
+            {(field) => (
+              <TagsInput
+                id={field.id}
+                label="Delegates"
+                options={FACES}
+                describeChips
+                placeholder="Search seats"
+                value={value}
+                onChange={setValue}
+              />
+            )}
+          </FormField>
         </div>
       );
     }

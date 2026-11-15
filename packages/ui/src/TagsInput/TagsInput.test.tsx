@@ -408,3 +408,50 @@ test("a placeholder wider than the box ends in an ellipsis, not mid-glyph", () =
     uninstall();
   }
 });
+
+test("an option's leading mark is drawn in its row and on its chip, hidden from the name", () => {
+  const faces: TagsInputOption[] = OPTIONS.map((option) =>
+    option.group === 'Seats'
+      ? { ...option, leading: <span data-testid={`face-${option.description}`}>F</span> }
+      : option,
+  );
+  render(<Manages initial={['Designer']} options={faces} />);
+  const chips = screen.getByRole('list', { name: 'Chosen: Manages' });
+  expect(chips.querySelector('[data-testid="face-designer"]')!.closest('[aria-hidden]')).not.toBeNull();
+  expect(screen.getByRole('button', { name: 'Remove Designer' })).toBeDefined();
+
+  fireEvent.keyDown(box(), { key: 'ArrowDown' });
+  const row = screen.getByRole('option', { name: /Site Reliability/ });
+  const face = row.querySelector('[data-testid="face-site-reliability"]')!;
+  expect(face.closest('[aria-hidden="true"]')).not.toBeNull();
+  // Between the tick and the label, so the labels still line up down the list.
+  expect(face.closest('.crewlet-tags-input__option-leading')!.previousElementSibling!.className).toBe(
+    'crewlet-tags-input__option-tick',
+  );
+  const unit = screen.getByRole('option', { name: 'Engineering' });
+  expect(unit.querySelector('.crewlet-tags-input__option-leading')).toBeNull();
+});
+
+test('a chip says its description only where the field asks for it', () => {
+  const { unmount } = render(
+    <TagsInput label="Seats" aria-label="Seats" options={OPTIONS} value={['Designer']} onChange={() => {}} />,
+  );
+  expect(screen.getByRole('list', { name: 'Chosen: Seats' }).textContent).toBe('Designer');
+  unmount();
+  render(
+    <TagsInput
+      label="Seats"
+      aria-label="Seats"
+      options={OPTIONS}
+      describeChips
+      value={['Designer', 'Engineering', 'gone']}
+      onChange={() => {}}
+    />,
+  );
+  const chips = screen.getByRole('list', { name: 'Chosen: Seats' });
+  const described = chips.querySelectorAll('.crewlet-tags-input__chip-description');
+  expect([...described].map((el) => el.textContent)).toEqual(['designer']);
+  // The Remove control keeps the label alone as its name.
+  expect(screen.getByRole('button', { name: 'Remove Designer' })).toBeDefined();
+  expect(screen.getByRole('button', { name: 'Remove gone' })).toBeDefined();
+});

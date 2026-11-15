@@ -10,6 +10,7 @@ import {
   type ChangeEvent,
   type ClipboardEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react';
 import { CheckGlyph, ChevronLeftGlyph, ChevronRightGlyph } from '@crewlethq/icons/glyphs';
 import { announce } from '../Announcer/index.js';
@@ -29,6 +30,11 @@ export interface TagsInputOption {
   group?: string | undefined;
   /** A short second line of identity, such as a handle. */
   description?: string | undefined;
+  /**
+   * Drawn before the label, in the list and on the chip: an avatar, a swatch, a
+   * glyph. Decorative and hidden from assistive technology: the label carries the words.
+   */
+  leading?: ReactNode;
 }
 
 export interface TagsInputProps {
@@ -57,6 +63,11 @@ export interface TagsInputProps {
   tagVariant?: TagVariant | undefined;
   /** Monospace flag forwarded to each Tag, for machine values such as IP ranges. */
   monospace?: boolean | undefined;
+  /**
+   * Whether a chip says its option's description after the label, for values a
+   * label alone does not tell apart, such as two seats with one name.
+   */
+  describeChips?: boolean | undefined;
   /** Keys that submit the current input as a new value. Defaults to Enter and comma. */
   submitKeys?: string[] | undefined;
   disabled?: boolean | undefined;
@@ -145,6 +156,7 @@ export const TagsInput = forwardRef<TagsInputHandle, TagsInputProps>(function Ta
     placeholder = 'Add a tag, press Enter or comma',
     tagVariant = 'neutral',
     monospace = false,
+    describeChips = false,
     submitKeys = ['Enter', ','],
     disabled = false,
     className = '',
@@ -430,6 +442,11 @@ export const TagsInput = forwardRef<TagsInputHandle, TagsInputProps>(function Ta
           <span className="crewlet-tags-input__option-tick" aria-hidden="true">
             {chosen ? <CheckGlyph size="sm" /> : null}
           </span>
+          {option.leading !== undefined ? (
+            <span className="crewlet-tags-input__option-leading" aria-hidden="true">
+              {option.leading}
+            </span>
+          ) : null}
           <span className="crewlet-tags-input__option-label">{textOf(option)}</span>
           {option.description ? (
             <span className="crewlet-listbox__hint">{option.description}</span>
@@ -455,45 +472,56 @@ export const TagsInput = forwardRef<TagsInputHandle, TagsInputProps>(function Ta
     <div className={cx('crewlet-tags-input', disabled && 'is-disabled', className)}>
       {value.length > 0 ? (
         <ul ref={chips} className="crewlet-tags-input__chips" aria-label={chosenLabel(label)}>
-          {keyed.map(({ held, key }, at) => (
-            <li
-              key={key}
-              data-chip={at}
-              className="crewlet-tags-input__chip"
-            >
-              {ordered ? (
-                <>
-                  <IconButton
-                    size="sm"
-                    data-move="earlier"
-                    label={moveEarlierLabel(nameOf(held))}
-                    icon={<ChevronLeftGlyph />}
-                    disabled={disabled || at === 0}
-                    onClick={() => move(at, -1)}
-                    onKeyDown={(event) => chipKeys(event, at)}
-                  />
-                  <IconButton
-                    size="sm"
-                    data-move="later"
-                    label={moveLaterLabel(nameOf(held))}
-                    icon={<ChevronRightGlyph />}
-                    disabled={disabled || at === value.length - 1}
-                    onClick={() => move(at, 1)}
-                    onKeyDown={(event) => chipKeys(event, at)}
-                  />
-                </>
-              ) : null}
-              <Tag
-                variant={tagVariant}
-                monospace={monospace}
-                onRemove={disabled ? undefined : () => removeAt(at)}
-                removeAriaLabel={removeLabel(nameOf(held))}
-                onKeyDown={ordered ? (event) => chipKeys(event, at) : undefined}
+          {keyed.map(({ held, key }, at) => {
+            const option = byValue.get(held);
+            const described = describeChips ? option?.description : undefined;
+            return (
+              <li
+                key={key}
+                data-chip={at}
+                className="crewlet-tags-input__chip"
               >
-                {nameOf(held)}
-              </Tag>
-            </li>
-          ))}
+                {ordered ? (
+                  <>
+                    <IconButton
+                      size="sm"
+                      data-move="earlier"
+                      label={moveEarlierLabel(nameOf(held))}
+                      icon={<ChevronLeftGlyph />}
+                      disabled={disabled || at === 0}
+                      onClick={() => move(at, -1)}
+                      onKeyDown={(event) => chipKeys(event, at)}
+                    />
+                    <IconButton
+                      size="sm"
+                      data-move="later"
+                      label={moveLaterLabel(nameOf(held))}
+                      icon={<ChevronRightGlyph />}
+                      disabled={disabled || at === value.length - 1}
+                      onClick={() => move(at, 1)}
+                      onKeyDown={(event) => chipKeys(event, at)}
+                    />
+                  </>
+                ) : null}
+                <Tag
+                  variant={tagVariant}
+                  monospace={monospace}
+                  leadingIcon={option?.leading}
+                  onRemove={disabled ? undefined : () => removeAt(at)}
+                  removeAriaLabel={removeLabel(nameOf(held))}
+                  onKeyDown={ordered ? (event) => chipKeys(event, at) : undefined}
+                >
+                  {nameOf(held)}
+                  {described ? (
+                    <>
+                      {' '}
+                      <span className="crewlet-tags-input__chip-description">{described}</span>
+                    </>
+                  ) : null}
+                </Tag>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
       <div className="crewlet-tags-input__field" ref={listbox.anchorRef}>
