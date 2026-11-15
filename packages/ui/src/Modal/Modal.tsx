@@ -105,7 +105,11 @@ export interface ModalProps extends FrameAttributes {
   onClose: () => void;
   /** The line that names the surface. It names the dialog whether or not it is drawn. */
   title?: ReactNode;
-  /** A second line under the title. It describes the surface unless `describedBy` says otherwise. */
+  /**
+   * A second line under the title, or on a sheet the first line of its body
+   * (a sheet's head is a one-line bar). It describes the surface unless
+   * `describedBy` says otherwise.
+   */
   subtitle?: ReactNode;
   /** A glyph beside the title. Decorative: the title carries the words. */
   icon?: ReactNode;
@@ -388,7 +392,7 @@ function ModalFrame({
   const closes = banded && showCloseButton;
   const content = (
     <>
-      {banded && (given(title) || given(subtitle) || given(headerActions) || closes || onBack) ? (
+      {banded && (given(title) || (given(subtitle) && !sheet) || given(headerActions) || closes || onBack) ? (
         <div
           className={cx(
             'crewlet-modal__header',
@@ -422,7 +426,7 @@ function ModalFrame({
                 {title}
               </h1>
             ) : null}
-            {given(subtitle) ? (
+            {given(subtitle) && !sheet ? (
               <p className="crewlet-modal__subtitle" id={subtitleId}>
                 {subtitle}
               </p>
@@ -440,7 +444,7 @@ function ModalFrame({
           ) : null}
         </div>
       ) : null}
-      {given(children) || (prompt && given(title)) ? (
+      {given(children) || (prompt && given(title)) || (sheet && given(subtitle)) ? (
         <div
           ref={bodyRef}
           // Named by the surface's own title where it has one, so the stop
@@ -469,6 +473,19 @@ function ModalFrame({
           {prompt && given(title) ? (
             <p className="crewlet-modal__prompt-title" id={titleId}>
               {title}
+            </p>
+          ) : null}
+          {/*
+           * A SHEET'S SUBTITLE IS ITS BODY'S LEAD. The head is a bar at the
+           * shell's own top-bar height, sized for one line and the commit pair;
+           * a title and a sentence under it filled the whole band, so the title
+           * stood a few pixels off the sheet's top edge. In the body the
+           * sentence has the room every field has, the bar keeps its line with
+           * the shell's, and the surface is still described by it.
+           */}
+          {sheet && given(subtitle) ? (
+            <p className="crewlet-modal__lead" id={subtitleId}>
+              {subtitle}
             </p>
           ) : null}
           {/* A dialog's contents are their own outline: see the component doc. */}

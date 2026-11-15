@@ -245,6 +245,44 @@ test("a dialog's head with a subtitle centres its controls on the title's line",
 });
 
 /*
+ * A SHEET'S SUBTITLE IS ITS BODY'S LEAD. The sheet's head is a bar at the
+ * shell's top-bar height; a title and a subtitle filled it, and the title
+ * stood a few pixels off the sheet's top edge. The sentence is the body's
+ * first line instead, and still describes the surface.
+ */
+test("a sheet's subtitle is the first line of its body, and still describes it", () => {
+  render(
+    <Modal
+      open
+      variant="sheet"
+      onClose={() => {}}
+      title="Add a rule"
+      subtitle="Requests of the rule's kinds go to its delegates first."
+    >
+      <input aria-label="Delegates" />
+    </Modal>,
+  );
+  const head = document.querySelector<HTMLElement>('.crewlet-modal__header')!;
+  expect(head.textContent).not.toContain('delegates first');
+  const body = document.querySelector<HTMLElement>('.crewlet-modal__body')!;
+  const lead = body.firstElementChild as HTMLElement;
+  expect(lead.className).toBe('crewlet-modal__lead');
+  expect(lead.textContent).toBe("Requests of the rule's kinds go to its delegates first.");
+  expect(screen.getByRole('dialog', { name: 'Add a rule' }).getAttribute('aria-describedby')).toBe(lead.id);
+});
+
+test("a dialog's subtitle stays in its head", () => {
+  render(
+    <Modal open onClose={() => {}} title="Landing page" subtitle="Board 1 of 3">
+      <p>Body</p>
+    </Modal>,
+  );
+  const head = document.querySelector<HTMLElement>('.crewlet-modal__header')!;
+  expect(head.querySelector('.crewlet-modal__subtitle')?.textContent).toBe('Board 1 of 3');
+  expect(document.querySelector('.crewlet-modal__lead')).toBeNull();
+});
+
+/*
  * AND THE CLASS ACTUALLY WINS. Both rules are one class, so a tie is broken
  * by source order: written above the base rule this set a size the base rule
  * then set back, and the sheet's head kept the dialog's register with the
