@@ -14,7 +14,7 @@ import { Checkbox } from '../Checkbox/index.js';
 import type { DiffListLabels } from '../DiffList/index.js';
 import { Disclosure } from '../Disclosure/index.js';
 import { ReceiptStrip, RefusalStrip } from '../ReceiptStrip/index.js';
-import { formatExact, formatUntil, toISO, useNow, type TimeValue } from '../RelativeTime/index.js';
+import { formatExact, formatUntil, toInstant, toISO, useNow, type TimeValue } from '../RelativeTime/index.js';
 import { Spinner } from '../Spinner/index.js';
 import { StatusCard, type StatusCardStatus } from '../StatusCard/index.js';
 import { cx } from '../utils/cx.js';
@@ -344,6 +344,29 @@ function headingOf(state: ProposalState, kind: ProposalKind, labels: ProposalCar
 }
 
 /**
+ * The time a card has left, counted on the shared clock so every card in a
+ * thread agrees, with the exact instant on the element and on hover; once it
+ * has passed, that it can no longer be approved. Its own component so only a
+ * card that draws it subscribes to the clock: a thread of settled cards does
+ * not re-render every second.
+ */
+function TimeLeft({ at, labels }: { at: TimeValue; labels: ProposalCardLabels }) {
+  const until = formatUntil(at, useNow());
+  return (
+    <span className="crewlet-proposal-card__term">
+      <ClockGlyph size="xs" />
+      {until === 'due' ? (
+        labels.lapsed
+      ) : (
+        <time dateTime={toISO(at) ?? undefined} title={formatExact(at) ?? undefined}>
+          {labels.expires} {until}
+        </time>
+      )}
+    </span>
+  );
+}
+
+/**
  * A change prepared for the person to approve, and what became of it: one
  * card from the moment it is proposed until it is applied, declined, expires
  * or is refused.
@@ -471,12 +494,11 @@ export function ProposalCard({
 
   // WHAT APPROVING INVOLVES, while it can still be pressed: a fresh sign-in
   // (said by the strip itself once the card is in `stepup`) and the time
-  // left, counted on the shared clock so every card in a thread agrees.
-  const now = useNow();
-  const until = deciding && expiresAt !== undefined ? formatUntil(expiresAt, now) : null;
+  // left, which an instant nothing could parse leaves out.
   const signIn = state === 'pending' && stepUp;
+  const expiry = deciding && toInstant(expiresAt) !== null ? expiresAt : undefined;
   const terms =
-    signIn || until !== null ? (
+    signIn || expiry !== undefined ? (
       <p className="crewlet-proposal-card__terms">
         {signIn ? (
           <span className="crewlet-proposal-card__term">
@@ -484,18 +506,7 @@ export function ProposalCard({
             {labels.stepUpAhead}
           </span>
         ) : null}
-        {until === null ? null : (
-          <span className="crewlet-proposal-card__term">
-            <ClockGlyph size="xs" />
-            {until === 'due' ? (
-              labels.lapsed
-            ) : (
-              <time dateTime={toISO(expiresAt) ?? undefined} title={formatExact(expiresAt) ?? undefined}>
-                {labels.expires} {until}
-              </time>
-            )}
-          </span>
-        )}
+        {expiry === undefined ? null : <TimeLeft at={expiry} labels={labels} />}
       </p>
     ) : null;
 
