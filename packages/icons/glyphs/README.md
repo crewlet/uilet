@@ -28,6 +28,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **`cloud`**, the AWS tile in an integrations catalogue (`VendorMark`'s `aws`). AWS's trademark guidelines allow a third party a plain-text reference only, with no logo, so the tile draws this generic cloud beside the name "AWS" rather than any mark of AWS's own.
 - **A company's map of what it runs on** (`GraphCanvas` in `@crewlethq/ui`, and the Atlas screens in the engine dashboard): `map` for the map itself and its sidebar row, `git-branch` for a repository, `workflow` for a pipeline, `hard-drive` for a bucket or an object store, `container` for a container platform and `waypoints` for an endpoint. Every other kind of entry on the map takes a glyph already here (`server`, `database`, `globe`, `cloud`, `layers`, `activity`, `plug`, `brain`).
 - **The assistant drawer** in the engine dashboard: `square-pen` for New conversation in its head (the conversations themselves keep `rotate-ccw-clock`, already here, because Lucide retired `history` as an alias of it), `square` drawn filled for the Stop a running request turns the send button into, and `circle-stop` for a request or one of its steps that the person stopped.
+- **The code host's screens** in the engine dashboard (Gitlet: the repository's main page and files, commits, branches, pushes, changes, a change and its files, checks, the merge queue and the pickers): `git-commit-vertical`, `git-merge`, `git-pull-request`, `git-pull-request-closed`, `git-pull-request-draft`, `git-compare`, `tag`, `file`, `file-diff`, `circle-x`, `circle-dot`, `scale` for a licence, `unfold-vertical` for hidden diff lines, `rows-2` and `columns-2` for the unified and split diff, `train-front` for the queue, and `square-plus`, `square-dot`, `square-minus` and `square-arrow-right` for a file's status in a tree (added, modified or type changed, deleted, renamed). Lucide retired `git-commit` as an alias of `git-commit-vertical`.
 
 ## Provenance
 
@@ -98,13 +99,16 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `circle-alert` | `CircleAlertGlyph` | `package/icons/circle-alert.svg` |
 | `circle-check` | `CircleCheckGlyph` | `package/icons/circle-check.svg` |
 | `circle-dashed` | `CircleDashedGlyph` | `package/icons/circle-dashed.svg` |
+| `circle-dot` | `CircleDotGlyph` | `package/icons/circle-dot.svg` |
 | `circle-question-mark` | `CircleQuestionMarkGlyph` | `package/icons/circle-question-mark.svg` |
 | `circle-stop` | `CircleStopGlyph` | `package/icons/circle-stop.svg` |
+| `circle-x` | `CircleXGlyph` | `package/icons/circle-x.svg` |
 | `clock` | `ClockGlyph` | `package/icons/clock.svg` |
 | `cloud` | `CloudGlyph` | `package/icons/cloud.svg` |
 | `code` | `CodeGlyph` | `package/icons/code.svg` |
 | `cog` | `CogGlyph` | `package/icons/cog.svg` |
 | `coins` | `CoinsGlyph` | `package/icons/coins.svg` |
+| `columns-2` | `Columns2Glyph` | `package/icons/columns-2.svg` |
 | `columns-3` | `Columns3Glyph` | `package/icons/columns-3.svg` |
 | `command` | `CommandGlyph` | `package/icons/command.svg` |
 | `compass` | `CompassGlyph` | `package/icons/compass.svg` |
@@ -122,7 +126,9 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `eye-off` | `EyeOffGlyph` | `package/icons/eye-off.svg` |
 | `face-slightly-smiling` | `FaceSlightlySmilingGlyph` | `package/icons/face-slightly-smiling.svg` |
 | `face-slightly-smiling-plus` | `FaceSlightlySmilingPlusGlyph` | `package/icons/face-slightly-smiling-plus.svg` |
+| `file` | `FileGlyph` | `package/icons/file.svg` |
 | `file-code` | `FileCodeGlyph` | `package/icons/file-code.svg` |
+| `file-diff` | `FileDiffGlyph` | `package/icons/file-diff.svg` |
 | `file-text` | `FileTextGlyph` | `package/icons/file-text.svg` |
 | `flag` | `FlagGlyph` | `package/icons/flag.svg` |
 | `fold-vertical` | `FoldVerticalGlyph` | `package/icons/fold-vertical.svg` |
@@ -135,6 +141,12 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `fullscreen` | `FullscreenGlyph` | `package/icons/fullscreen.svg` |
 | `gauge` | `GaugeGlyph` | `package/icons/gauge.svg` |
 | `git-branch` | `GitBranchGlyph` | `package/icons/git-branch.svg` |
+| `git-commit-vertical` | `GitCommitVerticalGlyph` | `package/icons/git-commit-vertical.svg` |
+| `git-compare` | `GitCompareGlyph` | `package/icons/git-compare.svg` |
+| `git-merge` | `GitMergeGlyph` | `package/icons/git-merge.svg` |
+| `git-pull-request` | `GitPullRequestGlyph` | `package/icons/git-pull-request.svg` |
+| `git-pull-request-closed` | `GitPullRequestClosedGlyph` | `package/icons/git-pull-request-closed.svg` |
+| `git-pull-request-draft` | `GitPullRequestDraftGlyph` | `package/icons/git-pull-request-draft.svg` |
 | `globe` | `GlobeGlyph` | `package/icons/globe.svg` |
 | `grip-vertical` | `GripVerticalGlyph` | `package/icons/grip-vertical.svg` |
 | `group` | `GroupGlyph` | `package/icons/group.svg` |
@@ -198,7 +210,9 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `rotate-ccw` | `RotateCcwGlyph` | `package/icons/rotate-ccw.svg` |
 | `rotate-ccw-clock` | `RotateCcwClockGlyph` | `package/icons/rotate-ccw-clock.svg` |
 | `rotate-cw` | `RotateCwGlyph` | `package/icons/rotate-cw.svg` |
+| `rows-2` | `Rows2Glyph` | `package/icons/rows-2.svg` |
 | `save` | `SaveGlyph` | `package/icons/save.svg` |
+| `scale` | `ScaleGlyph` | `package/icons/scale.svg` |
 | `scroll-text` | `ScrollTextGlyph` | `package/icons/scroll-text.svg` |
 | `search` | `SearchGlyph` | `package/icons/search.svg` |
 | `send` | `SendGlyph` | `package/icons/send.svg` |
@@ -214,9 +228,13 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `smartphone` | `SmartphoneGlyph` | `package/icons/smartphone.svg` |
 | `split` | `SplitGlyph` | `package/icons/split.svg` |
 | `square` | `SquareGlyph` | `package/icons/square.svg` |
+| `square-arrow-right` | `SquareArrowRightGlyph` | `package/icons/square-arrow-right.svg` |
 | `square-code` | `SquareCodeGlyph` | `package/icons/square-code.svg` |
+| `square-dot` | `SquareDotGlyph` | `package/icons/square-dot.svg` |
 | `square-kanban` | `SquareKanbanGlyph` | `package/icons/square-kanban.svg` |
+| `square-minus` | `SquareMinusGlyph` | `package/icons/square-minus.svg` |
 | `square-pen` | `SquarePenGlyph` | `package/icons/square-pen.svg` |
+| `square-plus` | `SquarePlusGlyph` | `package/icons/square-plus.svg` |
 | `square-terminal` | `SquareTerminalGlyph` | `package/icons/square-terminal.svg` |
 | `star` | `StarGlyph` | `package/icons/star.svg` |
 | `sticky-note` | `StickyNoteGlyph` | `package/icons/sticky-note.svg` |
@@ -225,6 +243,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `swatch-book` | `SwatchBookGlyph` | `package/icons/swatch-book.svg` |
 | `table` | `TableGlyph` | `package/icons/table.svg` |
 | `tablet` | `TabletGlyph` | `package/icons/tablet.svg` |
+| `tag` | `TagGlyph` | `package/icons/tag.svg` |
 | `target` | `TargetGlyph` | `package/icons/target.svg` |
 | `telescope` | `TelescopeGlyph` | `package/icons/telescope.svg` |
 | `text-align-center` | `TextAlignCenterGlyph` | `package/icons/text-align-center.svg` |
@@ -232,10 +251,12 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `text-align-start` | `TextAlignStartGlyph` | `package/icons/text-align-start.svg` |
 | `text-cursor` | `TextCursorGlyph` | `package/icons/text-cursor.svg` |
 | `text-quote` | `TextQuoteGlyph` | `package/icons/text-quote.svg` |
+| `train-front` | `TrainFrontGlyph` | `package/icons/train-front.svg` |
 | `trash` | `TrashGlyph` | `package/icons/trash.svg` |
 | `triangle-alert` | `TriangleAlertGlyph` | `package/icons/triangle-alert.svg` |
 | `type` | `TypeGlyph` | `package/icons/type.svg` |
 | `undo` | `UndoGlyph` | `package/icons/undo.svg` |
+| `unfold-vertical` | `UnfoldVerticalGlyph` | `package/icons/unfold-vertical.svg` |
 | `ungroup` | `UngroupGlyph` | `package/icons/ungroup.svg` |
 | `unlink` | `UnlinkGlyph` | `package/icons/unlink.svg` |
 | `upload` | `UploadGlyph` | `package/icons/upload.svg` |

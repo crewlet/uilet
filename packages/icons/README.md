@@ -329,7 +329,7 @@ Signature illustrations follow these rules so they recolor from CSS and sit on o
 
 The optical size axis goes with Material: a Lucide drawing is one drawing at every size, so `opsz` and the two functions that chose it are removed. A filled state is a prop rather than a second glyph, and only on a glyph that can carry one: Material's `check_circle-fill`, `error-fill`, `info-fill` and `warning-fill` were solid discs and triangles with the mark knocked out, which a stroke drawing cannot be, so they take the outline, and the tone around them carries the state as it already did.
 
-**One name survives with a different meaning, and it is not a compile error**, so look for it: `FullscreenGlyph` is Lucide's `fullscreen`, the corners with a screen inside that succeed Material's `fit_screen`, and Material's `fullscreen`, the bare corners, is now `MaximizeGlyph`. `TagGlyph` is gone rather than repurposed: Material's `tag` was a hash sign, which is `HashGlyph`, and Lucide's own `tag` is a price label that under the old name would have drawn a different thing without a word.
+**Two names survive with a different meaning, and neither is a compile error**, so look for them: `FullscreenGlyph` is Lucide's `fullscreen`, the corners with a screen inside that succeed Material's `fit_screen`, and Material's `fullscreen`, the bare corners, is now `MaximizeGlyph`. `TagGlyph` was dropped in 0.5.0, since Material's `tag` was a hash sign (`HashGlyph`); it has since returned as Lucide's own `tag`, a price label for a release tag, so code still importing it for a hash draws a different thing.
 
 | Was | Is |
 | --- | --- |
