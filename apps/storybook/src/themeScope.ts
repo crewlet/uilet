@@ -19,7 +19,8 @@ import { themes, type ThemeName } from '@crewlethq/tokens';
  * holds that export to themes.css, value for value, under these same names),
  * and the palette's `color-scheme`. Every descendant reading one of them gets
  * this palette's value whatever the root has, which is what a theme block does
- * for the whole document.
+ * for the whole document. The var() aliases tokens.css declares on the root
+ * (the code host's family among them) keep the root's palette inside a panel.
  */
 export function themeScope(theme: ThemeName): CSSProperties {
   const scope: Record<string, string> = { colorScheme: theme };
