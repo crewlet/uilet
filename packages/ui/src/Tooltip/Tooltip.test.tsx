@@ -107,6 +107,68 @@ test('a press closes the tip, and the focus it brings neither opens nor holds it
   expect(tip()).toBeNull();
 });
 
+// A held control's press pins its tip open, since touch has no hover or visible focus.
+test('with pressOpens a press opens the tip and pins it until a press elsewhere', () => {
+  render(
+    <>
+      <Tooltip content="Change Time zone. Changing settings needs Admin." pressOpens>
+        <button>Change Time zone</button>
+      </Tooltip>
+      <button>Elsewhere</button>
+    </>,
+  );
+  const trigger = screen.getByRole('button', { name: 'Change Time zone' });
+  // A tap: enter, down, up, leave.
+  fireEvent.pointerEnter(trigger, { pointerType: 'touch' });
+  fireEvent.pointerDown(trigger, { pointerType: 'touch' });
+  fireEvent.pointerUp(trigger, { pointerType: 'touch' });
+  fireEvent.pointerLeave(trigger, { pointerType: 'touch' });
+  expect(tip()?.textContent).toBe('Change Time zone. Changing settings needs Admin.');
+  settle(60_000);
+  expect(tip()).not.toBeNull();
+  fireEvent.pointerDown(screen.getByRole('button', { name: 'Elsewhere' }));
+  expect(tip()).toBeNull();
+});
+
+test('with pressOpens a second press on the trigger puts the tip away, and Escape does too', () => {
+  render(
+    <Tooltip content="Changing settings needs Admin." pressOpens>
+      <button>Change</button>
+    </Tooltip>,
+  );
+  const trigger = screen.getByRole('button', { name: 'Change' });
+  fireEvent.pointerDown(trigger, { pointerType: 'touch' });
+  expect(tip()).not.toBeNull();
+  fireEvent.pointerDown(trigger, { pointerType: 'touch' });
+  expect(tip()).toBeNull();
+  tabTo(trigger);
+  settle();
+  expect(tip()).toBeNull();
+
+  fireEvent.pointerDown(trigger, { pointerType: 'touch' });
+  expect(tip()).not.toBeNull();
+  fireEvent.keyDown(trigger, { key: 'Escape' });
+  expect(tip()).toBeNull();
+});
+
+test('a tip a press pinned is let go once the control is no longer held', () => {
+  const { rerender } = render(
+    <Tooltip content="Changing settings needs Admin." pressOpens>
+      <button>Change</button>
+    </Tooltip>,
+  );
+  const trigger = screen.getByRole('button', { name: 'Change' });
+  fireEvent.pointerDown(trigger, { pointerType: 'touch' });
+  expect(tip()).not.toBeNull();
+  rerender(
+    <Tooltip content="Change">
+      <button>Change</button>
+    </Tooltip>,
+  );
+  settle();
+  expect(tip()).toBeNull();
+});
+
 test('a focus that is not visible focus does not open the tip', () => {
   render(
     <Tooltip content="Runs at 09:00">

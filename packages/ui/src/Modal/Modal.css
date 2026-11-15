@@ -518,6 +518,8 @@
   font-size: var(--font-size-sm);
   line-height: var(--font-line-height-normal);
   color: var(--color-text-primary);
+  /* A section inside heads at the small step, never louder than the title. */
+  --crewlet-section-title-size: var(--font-size-sm);
 }
 
 /*
