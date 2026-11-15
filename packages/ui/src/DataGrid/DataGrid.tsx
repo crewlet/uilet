@@ -131,9 +131,10 @@ export interface DataGridColumn<T> {
   optional?: boolean | undefined;
   /**
    * The narrowest a FLEXIBLE column may be drawn: its track is
-   * `minmax(floor, 1fr)` rather than `minmax(0, 1fr)`. For the column that is
+   * `minmax(floor, auto)` rather than `minmax(0, auto)`. For the column that is
    * the point of the list (a title, a name), which at zero gave way to every
-   * content-sized column beside it.
+   * content-sized column beside it. Above its floor a flexible column is
+   * sized by what it holds (`tableTrack`).
    */
   floor?: string | undefined;
   /**
@@ -649,8 +650,13 @@ export function squeezed<T>(
  * cells alone, and no value sat under the head that named it.
  *
  * A SHRINK COLUMN IS CAPPED (`fit-content(20%)`): `max-content` grows without
- * a ceiling and grid resolves it before any flexible column, so one long value
- * starved the title to zero and still overflowed.
+ * a ceiling, so one long value starved the title to zero and still overflowed.
+ *
+ * A FLEXIBLE COLUMN IS SIZED BY WHAT IT HOLDS (`minmax(floor, auto)`, see
+ * `tableTrack`): the room is handed out evenly and each column stops at its
+ * widest value, so a short one takes what it holds and the long ones share the
+ * rest, rather than every flexible column taking an equal share whatever it
+ * held and a name being cut beside a column of empty room.
  *
  * COLUMNS THAT DO NOT FIT GIVE WAY IN ORDER (`drop`), measured after every
  * commit in a layout effect so the intermediate shapes never paint, and the

@@ -108,7 +108,7 @@ describe('the columns', () => {
     const { container } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} />);
     const grid = container.querySelector<HTMLElement>('.crewlet-data-grid')!;
     expect(grid.style.gridTemplateColumns).toBe(
-      'minmax(8rem, 1fr) fit-content(20%) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)',
+      'minmax(8rem, auto) fit-content(20%) minmax(0, auto) minmax(0, auto) minmax(0, auto)',
     );
     expect(container.querySelector<HTMLElement>('.crewlet-data-grid__row')!.getAttribute('style')).toBeNull();
     expect(sheet()).toMatch(/\.crewlet-data-grid__row \{[^}]*grid-template-columns: subgrid;/);

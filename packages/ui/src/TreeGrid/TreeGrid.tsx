@@ -136,7 +136,7 @@ export interface TreeGridColumn {
   shrink?: boolean | undefined;
   /**
    * The narrowest a flexible column may be drawn: its track is
-   * `minmax(floor, 1fr)` rather than `minmax(0, 1fr)`. For the column that is
+   * `minmax(floor, auto)` rather than `minmax(0, auto)`. For the column that is
    * the point of the list, which at zero gave way to every column beside it.
    */
   floor?: string | undefined;
