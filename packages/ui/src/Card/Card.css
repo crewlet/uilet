@@ -574,16 +574,8 @@
     white-space: normal;
   }
 
-  /*
-   * AND THE TITLE WRAPS rather than ends at the controls. The one-line rule
-   * is there so a subtitle gives up its tail before the title gives up a
-   * pixel; on this step the subtitle has a line of its own and nothing left
-   * to give, so a title wider than the room the controls leave was simply
-   * cut: on a phone "Scratch repositories and commit identity" read
-   * "Scratch repositories and com" beside a Configuration link. A title is
-   * the card's name and is read in full, so it takes a second line. A caller
-   * that asked for an ending (`truncate`) keeps it.
-   */
+  /* The subtitle has its own line here, so a long title wraps rather than
+     being cut at the controls. A `truncate` title keeps its ellipsis. */
   .crewlet-card__header:has(> .crewlet-card__subtitle) .crewlet-card__title:not(.crewlet-card__title--truncate) {
     white-space: normal;
     overflow-wrap: anywhere;
