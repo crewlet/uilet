@@ -4,6 +4,7 @@ import { ProductMark, PRODUCTS, VendorMark, type Product } from '@crewlethq/icon
 import assistantTile from '@crewlethq/icons/svg/product/app-tile/assistant.svg';
 import chatTile from '@crewlethq/icons/svg/product/app-tile/chat.svg';
 import docletTile from '@crewlethq/icons/svg/product/app-tile/doclet.svg';
+import gitletTile from '@crewlethq/icons/svg/product/app-tile/gitlet.svg';
 import workletTile from '@crewlethq/icons/svg/product/app-tile/worklet.svg';
 import { themeScope } from '../themeScope';
 
@@ -20,6 +21,7 @@ const NAMES: Record<Product, string> = {
   worklet: 'Worklet',
   doclet: 'Doclet',
   chat: 'Crewlet Chat',
+  gitlet: 'Gitlet',
   assistant: 'Ask Crewlet',
 };
 
@@ -27,6 +29,7 @@ const TILES: Record<Product, string> = {
   worklet: workletTile,
   doclet: docletTile,
   chat: chatTile,
+  gitlet: gitletTile,
   assistant: assistantTile,
 };
 

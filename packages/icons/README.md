@@ -114,28 +114,29 @@ import { ProductMark } from '@crewlethq/icons/product-mark';
 <ProductMark product="assistant" size="sm" title="Ask Crewlet" />
 ```
 
-`@crewlethq/icons/product-mark` is the marks' own entry, with `ProductMark`, `PRODUCTS` and their types and nothing else: its import graph reaches the drawings, the glyph frame and `ProductMark.css`, never the root with its illustrations, vendor marks and their stylesheets, so a first paint that draws one mark (an Ask button) pays for that alone whatever its bundler does with the root's side effects. The root still exports the same functions; `test/bundle.test.mjs` holds the entry's graph and what a build of it carries (about 6 KB for all eight drawings).
+`@crewlethq/icons/product-mark` is the marks' own entry, with `ProductMark`, `PRODUCTS` and their types and nothing else: its import graph reaches the drawings, the glyph frame and `ProductMark.css`, never the root with its illustrations, vendor marks and their stylesheets, so a first paint that draws one mark (an Ask button) pays for that alone whatever its bundler does with the root's side effects. The root still exports the same functions; `test/bundle.test.mjs` holds the entry's graph and what a build of it carries (about 7 KB for all ten drawings).
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `product` | `Product`: `'worklet' \| 'doclet' \| 'chat' \| 'assistant'` | required | Which of Crewlet's own products. |
+| `product` | `Product`: `'worklet' \| 'doclet' \| 'chat' \| 'gitlet' \| 'assistant'` | required | Which of Crewlet's own products. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `drawing` | `ProductMarkDrawing`: `'auto' \| 'small' \| 'master'` | `'auto'` | Which drawing to mount. `auto` mounts the 16 pixel grid drawing below 24 px and the master from 24 px up (see [Two drawings](#two-drawings)). |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `soon` | boolean | `false` | Draws a product that has not shipped hollow: a faint violet body under a violet keyline and figure. Never grey, which is how a vendor mark says "not connected". |
 
-The four services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. `PRODUCTS` lists them. Pair the Ask Crewlet mark with its name ("Ask Crewlet" on a button, in navigation and in catalogues), because a sparkle alone is also read as "new" or "favourite"; for the same reason, Crewlet's own "new" and "soon" cues never use a four point star.
+The five services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. `PRODUCTS` lists them. Pair the Ask Crewlet mark with its name ("Ask Crewlet" on a button, in navigation and in catalogues), because a sparkle alone is also read as "new" or "favourite"; for the same reason, Crewlet's own "new" and "soon" cues never use a four point star.
 
 | Product | Figure |
 | ------- | ------ |
 | `worklet` (projects and tasks) | A large tick for the finished task over one open row: a hollow chamfered box and its line for the task still to do. Done is solid and heavy, open is hollow and light. |
 | `doclet` (spaces and pages) | A page whose corner is folded by the brand's own 45 degree chamfer, with a heading block and two lines of text. |
 | `chat` (talking with agents) | A chamfered speech bubble whose one horizontal window is the crewmate's visor, cut through to the tile. The family's one crew reference, with no eyes and no face. |
+| `gitlet` (the company's git repositories) | A branch leaving its trunk: three hollow chamfered commits, the two on the left joined by a straight trunk and the one on the upper right running down a 45 degree diagonal into the lower commit's chamfer, which meets it square. On the 16 pixel grid the commits are plain squares, as Worklet's open box is, so each keeps a one pixel wall and counter. |
 | `assistant` (asking Crewlet itself, as the signed-in person) | A four point concave spark with a small companion spark on the 45 degree axis that points into the octagon's upper right chamfer. No face: Ask Crewlet has no identity of its own, so it is a capability of Crewlet rather than a crew member. |
 
 ### Construction
 
-All four stand on one tile: the crewmate head's octagon on the 48 unit grid, inset 2 units, with 9 unit chamfers at 45 degrees, so its weight sits beside a vendor mark's. A lower facet gives it the brand mark's depth. One white figure tells them apart, every straight edge orthogonal or a true 45 degree diagonal and every curve a circular arc, so no size shows a staircase. Interior detail is always a knockout through to the tile, never a second tone. Each file is a handful of paths, each tagged with the part it plays:
+All five stand on one tile: the crewmate head's octagon on the 48 unit grid, inset 2 units, with 9 unit chamfers at 45 degrees, so its weight sits beside a vendor mark's. A lower facet gives it the brand mark's depth. One white figure tells them apart, every straight edge orthogonal or a true 45 degree diagonal and every curve a circular arc, so no size shows a staircase. Interior detail is always a knockout through to the tile, never a second tone. Each file is a handful of paths, each tagged with the part it plays:
 
 | `data-part` | What it is | In |
 | ----------- | ---------- | -- |
@@ -184,7 +185,7 @@ import workletTile from '@crewlethq/icons/svg/product/app-tile/worklet.svg';
 <link rel="apple-touch-icon" href="/worklet-180.png" />
 ```
 
-All four share one frame on `0 0 180 180`: a full bleed `#6a3cff` ground, the octagon redrawn for 180 px in `#7c56ff` with its lower facet in `#5c24ff`, and the master's figure at 80 percent baked into absolute coordinates. Every figure sits inside the 72 px maskable safe zone, so a manifest may list a PNG exported from it as `any maskable`; a rounded or circle mask crops the octagon's corners, which is expected. Raster pipelines export the PNG from this file, and favicons from the 16 pixel grid drawing (16 px, and 32 px at 2x). A change to a figure is baked into its app tile too.
+All five share one frame on `0 0 180 180`: a full bleed `#6a3cff` ground, the octagon redrawn for 180 px in `#7c56ff` with its lower facet in `#5c24ff`, and the master's figure at 80 percent baked into absolute coordinates. Every figure sits inside the 72 px maskable safe zone, so a manifest may list a PNG exported from it as `any maskable`; a rounded or circle mask crops the octagon's corners, which is expected. Raster pipelines export the PNG from this file, and favicons from the 16 pixel grid drawing (16 px, and 32 px at 2x). A change to a figure is baked into its app tile too.
 
 ### Raw files
 
