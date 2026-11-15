@@ -107,12 +107,7 @@ test('a press closes the tip, and the focus it brings neither opens nor holds it
   expect(tip()).toBeNull();
 });
 
-/*
- * A HELD CONTROL'S PRESS ASKS FOR ITS TIP. The control does nothing when
- * pressed, and on a touch screen the press is the only gesture there is: a
- * finger lifted fires the pointer's leave at once, and a tap brings no
- * visible focus. So the press opens the tip and pins it until it is put away.
- */
+// A held control's press pins its tip open, since touch has no hover or visible focus.
 test('with pressOpens a press opens the tip and pins it until a press elsewhere', () => {
   render(
     <>
@@ -123,16 +118,14 @@ test('with pressOpens a press opens the tip and pins it until a press elsewhere'
     </>,
   );
   const trigger = screen.getByRole('button', { name: 'Change Time zone' });
-  // A tap, as a touch screen orders it: enter, down, up, leave, all at once.
+  // A tap: enter, down, up, leave.
   fireEvent.pointerEnter(trigger, { pointerType: 'touch' });
   fireEvent.pointerDown(trigger, { pointerType: 'touch' });
   fireEvent.pointerUp(trigger, { pointerType: 'touch' });
   fireEvent.pointerLeave(trigger, { pointerType: 'touch' });
   expect(tip()?.textContent).toBe('Change Time zone. Changing settings needs Admin.');
-  // PERSISTENT, as every tip is: nothing takes it away on a timer.
   settle(60_000);
   expect(tip()).not.toBeNull();
-  // A press anywhere else puts it away, through the layer stack.
   fireEvent.pointerDown(screen.getByRole('button', { name: 'Elsewhere' }));
   expect(tip()).toBeNull();
 });
@@ -148,7 +141,6 @@ test('with pressOpens a second press on the trigger puts the tip away, and Escap
   expect(tip()).not.toBeNull();
   fireEvent.pointerDown(trigger, { pointerType: 'touch' });
   expect(tip()).toBeNull();
-  // The focus that second press brought does not bring it back.
   tabTo(trigger);
   settle();
   expect(tip()).toBeNull();

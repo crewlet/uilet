@@ -69,11 +69,8 @@ export interface TooltipProps extends TriggerAttributes {
   /** Nothing opens: for a trigger whose tip is only worth showing sometimes. */
   disabled?: boolean | undefined;
   /**
-   * A press OPENS the tip rather than closing it, and it stays until a press
-   * elsewhere, Escape, the trigger's blur or a second press on the trigger.
-   * For a HELD control (`disabledReason`), whose press does nothing else: a
-   * touch screen has no hover and no keyboard focus, so a press is the only
-   * way its reader can ask why. Button and IconButton set it while held.
+   * A press opens the tip and pins it until dismissed, for a held control:
+   * on touch the press is the only way to ask why.
    */
   pressOpens?: boolean | undefined;
   /** Milliseconds a pointer rests on the trigger before the panel appears. Focus never waits. */
@@ -123,11 +120,7 @@ const TOOLTIP_GAP = Number.parseFloat(spacing['2']);
  * a reader must have is on the page. This is a hint about a control that
  * already has a name.
  *
- * THE ONE PRESS IT ANSWERS is a held control's (`pressOpens`): a control that
- * cannot be used now does nothing when pressed, so the press opens its tip,
- * with the reason, and pins it until it is dismissed. That is how a touch
- * reader learns why, without the reason having to be drawn beside every held
- * control on the page.
+ * A held control's press opens its tip instead (`pressOpens`).
  *
  * IT IS ONE LINE. A list of paths, a table of values or a paragraph belongs in
  * a `Popover` with `role="dialog"` or in a `Disclosure`, both of which a reader
@@ -181,8 +174,7 @@ export function Tooltip({
   // Hover and focus are counted separately: a control focused by the keyboard
   // and then passed over by the pointer must not close when the pointer leaves.
   // `pressed` is a press that answered the tip: it stays shut until the
-  // pointer leaves and comes back. `pinned` is a press that ASKED for it
-  // (`pressOpens`): it stays open whatever the pointer and focus do next.
+  // pointer leaves and comes back. `pinned` is a `pressOpens` press: open until dismissed.
   const over = useRef({ pointer: false, focus: false, pressed: false, pinned: false });
   const [place, setPlace] = useState<{ left: number; top: number; side: 'above' | 'below' } | null>(null);
   const container = useLayerContainer();
@@ -233,8 +225,7 @@ export function Tooltip({
       setOpen(false);
     }
   }, [disabled, clear]);
-  // A tip a press pinned is let go once a press no longer asks for it: the
-  // control it explained is not held any more, and its hint is a hover's again.
+  // A pinned tip closes once its control is no longer held.
   useEffect(() => {
     if (pressOpens || !over.current.pinned) return;
     over.current.pinned = false;
@@ -363,12 +354,7 @@ export function Tooltip({
     },
     // A press answers the tip: it closes at once and stays shut while the
     // pointer is still on the control, whatever focus the press brought.
-    //
-    // UNLESS THE PRESS ASKED FOR IT (`pressOpens`): a held control's press
-    // does nothing else, and on a touch screen it is the only way to ask why,
-    // since a finger lifted fires the pointer's leave at once and never
-    // brings visible focus. It opens at once and is pinned there; a second
-    // press on the trigger puts it away, as a press anywhere else does.
+    // With `pressOpens` the press pins it open instead, and a second press closes it.
     onPointerDown: (event: PointerEvent) => {
       over.current.focus = false;
       clear();

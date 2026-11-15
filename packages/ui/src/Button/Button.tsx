@@ -76,8 +76,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, Bu
   /**
    * The kit Tooltip on hover and keyboard focus: a hint of its own, then the
    * reason while held; or `true` for the reason alone. Shown and not read, since
-   * the name and the reason already are. While held, a press opens it too,
-   * which is how a touch reader is told why.
+   * the name and the reason already are. While held, a press opens it too.
    */
   tooltip?: string | boolean | undefined;
   /**

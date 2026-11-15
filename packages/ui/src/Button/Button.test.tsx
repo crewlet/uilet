@@ -551,8 +551,7 @@ describe('a held control answers a press with its reason, which is how touch is 
     const save = screen.getByRole('button', { name: 'Save' });
     fireEvent.pointerDown(save, { pointerType: 'touch' });
     fireEvent.click(save);
-    // The press elsewhere put the held one's tip away, and the live one's own
-    // press answers its hint rather than opening it.
+    // The live button's press acts and opens no tip.
     expect(tip()).toBeNull();
     expect(onSave).toHaveBeenCalledTimes(1);
   });

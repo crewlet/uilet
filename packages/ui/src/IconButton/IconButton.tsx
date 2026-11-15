@@ -57,7 +57,7 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
    * The kit Tooltip on hover and keyboard focus, in place of the native title:
    * `true` for the label, or a hint of its own, then the reason while held.
    * Shown and not read, since the name and the reason already are. While held,
-   * a press opens it too, which is how a touch reader is told why.
+   * a press opens it too.
    */
   tooltip?: string | boolean | undefined;
   /** Render the single child element with these classes instead of a button. */

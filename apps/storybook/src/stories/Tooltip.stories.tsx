@@ -113,10 +113,8 @@ export const OnADisabledControl: Story = {
 };
 
 /**
- * A held control's own tip, through its `tooltip` prop: on hover and keyboard
- * focus as every tip, and on a PRESS too, since a held control's press does
- * nothing else and a touch screen has no other gesture to ask with. The press
- * pins it until a press elsewhere, Escape or a second press puts it away.
+ * A held control's tip opens on hover, keyboard focus and a press, so touch
+ * can ask why too.
  */
 export const HeldControlAnswersAPress: Story = {
   render: () => (
