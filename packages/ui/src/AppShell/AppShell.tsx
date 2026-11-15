@@ -1005,6 +1005,29 @@ export function AppShellRail({ header, search, status, footer, className, childr
    * a row that folds away when the host draws no fold control.
    */
   const leaving = useContext(RailLeavingContext) || undefined;
+  /*
+   * THE MIDDLE'S SCROLLBAR, measured, so what stands in the middle can give
+   * its width back. The full rail's middle reserves its bar's gutter at every
+   * height (AppShell.css), and the field and the nav take that width off their
+   * end inset, so they keep the width they have at rest whether or not the
+   * middle scrolls. It is the middle's own bar, read as its border box less
+   * its client box, because CSS cannot read a scrollbar's width and the
+   * screen's gutter is 0 beside a flush screen, where this bar is still
+   * reserved. It is 0 where scrollbars overlay the content.
+   */
+  const [middle, setMiddle] = useState<HTMLDivElement | null>(null);
+  const [scrollbar, setScrollbar] = useState(0);
+  useLayoutEffect(() => {
+    if (!middle) return undefined;
+    const measure = () => setScrollbar(Math.max(0, middle.offsetWidth - middle.clientWidth));
+    measure();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    // A bar that changes width (a zoom, the compact shape's unreserved bar
+    // arriving) changes the middle's content box, which is what this watches.
+    const observer = new ResizeObserver(measure);
+    observer.observe(middle);
+    return () => observer.disconnect();
+  }, [middle]);
   const statusSlot = status ? (
     <div className="crewlet-app-shell__rail-status" inert={leaving}>
       {status}
@@ -1019,7 +1042,12 @@ export function AppShellRail({ header, search, status, footer, className, childr
         </div>
       ) : null}
       {compact ? statusSlot : null}
-      <div className="crewlet-app-shell__rail-body" inert={leaving}>
+      <div
+        ref={setMiddle}
+        className="crewlet-app-shell__rail-body"
+        inert={leaving}
+        style={{ ['--crewlet-rail-scrollbar' as string]: `${scrollbar}px` }}
+      >
         {search && !compact ? <div className="crewlet-app-shell__rail-search">{search}</div> : null}
         {children}
       </div>

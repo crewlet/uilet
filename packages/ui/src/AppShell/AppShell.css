@@ -204,10 +204,31 @@
   padding-top: var(--size-shell-inset);
 }
 
+/*
+ * THE MIDDLE IS THE RAIL'S SCROLLER, and it KEEPS ITS WIDTH WHEN IT SCROLLS.
+ * It reserved nothing, so when what it holds (a long group of running work)
+ * grew past the window, the scrollbar took its width out of the content: the
+ * field and every row ended a bar's width earlier, and the field's words were
+ * cut beside its shortcut. It reserves the bar's gutter at every height, and
+ * what stands in it (the field and the nav) gives exactly that width back from
+ * its end inset (`--crewlet-rail-body-end`, the nav's gutter less the bar), so
+ * the field and the rows stand where they stood before, scrolling or not.
+ *
+ * The bar's width is the middle's own (`--crewlet-rail-scrollbar`, measured by
+ * `AppShell.Rail`, 0 where scrollbars overlay the content), not the screen's
+ * gutter, which is 0 beside a flush screen while the middle still reserves its
+ * bar. A bar wider than the gutter gives back what the gutter has.
+ */
 .crewlet-app-shell__rail-body {
+  --crewlet-rail-body-end: max(0px, calc(var(--size-nav-gutter) - var(--crewlet-rail-scrollbar, 0px)));
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.crewlet-app-shell__rail-body .crewlet-sidebar-nav {
+  padding-inline-end: var(--crewlet-rail-body-end);
 }
 
 /* The rail's bar, only where `::-webkit-scrollbar` is not read: set where it
@@ -310,6 +331,10 @@
 .crewlet-app-shell__rail-search {
   --crewlet-rail-field-pad: calc(var(--size-nav-row-pad) - 1px);
   padding: 0 calc(var(--size-nav-gutter) + var(--size-nav-row-pad) - var(--crewlet-rail-field-pad) - 1px);
+  /* The end gives the middle's scrollbar back, as the nav's does (above). */
+  padding-inline-end: calc(
+    var(--crewlet-rail-body-end) + var(--size-nav-row-pad) - var(--crewlet-rail-field-pad) - 1px
+  );
 }
 
 /* The same gutter the nav takes, so what the foot says lines up with the rows
@@ -1046,8 +1071,12 @@
   margin: 0;
 }
 
+/* The compact column reserves no gutter, so its tiles stay centred in it, and
+   gives none back. */
 .crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-body {
+  --crewlet-rail-body-end: var(--size-nav-gutter);
   padding: var(--spacing-1) 0;
+  scrollbar-gutter: auto;
 }
 
 /*
