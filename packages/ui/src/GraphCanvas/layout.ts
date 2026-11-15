@@ -902,8 +902,15 @@ export interface GraphTrunk {
   /** How many edges it stands for. */
   count: number;
   d: string;
-  /** Where its count is written: the middle of its run. */
+  /** The middle of its run: where its count is written while nothing is in the way there. */
   label: CanvasPoint;
+  /**
+   * The gap it crosses: from the upper cluster's foot (`top`) to the lower
+   * one's head (`bottom`), with the level run between them at `y`, from `x1`
+   * (under the upper cluster) to `x2` (over the lower one). Where its count may
+   * be written: see [placeTrunkLabels].
+   */
+  run: { x1: number; x2: number; y: number; top: number; bottom: number };
   box: CanvasRect;
 }
 
@@ -957,9 +964,95 @@ export function graphTrunks(
       count,
       d: pathOf(points),
       label: { x: (x1 + x2) / 2, y: turn },
+      run: { x1, x2, y: turn, top: y1, bottom: y2 },
       box: boxOf(points),
     };
   });
+}
+
+/** How far apart two counts written in one gap stand, so they never touch. */
+const LABEL_GAP = 4;
+
+/** Where along its level run a count is tried, the middle first. */
+const ALONG = [0.5, 0.25, 0.75, 0, 1];
+
+/** How far a count tried past either end of its run still covers the trunk's corner. */
+const ON_THE_CORNER = 8;
+
+/**
+ * WHERE EACH TRUNK'S COUNT IS WRITTEN, or null where nowhere in its gap is
+ * clear. A count holds its size on screen, as the clusters' titles do, while
+ * the gap between two bands shrinks with the zoom, so at its middle a count
+ * came to stand on the lower clusters' titles, and two trunks leaving one
+ * cluster wrote their counts on each other. Each count is tried along its
+ * level run, the middle first, then just past either end of it, at the middle
+ * of the gap, hung from the upper cluster's foot, or stood on the lower one's
+ * head, and takes the first place that covers no title, no card (`obstacles`,
+ * in world units) and no count already placed: a trunk that drops straight
+ * down first, since it has one place across, then the largest counts. It may
+ * cross a cluster's outline, never what is drawn inside one. A count with nowhere clear is not
+ * written: its trunk still is, and the legend says what a trunk is.
+ *
+ * `sizes` is each count's box in world units, by trunk key, as it is drawn at
+ * the zoom the map stands at.
+ */
+export function placeTrunkLabels(
+  trunks: readonly GraphTrunk[],
+  sizes: ReadonlyMap<string, { width: number; height: number }>,
+  obstacles: readonly CanvasRect[],
+): Map<string, CanvasPoint | null> {
+  const out = new Map<string, CanvasPoint | null>();
+  const placed: CanvasRect[] = [];
+  // THE LEAST FREE FIRST: a trunk that drops straight down has one place
+  // across, and one with a level run has five, so the straight one is placed
+  // before a longer run takes its spot; then the larger counts.
+  const free = (trunk: GraphTrunk) => (trunk.run.x1 === trunk.run.x2 ? 0 : 1);
+  const order = [...trunks].sort((a, b) => free(a) - free(b) || b.count - a.count || byText(a.key, b.key));
+  for (const trunk of order) {
+    const size = sizes.get(trunk.key);
+    if (!size || size.width <= 0 || size.height <= 0) {
+      out.set(trunk.key, null);
+      continue;
+    }
+    const { x1, x2, y, top, bottom } = trunk.run;
+    const { width: w, height: h } = size;
+    // Along the run, then just past either end of it, still on the trunk's
+    // corner: two trunks that cross share one run, often too short for two
+    // counts side by side and in a gap too short to stack them.
+    const lo = Math.min(x1, x2);
+    const hi = Math.max(x1, x2);
+    const xs = [
+      ...(x1 === x2 ? [x1] : ALONG.map((t) => x1 + (x2 - x1) * t)),
+      lo - w / 2 + ON_THE_CORNER,
+      hi + w / 2 - ON_THE_CORNER,
+    ];
+    const ys = [y, top + h / 2 + 1, bottom - h / 2 - 1];
+    // What could stand in the way of this count: whatever is near its run.
+    const near = (box: CanvasRect) =>
+      box.x < Math.max(x1, x2) + w && box.x + box.width > Math.min(x1, x2) - w &&
+      box.y < bottom + h && box.y + box.height > top - h;
+    const against = obstacles.filter(near);
+    let at: CanvasPoint | null = null;
+    for (const cx of xs) {
+      for (const cy of ys) {
+        const box = { x: cx - w / 2, y: cy - h / 2, width: w, height: h };
+        if (against.some((other) => overlaps(box, other, 0))) continue;
+        if (placed.some((other) => overlaps(box, other, LABEL_GAP))) continue;
+        at = { x: cx, y: cy };
+        placed.push(box);
+        break;
+      }
+      if (at) break;
+    }
+    out.set(trunk.key, at);
+  }
+  return out;
+}
+
+function overlaps(a: CanvasRect, b: CanvasRect, gap: number): boolean {
+  return (
+    a.x < b.x + b.width + gap && a.x + a.width + gap > b.x && a.y < b.y + b.height + gap && a.y + a.height + gap > b.y
+  );
 }
 
 /** Decides which channels and street an edge takes, before ports and tracks are known. */

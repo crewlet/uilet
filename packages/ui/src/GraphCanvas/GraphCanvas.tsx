@@ -91,6 +91,7 @@ import {
   graphItemKey,
   graphTrunks,
   layoutGraph,
+  placeTrunkLabels,
   routeGraphEdges,
   type GraphItem,
   type GraphLayout,
@@ -750,6 +751,46 @@ export function GraphCanvas({
     );
   }, [layout, chrome, shown, edges, laneOfNode]);
 
+  // EACH TRUNK'S COUNT WHERE NOTHING ELSE IS: measured as drawn at this zoom
+  // (a count and a cluster's title both hold their size on screen) and
+  // written on the elements themselves, as the card beside an entry is, so a
+  // pinch never re-renders the map to move them. See [placeTrunkLabels].
+  const placeTrunksNow = useRef<() => void>(() => {});
+  placeTrunksNow.current = () => {
+    const world = worldEl.current;
+    if (!world || !layout || trunks.length === 0) return;
+    const labels = [...world.querySelectorAll<HTMLElement>('.crewlet-graph-canvas__trunk-label')];
+    const sizes = new Map<string, { width: number; height: number }>();
+    for (const el of labels) sizes.set(el.dataset.trunk ?? '', { width: el.offsetWidth, height: el.offsetHeight });
+    // Nothing laid out (no layout engine): the counts stay where they were drawn.
+    if (labels.every((el) => el.offsetWidth === 0)) return;
+    const obstacles: CanvasRect[] = [...layout.itemByKey.values()];
+    const words = (el: Element | null, x: number, y: number, centred: boolean) => {
+      if (!(el instanceof HTMLElement) || el.offsetWidth === 0) return;
+      const top = y + el.offsetTop - (centred ? el.offsetHeight / 2 : 0);
+      obstacles.push({ x: x + el.offsetLeft, y: top, width: el.offsetWidth, height: el.offsetHeight });
+    };
+    for (const lane of layout.lanes) {
+      const head = world.querySelector(`.crewlet-graph-canvas__lane-head[data-lane="${CSS.escape(lane.id)}"]`);
+      // The title is set into its cluster's outline, its middle on the head's top edge.
+      words(head?.firstElementChild ?? null, lane.head.x, lane.head.y, true);
+    }
+    for (const band of layout.bands) {
+      if (!band.title) continue;
+      const title = world.querySelector(`.crewlet-graph-canvas__band-title[data-band="${CSS.escape(band.id)}"]`);
+      words(title?.firstElementChild ?? null, band.title.x, band.title.y, false);
+    }
+    const at = placeTrunkLabels(trunks, sizes, obstacles);
+    for (const el of labels) {
+      const point = at.get(el.dataset.trunk ?? '');
+      if (point) {
+        el.style.transform = `translate(${point.x}px, ${point.y}px) translate(-50%, -50%)`;
+        el.style.removeProperty('visibility');
+      } else {
+        el.style.visibility = 'hidden';
+      }
+    }
+  };
 
   // ---- what each card says about its relations -------------------------------------
   const relationsOf = useMemo(() => {
@@ -794,6 +835,7 @@ export function GraphCanvas({
         worldEl.current?.style.setProperty(ZOOM_PROPERTY, String(view.k));
       }
       placeCardNow.current();
+      placeTrunksNow.current();
       const next = graphWindow(mountedNow.current, view, size);
       if (next !== mountedNow.current) setMounted(next);
     },
@@ -834,6 +876,8 @@ export function GraphCanvas({
     el.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
   };
   useLayoutEffect(() => placeCardNow.current());
+  // A new layout, new trunks or a new level of detail places the counts again; a zoom does in `viewChanged`.
+  useLayoutEffect(() => placeTrunksNow.current(), [layout, trunks, mounted]);
 
   // ---- the opening view: the whole map, or the entry a link names ----------------
   const root = useRef<HTMLDivElement>(null);
@@ -1314,9 +1358,10 @@ export function GraphCanvas({
                 key={band.id}
                 className="crewlet-graph-canvas__band-title"
                 aria-hidden="true"
+                data-band={band.id}
                 style={placedStyle(band.title)}
               >
-                {bands[band.index]!.label}
+                <span>{bands[band.index]!.label}</span>
               </div>
             ) : null,
           )}
@@ -1352,6 +1397,7 @@ export function GraphCanvas({
               key={trunk.key}
               className="crewlet-graph-canvas__trunk-label"
               aria-hidden="true"
+              data-trunk={trunk.key}
               style={{ transform: `translate(${trunk.label.x}px, ${trunk.label.y}px) translate(-50%, -50%)` }}
             >
               {text.trunk(trunk.count)}
@@ -1364,6 +1410,7 @@ export function GraphCanvas({
                 key={lane.id}
                 className="crewlet-graph-canvas__lane-head"
                 aria-hidden="true"
+                data-lane={lane.id}
                 style={placedStyle(lane.head)}
               >
                 <span className="crewlet-graph-canvas__lane-title">
