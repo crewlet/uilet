@@ -208,6 +208,20 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.129.0
+
+### A map's trunks, legend and zoom bar say what they draw
+
+- **A trunk's count never stands on anything.** A count and a cluster's title both hold their size on screen while the gap between two bands shrinks with the zoom, so at the gap's middle a count stood on the lower clusters' titles, and two trunks leaving one cluster wrote their counts on each other. `GraphCanvas` now writes each count where it covers no title, card or other count: along its level run, at the middle of the gap, hung from the upper cluster or stood on the lower one, a trunk that drops straight down placed first. Where nowhere is clear, the count is not written and its trunk still is. `placeTrunkLabels` is that placement as a pure function, and `GraphTrunk.run` is the gap a trunk crosses.
+- **The Runs on switch reads on while trunks are drawn.** It read off at rest, over the trunks, and pressing it drew every runs-on line. Each legend switch now says whether its family is drawn: Runs on is on by default and draws trunks, pressing it hides them, and each runs-on line is drawn for the entry a reader stands on. Without the chrome, a family still draws line by line.
+- **Zoom out is held at the fit, and Zoom in at the ceiling**, each with its reason (`CanvasLabels.zoomOutHeld`, `zoomInHeld`). They stayed live and did nothing, since every zoom is clamped to the limits. They are held softly, so focus stays on them.
+
+### A link set inside a sentence is underlined
+
+**A link set inside a sentence (`size="inherit"`) is underlined at rest**, in the `default` and `subtle` variants. Among other words its ink alone did not set it apart: the accent ink against secondary text is 1.18:1 in the dark palette, where running text needs 3:1 or a mark that is not colour. `quiet` and `plain` keep their own rules.
+
+**Breaking:** with the chrome on, `support` in `families` draws trunks, never a line per entry, and the default `families` now holds `support`; `CanvasLabels` (and so `GraphCanvasLabels`) has two more fields, `zoomOutHeld` and `zoomInHeld`, which a full set of labels must give.
+
 ## Changes in 0.127.0
 
 ### A map opens fitted to its view
