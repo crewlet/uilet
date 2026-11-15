@@ -1142,3 +1142,15 @@ test('a body whose words fit is not a stop', () => {
     remove();
   }
 });
+
+// A section inside a dialog heads at the title's small step, never above it.
+test('a section inside a dialog heads at the small step, under the title', () => {
+  const block = /(?:^|\n)\.crewlet-modal__body\s*\{([^}]*)\}/.exec(
+    modalCss().replace(/\/\*[\s\S]*?\*\//g, ''),
+  )?.[1];
+  expect(block).toMatch(/--crewlet-section-title-size:\s*var\(--font-size-sm\)/);
+  const title = /(?:^|\n)\.crewlet-modal__title\s*\{([^}]*)\}/.exec(
+    modalCss().replace(/\/\*[\s\S]*?\*\//g, ''),
+  )?.[1];
+  expect(title).toMatch(/font-size:\s*var\(--font-size-sm\)/);
+});
