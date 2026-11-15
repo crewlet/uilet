@@ -257,12 +257,49 @@ svg.crewlet-select__chevron {
   /* Six rows and a scroll. A list that draws past the bottom of the dialog
      it was opened in is a list whose last answers nobody finds. */
   --crewlet-select-menu-max-height: 12rem;
+  /*
+   * THE FLOOR AND THE MEASURE a list asks for beside its trigger's width. A
+   * list of names asks for neither: it is as wide as its trigger at least,
+   * and a picker's is as wide as its longest name. A described list asks for
+   * both (below).
+   */
+  --crewlet-select-menu-min-width: 0px;
+  --crewlet-select-menu-max-width: 100vw;
 
   position: fixed;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  max-height: min(var(--crewlet-select-menu-max-height), 60vh);
+  /*
+   * THE WIDTH IS MADE HERE from three measurements the component writes when
+   * it places the panel (Select.tsx, `position`): the field's width
+   * (--crewlet-select-anchor-width), the room's (--crewlet-select-room-width)
+   * and the height beside the field (--crewlet-select-room-height). Each
+   * bound is the larger of the field and what the list asks for, and never
+   * more than the room, so on a phone the room wins over a floor that would
+   * hang past its edge.
+   *
+   * The field's width used to be the panel's whole width, written on the node
+   * with no minimum, so a field in a table cell offered a sentence per option
+   * in a 115px panel, a word or two to a line and one option taller than the
+   * window. A screen's own min-width could not lift it either: one class
+   * against this one, it won or lost by which stylesheet the page linked
+   * last.
+   */
+  min-width: min(
+    max(var(--crewlet-select-anchor-width, 0px), var(--crewlet-select-menu-min-width)),
+    var(--crewlet-select-room-width, 100vw)
+  );
+  max-width: min(
+    max(var(--crewlet-select-anchor-width, 0px), var(--crewlet-select-menu-max-width)),
+    var(--crewlet-select-room-width, 100vw)
+  );
+  /* Never taller than the larger side beside the field, so it fits on that
+     side and never covers the field and the answer it shows. */
+  max-height: min(
+    var(--crewlet-select-menu-max-height),
+    60vh,
+    var(--crewlet-select-room-height, 100vh)
+  );
   /*
    * THE PANEL IS THE PRODUCT'S SURFACE, on the panel hairline, at the panel
    * corner. A list offered from a field is another panel over the one the
@@ -284,12 +321,30 @@ svg.crewlet-select__chevron {
   z-index: var(--z-index-popover);
 }
 
-/* SIX ROWS OF THE LIST'S OWN HEIGHT. A row with a second line (an option's
-   description) is twice a one-line row, so the same six rows need twice the
-   room: at 12rem a list of four described answers scrolled, and the first or
-   the last of them was cut at the panel's edge. */
+/* A FIELD'S LIST MATCHES ITS FIELD: exactly the field's width, unless the
+   list asks for a wider floor, and never wider than the room. */
+.crewlet-select__menu--matches {
+  width: min(
+    max(var(--crewlet-select-anchor-width, 0px), var(--crewlet-select-menu-min-width)),
+    var(--crewlet-select-room-width, 100vw)
+  );
+}
+
+/*
+ * A DESCRIBED LIST READS AS PROSE, so it is set at a reading width. Its
+ * floor keeps a sentence to whole phrases a line (about fifty characters at
+ * the description's size), and its measure keeps a picker's long sentence
+ * from running one line across the window (about seventy).
+ *
+ * SIX ROWS OF THE LIST'S OWN HEIGHT. A row with a second line (an option's
+ * description) is twice a one-line row, so the same six rows need twice the
+ * room: at 12rem a list of four described answers scrolled, and the first or
+ * the last of them was cut at the panel's edge.
+ */
 .crewlet-select__menu--described {
   --crewlet-select-menu-max-height: 24rem;
+  --crewlet-select-menu-min-width: 22rem;
+  --crewlet-select-menu-max-width: 28rem;
 }
 
 /* Inside a layer host the panel is placed against the host's own box. */
@@ -443,6 +498,9 @@ svg.crewlet-select__chevron {
   font-size: var(--font-size-2xs);
   line-height: var(--font-line-height-normal);
   color: var(--color-text-tertiary);
+  /* A word longer than the measure (an address, an id) breaks rather than
+     running out of the panel, which clips it. */
+  overflow-wrap: break-word;
 }
 
 /* The second line stays the second line on the row the reader is on: it is

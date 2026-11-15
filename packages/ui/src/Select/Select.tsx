@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type FocusEventHandler,
   type KeyboardEvent,
   type ReactNode,
@@ -21,6 +22,7 @@ import {
   placePopup,
   useLayerContainer,
   viewportBounds,
+  visibleBounds,
   type PlacementRect,
 } from '../Layer/index.js';
 import { useHighlightRest, useListbox, useOptionKeys } from '../Listbox/index.js';
@@ -42,6 +44,12 @@ export type SelectAlign = 'left' | 'right';
  * that keeps a row of them even and a cap that stops one long value pushing
  * the rest of the bar off the screen. A filter row of full-width selects is
  * one question per line, which is not what a filter bar is.
+ *
+ * The LIST follows the mode: a field's list matches its field, and a picker's
+ * sizes to its options with the trigger as a floor. Either way a list whose
+ * options carry a description is never narrower than a readable floor or
+ * wider than a readable measure, so a field in a table cell does not offer
+ * its sentences a word to a line, and no list is wider than the window.
  */
 export type SelectWidth = 'full' | 'auto';
 
@@ -447,6 +455,30 @@ const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(function N
 
 /* ── Listbox ─────────────────────────────────────────────────────────── */
 
+/**
+ * Where an open panel is drawn and the three measurements its size is made
+ * from: the field it hangs from (`anchor`), the width of the room it is placed
+ * in (`room`) and the height of the larger side of that room beside the field
+ * (`tall`). The stylesheet turns them into the panel's width and height
+ * (Select.css, "The panel"), with the floor and the measure a list asks for.
+ */
+interface Place {
+  left: number;
+  top: number;
+  anchor: number;
+  room: number;
+  tall: number;
+}
+
+/** The measurements as the custom properties Select.css reads. */
+function placeVars({ anchor, room, tall }: Pick<Place, 'anchor' | 'room' | 'tall'>): Record<string, string> {
+  return {
+    '--crewlet-select-anchor-width': `${anchor}px`,
+    '--crewlet-select-room-width': `${room}px`,
+    '--crewlet-select-room-height': `${tall}px`,
+  };
+}
+
 interface ListboxSelectProps {
   id: string;
   chosen: SelectValue[];
@@ -527,13 +559,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
 ) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [place, setPlace] = useState<{
-    left: number;
-    top: number;
-    width?: number | undefined;
-    minWidth?: number | undefined;
-    maxWidth?: number | undefined;
-  } | null>(null);
+  const [place, setPlace] = useState<Place | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   // The frame round the trigger: the bordered field a reader sees, and the
   // box the panel is placed against (see `position`).
@@ -767,19 +793,28 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
    * its trigger was kept on screen as though it were not, and hung over the
    * edge by the difference.
    *
-   * THE WIDTH IS APPLIED BEFORE THE MEASUREMENT, not after. A panel's height
+   * THE SIZES ARE APPLIED BEFORE THE MEASUREMENT, not after. A panel's height
    * is a function of its width — the narrower it is, the more its options
    * wrap — so measuring at the natural width and then applying another one
    * computes the flip and the vertical clamp for a layout that never renders.
-   * The style is written directly on the node here rather than waited for
-   * through state, because a placement pass is synchronous by nature: it
-   * writes, reads back, and commits once.
+   * They are written directly on the node here rather than waited for through
+   * state, because a placement pass is synchronous by nature: it writes, reads
+   * back, and commits once. What is written is three measurements (see
+   * `Place`); the width and height they make are the stylesheet's, so a
+   * caller's `menuClassName` can move the floor and the measure it reads.
    *
    * THE ANCHOR IS THE FRAME, not the trigger button. The button sits inside
    * the frame's 1px boundary, so a panel placed against it stood a pixel in
    * from either edge of the field it is meant to match, and the layer gap was
    * measured from inside that boundary: 3px under the field the reader sees,
    * where every other popup stands 4px off its anchor.
+   *
+   * AS TALL AS THE ROOM BESIDE THE FIELD, at most. The panel was capped at a
+   * fixed height and placed in the whole layer, so where neither side of the
+   * field had that much room the clamp slid it back over the field, and the
+   * list covered the very answer it was opened from. Capped to the larger
+   * side, it always fits on one, and [placePopup] chooses that side. [Menu]
+   * has measured its room the same way all along.
    */
   const position = useCallback(() => {
     const at = frame.current;
@@ -788,22 +823,27 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     const inHost = container !== document.body;
     const host = inHost ? container.getBoundingClientRect() : viewportBounds();
     const rect = at.getBoundingClientRect();
-    // A field's list matches its field, which is what `full` means and why
-    // this is not simply "size to the content" everywhere. A picker's list
-    // takes the trigger as a FLOOR instead, so it is never narrower than the
-    // control it hangs from and never capped by it.
-    const matches = width === 'full';
-    // NEVER WIDER THAN THE ROOM IT IS PLACED IN: sized to its longest option,
-    // a panel wider than a phone hung past the edge however it was slid.
-    const room = Math.max(0, host.width - 2 * LAYER_GAP);
-    const floor = matches ? undefined : Math.min(rect.width, room);
-    box.style.maxWidth = `${room}px`;
-    box.style.width = matches ? `${Math.min(rect.width, room)}px` : '';
-    box.style.minWidth = floor === undefined ? '' : `${floor}px`;
+    // The part of the layer the window shows, inset by the gap: a layer taller
+    // than the window would otherwise offer room below the window's foot.
+    const bounds = visibleBounds(host, inHost);
+    const anchorY = rect.top - (inHost ? host.y : 0);
+    const sizes = {
+      anchor: rect.width,
+      // NEVER WIDER THAN THE ROOM IT IS PLACED IN: sized to its longest
+      // option, a panel wider than a phone hung past the edge however it was
+      // slid.
+      room: bounds.width,
+      tall: Math.max(
+        bounds.y + bounds.height - (anchorY + rect.height + LAYER_GAP),
+        anchorY - LAYER_GAP - bounds.y,
+        0,
+      ),
+    };
+    for (const [name, value] of Object.entries(placeVars(sizes))) box.style.setProperty(name, value);
     const own = box.getBoundingClientRect();
     const local: PlacementRect = {
       x: (align === 'right' ? rect.right - own.width : rect.left) - (inHost ? host.x : 0),
-      y: rect.top - (inHost ? host.y : 0),
+      y: anchorY,
       width: rect.width,
       height: rect.height,
     };
@@ -821,23 +861,18 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       close(panel.current?.contains(document.activeElement) ?? false);
       return;
     }
-    const spot = placePopup(
-      local,
-      { width: own.width, height: own.height },
-      { x: LAYER_GAP, y: LAYER_GAP, width: host.width - 2 * LAYER_GAP, height: host.height - 2 * LAYER_GAP },
-    );
-    const applied = matches ? Math.min(rect.width, room) : undefined;
+    const spot = placePopup(local, { width: own.width, height: own.height }, bounds);
     setPlace((was) =>
       was &&
       was.left === spot.left &&
       was.top === spot.top &&
-      was.width === applied &&
-      was.minWidth === floor &&
-      was.maxWidth === room
+      was.anchor === sizes.anchor &&
+      was.room === sizes.room &&
+      was.tall === sizes.tall
         ? was
-        : { left: spot.left, top: spot.top, width: applied, minWidth: floor, maxWidth: room },
+        : { left: spot.left, top: spot.top, ...sizes },
     );
-  }, [align, close, container, width]);
+  }, [align, close, container]);
 
   useLayoutEffect(() => {
     if (!open) {
@@ -1083,12 +1118,15 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
         // lines tall, so the one-line cap scrolled a list of four described
         // answers and cut the first or the last of them.
         described && 'crewlet-select__menu--described',
+        // A field's list matches its field; a picker's sizes to its options.
+        // The width policy follows the mode (Select.css, "The panel").
+        width === 'full' && 'crewlet-select__menu--matches',
         container !== null && container !== document.body ? 'crewlet-select__menu--in-host' : 'crewlet-select__menu--fixed',
         menuClassName,
       )}
       style={
         place
-          ? { left: place.left, top: place.top, width: place.width, minWidth: place.minWidth, maxWidth: place.maxWidth }
+          ? ({ left: place.left, top: place.top, ...placeVars(place) } as CSSProperties)
           : // Laid out but not painted, so its own height can be measured
             // before it is placed and no reader sees it in a corner first.
             { visibility: 'hidden' }

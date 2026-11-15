@@ -555,23 +555,27 @@ test('the panel is placed by its OWN width, so align moves it', () => {
  * the TRIGGER to the answer it is showing and caps it so it cannot push a
  * filter bar around — a bound about the toolbar, which a portalled popup is
  * not in. The panel takes that width as a minimum and sizes to its options;
- * `width="full"` is the other contract and still matches its field exactly.
+ * `width="full"` is the other contract and matches its field. Both are the
+ * stylesheet's, from the measurements the placement writes on the panel, so
+ * what is read here is those measurements and the mode's class; the widths
+ * they make are measured in a browser (ui-layout-tests, select-panel).
  */
 test('a picker panel floors at its trigger, a field panel matches it', () => {
   const restore = stubGeometry({ trigger: rect(400, 132), panel: rect(0, 210) });
   try {
     const { unmount } = render(<Picker width="auto" />);
     fireEvent.click(trigger());
-    const auto = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style;
-    expect(auto?.minWidth).toBe('132px');
-    expect(auto?.width).toBe('');
+    const auto = document.querySelector<HTMLElement>('.crewlet-select__menu')!;
+    expect(auto.style.getPropertyValue('--crewlet-select-anchor-width')).toBe('132px');
+    expect(auto.classList.contains('crewlet-select__menu--matches')).toBe(false);
+    expect(auto.style.width).toBe('');
     unmount();
 
     render(<Picker width="full" />);
     fireEvent.click(trigger());
-    const full = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style;
-    expect(full?.width).toBe('132px');
-    expect(full?.minWidth).toBe('');
+    const full = document.querySelector<HTMLElement>('.crewlet-select__menu')!;
+    expect(full.style.getPropertyValue('--crewlet-select-anchor-width')).toBe('132px');
+    expect(full.classList.contains('crewlet-select__menu--matches')).toBe(true);
   } finally {
     restore();
   }
@@ -585,8 +589,8 @@ test('a picker panel floors at its trigger, a field panel matches it', () => {
 test('a panel wider than the window is capped at the room and slid inside it', () => {
   const restore = stubGeometry({ trigger: rect(5, 140), panel: rect(0, 586) });
   const panelBox = (el: Element) => {
-    const max = Number.parseFloat((el as HTMLElement).style.maxWidth) || Infinity;
-    return rect(0, Math.min(586, max));
+    const room = (el as HTMLElement).style.getPropertyValue('--crewlet-select-room-width');
+    return rect(0, Math.min(586, Number.parseFloat(room) || Infinity));
   };
   const real = Element.prototype.getBoundingClientRect;
   const wrapped = Element.prototype.getBoundingClientRect;
@@ -600,7 +604,7 @@ test('a panel wider than the window is capped at the room and slid inside it', (
     render(<Picker width="auto" />);
     fireEvent.click(trigger());
     const style = document.querySelector<HTMLElement>('.crewlet-select__menu')!.style;
-    expect(style.maxWidth).toBe('382px');
+    expect(style.getPropertyValue('--crewlet-select-room-width')).toBe('382px');
     const left = Number.parseFloat(style.left);
     expect(left).toBeGreaterThanOrEqual(4);
     expect(left + 382).toBeLessThanOrEqual(390 - 4);
@@ -608,6 +612,30 @@ test('a panel wider than the window is capped at the room and slid inside it', (
     Element.prototype.getBoundingClientRect = real;
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
     restore();
+  }
+});
+
+/*
+ * NEVER TALLER THAN THE ROOM BESIDE ITS FIELD. Capped at a fixed height and
+ * placed in the whole window, a long list opened from a field halfway down a
+ * short window fitted on neither side, and the clamp slid it up over the field
+ * and the answer it showed. The placement writes the larger side's height for
+ * the stylesheet to cap the panel at, so the panel always fits on one side.
+ */
+test('a panel is capped at the larger side beside its field, so it never covers it', () => {
+  const height = window.innerHeight;
+  Object.defineProperty(window, 'innerHeight', { configurable: true, value: 500 });
+  // A field at 300px in a 500px window, with the 4px gap at either edge and
+  // off the field: 160px below it (496 - 300 - 32 - 4), 292px above (300 - 4 - 4).
+  const restore = stubGeometry({ trigger: rect(400, 132, 300), panel: rect(0, 210) });
+  try {
+    render(<Picker width="full" />);
+    fireEvent.click(trigger());
+    const style = document.querySelector<HTMLElement>('.crewlet-select__menu')!.style;
+    expect(style.getPropertyValue('--crewlet-select-room-height')).toBe('292px');
+  } finally {
+    restore();
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: height });
   }
 });
 
@@ -925,13 +953,16 @@ test('a list of marked rows ends each row with its tick, and a list of words kee
  * THE PANEL'S HEIGHT IS THE LIST'S. The shared listbox register caps a list
  * at min(360px, 60vh), and inside a Select's panel that cap overrode a taller
  * `--crewlet-select-menu-max-height`, so a caller asking for room got the same
- * short list. The panel now holds the cap on the window, and the list inside
- * it, scoped for the weight, has none of its own.
+ * short list. The panel now holds the cap on the window and on the room
+ * beside its field, and the list inside it, scoped for the weight, has none
+ * of its own.
  */
 test("a taller panel is a taller list, and the panel keeps the window's cap", () => {
   const css = selectCss();
   const menu = /\.crewlet-select__menu\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-  expect(menu).toMatch(/max-height:\s*min\(var\(--crewlet-select-menu-max-height\),\s*60vh\)/);
+  expect(menu).toMatch(
+    /max-height:\s*min\(\s*var\(--crewlet-select-menu-max-height\),\s*60vh,\s*var\(--crewlet-select-room-height, 100vh\)\s*\)/,
+  );
   const list = /\.crewlet-select__menu\s+\.crewlet-select__list\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(list).toMatch(/max-height:\s*none/);
 });
