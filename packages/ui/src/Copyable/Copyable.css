@@ -1,14 +1,6 @@
 /*
- * Copyable: a value and the one control that copies it.
- *
- * Three framings, and they differ only in how the value is drawn:
- *
- *   chip    A compact pill for a table cell, with head and tail truncation.
- *   inline  The value inline in a detail row, no chip behind it.
- *   block   A bordered panel for a full URL or a command.
- *
- * The control is an IconButton in every one of them, and it is the only tab
- * stop: the value is text.
+ * Copyable: a value and the IconButton that copies it, as a `chip` (a pill for
+ * a table cell), `inline` (in a detail row) or `block` (a panel for a command).
  */
 
 .crewlet-copyable {
@@ -62,11 +54,7 @@
 
 /*
  * The chip states its own line, the document's leading rounded to a whole
- * pixel as the keycap and the key chip take it (see Kbd.css). Inherited, it
- * was whatever the text around it said: 17.95px on the document's own line
- * and 17.4px inside a tighter sentence, where Chromium floored the leading
- * above the figures to nothing and they stood nearly a pixel high in their
- * chip.
+ * pixel (see Kbd.css), so its figures sit centred in any sentence.
  */
 .crewlet-copyable--chip .crewlet-copyable__value {
   font-size: var(--font-size-2xs);
@@ -78,10 +66,8 @@
 
 /* ---- inline ------------------------------------------------------------ */
 
-/* INLINE TAKES THE ROW'S OWN REGISTER: in a detail row it is one of the
-   row's values, so it is their size and ink, in the mono face. At a fixed
-   12px in the secondary ink, an address was the one value in its list a step
-   smaller and quieter than the values around it. */
+/* Inline takes the row's own size and ink, in the mono face: in a detail row
+   it is one of the row's values. */
 .crewlet-copyable--inline .crewlet-copyable__value {
   font-size: inherit;
   background: transparent;
@@ -108,12 +94,8 @@
 }
 
 /*
- * A BLOCK SHOWS ITS VALUE WHOLE, wrapped at any character and with every
- * space kept: it is the variant for an address a reader must allowlist or a
- * command they must check before running it. Held to one line, it scrolled
- * past a phone's width behind an ellipsis, with no scrollbar to say there was
- * more, and the reader saw "https://example.com/webho…" of the address they
- * were asked to copy into a vendor's form.
+ * A block shows its value whole, every space kept and wrapped where it must:
+ * an address to allowlist or a command to check is never cut.
  */
 .crewlet-copyable--block .crewlet-copyable__value {
   font-size: var(--font-size-compact);
@@ -128,13 +110,8 @@
 }
 
 /*
- * A PATH OR AN ADDRESS BREAKS AT ITS SEPARATORS: the component offers a break
- * after every `/`, and `overflow-wrap: anywhere` above is the last resort for
- * a run between them no line can hold. AN OPAQUE VALUE (a token, an id, a key:
- * one run with no space and no `/`) means nothing in its pieces, so it breaks
- * at any character and fills each line; left to the line breaker it broke
- * after a hyphen, and a token read "cwl_pat_01a1dc5f-3ec7-7cf4-a60d-" over a
- * ragged first line, as if it ended there.
+ * A path breaks after each `/` (the component offers the breaks); an opaque
+ * value, one run with no space and no `/`, breaks at any character.
  */
 .crewlet-copyable--opaque .crewlet-copyable__value {
   word-break: break-all;

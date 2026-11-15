@@ -1,10 +1,6 @@
 /*
- * A link, in the three registers a console needs: a navigation, an identity
- * and a quiet reference.
- *
- * The ink is the accent's INK step, not the accent fill. The fill is a mark
- * and clears 3:1; text has to clear 4.5:1, and at caption size it is exactly
- * the place a fill-as-text fails.
+ * A link: a navigation, an identity or a quiet reference. The ink is the
+ * accent's ink step (4.5:1 for text), not the accent fill (3:1, for marks).
  */
 
 .crewlet-link {
@@ -34,12 +30,8 @@
 }
 
 /*
- * A reference among other words. Its own ink sits between the accent ink and
- * the secondary text, so a column of rows that each name a task does not read
- * as a column of links, and the hover steps it up to the full accent ink with
- * no underline. The ink is a token rather than a mix of two, because a mix is
- * a colour nobody measured; this one clears 4.5:1 on every surface and on a
- * pressed row.
+ * A reference among other words: a measured token between the accent ink and
+ * secondary text (4.5:1 on every surface and pressed row); hover steps it up.
  */
 .crewlet-link--quiet {
   color: var(--color-text-link-quiet);
@@ -59,12 +51,8 @@
   text-decoration: underline;
 }
 
-/*
- * FORCED COLORS paints every link in LinkText whatever its state, so the step
- * up to the accent ink cannot be seen there, and a hover with no underline is
- * no hover at all. The rule under the words is the one mark the mode leaves to
- * the author, so it is where the quiet variant's hover goes in that mode.
- */
+/* Forced colors paints every link in LinkText, so the quiet hover there is the
+   underline. */
 @media (forced-colors: active) {
   .crewlet-link--quiet:hover {
     text-decoration: underline;
@@ -76,12 +64,8 @@
 }
 
 /*
- * Set inside a sentence: the sentence's own size, whatever it is, and
- * UNDERLINED AT REST. Among other words its ink alone does not set it apart:
- * the accent ink against secondary text is 1.18:1 in the dark palette, where a
- * link in running text needs 3:1 against the words around it or a mark that is
- * not colour. The underline is that mark, in every palette. A quiet reference
- * keeps its own rule (never underlined), and a plain one its own ink.
+ * Inside a sentence: its size. Default and subtle links are underlined at
+ * rest, since the accent ink on secondary text is 1.18:1 in the dark palette.
  */
 .crewlet-link--inherit {
   font-size: inherit;
@@ -105,10 +89,8 @@
 }
 
 /*
- * A whole row is the target. No underline, because the row's own hover says
- * it is live, and the ring is drawn INSIDE: a row inside a clipping scroller
- * loses an outset ring to the scroller's edge and to the next row painted
- * over it.
+ * A whole row is the target: no underline, and the ring is drawn inside so a
+ * clipping scroller and the next row do not hide it.
  */
 .crewlet-link--block {
   display: block;
@@ -125,13 +107,8 @@
 }
 
 .crewlet-link__external {
-  /*
-   * Sits on the text baseline beside the last word rather than under it.
-   * INLINE, said here, because the document baseline sets every `svg` to
-   * `display: block`: as a block the mark broke the line inside the link and
-   * stood alone on a row of its own under the words, and the vertical-align
-   * below did nothing at all.
-   */
+  /* Inline, said here: the document baseline sets every `svg` to block, which
+     would break the line inside the link. */
   display: inline-block;
   vertical-align: -0.125em;
   margin-inline-start: var(--spacing-1);

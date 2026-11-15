@@ -1,17 +1,6 @@
 /**
- * THE RAIL KEEPS ITS WIDTH WHEN ITS MIDDLE SCROLLS. The rail's middle (its
- * field and its navigation) is the rail's scroller, and a scrollbar drawn in
- * the layout takes its width from the scroller's content: when a long group
- * (a list of running work) grew the middle past the window, the field and
- * every row lost the bar's width, and the field's words were cut beside its
- * shortcut ("Search everythi..."). The field and a row are measured here at
- * rest and with the middle scrolling, on a scrolling screen and on a flush one,
- * and must keep one width, the one they had at rest before the rail reserved
- * anything.
- *
- * This file runs on the browser instance that draws scrollbars in the layout
- * (vitest.config.ts): the runner's headless default hides them, and there a
- * scroller gives up no width at all.
+ * The rail's field and rows keep their at-rest width while its middle scrolls.
+ * Runs on the browser that draws scrollbars in the layout (vitest.config.ts).
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';

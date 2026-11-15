@@ -1,60 +1,7 @@
 /**
- * The application frame: a rail on the frame, and beside it a floating sheet
- * holding a top bar and ONE scroll container.
- *
- * WHY THE SHELL OWNS THE GRID NOW. It used to be passive: the slots positioned
- * themselves with `position: fixed` and the shell only reserved a matching
- * margin, so every consumer repeated the rail's width and the bar's height as
- * literals in its own stylesheet (280 and 64, in two files, in two projects),
- * and a change to either meant editing four places that nothing compared. The
- * grid is sized from `--size-shell-rail` and `--size-shell-topbar` here, and
- * the slots simply fill their cells.
- *
- * THE SCREEN FLOATS ON A SHEET. The rail stands on the frame, the lowest rung,
- * and everything the reader reads (the bar, a banner, the screen, a footer) is
- * one sheet a rung above it, held off the frame's edges by `--size-shell-inset`
- * and rounded at `--radius-sheet`. It is one element rather than a background
- * the bar and the scroller each paint, because the corner has to clip both and
- * the hairline has to run round both: two surfaces that each drew half of it
- * would meet in a seam under the bar.
- *
- * THE DOCUMENT DOES NOT SCROLL. `100dvh` with `overflow: hidden` on the root,
- * and one scroller inside it, which is what lets a router restore a scroll
- * position per history entry: a page with three independent scrollers has
- * three positions and no way to name them. A page that can also scroll as a
- * whole carries the rail off the top of the window and leaves the reader with
- * two scrollbars, neither obviously the one they want.
- *
- * THE LANDMARKS ARE REAL. The rail is an `aside`, the bar is a `header`
- * OUTSIDE `main` (so it is the page's banner rather than part of the screen),
- * and `main` is a focusable target for the skip link that precedes everything.
- *
- * NARROW IS A DIFFERENT SHAPE, NOT A SMALLER ONE. Below the shell breakpoint
- * the sheet is the whole window, its inset, corner and hairline collapsed to
- * nothing, and the rail is a modal drawer on the shared layer stack: it takes Escape, traps
- * Tab, hands focus back to the toggle, and closes on a navigation and when the
- * layout it belongs to ends. Hidden rather than merely moved off screen, too,
- * because a rail translated out of view keeps every link in the tab order and
- * a keyboard reader walks through a dozen stops nobody can see.
- *
- * THE ASIDE MIRRORS THE RAIL. A panel the whole frame keeps open beside every
- * screen (the assistant) is a third track of the shell's grid, a second sheet
- * on the frame to the right of the page's, so opening it PUSHES the page
- * narrower rather than covering it. Nothing about the page changes but its
- * width: the bar, the sticky headers, the one scroller and the measured
- * gutter are all the sheet's, and the sheet keeps them. Where the window
- * cannot hold the page and the panel side by side the panel is an overlay
- * over the page's end, and on a phone it is the whole window; both are
- * modal surfaces on the shared layer stack, unless the host asks for an
- * overlay that leaves the page live beside it (`asideModal={false}`). WHICH SHAPE is the host's
- * decision (`asideShape`), never a media query's: the width that leaves the
- * page its floor depends on what else the frame holds and on the density,
- * which only the application knows.
- *
- * AND THE PEEK IS A COLUMN OF THE SHEET. A detail panel opened from a list
- * (`peek`) stands beside the scroller inside the sheet, under the bar, so the
- * section the reader is on still reads across the top. It is a column where
- * the host says there is room and a drawer over the page where there is not.
+ * The application frame: a rail on the frame and, beside it, a floating sheet
+ * holding the top bar and the one scroll container (the document never
+ * scrolls). Below the shell step the rail becomes a modal drawer.
  */
 
 import {
@@ -118,12 +65,8 @@ export interface AppShellAsideResize {
 }
 
 /**
- * Where the rail stops being a column beside the page and becomes a drawer:
- * STRICTLY UNDER the shell step. The step is the rail, the inset and the
- * sheet's floor added up, so at exactly that width the wide layout fits, and
- * `max-width` would draw the drawer at the one width the arithmetic says it
- * is not needed. AppShell.css switches on the same query, and the suite holds
- * the two to each other.
+ * Where the rail becomes a drawer: strictly under the shell step, since the
+ * wide layout still fits at exactly that width. AppShell.css uses the same query.
  */
 const NARROW = `(width < ${breakpoint.shell})`;
 
@@ -141,11 +84,8 @@ interface AppShellContextValue {
   toggleLabel: string;
   hasRail: boolean;
   /**
-   * The shape the rail is drawn in NOW: `compact` only where the host asked
-   * for it and the layout is wide, `full` in the drawer and everywhere else,
-   * so an application picks `CompactNav` or `SidebarNav` from this alone.
-   * While the rail folds it is still `full`, and it turns `compact` when the
-   * rail reaches the compact column (see `railMotion.ts`).
+   * The shape the rail is drawn in now: `compact` only where the host asked
+   * and the layout is wide, `full` otherwise and while the rail folds.
    */
   rail: AppShellRailShape;
 }
@@ -187,18 +127,9 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   /** The scroll container itself, for a router restoring a position. */
   mainRef?: Ref<HTMLElement> | undefined;
   /**
-   * Gives the screen the whole height and width left under the bar, as a flex
-   * column, for a canvas or a split view that draws to the bottom of the
-   * window instead of scrolling. The column keeps its pad, and its end pad
-   * counts the scrollbar's width, so its content stands where a scrolling
-   * screen's does; a `ListDetail` standing in it reaches past that pad, so
-   * its detail's scrollbar is on the sheet's edge.
-   *
-   * `flush` is the same column EDGE TO EDGE: the content column gives up its
-   * pad and its gap as well, for a screen that draws its own frame to the
-   * sheet's edges (a conversation with a list and a pane either side of it).
-   * The column is positioned, so a `LayerHost` the screen keeps inside it
-   * fills exactly the screen.
+   * Gives the screen the whole space under the bar as a positioned flex
+   * column, for a canvas or split view that draws to the window's foot instead
+   * of scrolling. `flush` also drops the column's pad and gap.
    */
   fill?: boolean | 'flush' | undefined;
   /**
@@ -212,25 +143,18 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   /** The link that precedes everything, for a keyboard reader. */
   skipLabel?: string | undefined;
   /**
-   * The rail's shape the reader chose: the full navigation, or the compact
-   * column of glyphs. A desktop choice: under the shell step the rail is a
-   * drawer drawn full whatever this says, and `useAppShell().rail` reports
-   * the shape actually drawn.
+   * The rail shape the reader chose. Under the shell step the rail is a full
+   * drawer whatever this says; `useAppShell().rail` reports the shape drawn.
    */
   rail?: AppShellRailShape | undefined;
   /**
-   * Called with the other shape when the reader presses the fold control.
-   * Given, the shell draws THE fold control (never in the drawer): a chevron
-   * on the head's row, before the brand's mark, pointing left while the rail
-   * is full and right while it is compact. Keeping the choice, and binding a
-   * key to it, are the application's.
+   * Called with the other shape when the reader presses the fold control,
+   * which the shell draws only when this is given (never in the drawer).
    */
   onRailChange?: ((next: AppShellRailShape) => void) | undefined;
   /**
-   * The keys the application binds to the fold (`['Mod', '\\']`), drawn in
-   * the control's tooltip and set as its `aria-keyshortcuts`. The shell binds
-   * nothing: the same press may mean something else where the rail is a
-   * drawer, and only the application knows.
+   * The keys the application binds to the fold (`['Mod', '\\']`), shown in
+   * the control's tooltip and `aria-keyshortcuts`. The shell binds nothing.
    */
   railFoldKeys?: readonly string[] | undefined;
   /** The fold control's two names. Defaults to "Collapse the sidebar" and "Expand the sidebar". */
@@ -254,12 +178,9 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   /** Which shape the aside takes; the host decides it. */
   asideShape?: AppShellAsideShape | undefined;
   /**
-   * Whether the aside is modal as an `overlay`: true (the default) draws it
-   * as a dialog behind a veil, with Tab held inside; false leaves the page
-   * live beside it, a complementary region with no veil and no trap that
-   * Escape from inside still closes, handing focus back to what opened it.
-   * A column is never modal and a sheet, which covers the whole window,
-   * always is.
+   * Whether an `overlay` aside is modal: true (the default) is a dialog behind
+   * a veil; false leaves the page live and Escape still closes it. A column is
+   * never modal and a sheet always is.
    */
   asideModal?: boolean | undefined;
   /** Closes the aside: Escape and, behind a veil, a press on the veil, as an overlay or a sheet. */
@@ -273,9 +194,7 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   peek?: ReactNode;
   /**
    * Whether the peek is a column of the sheet or a drawer over the page; the
-   * host decides it. The peek sizes itself (`PeekRail` takes its width and
-   * the page's floor), because a column of the sheet is the peek's own box
-   * rather than a track of the frame.
+   * host decides it. The peek sizes itself (`PeekRail` takes its width).
    */
   peekShape?: AppShellPeekShape | undefined;
   children?: ReactNode;
@@ -320,13 +239,8 @@ export function AppShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
   const [gauge, setGauge] = useState<HTMLElement | null>(null);
-  /*
-   * The drawer's own place in the layer band, reported back by the surface
-   * that registered it, so the rail can be painted ONE step above the veil
-   * that belongs to it. It cannot be a constant: the band's steps are handed
-   * out by depth, so a drawer opened over something else sits higher than one
-   * opened from the page, and a dialog raised over either has to clear both.
-   */
+  // The drawer's layer step, reported by its surface, so the rail paints one
+  // step above its own veil. Steps are handed out by depth, so not a constant.
   const [drawerZ, setDrawerZ] = useState<number | null>(null);
   const rail = useRef<HTMLElement | null>(null);
 
@@ -356,16 +270,8 @@ export function AppShell({
     [mainRef],
   );
 
-  /*
-   * MEASUREMENTS ARE HELD WHILE THE RAIL MOVES. The rail eases its width, and
-   * the sheet beside it with it, so every observer below fires on every frame
-   * of a fold: the screen's width re-rendered every `useScreenWidth` and
-   * `useScreenBelow` reader sixty times a second, and a screen could change
-   * shape mid motion and again at its end. While a phase runs a measurement
-   * is kept rather than taken, and each kept one is taken once, at the width
-   * the rail comes to rest at. A container query on the column still follows
-   * every frame: that is the stylesheet's, and costs no render.
-   */
+  // Measurements are held while the rail moves: the observers below would
+  // fire every frame of a fold, so each held one is taken once at rest.
   const railMoving = useRef(false);
   const heldMeasures = useRef(new Set<() => void>());
   const unlessRailMoving = useCallback(
@@ -376,23 +282,9 @@ export function AppShell({
     [],
   );
 
-  /*
-   * THE SCROLLER'S GUTTER, measured, so the top bar can reserve the same
-   * strip. The scroller keeps its scrollbar's gutter at every height (see
-   * AppShell.css), and where the platform draws scrollbars in the layout
-   * that strip moves the content's end edge in by its width while the bar
-   * above it, which does not scroll, kept its own: every page's actions ended
-   * 15px past the cards under them. CSS cannot read a scrollbar's width, so
-   * it is read here, as the scroller's border box less its client box, and
-   * handed to the stylesheet as `--crewlet-app-shell-gutter`. It is 0 where
-   * scrollbars overlay the content, and on a flush screen, which draws its
-   * own frame.
-   *
-   * A FILL SCREEN'S SCROLLER RESERVES NONE (its column pads by the gutter
-   * instead, which a pane can reach past), so there it is read off the gauge,
-   * an empty scroller that always draws a scrollbar: the bar's end inset is
-   * the same on a fill screen as on the scrolling screen beside it.
-   */
+  // The scrollbar's width, which CSS cannot read, so the top bar reserves
+  // the same strip (`--crewlet-app-shell-gutter`). A fill screen's scroller
+  // reserves none, so there it is read off the gauge, which always has one.
   const [gutter, setGutter] = useState(0);
   useLayoutEffect(() => {
     const ruler = gauge ?? scroller;
@@ -409,16 +301,9 @@ export function AppShell({
     };
   }, [gauge, scroller, unlessRailMoving]);
 
-  /*
-   * WHAT THE ASIDE COLUMN TAKES FROM THE WINDOW'S RIGHT, measured, so a peek
-   * drawn as a drawer covers the PAGE beside the aside rather than the aside
-   * itself: the reader opened the assistant to talk about the page, and a
-   * peek it opened stands over the page, next to it. It is the distance from
-   * the page sheet's right edge to the shell's, which CSS cannot read because
-   * the aside's track is capped by arithmetic on the shell's own width. It is
-   * published only while the aside is a column, as
-   * `--crewlet-app-shell-aside-occupied`.
-   */
+  // What the aside column takes from the window's right, so a peek drawer
+  // covers the page rather than the aside. Published only while the aside is
+  // a column, as `--crewlet-app-shell-aside-occupied`.
   const root = useRef<HTMLDivElement | null>(null);
   const sheet = useRef<HTMLDivElement | null>(null);
   const asideColumn = hasAside && asideShape === 'column';
@@ -444,13 +329,8 @@ export function AppShell({
     };
   }, [asideColumn, unlessRailMoving]);
 
-  /*
-   * THE SCREEN'S WIDTH, measured on the content column and published for the
-   * decisions a stylesheet cannot make (`useScreenBelow`, screenWidth.ts). It
-   * is the content box, the width a container query on the column reads, so
-   * a screen's JavaScript and its stylesheet fold at the same pixel. Measured
-   * in a layout effect, so the first paint already has it.
-   */
+  // The content column's content box, the width its container queries read,
+  // published for `useScreenBelow` (screenWidth.ts) before the first paint.
   const content = useRef<HTMLDivElement | null>(null);
   const [screenWidth] = useState(createScreenWidthStore);
   useLayoutEffect(() => {
@@ -488,16 +368,9 @@ export function AppShell({
     for (const measure of held) measure();
   }, [railMotion]);
 
-  /*
-   * FOCUS LEAVES THE FOLDING CONTENT FOR THE RAIL'S FIRST LIVE CONTROL. A
-   * reader who folds the rail by its key from a row inside it would otherwise
-   * be left in content that has just turned inert. The first control the
-   * fold leaves live is the fold control, where the host draws one, and
-   * otherwise the brand's link in the head, both in the same place in both
-   * shapes. A rail with neither has nowhere live to go while it folds: focus
-   * is taken off the row, and handed to the folded rail's first control once
-   * that is drawn.
-   */
+  // Focus in content the fold turns inert moves to the rail's first live
+  // control, or, where there is none, to the folded rail's first control
+  // once it is drawn.
   const refocusFolded = useRef(false);
   useLayoutEffect(() => {
     const aside = rail.current;
@@ -545,13 +418,8 @@ export function AppShell({
           foldable && 'crewlet-app-shell--foldable',
           className,
         )}
-        /*
-         * THE SHAPES ARE ATTRIBUTES, one value each, so there is no width at
-         * which the aside is both a column and an overlay, or the peek both a
-         * column and a drawer: the stylesheet switches on the value the host
-         * decided rather than on a media query that would have to be kept
-         * tiling with the host's arithmetic.
-         */
+        // The shapes are attributes with one value each, so the stylesheet
+        // switches on the host's decision rather than on a media query.
         data-aside={hasAside ? asideShape : undefined}
         data-peek={hasPeek ? peekShape : undefined}
         data-rail={hasRail ? railShape : undefined}
@@ -560,10 +428,8 @@ export function AppShell({
           ...style,
           ['--crewlet-app-shell-gutter' as string]: `${gutter}px`,
           ...(drawerZ === null ? null : { ['--crewlet-app-shell-drawer-z' as string]: String(drawerZ) }),
-          // The aside's width is published on the ROOT, because two things
-          // read it from opposite sides: the grid track that sizes the column
-          // is declared here, and the overlay that sizes itself is a
-          // descendant. A custom property inherits downward only.
+          // On the root, since both the grid track here and the overlay
+          // below read it, and a custom property inherits downward only.
           ...(hasAside
             ? {
                 ['--crewlet-app-shell-aside' as string]: `${asideWidth}px`,
@@ -576,10 +442,8 @@ export function AppShell({
         }}
       >
         {/*
-         * FIRST IN THE DOCUMENT, and it moves focus itself rather than letting
-         * the browser follow the fragment: an application routed on the hash
-         * would read "#main" as a route and navigate away from the page the
-         * reader was trying to skip into.
+         * First in the document. It moves focus itself rather than following
+         * the fragment, which a hash-routed application would read as a route.
          */}
         <a
           className="crewlet-app-shell__skip"
@@ -598,25 +462,16 @@ export function AppShell({
             id={railId}
             className="crewlet-app-shell__rail"
             data-open={drawerOpen || undefined}
-            /*
-             * A DIALOG ONLY WHILE OPEN. Wide, the rail is the page's own
-             * navigation beside the screen; narrow and open, it is a modal
-             * over it, and a screen reader should hear that the page behind
-             * it is inert.
-             */
+            // A dialog only while it is the open drawer; otherwise it is the
+            // page's own navigation.
             role={drawerOpen ? 'dialog' : undefined}
             aria-modal={drawerOpen || undefined}
             aria-label={drawerOpen ? toggleLabel : undefined}
           >
             {/*
-             * THE FOLD CONTROL IS THE SHELL'S, before the rail's own content
-             * and outside it, so it is ONE ELEMENT whichever shape the
-             * application draws: an application that swaps its whole rail
-             * between the shapes cannot remount it, and the focus that folded
-             * the rail is still on it. First in the rail's order because it
-             * acts on the whole rail, as a region's own control precedes it.
-             * It says the CHOSEN shape, not the one drawn: while the rail
-             * folds, it already offers to unfold it.
+             * The shell's own fold control, outside the rail's content so a
+             * rail swapped between shapes never remounts it and loses focus.
+             * It follows the chosen shape, not the one drawn.
              */}
             {foldable ? (
               <RailFold rail={railTarget} onRailChange={onRailChange} keys={railFoldKeys} labels={railFoldLabels} railId={railId} />
@@ -635,11 +490,8 @@ export function AppShell({
             </div>
           ) : null}
           {/*
-           * THE BODY IS ALWAYS THERE, peek or none. It is the row the
-           * scroller and a peek column share, and it is never added or taken
-           * away with the peek: a wrapper that came and went would remount
-           * `main`, and with it the whole screen and its scroll position,
-           * every time a row was peeked.
+           * Always rendered, peek or none: a wrapper that came and went would
+           * remount `main`, its screen and its scroll position on every peek.
            */}
           <div className="crewlet-app-shell__body">
             <main id={main} ref={setMain} className="crewlet-app-shell__main" tabIndex={-1}>
@@ -680,19 +532,9 @@ interface ShellAsideProps {
 }
 
 /**
- * The aside's track: a complementary region as a column, a modal dialog as an
- * overlay or a sheet, and a complementary region again as a non-modal
- * overlay, which lies over the page without taking it away.
- *
- * ONE ELEMENT IN EVERY SHAPE, with its role switched rather than its tag, so
- * a window resized across the column threshold does not remount the panel
- * and lose what the reader had in it (a half-typed message, a scrolled
- * thread). A `div` with a role rather than an `aside`, because an `aside` may
- * not be a dialog.
- *
- * THE GRIP STANDS OUTSIDE THE SHEET THAT CLIPS, in the frame's inset between
- * the page's sheet and this one, which is the seam it sizes. Only as a
- * column: an overlay or a sheet has no page beside it to give way.
+ * The aside's track: one `div` in every shape with its role switched (a
+ * dialog when modal), so a change of shape never remounts the panel. Only a
+ * column has a grip, outside the clipping sheet.
  */
 function ShellAside({ shape, modal, label, width, resize, onClose, children }: ShellAsideProps) {
   const region = useRef<HTMLDivElement | null>(null);
@@ -735,9 +577,8 @@ function ShellAside({ shape, modal, label, width, resize, onClose, children }: S
         </div>
       </div>
       {/*
-       * AFTER the region, so the region's ref is attached by the time the
-       * veil's layout effect hands it to the layer stack: on the commit that
-       * opens both, an earlier sibling's effects run before a later one's ref.
+       * After the region, so its ref is attached before the veil's layout
+       * effect hands it to the layer stack.
        */}
       {modal ? <AsideVeil region={region} onClose={onClose} onZIndex={setZ} /> : null}
     </AsideContext.Provider>
@@ -745,21 +586,9 @@ function ShellAside({ shape, modal, label, width, resize, onClose, children }: S
 }
 
 /**
- * What a NON-MODAL overlay keeps of a modal's manners without holding the
- * page: focus moves in when it opens and goes back to what opened it when it
- * closes, and Escape from inside closes it. Nothing is trapped, nothing is
- * veiled, and the page beside it takes presses and Tab as before.
- *
- * NOT ON THE LAYER STACK, because the stack's entries own every Escape and
- * Tab in the document, and this surface owns neither outside itself. It
- * gives way to the stack instead: while any surface is on it (a menu opened
- * inside the panel, a dialog it opened), Escape is that surface's.
- *
- * WHERE FOCUS CAME FROM is read during the aside's FIRST render, before
- * anything inside it takes focus with `autoFocus`, and handed back only if
- * focus is still inside the panel when it closes: a reader who has moved on
- * to the page is not pulled back. A change of shape is not a close: the
- * panel stays mounted, and so does focus.
+ * A non-modal overlay: focus moves in on open and back to the opener (read on
+ * first render) on close if still inside, and Escape from inside closes it.
+ * Not on the layer stack, which owns every Escape and Tab in the document.
  */
 function useLooseOverlay(
   region: { current: HTMLElement | null },
@@ -792,11 +621,8 @@ function useLooseOverlay(
 }
 
 /**
- * The veil behind an overlay or a sheet aside, and its place on the layer
- * stack: Escape, the Tab trap, a press on the veil, focus moved in and handed
- * back. Mounted only while the aside is modal, which is what registers it.
- * Not portalled, for the reason the rail drawer's veil is not: the panel it
- * belongs to is the shell's own element and cannot be moved.
+ * The veil behind a modal aside, and its place on the layer stack; mounting
+ * it registers it. Not portalled: its panel is the shell's own element.
  */
 function AsideVeil({
   region,
@@ -833,18 +659,9 @@ function AsideVeil({
 }
 
 /**
- * The narrow layout's drawer, on the shared layer stack.
- *
- * The rail itself is always mounted, because above the breakpoint it is the
- * page's navigation. What this adds while it is open is what every other modal
- * has: a veil, Escape, the Tab trap, focus moved in and handed back. Mounted
- * only while the drawer is open, which is what registers it on the stack.
- *
- * ITS VEIL IS NOT PORTALLED. Everything else in this package portals into the
- * nearest LayerHost because a panel has to be painted beside a fullscreen
- * element; this panel IS a cell of the shell's own grid and cannot be moved
- * anywhere, and a veil portalled away from the panel it belongs to would be
- * the only half of the pair that could.
+ * The narrow layout's drawer: makes the always-mounted rail modal on the
+ * layer stack while open. Its veil is not portalled, because the rail is a
+ * cell of the shell's grid and the veil must stay beside it.
  */
 function ShellDrawer({
   rail,
@@ -890,16 +707,8 @@ function ShellDrawer({
 }
 
 /**
- * THE FOLD CONTROL: one button on the head's row, before the brand's mark, in
- * the same place in both shapes. Its chevrons point the way the rail will go,
- * left to fold it while it is full and right to unfold it while it is
- * compact. Its name says what pressing it does, `aria-expanded` says whether
- * the rail is open now, and its tooltip carries the keys the application
- * binds.
- *
- * THE CONTROL AND THE MARK ARE ONE PAIR, a step apart and centred together in
- * the compact column, so the column holds both and neither moves when the
- * rail folds (AppShell.css).
+ * The fold control, before the brand's mark in both shapes: its chevrons
+ * point the way the rail will go, and its tooltip carries the bound keys.
  */
 function RailFold({
   rail,
@@ -957,24 +766,17 @@ export interface AppShellRailProps {
   header?: ReactNode;
   /**
    * The rail's field, first in its scrolling middle: a `SearchTrigger` with
-   * `variant="rail"`. The slot stands it on the nav's own gutter with its
-   * glyph on the nav rows' glyph column, so the field needs no inset of its
-   * application's own.
+   * `variant="rail"`, aligned to the nav rows by the slot.
    */
   search?: ReactNode;
   /**
-   * A compact status at the end of the head's line, beside the name the head
-   * carries: an `<AppShell.RailStatus>`, the application's own state in a
-   * dot and a count. It takes its own width, so the name keeps the rest and
-   * truncates there, and it stands in the drawer's head the same way. In the
-   * compact rail it has a row of its own under the head's mark.
+   * An `<AppShell.RailStatus>` (a dot and a count) at the end of the head's
+   * line; in the compact rail, a row of its own under the head's mark.
    */
   status?: ReactNode;
   /**
-   * The foot: what a reader reaches for rarely, such as a settings link and
-   * their own account row. An `<AppShell.RailRow>` puts a line there on the
-   * rail's own insets, so its mark lands on the line every nav glyph above it
-   * sits on. A state the application reports belongs in `status`, compact.
+   * The foot, for what a reader reaches for rarely (settings, their account).
+   * An `<AppShell.RailRow>` lines its mark up with the nav glyphs above it.
    */
   footer?: ReactNode;
   className?: string | undefined;
@@ -982,39 +784,18 @@ export interface AppShellRailProps {
 }
 
 /**
- * The rail's three regions: a head, a scrolling middle, and a foot.
- *
- * ONE RAIL IN BOTH SHAPES, its slots kept. Compact, the head holds the brand
- * alone (the lockup shows its mark, over the column's centre, and keeps its
- * name as the link's name and title); the field is not drawn, because a
- * 76px column has no room for one and the application draws a Search tile
- * among its `CompactNav` places instead; and the status stands in a row of
- * its own under the mark, as its dot and count, since the head has no line
- * left beside the mark. That row is the first thing under the head in the
- * column, before the places, so the state a reader checks at a glance is
- * where their eye starts. The middle and the foot are drawn as the
- * application gives them.
+ * The rail's three regions: a head, a scrolling middle, and a foot. Compact,
+ * the head shows the brand's mark alone, the field is not drawn, and the
+ * status takes a row of its own under the mark.
  */
 export function AppShellRail({ header, search, status, footer, className, children }: AppShellRailProps) {
   const compact = useRailShape() === 'compact';
-  /*
-   * ON ITS WAY OUT while the rail folds over it: nothing in what changes shape
-   * (the middle, the foot, the status) takes focus or a press until the
-   * compact column is drawn in its place. The head stays live: its mark
-   * stands in the same place in both shapes, and it is where focus goes from
-   * a row that folds away when the host draws no fold control.
-   */
+  // While the rail folds, what changes shape (middle, foot, status) is inert;
+  // the head stays live, since its mark stands still and can take focus.
   const leaving = useContext(RailLeavingContext) || undefined;
-  /*
-   * THE MIDDLE'S SCROLLBAR, measured, so what stands in the middle can give
-   * its width back. The full rail's middle reserves its bar's gutter at every
-   * height (AppShell.css), and the field and the nav take that width off their
-   * end inset, so they keep the width they have at rest whether or not the
-   * middle scrolls. It is the middle's own bar, read as its border box less
-   * its client box, because CSS cannot read a scrollbar's width and the
-   * screen's gutter is 0 beside a flush screen, where this bar is still
-   * reserved. It is 0 where scrollbars overlay the content.
-   */
+  // The middle's own scrollbar width, which CSS cannot read, so the field
+  // and the nav take it off their end inset and keep their width whether or
+  // not the middle scrolls. 0 where scrollbars overlay the content.
   const [middle, setMiddle] = useState<HTMLDivElement | null>(null);
   const [scrollbar, setScrollbar] = useState(0);
   useLayoutEffect(() => {
@@ -1061,13 +842,8 @@ export function AppShellRail({ header, search, status, footer, className, childr
 }
 
 /**
- * A figure at the end of a row in the foot, and what it counts.
- *
- * VALUES RATHER THAN AN ELEMENT, for the reason `NavItem`'s figures are
- * values: the rail paints the figure, so its ink is held to its floor on
- * every ground the row can have, the row a panel is open from included, and
- * that is a fact about the rail rather than something a call site can be
- * asked to know.
+ * A figure at the end of a row in the foot, and what it counts. Values rather
+ * than an element, so the rail paints the figure in an ink it can hold.
  */
 export interface RailRowCount {
   /** The figure, drawn as given, so the caller decides its formatting. */
@@ -1085,9 +861,7 @@ export interface RailRowCount {
   mark?: ReactNode;
   /**
    * `warning` draws the figure and its mark in the warning ink, for a count
-   * of things that are wrong: the alarms standing on a node. The figure is
-   * never the only carrier, since its mark and its label say the same. Left
-   * out, it is the quiet figure a count in the nav is, in the tertiary ink.
+   * of things that are wrong; left out, the figure is in the tertiary ink.
    */
   tone?: Extract<Tone, 'neutral' | 'warning'> | undefined;
 }
@@ -1122,24 +896,18 @@ interface RailRowContent {
    */
   icon?: ReactNode;
   /**
-   * A value at the end of the row: a tag, a time. It stands beside the words
-   * while both fit on the rail, and drops under them when they do not, so it
-   * never takes the room the words need. A figure with words that name it is
-   * `count`.
+   * A value at the end of the row (a tag, a time), beside the words while
+   * both fit and under them when not. A named figure is `count`.
    */
   trailing?: ReactNode;
   /**
-   * How many of something the row reports, as a figure after the words: the
-   * alarms standing on the engine. It is read as the end of the row's name
-   * (", 5 alarms") and hidden from assistive technology where it is drawn, so
-   * each reader is told it once.
+   * A figure after the words, such as the alarms on the engine, read once as
+   * the end of the row's name (", 5 alarms").
    */
   count?: RailRowCount | undefined;
   /**
-   * A second line under the row's words: "3 nodes · config epoch 42" under
-   * "Engine healthy". Given one, the row is the design's STATUS BLOCK, drawn
-   * on the card rung inside a hairline, its words in the primary ink over this
-   * line in the quiet one.
+   * A second line under the row's words ("3 nodes · config epoch 42"). Given
+   * one, the row is drawn as a status block on the card rung inside a hairline.
    */
   detail?: ReactNode;
   className?: string | undefined;
@@ -1166,10 +934,8 @@ export interface ActionRailRowProps extends RailRowContent {
    */
   label?: string | undefined;
   /**
-   * Whether the panel this row opens is open. A `Popover` or a `Menu` the row
-   * is the trigger of passes this and the two below, and the row draws its
-   * open state from it, so the picture and what a screen reader is told
-   * cannot come apart.
+   * Whether the panel this row opens is open, passed by the `Popover` or
+   * `Menu` it triggers; the row draws its open state from it.
    */
   'aria-expanded'?: boolean | undefined;
   /**
@@ -1182,14 +948,8 @@ export interface ActionRailRowProps extends RailRowContent {
 }
 
 /**
- * A row in the rail's foot.
- *
- * `label` and the three popup attributes are refused without `onClick` by the
- * type rather than ignored at runtime: `aria-label` on an element with no role
- * is dropped by assistive technology, and `aria-expanded` on one is a state of
- * a control that does not exist, so either passed to a row nothing presses is
- * something nobody is ever told, and a silent no-op is the shape a caller
- * cannot debug.
+ * A row in the rail's foot. Without `onClick` the type refuses `label` and
+ * the popup attributes, which a row nothing presses has no role to carry.
  */
 export type AppShellRailRowProps = StaticRailRowProps | ActionRailRowProps;
 
@@ -1199,26 +959,9 @@ function opensSomething(haspopup: AriaAttributes['aria-haspopup']): boolean {
 }
 
 /**
- * A row in the rail's foot, on the rail's own two insets.
- *
- * WHY IT IS A COMPONENT RATHER THAN A BUTTON THE CALLER DROPS IN. The rail's
- * geometry is in two parts: the gutter insets the rail, which is where a row's
- * background begins, and the row pad insets the content inside the row. A
- * control brings its own inset and lands its mark a few pixels off the line
- * every nav glyph above it sits on, which is the one thing a reader notices
- * about a rail without being able to say what it is.
- *
- * AND THE FOOT CLAIMS WHAT LANDS THERE ANYWAY, because an application with a
- * status button of its own reaches for that one whatever this package offers:
- * the stylesheet gives a direct child of the foot the same row this draws, so
- * a dropped-in control is a row in the rail rather than a control sitting on a
- * toolbar's inset. This is still the one to reach for, because it is also the
- * thing that decides whether the row is a control at all.
- *
- * A ROW THAT OPENS A PANEL IS THE PANEL'S TRIGGER, as it is: the element is
- * handed to `ref`, and the popup attributes a `Popover` or a `Menu` gives its
- * trigger reach the button, so the panel is anchored to the row and the row
- * says whether it is open.
+ * A row in the rail's foot, on the rail's own insets so its mark lines up
+ * with the nav glyphs. With `onClick` it is a button that can be a `Popover`
+ * or `Menu` trigger: `ref` and the popup attributes reach the button.
  */
 export const AppShellRailRow = forwardRef<HTMLElement, AppShellRailRowProps>(function AppShellRailRow(
   {
@@ -1238,15 +981,8 @@ export const AppShellRailRow = forwardRef<HTMLElement, AppShellRailRowProps>(fun
 ) {
   const block = detail !== undefined && detail !== null && detail !== false && detail !== '';
   const opens = onClick !== undefined && opensSomething(haspopup);
-  /*
-   * THE WORDS ARE NEVER CUT. A status line says what a node is doing, and the
-   * row used to give its words whatever the mark and the trailing value left
-   * and end them in an ellipsis, so a pill beside "engine connected" left
-   * "engine conn…": the one part of the row that was the point. The words and
-   * the value now share a wrapping line, so the value stands beside the words
-   * while both fit and drops under them when they do not, and words longer
-   * than the rail wrap rather than end.
-   */
+  // The words are never cut: they share a wrapping line with the trailing
+  // value, which drops under them when both do not fit.
   const inside = (
     <>
       {icon ? (
@@ -1255,19 +991,15 @@ export const AppShellRailRow = forwardRef<HTMLElement, AppShellRailRowProps>(fun
         </span>
       ) : null}
       {/*
-       * The spaces between the parts are REAL, so a control named by its
-       * content reads "Engine healthy 3 nodes" rather than "Engine healthy3
-       * nodes". A flex container draws no text node of whitespace alone
-       * between its items, so they cost the layout nothing.
+       * Real spaces between the parts, so a name read from the content is
+       * "Engine healthy 3 nodes"; flex layout draws none of them.
        */}
       <span className="crewlet-app-shell__rail-row-body">
         <span className="crewlet-app-shell__rail-row-text">
           <span className="crewlet-app-shell__rail-row-label">
             {children}
-            {/* THE COUNT IS READ AS THE END OF THE WORDS, in the words' own
-                box: written after the last word, the comma lands where it
-                belongs and the pause it buys falls between the state and its
-                figure ("Engine serving, 5 alarms"), as a nav row's does. */}
+            {/* The count is read as the end of the words, in their own box:
+                "Engine serving, 5 alarms". */}
             {count ? <VisuallyHidden>{countWords(count)}</VisuallyHidden> : null}
           </span>
           {block ? (
@@ -1369,22 +1101,9 @@ export interface ActionRailStatusProps extends RailStatusContent {
 export type AppShellRailStatusProps = StaticRailStatusProps | ActionRailStatusProps;
 
 /**
- * The application's state, compact, at the end of the rail head's line.
- *
- * A FOOT ROW'S MEANING IN A DOT AND A COUNT. The state's words are its name
- * and its title rather than a line of the rail ("Engine serving, 1 alarm"),
- * so a sighted reader reads the dot and the count, and hovers for the words,
- * and a screen reader is told what a foot row would have told it. The count
- * is the row's own (`RailRowCount`), in the same inks.
- *
- * IT TAKES A FIXED FLOOR OF WIDTH, a dot and a two-figure count, so the
- * name beside it truncates at one place whatever the count says: the name
- * does not lose a character when an alarm is raised. A count wider than the
- * floor still grows the status rather than being cut.
- *
- * A STATUS THAT OPENS A PANEL IS ITS TRIGGER, as the foot's row is: the
- * element goes to `ref` and the popup attributes reach the button, so a
- * `Popover` anchors to it and it says whether the panel is open.
+ * The application's state at the end of the rail head's line: a dot and a
+ * count, with the words as its name and title. It keeps a two-figure floor
+ * of width so the name beside it truncates at one place.
  */
 export const AppShellRailStatus = forwardRef<HTMLElement, AppShellRailStatusProps>(function AppShellRailStatus(
   {
@@ -1446,13 +1165,8 @@ export interface AppShellToggleProps {
 }
 
 /**
- * The control that opens the rail as a drawer.
- *
- * Drawn at every width and HIDDEN BY THE STYLESHEET above the breakpoint,
- * rather than removed by a second copy of the width rule in JavaScript. It
- * used to be drawn at every width and to work at every width, and pressing it
- * on a desktop put an unstyled veil into the shell's own grid, which took the
- * rail's column and pushed the whole application into the next row.
+ * The control that opens the rail as a drawer. Drawn at every width and
+ * hidden by the stylesheet above the breakpoint.
  */
 export function AppShellToggle({ className }: AppShellToggleProps) {
   const { drawerOpen, toggleDrawer, railId, toggleLabel, hasRail } = useAppShell();

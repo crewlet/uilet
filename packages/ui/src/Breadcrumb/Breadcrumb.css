@@ -1,31 +1,7 @@
 /*
- * The trail in a top bar.
- *
- * IT IS WHAT GIVES WAY, AND WHAT TAKES THE SLACK. `flex-grow: 1` is the spacer
- * a bar would otherwise need: the trail absorbs the free space, so the
- * controls after it stay in the bar's far corner. Its BASIS is 0, which is
- * what lets a wrapping bar break by what it holds rather than at a width, and
- * `flex-shrink: 100` puts it ahead of anything else on the bar that can give.
- *
- * ITS FLOOR IS THE WAY BACK OUT, measured by the component
- * (`--crewlet-breadcrumb-floor`): each ancestor at what it keeps of its words
- * and the last crumb's stub, at least 20ch, and never more than the whole bar. A fixed 20ch
- * alone let a seat's trail share a phone's line with its one button and cut
- * "Engineering · Co" mid-letter under it; measured, a trail that cannot show
- * its ancestry beside the controls makes the bar break a line instead.
- *
- * Past the whole bar the trail SCROLLS rather than clipping as a box: the
- * ancestors shrink only to their stubs, so once those alone are wider than the
- * bar there is nothing left to ellipsise, and a clip lands wherever the pixels
- * ran out.
- *
- * ROOM FOR A LINK'S RING (`--crewlet-breadcrumb-ring-room`). A scrollport
- * clips whatever is drawn outside it, so a crumb draws its ring inside its
- * own box; with no padding there, the ring covered the outer 2px of the
- * crumb's glyph and of its last letter. A link takes the room as padding
- * inside a negative margin of the same length, and the trail takes it at its
- * start the same way, so the ring stands clear of the words and nothing
- * moves: every word and glyph keeps its place.
+ * The trail takes the bar's slack and gives way first (`flex: 1 100 0`), down
+ * to its measured floor (`--crewlet-breadcrumb-floor`), then scrolls. The ring
+ * room is padding inside an equal negative margin, since a scrollport clips.
  */
 .crewlet-breadcrumb {
   --crewlet-breadcrumb-ring-room: var(--spacing-1);
@@ -60,24 +36,9 @@
   min-width: 0;
 }
 
-/*
- * THE OBJECT'S OWN NAME TAKES THE CUT, never the way back out. The reader
- * knows which object they are on, because the page below says so; what they
- * cannot reconstruct is the links out of it. So an ancestor keeps a readable
- * minimum of its words while the page's own name gives way to its stub.
- */
-/* EVERY CRUMB GIVES WAY, in proportion to its length: the page down to a
-   floor of 24ch and each ancestor to what it keeps of its words, each cut with
-   an ellipsis and titled on hover. Kept whole, one long parent cut the page
-   itself to "Pri..." at 1440 and pushed it off a phone.
-
-   AN ANCESTOR KEEPS A READABLE MINIMUM (`--crewlet-breadcrumb-keep`): its
-   first twenty characters, or all of them where it has fewer, measured by the
-   component (Breadcrumb.tsx, `KEEP_CHARACTERS`), and counted in the trail's
-   floor, so a bar too busy to hold them breaks a line rather than cutting the
-   way back out. A stub of 2ch beside a busy page bar read "D..." and "Product
-   Man...", and nothing at all where the crumb leads with a glyph. Until it is
-   measured, and on a phone (below), the stub is 2ch. */
+/* Every crumb gives way in proportion to its length, the page to 24ch and an
+   ancestor to what it keeps (`--crewlet-breadcrumb-keep`, measured by the
+   component; 2ch until measured and on a phone). */
 .crewlet-breadcrumb__part:not(:last-child) {
   flex: 0 1 auto;
   min-width: var(--crewlet-breadcrumb-keep, 2ch);
@@ -105,10 +66,8 @@ svg.crewlet-breadcrumb__separator {
 }
 
 /*
- * The ancestors in the quiet ink: a link lifts to the primary ink under the
- * pointer, and one with nothing to press stays where it is. NO UNDERLINE: a
- * crumb is a piece of chrome, not a word in a sentence, and the step between
- * two measured text rungs is its hover in both themes.
+ * The ancestors in the quiet ink; a link lifts to the primary ink on hover,
+ * with no underline, since a crumb is chrome rather than a word in a sentence.
  */
 .crewlet-breadcrumb__crumb {
   border-radius: var(--radius-xs);
@@ -155,10 +114,8 @@ a.crewlet-breadcrumb__crumb:focus-visible {
 }
 
 /*
- * THE LABEL IS THE BOX THAT ELLIPSISES. The crumb around it is a flex
- * container, and `text-overflow` never reaches the anonymous item text inside
- * one makes; a span is a real flex item, and its `min-width: 0` is what lets
- * it shrink below its text at all.
+ * The label is the box that ellipsises: `text-overflow` never reaches a flex
+ * container's anonymous text, and `min-width: 0` lets the span shrink.
  */
 .crewlet-breadcrumb__text {
   min-width: 0;
@@ -209,11 +166,8 @@ a.crewlet-breadcrumb__crumb:focus-visible {
 }
 
 /*
- * ON A PHONE AN ANCESTOR WITH A GLYPH IS ITS GLYPH. The workspace's mark is
- * the one sign of where the reader is that survives a sidebar folded into a
- * drawer, and the line it shares with the drawer toggle and the page's primary
- * action has no room for its word as well. The word stays, out of sight, so
- * the crumb is still named.
+ * On a phone an ancestor with a glyph is its glyph, its word kept out of
+ * sight so the crumb is still named.
  */
 @media (width < 640px) {
   /* ON A PHONE AN ANCESTOR GIVES WAY TO ITS STUB: the trail shares its line

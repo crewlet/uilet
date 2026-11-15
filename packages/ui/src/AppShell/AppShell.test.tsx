@@ -1,11 +1,6 @@
 /**
  * The shell's landmarks, its skip link, the frame and its floating sheet, and
  * the drawer.
- *
- * The drawer cases are ported from the engine dashboard's `app/Shell.test.tsx`,
- * where the rail was a veil with a click handler and nothing else: Escape did
- * nothing, Tab walked out behind the veil, and a dialog raised over it shared
- * no stack with it.
  */
 
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
@@ -30,11 +25,8 @@ afterEach(() => {
 });
 
 /**
- * A media query list the test drives.
- *
- * jsdom has no matchMedia, and the suite's own stub answers "never matches",
- * which is the wide layout. Crossing the breakpoint is a state only a
- * controllable one can reach.
+ * A media query list the test drives: jsdom has no matchMedia, and the suite's
+ * stub never matches, so only this one can cross the breakpoint.
  */
 function installMedia(initial: boolean): { set: (matches: boolean) => void; restore: () => void } {
   const listeners = new Set<() => void>();
@@ -71,17 +63,9 @@ function installMedia(initial: boolean): { set: (matches: boolean) => void; rest
 }
 
 /**
- * A media query list that ANSWERS its query, for a viewport of one width.
- *
- * The stub above answers whatever it is told, so it can drive the drawer
- * across the breakpoint but cannot say WHERE the breakpoint is. This one reads
- * the query the shell asks and evaluates it the way a browser would, over the
- * four width features a layout switch is written with, and refuses anything
- * else: a query it could not read would otherwise answer false and pass as the
- * wide layout. Every LAYOUT query the shell asks is recorded, so a case can
- * hold the stylesheet to the same one. The reader's motion preference is a
- * question of another kind (the rail asks it before it eases), answered here
- * as no preference and not recorded.
+ * A media query list that evaluates its width query for one viewport width,
+ * refusing any query it cannot read, and records every layout query asked.
+ * The motion preference query answers "no preference" and is not recorded.
  */
 function installViewport(width: number, asked: string[]): () => void {
   const had = Object.getOwnPropertyDescriptor(globalThis, 'matchMedia');
@@ -208,12 +192,9 @@ test('the skip link is first, and it moves focus into main', () => {
   const main = screen.getByRole('main');
   expect(skip.compareDocumentPosition(main) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
-  // Focus is MOVED rather than left to the browser's fragment: an application
-  // routed on the hash would read "#main" as a route and navigate away from
-  // the page the reader was skipping into. fireEvent answers false when a
-  // listener claimed the press, which is the only way to see the fragment
-  // navigation refused: jsdom performs none, so a location that stayed put
-  // would say the same thing whether or not the press was claimed.
+  // Focus is moved, not left to the fragment, which a hash router would read as a
+  // route. fireEvent answers false when a listener claimed the press; jsdom
+  // performs no fragment navigation, so this is the only way to see it refused.
   expect(fireEvent.click(skip)).toBe(false);
   expect(document.activeElement).toBe(main);
   expect(main.getAttribute('id')).toBe(skip.getAttribute('href')?.slice(1));
@@ -380,13 +361,8 @@ test('the shell reports the layout and the scroller to what is inside it', () =>
 });
 
 /**
- * WHERE THE DRAWER TAKES OVER, and why it is there.
- *
- * `breakpoint.shell` is derived rather than chosen: the rail, the inset
- * between the frame and the sheet, and the sheet the design needs to draw a
- * list beside its detail (the Inbox, a 320px list beside a 460px detail). At
- * exactly that width the sheet is exactly its floor, so the wide layout holds
- * there and the drawer takes over one pixel under it.
+ * `breakpoint.shell` is the rail, the inset and the sheet's floor added up, so
+ * the wide layout holds at exactly that width and the drawer takes over under it.
  */
 describe('the shell breakpoint', () => {
   const shell = Number.parseFloat(breakpoint.shell);
@@ -433,10 +409,8 @@ describe('the shell breakpoint', () => {
   });
 
   test('the stylesheet switches on the question the component asks', () => {
-    // The layout is drawn by the stylesheet and the drawer is driven by the
-    // component, so the two have to change shape at the same pixel: one
-    // switching at 1024 and the other under it draws the wide grid with the
-    // drawer's control, or a drawer the component does not know is there.
+    // The stylesheet draws the layout and the component drives the drawer, so
+    // both must change shape at the same pixel.
     const asked: string[] = [];
     const restore = installViewport(shell, asked);
     try {
@@ -453,12 +427,9 @@ describe('the shell breakpoint', () => {
   });
 
   test('every component that follows the shell switches with it', () => {
-    // A modal sheet going full width, a toolbar folding into its overflow, a
-    // search field dropping its label and the artifact bar taking the top
-    // bar's narrow inset all happen "where the rail becomes a drawer", and each spells the number
-    // because a media query cannot read a token. Spelt as `max-width` it
-    // switches a pixel before the shell does, and at exactly the step the
-    // wide shell is drawn with a narrow toolbar in it.
+    // Every stylesheet that switches "where the rail becomes a drawer" spells the
+    // number, since a media query cannot read a token; `max-width` would switch
+    // a pixel before the shell does.
     const source = resolve(dirname(fileURLToPath(import.meta.url)), '..');
     const found: string[] = [];
     for (const folder of readdirSync(source, { withFileTypes: true })) {
@@ -485,16 +456,9 @@ describe('the shell breakpoint', () => {
 });
 
 /**
- * THE FRAME AND THE SHEET, as the cascade applies them at a width either side
- * of the step, in both palettes.
- *
- * The rail stands on the frame, and everything the reader reads is one sheet a
- * rung above it: inset from the frame on its top, right and bottom, drawn
- * round with the plain hairline and rounded at the sheet's corner. Under the
- * step the sheet is the window. Measured through jsdom's own cascade with the
- * values each theme ships, so a later rule winning on source order, a selector
- * that matches nothing the shell renders, or a heavier rule the narrow block
- * cannot take back shows up here.
+ * The frame and the sheet either side of the step, in both palettes, through
+ * jsdom's cascade: wide, the sheet is inset, rounded and hairlined on the
+ * frame; under the step it is the window.
  */
 describe('the frame and the sheet', () => {
   const step = Number.parseFloat(breakpoint.shell);
@@ -558,12 +522,8 @@ describe('the frame and the sheet', () => {
 
   test('the bar takes the content inset on both sides, and the scroller gutter at its end', () => {
     /*
-     * A page's first line starts under the bar's title and its cards end
-     * under the bar's last control. Wide, the bar stood 16px in over content
-     * inset 20px; and at its end the content also gives up the scroller's
-     * gutter, so with scrollbars drawn in the layout every page's actions
-     * ended 15px past the cards under them. The end inset is the content's
-     * plus the gutter the shell measures.
+     * A page's first line starts under the bar's title and its cards end under
+     * the bar's last control: the end inset is the content's plus the gutter.
      */
     for (const [width, expected] of [
       [step - 1, 16],
@@ -630,13 +590,9 @@ describe('the frame and the sheet', () => {
 
   test('a fill screen reads the gutter off the gauge, since its scroller reserves none', () => {
     /*
-     * A FILL SCREEN'S SCROLLER RESERVES NO GUTTER: its column pads its end by
-     * the gutter instead, so a pane standing in it can reach the sheet's
-     * edge. Measured off that scroller the gutter was 0 there, and the bar's
-     * controls moved one scrollbar out between a fill screen and the
-     * scrolling screen beside it. The shell reads it off its gauge, an empty
-     * scroller that always draws one, and a flush screen, which draws its own
-     * frame, has none.
+     * A fill screen's scroller reserves no gutter, so the shell reads it off
+     * its gauge, an empty scroller that always draws one; a flush screen has
+     * none.
      */
     const offset = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
     const client = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
@@ -761,13 +717,9 @@ test('a shell with no rail draws no control for one', () => {
 });
 
 /**
- * Every rule in a stylesheet, with the at-rule it sits inside.
- *
- * Small enough to write out because a plain rule in this file holds no nested
- * rule: a `{` after a selector runs to the next `}`, and only an `@` block
- * pushes a level. The path Vite does NOT rewrite is the one used to reach the
- * file, `fileURLToPath(import.meta.url)`; `new URL('./x', import.meta.url)`
- * becomes an asset reference and answers with a dev-server URL.
+ * Every rule in a stylesheet, with the at-rule it sits inside; only an `@` block
+ * nests here. Read via `fileURLToPath(import.meta.url)`, which Vite does not
+ * rewrite into an asset URL.
  */
 function cssRules(css: string): { at: string; selector: string; body: string }[] {
   const text = css.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -814,19 +766,9 @@ function properties(body: string): Set<string> {
 
 test('nothing the open rail declares can outrank the layout it is drawn in', () => {
   /*
-   * The one cascade trap in this file, held over the file itself because the
-   * suite runs in jsdom, which computes no layout and resolves no stylesheet
-   * a component imports.
-   *
-   * `.crewlet-app-shell__rail[data-open='true']` is an attribute selector and
-   * outranks the plain `.crewlet-app-shell__rail` the narrow block
-   * re-declares, so any property the unconditional rule sets wins inside that
-   * block as well. A `position: relative` there (which the rule briefly
-   * carried, to make z-index bite) therefore beat the narrow layout's
-   * `position: fixed`, and the open drawer left the fixed layer to become a
-   * grid item, taking the whole column and pushing the application into the
-   * next row. It is the exact failure the veil's own comment describes, in the
-   * one state the drawer exists for.
+   * The open rail's attribute selector outranks the narrow block's plain one,
+   * so a property it sets would beat the drawer's `position: fixed`. jsdom
+   * resolves no imported stylesheet, so the file itself is read.
    */
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
   const rules = cssRules(css);
@@ -887,13 +829,8 @@ test('a shell the reader can fold has no accessibility violations in either shap
 });
 
 /**
- * The rail's foot, and the one vertical line the whole rail is built on.
- *
- * The geometry is in two parts on purpose: the gutter insets the rail, which
- * is where a row's background begins, and the row pad insets the content
- * inside the row. Two files spend those two tokens, this one and
- * SidebarNav.css, and if they ever spend different ones the foot's mark stops
- * landing on the line every nav glyph sits on. Nothing else compares them.
+ * The rail's foot: the gutter insets the rail and the row pad insets a row's
+ * content, and this file and SidebarNav.css must spend the same two tokens.
  */
 describe("the rail's foot", () => {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -936,13 +873,9 @@ describe("the rail's foot", () => {
 
   test('the account row is the one tall row in the foot, around a medium badge', () => {
     /*
-     * At 36px with a 26px badge the reader's own row was the smallest thing in
-     * the rail to read. In the foot it stands half a spacing step under the
-     * large control step (42px) around a column a medium badge (32px) wide, inset
-     * 6px from the row's start, so a ring drawn 2px outside the badge stays
-     * inside the row. At 44px it read as cramped against the foot's edges, so
-     * it gave up half a step and the room around it grew: one step above and
-     * below, where it had none.
+     * The reader's row stands half a spacing step under the large control step,
+     * around a medium badge inset 6px from the row's start, so a ring drawn 2px
+     * outside the badge stays inside the row.
      */
     const row = body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row');
     expect(row).toContain('--crewlet-account-row-badge: 32px');
@@ -999,10 +932,7 @@ describe("the rail's foot", () => {
   const CONTROL = '.crewlet-app-shell__rail-row--action:not(.crewlet-app-shell__rail-row--block)';
 
   test("a foot row's target clears 24px at every density", () => {
-    // --size-row-sm is the step that carries the floor, which is the whole
-    // reason a status line takes it rather than a height of its own: the
-    // engine's own pill had neither, and compact density took it under the
-    // size a finger can hit.
+    // --size-row-sm carries the 24px target floor at every density.
     const row = body(css, '.crewlet-app-shell__rail-row');
     expect(row).toContain('min-height: var(--size-row-sm)');
     const tokens = readFileSync(resolve(here, '../../../tokens/dist/css/tokens.css'), 'utf8');
@@ -1048,11 +978,8 @@ describe("the rail's foot", () => {
 
   test('a control dropped into the foot is a row in the rail', () => {
     /*
-     * THE SLOT TAKES A CONTROL FROM ANYWHERE. `AppShell.RailRow` is the row
-     * this package draws, but an application with a status button of its own
-     * reaches for that one, and the engine does: a ghost Button arrived
-     * centred in a 263px rail, on a toolbar's inset, in a toolbar's ink and at
-     * a toolbar's weight. The foot claims a direct child instead.
+     * The foot also takes an application's own control as a direct child
+     * (`> .crewlet-btn`), drawn as a rail row rather than a toolbar button.
      */
     const row = body(css, '.crewlet-app-shell__rail-foot > .crewlet-btn');
     expect(row).toContain('padding: calc(var(--spacing-2) - 1px) calc(var(--size-nav-row-pad) - 1px)');
@@ -1070,11 +997,8 @@ describe("the rail's foot", () => {
 
   test("a control in the foot is a row of the rail's own grammar, as the nav's rows are", () => {
     /*
-     * The engine's row sits under Settings, which is a nav row, and has to
-     * read as one more row of the rail. Drawn as the status line's caption it
-     * stood 34px beside a 30px row, in a smaller, quieter type, with its words
-     * starting seven pixels left of "Settings": a 7px dot and an 8px gap where
-     * the nav spends a 14px glyph and a 10px one.
+     * A status row in the foot reads as one more nav row: the same height, type
+     * and start for its words as the nav row above it.
      */
     const control = body(css, CONTROL);
     const navRow = body(nav, '.crewlet-nav-item__row');
@@ -1220,12 +1144,8 @@ describe("the rail's foot", () => {
 
   test('the type refuses a control state on a row nothing presses', () => {
     /*
-     * Each `@ts-expect-error` below is an ASSERTION, and `npm run typecheck`
-     * is where it runs: the build fails if the error it names ever stops
-     * happening. `aria-expanded` on an element with no role is the state of a
-     * control that does not exist, and a name on one is dropped by assistive
-     * technology, so either on a row nothing presses is a promise nobody is
-     * told. The shapes are the point; nothing here is rendered.
+     * Each `@ts-expect-error` below is an assertion that `npm run typecheck`
+     * runs: a row nothing presses takes no `aria-expanded` and no name.
      */
     // @ts-expect-error a row nothing presses opens nothing
     const opensNothing: AppShellRailRowProps = { children: 'Engine', 'aria-expanded': false };
@@ -1294,12 +1214,8 @@ describe("the rail's foot", () => {
       </AppShell>,
     );
     /*
-     * ONE CONTROL, NOT TWO. A row the rail merely states is a line of text: a
-     * button there puts a tab stop in front of a keyboard reader that does
-     * nothing when they press it, which is worse than no affordance at all.
-     * Asserted over the rows themselves rather than by name, because a button
-     * with no accessible name is exactly what the regression would produce and
-     * a query by name would not find it.
+     * A row the rail only states is text, not a button. Asserted over the rows
+     * rather than by name, since the regression is a button with no name.
      */
     const rows = [...document.querySelectorAll('.crewlet-app-shell__rail-row')];
     expect(rows.map((row) => row.tagName)).toEqual(['DIV', 'BUTTON']);
@@ -1310,10 +1226,8 @@ describe("the rail's foot", () => {
 
   test("a foot row's words are never cut: they wrap, and the trailing value drops under them", () => {
     /*
-     * The status line used to take what the pill beside it left and end in an
-     * ellipsis, so "engine connected" beside "2 turns in flight" read "engine
-     * conn…". The words and the value share one WRAPPING line now, so the
-     * value moves under the words rather than the words being cut.
+     * The words and the value share one wrapping line, so the value moves under
+     * the words rather than the words being cut.
      */
     const label = body(css, '.crewlet-app-shell__rail-row-label');
     expect(label).not.toMatch(/text-overflow|white-space:\s*nowrap|overflow:\s*hidden/);
@@ -1392,12 +1306,8 @@ describe("the rail's foot", () => {
 
   test('a panel opened from the open drawer is drawn above the drawer', () => {
     /*
-     * The engine's row lives in the drawer below the shell breakpoint, so its
-     * panel is opened from inside the drawer. The layer host used to be a
-     * stacking context at the bottom of the layer band, and the drawer's rail,
-     * a step above its own veil beside the host rather than inside it, was
-     * drawn over every surface the host held: the panel opened under the
-     * drawer it came from.
+     * Below the breakpoint the engine's row is in the drawer, so its panel must
+     * draw above the drawer it is opened from.
      */
     const media = installMedia(true);
     try {
@@ -1676,11 +1586,8 @@ describe('the rail head, its field and the scroller', () => {
     expect(container.querySelector('.crewlet-app-shell__rail-search')).toBeNull();
   });
 
-  // ITS GLYPH ON THE NAV'S GLYPH COLUMN and its shortcut on the line a row's
-  // words end on: the slot's inset, the field's edge and its pad add up to a
-  // row's gutter and pad at each end. It is held off the nav by the nav's own
-  // top inset alone. The head's first child takes the head's width so a long
-  // name truncates.
+  // The field's glyph stands on the nav's glyph column and its shortcut where a
+  // row's words end; the head's first child takes the head's width.
   test("the field stands on the nav's content columns, and the head's first child takes its width", () => {
     const search = rule('.crewlet-app-shell__rail-search');
     // THE FIELD IS A ROW'S WIDTH: its pad is a row's pad less its own edge,
@@ -1696,14 +1603,9 @@ describe('the rail head, its field and the scroller', () => {
     expect(head).toContain('min-width: 0;');
   });
 
-  // THE MIDDLE KEEPS ITS WIDTH WHEN IT SCROLLS. It is the rail's scroller,
-  // and it reserved nothing, so when a long group grew it past the window the
-  // scrollbar took its width out of the field and every row ("Search
-  // everythi..." beside the shortcut). The full rail's middle reserves the
-  // bar's gutter at every height, and the field and the nav give exactly that
-  // width back from their end inset, so they stand where they stood before,
-  // scrolling or not. The compact column reserves nothing and gives nothing
-  // back: its tiles are centred in 76px.
+  // The full rail's middle reserves its scrollbar's gutter at every height and
+  // the field and the nav give it back at their end, so scrolling moves nothing.
+  // The compact column reserves nothing: its tiles are centred.
   test("the full rail's middle reserves its scrollbar, and the field and the nav give it back at their end", () => {
     const middle = rule('.crewlet-app-shell__rail-body');
     expect(middle).toContain('overflow-y: auto;');
@@ -1726,12 +1628,8 @@ describe('the rail head, its field and the scroller', () => {
     expect(compact).toContain('--crewlet-rail-body-end: var(--size-nav-gutter);');
   });
 
-  // THE BAR'S WIDTH IS THE MIDDLE'S OWN, measured off the middle rather than
-  // borrowed from the screen's scroller: the screen's gutter is 0 beside a
-  // flush screen, where the middle still reserves its bar, and the field and
-  // the rows would have stood a bar narrower there than beside a scrolling
-  // screen. CSS cannot read a scrollbar's width, so the rail reads it as the
-  // middle's border box less its client box.
+  // CSS cannot read a scrollbar's width, so the rail measures its middle (border
+  // box less client box); the screen's gutter is 0 beside a flush screen.
   test("the rail measures its middle's scrollbar and hands it to the stylesheet", () => {
     const offset = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
     const client = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
@@ -1765,12 +1663,9 @@ describe('the rail head, its field and the scroller', () => {
     expect(body.style.getPropertyValue('--crewlet-rail-scrollbar')).toBe('0px');
   });
 
-  // THE SCROLLER IS A SIZE CONTAINER, so a column beside the screen can be the
-  // view's height. A FILL SCREEN'S SCROLLER RESERVES NO GUTTER: its column
-  // pads its end by the inset and the gutter instead, which holds the content
-  // under the bar's controls and which a pane can reach past to the sheet's
-  // edge, and it runs the sheet's whole width. A flush column has no pad to
-  // reach past.
+  // The scroller is a size container. A fill screen's scroller reserves no
+  // gutter: its column pads its end by the inset and the gutter instead, and a
+  // pane can reach past that pad to the sheet's edge.
   test('the scroller is a size container, and a fill screen pads by the gutter rather than reserving it', () => {
     const main = rule('.crewlet-app-shell__main');
     expect(main).toContain('scrollbar-gutter: stable;');

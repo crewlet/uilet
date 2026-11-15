@@ -1,22 +1,7 @@
 /**
- * The chart's tree, its keys, its menus and its layout.
- *
- * What these protect:
- * - the chart is an ARIA tree whose items say their level, position and
- *   expansion, and hold nothing focusable: the pointer's buttons sit beside
- *   them, hidden and out of the tab order;
- * - the arrows, Home, End and type ahead move one roving tab stop, the item
- *   keys reach the caller, and the ContextMenu key or Shift+F10 opens the
- *   node's menu in the canvas layer, returning focus to the node;
- * - focus lands where the caller sends it, opening a collapsed card on the way
- *   and never scrolling;
- * - a relayout keeps the node the operator acted on still on screen;
- * - a push that changes a word inside a card lays nothing out again.
- *
- * jsdom has no layout, so `LayoutObserver` reports the sizes a browser would.
- *
- * Ported from the generic half of the engine dashboard's
- * `routes/org/builder/CanvasView.test.tsx`.
+ * The chart's tree, its keys, its menus and its layout: ARIA tree semantics,
+ * one roving tab stop, focus requests, and relayouts that keep the node acted
+ * on in view. jsdom has no layout, so `LayoutObserver` reports a browser's sizes.
  */
 
 import { readFileSync } from 'node:fs';
@@ -141,13 +126,9 @@ class LayoutObserver {
 // ---------------------------------------------------------------------------
 
 /*
- * A RELAYOUT TRAVELS (motion.ts), so a card's transform right after one is
- * where the card WAS. jsdom's own frames fire on a timer nothing here waits
- * for, which would leave every case in this file reading a chart mid-move, so
- * the suite owns the frame queue: `settleMotion` runs the pending frames far
- * enough past the tween's length that every card has landed. Every case that
- * is not ABOUT the motion goes through `LayoutObserver.settle`, which ends
- * with it, and reads the chart at rest exactly as it always did.
+ * A relayout travels (motion.ts), so the suite owns the frame queue:
+ * `settleMotion` runs frames past the tween until every card has landed, and
+ * `LayoutObserver.settle` ends with it, so other cases read the chart at rest.
  */
 const frames: (FrameRequestCallback | null)[] = [];
 
@@ -166,31 +147,13 @@ function settleMotion(): void {
 }
 
 /*
- * FOCUS ON AN INVISIBLE ELEMENT DOES NOTHING, which is what a browser does and
- * what jsdom does not.
- *
- * The specification says a focusable area must be being rendered, so `focus()`
- * inside a subtree whose computed `visibility` is `hidden` returns having
- * moved nothing at all, silently. jsdom focuses it anyway. That difference hid
- * a real defect for a whole afternoon: the chart draws a card it has not
- * placed yet hidden, a ghost is unplaced on the tick it first renders, and a
- * single focus attempt made then cannot land. Every suite here passed while a
- * browser opened the form with the cursor on the node behind it.
- *
- * So the rule is installed for this file. It is the browser's own, not a
- * convenience: a case that asks whether focus LANDED has to be asked somewhere
- * the answer can be no.
+ * As in a browser, `focus()` inside a `visibility: hidden` subtree moves
+ * nothing (jsdom focuses it anyway), so a case can ask whether focus landed.
  */
 const realFocus = HTMLElement.prototype.focus;
 /**
- * How many focus attempts on a PLACED card the browser is to refuse, for a
- * case about the ordering jsdom does not reproduce.
- *
- * The DOM is a commit behind the layout in a real browser: the card is placed
- * as far as this component is concerned and still reads as the unplaced one,
- * which is drawn hidden, so the attempt made on that commit is refused. jsdom
- * commits the two together and every attempt succeeds, which is why nothing
- * here could see the retry that covers it. This is the lag, modelled.
+ * How many focus attempts on a placed card the browser is to refuse. Models a
+ * browser's DOM lagging a commit behind the layout, which jsdom does not.
  */
 let FOCUS_REFUSALS = 0;
 
@@ -371,11 +334,9 @@ function More({ id, card }: { id: string; card: TreeCardContext }) {
 }
 
 /*
- * THE TREE'S OWN ACCESSIBILITY CONTRACT, as one assertion: every control the
- * chart draws is out of the tab order AND hidden from the element-by-element
- * walk, and no treeitem holds a focusable descendant. Written once because two
- * cases ask it of two different shapes (a strip beside the item, a slot inside
- * it), and a rule stated twice is a rule that drifts.
+ * The tree's accessibility contract: every control the chart draws is out of
+ * the tab order and hidden from the element-by-element walk, and no treeitem
+ * holds a focusable descendant.
  */
 function expectNothingFocusableInAnItem() {
   for (const el of screen.getAllByRole('treeitem')) {
@@ -594,16 +555,9 @@ describe('the tree', () => {
   });
 
   /*
-   * INCLUDING A CONTROL A CALLER DRAWS ON A NODE RATHER THAN IN A STRIP. The
-   * rule above was only ever checked against a fixture whose every button sits
-   * in `ctx.actions`, so it could catch that strip regressing and nothing
-   * else: a control added to the node's own leading edge went inside the
-   * treeitem, and this case stayed green while a screen reader walking element
-   * by element met a stray button in every node. `tabIndex={-1}` is the Tab
-   * order and does not answer for that walk.
-   *
-   * SO THE SECOND PLACE A CARD DRAWS A CONTROL IS CHECKED HERE TOO: beside the
-   * item, hidden, out of the tab order, exactly as the strip is.
+   * A control drawn on the node itself, not in `ctx.actions`, must also sit
+   * beside the item, hidden and out of the tab order: `tabIndex={-1}` does not
+   * hide it from a screen reader's element-by-element walk.
    */
   test('a control a card draws outside its strip keeps the same rule', () => {
     render(
@@ -648,10 +602,8 @@ describe('the tree', () => {
 
   test('the drawing the layout needs is hidden, so the tree announces only its nodes', () => {
     const { container } = mount();
-    // The connectors carry no information a reader cannot get from the levels
-    // the treeitems already say, and the gap probe is a measuring stick with
-    // no content at all. Announced, each would be an unnamed graphic between
-    // every pair of cards.
+    // The connectors and the gap probe say nothing the treeitems' levels do not;
+    // announced, each would be an unnamed graphic between every pair of cards.
     const links = container.querySelector('.crewlet-tree-canvas__links')!;
     expect(links.getAttribute('aria-hidden')).toBe('true');
     const probe = container.querySelector('.crewlet-tree-canvas__gap')!;
@@ -784,11 +736,8 @@ describe('focus', () => {
   });
 
   /*
-   * AND ASKED BEFORE IT IS MEASURED, it lands once the card is DRAWN, which is
-   * a commit after the layout first places it: until the frame being drawn
-   * catches up, a new card is drawn hidden, and a browser refuses focus inside
-   * it. Taken on the layout's commit, the request was spent there and focus
-   * stayed on whatever held it, which after an add is the node added to.
+   * A new card is drawn hidden until a commit after layout places it, and a
+   * browser refuses focus inside it, so the request waits until it is drawn.
    */
   test('a focus request made before a new card is measured lands once the card is drawn', () => {
     const view = mount();
@@ -856,12 +805,9 @@ describe('live state', () => {
 
 
 /*
- * WHO HOLDS A SEAT IS NEVER THE CARD'S FRAME. A person's seat is told from an
- * agent's by its badge's outline, which is the one cue, so the chart draws
- * every node's card with the same edge and offers the caller no way to mark
- * one: the dashed edge it used to draw round a person's seat was a second cue
- * for that one fact. The only dashed card on a chart is the ghost of a node
- * being added, which is a place nothing fills yet.
+ * A person's seat is told by its badge's outline, never the card's edge, so
+ * every card takes the same edge; the only dashed card is the ghost of a node
+ * being added.
  */
 test("every node's card takes the same edge, and the only dashed card is the ghost", () => {
   // @ts-expect-error a card's edge is not the caller's to choose
@@ -894,12 +840,7 @@ test("every node's card takes the same edge, and the only dashed card is the gho
 
 /*
  * ───────────────────────────────────────────────────────────────────────────
- * The pointer's controls
- *
- * They are the component's to place, because where they sit decides how much
- * width a name has. Two halves of that: the PROPS the caller spreads (here),
- * and the RULES that reveal them, which no jsdom can see and which are read off
- * the stylesheet at the bottom of this file.
+ * The pointer's controls: the props here, the reveal rules at the file's end.
  * ───────────────────────────────────────────────────────────────────────────
  */
 
@@ -909,20 +850,17 @@ describe('the pointer-only controls', () => {
     const strips = [...container.querySelectorAll('.crewlet-tree-canvas__actions')];
     expect(strips.length).toBeGreaterThan(0);
     for (const strip of strips) expect(strip.getAttribute('aria-hidden')).toBe('true');
-    // And every button the chart itself draws is inside one of the two quiet
-    // strips: nothing the caller hung on a card is left in the open, where it
-    // would be drawn over a name at rest. (The canvas's own zoom controls are
-    // outside the tree and are not the chart's cards.)
+    // Every button the chart draws sits in one of the two quiet strips, never
+    // over a name at rest (the canvas's zoom controls are outside the tree).
     for (const button of screen.getByRole('tree').querySelectorAll('button')) {
       expect(button.closest('.crewlet-tree-canvas__actions, .crewlet-tree-canvas__under')).not.toBeNull();
     }
   });
 
   /*
-   * THE REVEAL IS KEYED ON THE SIBLING ORDER, so a strip that is not its
-   * treeitem's next sibling is a strip no hover ever shows. Nothing else can
-   * check it: jsdom applies no stylesheet, so this asserts the shape the rule
-   * needs rather than the rule's effect.
+   * The reveal rule is keyed on sibling order, so a strip must be its
+   * treeitem's next sibling. jsdom applies no stylesheet, so this asserts the
+   * shape the rule needs rather than its effect.
    */
   test('a strip is drawn immediately after the node it belongs to', () => {
     mount();
@@ -994,21 +932,13 @@ describe('what hangs under a card', () => {
 
 /*
  * ───────────────────────────────────────────────────────────────────────────
- * The rules that reveal them, read off the stylesheet
- *
- * jsdom applies none of it: `getComputedStyle` answers the initial value for
- * every property here and resolves no custom property at all, so the quiet
- * state, the reveal and the inertness are invisible to every test above. The
- * file is the only place they can be measured, so it is where they are.
+ * The reveal rules, read off the stylesheet, since jsdom applies none of it.
  * ───────────────────────────────────────────────────────────────────────────
  */
 
 /*
- * A TONE IS ONE ANSWER REACHING FIVE THINGS: the card's fill, its edge, the
- * ink of its name, the accent of its mark and the branch that arrives at it.
- * Each of those used to be a decision a consumer made for itself, which is how
- * two charts in one product came to tint the card and leave the branch
- * neutral.
+ * A tone reaches five things: the card's fill, its edge, its name's ink, its
+ * mark's accent and the branch that arrives at it.
  */
 describe('a toned node', () => {
   const tone = (id: string) => (kindOf(id) === 'seat' ? ('purple' as const) : undefined);
@@ -1036,10 +966,8 @@ describe('a toned node', () => {
   });
 
   /*
-   * THE HUE IS A NAMED SET, and the stylesheet is what turns each name into the
-   * four measured steps of that hue. A name with no rule behind it would draw a
-   * card with no fill at all, which is the one failure a type cannot catch on
-   * its own: the union and the stylesheet are two lists that have to agree.
+   * Every hue name needs a stylesheet rule giving its four steps: a name with
+   * no rule draws a card with no fill, which the type cannot catch.
    */
   test('every tone the type offers has its four steps and its branch', () => {
     for (const hue of NODE_HUES) {
@@ -1102,12 +1030,8 @@ describe('the node appearance', () => {
   });
 
   /*
-   * A NODE IS OPAQUE, TONED OR NOT. The branches are drawn UNDER the cards, so
-   * a card that is not painted over the page's own ground has the connectors
-   * of the rank above running through its face and through its name. A TONED
-   * card already went down as the ground plus its tint; a neutral one is the
-   * ground plus the card's own step, which is the same pair. The console chart
-   * lays an opaque rectangle under every card and says why.
+   * The branches are drawn under the cards, so every card, toned or not, is
+   * painted over the page ground to hide the connectors behind its face.
    */
   test('a node is painted over the page ground, with or without a tone', () => {
     const uninstall = installThemed('dark', 'TreeCanvas/TreeCanvas.css');
@@ -1127,14 +1051,9 @@ describe('the node appearance', () => {
   });
 
   /*
-   * A CELL OF THE ACTIONS COLUMN IS A POINTER TARGET AT EVERY DENSITY. The
-   * column splits one rank into two cells, so the rank is floored at two
-   * targets and the column's width at one; and the hairline down its edge is a
-   * SHADOW rather than a border, because a border is inside the column's own
-   * box and took a pixel off the width of every control in it. A browser is
-   * where that is visible and jsdom is not one, so the three declarations that
-   * hold it are read from the stylesheet. Measured in a browser at all three
-   * densities: 24 by 24.
+   * Each cell of the actions column is a 24 by 24 target at every density, and
+   * its edge hairline is a shadow, since a border would narrow every control.
+   * jsdom has no layout, so the declarations are read from the stylesheet.
    */
   test('a control in the column is a pointer target at every density', () => {
     const item = rule(`.crewlet-tree-canvas--node .crewlet-tree-canvas__card [role='treeitem']`);
@@ -1147,12 +1066,8 @@ describe('the node appearance', () => {
   });
 
   /*
-   * EVERY HAIRLINE INSIDE A NODE IS INSET, which is what the console chart
-   * draws: its actions rule runs from 4 to `NODE_H - 4` and the divider
-   * between its two cells from `ACT_X + 4` to `nw - 4`. Run edge to edge the
-   * node read as a table of cells rather than as a card with a column beside
-   * its name. And the rule still takes no width from the cells, which is why
-   * it is drawn outside the column's box rather than as a border on it.
+   * The hairlines inside a node are inset from its edges, and drawn outside the
+   * column's box so they take no width from the cells.
    */
   test('the hairlines inside a node are inset, and take no width from the cells', () => {
     const uninstall = installThemed('dark', 'TreeCanvas/TreeCanvas.css');
@@ -1213,11 +1128,8 @@ describe('the node appearance', () => {
 });
 
 /*
- * THE SHAPE A CALLER ASKS FOR is the one drawn: the component has to reach
- * `layoutConnectors` with it, and a shape the caller asks for and the
- * component drops is a chart drawn in the wrong language with nothing to say
- * so. The arithmetic of each shape is the layout suite's; what is asserted
- * here is that the answer arrives.
+ * The shape a caller asks for reaches `layoutConnectors`; each shape's
+ * arithmetic is the layout suite's.
  */
 describe('the connector shape', () => {
   const paths = (container: HTMLElement) =>
@@ -1255,11 +1167,8 @@ describe('the connector shape', () => {
   });
 
   /*
-   * THE CONNECTOR'S COLOUR IS A TOKEN, and it is the sheet's. The path carries
-   * its geometry as an attribute the layout computed and nothing else, so no
-   * colour can be written into the markup where a theme cannot reach it; and
-   * every stroke the sheet gives a connector is a colour token, the neutral one
-   * being the border step the palette suite holds to 3:1 for exactly this mark.
+   * A path carries only its geometry, so a theme reaches its colour: every
+   * connector stroke is a sheet colour token (the neutral one held to 3:1).
    */
   test('the connector colour is a token from the stylesheet, never a literal', () => {
     const { container } = mount();
@@ -1278,13 +1187,9 @@ describe('the connector shape', () => {
 });
 
 /*
- * GROUPS: a box round a run of sibling cards, with a label along its top.
- *
- * What these protect: the box is where the layout made room for it, round
- * exactly its members plus the padding and header it measured; it arrives and
- * travels with them; it says what it is to a reader of the TREE (as each
- * member's description) while the drawing itself is hidden; and a group whose
- * members are not drawn is not drawn.
+ * Groups: a box round a run of sibling cards, labelled along its top. It stands
+ * where the layout made room, travels with its members, and is told to a tree
+ * reader as each member's description while the drawing is hidden.
  */
 describe('groups', () => {
   const UNITS: TreeCanvasGroup[] = [
@@ -1456,10 +1361,8 @@ describe('the stylesheet', () => {
   });
 
   /*
-   * ONE LINE ROUND ONE CARD. A toned card carried a halo ring 3px outside its
-   * boundary and the ghost a breathing ring in the same place, and a selected
-   * node drew an accent ring inside the card's boundary: each was two parallel
-   * lines round one box. None of them may come back.
+   * One line round one card: no halo, breathing or selection ring is drawn
+   * beside a card's own boundary.
    */
   test('no card draws a ring beside its own boundary', () => {
     expect(SHEET).not.toContain('.crewlet-tree-canvas__card[data-tone]::after');
@@ -1501,14 +1404,9 @@ describe('the stylesheet', () => {
   });
 
   /*
-   * EVERY CARD IS PLACED BY ITS TRANSFORM AND BY NOTHING ELSE. This rule said
-   * `relative` for a while, one rule after the block above had said `absolute`
-   * for the same element at the same specificity; the later word won, every
-   * card stayed in normal flow, and the transform that places it was added to
-   * wherever the stack of cards before it had already pushed it. jsdom
-   * computes no position, so the suite could not see a chart whose Nth card
-   * was drawn the height of the N-1 before it too low; the declaration is
-   * read instead.
+   * A card is placed by its transform alone, so it stays `position: absolute`
+   * (in flow, each card lands below the ones before it). jsdom computes no
+   * position, so the declaration is read.
    */
   test('a card is placed by its transform, not by the cards before it', () => {
     expect(rule('.crewlet-tree-canvas__card')).toContain('position: absolute');
@@ -1516,11 +1414,8 @@ describe('the stylesheet', () => {
   });
 
   /*
-   * A BAND THAT TURNED OUT EMPTY COLLAPSES. The component draws no slot at all
-   * for a caller that returns nothing, which is the contract; but a caller can
-   * also return a component that itself renders nothing, and that is an element
-   * as far as the component can tell. The rule catches what the contract
-   * cannot, so no card ever carries a band of air.
+   * A caller's component that renders nothing is still an element, so the
+   * `:empty` rule collapses the band the slot contract cannot catch.
    */
   test('a band with nothing in it takes no room', () => {
     expect(rule('.crewlet-tree-canvas__under:empty')).toContain('display: none');
@@ -1537,10 +1432,8 @@ describe('the stylesheet', () => {
   });
 
   /*
-   * A ROW's strip hangs off the ROW, not off the card's top right corner where
-   * nine of them would land on top of one another. The row is the caller's
-   * element, so the rule finds it rather than asking every caller to remember
-   * to declare itself a containing block.
+   * A row's strip hangs off its row, not the card's corner, so the rule makes
+   * the caller's element that holds a strip its containing block.
    */
   test('whatever holds a strip is made its containing block', () => {
     expect(rule('.crewlet-tree-canvas__card :has(> .crewlet-tree-canvas__actions)')).toContain(
@@ -1555,17 +1448,9 @@ describe('the stylesheet', () => {
   });
 
   /*
-   * REVEALED BY FOCUS AS WELL AS BY HOVER, and by the selection, and while a
-   * menu opened from the strip is up. That last one is not an extra: focus is
-   * then inside a surface portalled out of the card, so neither `:hover` nor
-   * `:focus-within` holds and the strip would vanish from under its own menu.
-   */
-  /*
-   * A CARD'S OWN STRIP APPEARS WITH THE CARD, so pointing anywhere at a card
-   * shows what can be done to it; a ROW's appears with its row, so an expanded
-   * unit does not show nine menus at once. Keyed on the treeitem alone,
-   * pointing at a unit's lead chip showed the add control below the card and
-   * not the menu beside its name.
+   * Revealed by hover, focus, selection, and while its menu is open (focus is
+   * then portalled out of the card). A card's strip appears with the card, a
+   * row's with its row.
    */
   test('every way a reader reaches a node reveals its controls', () => {
     const reveal = rule(
@@ -1586,10 +1471,8 @@ describe('the stylesheet', () => {
 
   test('a reveal is a state change, so reduced motion simply has it happen', () => {
     /*
-     * PUT TO THE CASCADE, not read off the block: the node appearance's three
-     * quiet controls were named in a stop that sat ABOVE the rules starting
-     * their fades, so it tied with them on specificity, lost on source order,
-     * and read perfectly. Every control the chart reveals is measured here.
+     * Put to the cascade rather than read off the block, so a rule that loses
+     * on source order is caught. Every control the chart reveals is measured.
      */
     const { container } = render(
       <TreeCanvas
@@ -1694,12 +1577,9 @@ function cardsOnScreen(container: HTMLElement): Map<string, { left: number; top:
 
 describe('where the ranks sit', () => {
   /*
-   * THE `node` APPEARANCE IS AN ORG CHART, and a rank of an organization is a
-   * row a reader scans across. This fixture's cards are as tall as the rows in
-   * them, so a unit holding seats is taller than a seat: on shared ranks the
-   * two still sit on one line, and on per-parent ranks the seats under the
-   * shorter card ride up beside the taller one's. Both are correct and they
-   * are different pictures, which is the whole of this decision.
+   * Here a unit holding seats is taller than a seat: on shared ranks both still
+   * sit on one line, and on per-parent ranks the seats under the shorter card
+   * ride up beside the taller one's.
    */
   /**
    * Engineering's card holds three rows and Sales's holds two, and both hang
@@ -1890,11 +1770,9 @@ describe('the motion in the stylesheet', () => {
 
   test('reduced motion draws every card at once', () => {
     /*
-     * The component does not start the reveal under the preference at all;
-     * what the stylesheet adds is the card that was MID-reveal when the
-     * setting changed. So the chart is caught mid-reveal, one card shown and
-     * the rest waiting, and the stops are put to the cascade: every card is
-     * drawn, and the one arriving stops arriving.
+     * The component starts no reveal under the preference; the stylesheet
+     * stops a card already mid-reveal, so the chart is caught mid-reveal and
+     * the stops are put to the cascade.
      */
     vi.useFakeTimers();
     try {
@@ -1920,10 +1798,8 @@ describe('the motion in the stylesheet', () => {
   });
 
   /*
-   * A GROUP ARRIVES WITH ITS FIRST MEMBER, and stops arriving for a reader who
-   * asked for less, exactly as a card does: caught waiting while only the
-   * company is in, and again arriving once a member is, and the stops put to
-   * the cascade over both.
+   * A group arrives with its first member and, like a card, stops arriving for
+   * a reader who asked for less motion.
    */
   test('a group waits for its first member, and reduced motion draws it at once', () => {
     vi.useFakeTimers();
@@ -1960,17 +1836,9 @@ describe('the motion in the stylesheet', () => {
   });
 
   /*
-   * THE CONSOLE CHART'S SPACING, as the steps nearest its own: 50 across and a
-   * rank a node's height down, with a margin around the chart. Read from the
-   * stylesheet because the probes are what the layout measures and jsdom
-   * computes no custom property at all.
-   */
-  /*
-   * THE GAP A READER SEES IS THE SAME NUMBER IT ALWAYS WAS. The add strip used
-   * to sit INSIDE the card and the rank gap was `--spacing-11` alone; the
-   * strip hangs on the branch now, so the room it needs moved into the gap
-   * with it. 80 + 24 is the 104px from a node's bottom edge to its children's
-   * tops that the console chart draws as 100.
+   * 50 across, 80 + 24 from a node's bottom to its children's tops (the add
+   * strip hangs in that gap), and a margin round the chart. Read from the
+   * stylesheet: jsdom computes no custom property.
    */
   test('a chart of nodes is spaced like the chart it is drawn to match', () => {
     const uninstall = installThemed('dark', 'TreeCanvas/TreeCanvas.css');
@@ -1983,14 +1851,9 @@ describe('the motion in the stylesheet', () => {
   });
 
   /*
-   * THE ADD HANGS BELOW THE CARD, on the branch its children come off, which
-   * is where the console chart puts it (`pillY = fullH + 3`). Inside the card
-   * it was a band of the card's own face with a hole punched in it, and the
-   * branch started at the card's bottom edge 13px BELOW the mark, so the line
-   * never reached the control sitting on it.
-   *
-   * AND IT IS OUT OF THE FLOW, so the card's measured box is the node itself:
-   * nothing in this strip can relay the chart, whatever a hover does to it.
+   * The add hangs below the card on the branch its children come off, out of
+   * the flow, so the card's measured box is the node alone and nothing in the
+   * strip can relay the chart.
    */
   test('what hangs under a node is drawn below the card and measured with none of it', () => {
     const uninstall = installThemed('dark', 'TreeCanvas/TreeCanvas.css');
@@ -2004,23 +1867,14 @@ describe('the motion in the stylesheet', () => {
   });
 
   /*
-   * AND IT IS CENTRED ON THE NODE'S OWN AXIS, IN A TRACK OF ITS OWN. The
-   * console chart centres the add on `nw / 2` and has nothing else on the
-   * branch; a row of two controls centred TOGETHER put the add 14px right of
-   * the axis on every node of a resting chart.
-   *
-   * THE TRACK IS THE PILL'S WIDEST FOOTPRINT, not `auto`. A pill OPENS out of
-   * the flow, centred on its own mark, at one pointer target per choice: sized
-   * to what a CLOSED pill needs, the track left a neighbour sitting exactly
-   * where the second choice lands, and a reader reaching for it pressed "add a
-   * unit" instead. Four targets is the widest pill `AddPill` takes.
+   * The add is centred on the node's axis in a track of its own, as wide as the
+   * widest open pill (four targets), so no neighbour sits where a choice lands
+   * when the pill opens.
    */
   test('the add sits on the axis whatever else is drawn beside it', () => {
     const uninstall = installThemed('dark', 'TreeCanvas/TreeCanvas.css');
-    // The strip's own two children, as a chart draws them: the expander and
-    // the add. `AddPill` is not mounted here, because what the rule is keyed
-    // on is the CLASS, and a chart that drew its own add under that class is
-    // what these tracks are for.
+    // The strip's expander and add, as a chart draws them. `AddPill` is not
+    // mounted: the rule is keyed on its class.
     const { container } = render(
       <TreeCanvas
         label="Structure chart"
@@ -2051,10 +1905,8 @@ describe('the motion in the stylesheet', () => {
   });
 
   /*
-   * THE ADD IS ON A RESTING CHART AND THE EXPANDER IS NOT. One is an
-   * affordance saying a child can go here; the other is a control, and a
-   * control per branch on a chart of a hundred nodes is a field of chrome over
-   * a picture of an organization.
+   * The add shows on a resting chart and the expander does not: a control per
+   * branch on a large chart is a field of chrome.
    */
   test('the add is drawn at rest and everything else in the strip is not', () => {
     // The rule that hides the strip's controls, not the reduced-motion block
@@ -2070,17 +1922,9 @@ describe('the motion in the stylesheet', () => {
 // ---------------------------------------------------------------------------
 
 /*
- * WHAT THESE PROTECT. A ghost is a card the LAYOUT knows about and the DATA
- * does not, and every one of these is a way that could stop being true:
- *
- * - the tree is untouched by it, so no real node's level, position, set size
- *   or key moves and no key, type ahead or selection can land on it;
- * - the chart makes room for it where the new node will go, and draws the
- *   branch into it;
- * - the view eases onto it and is given back;
- * - focus goes into the form and comes back to the node it was added to;
- * - Escape cancels;
- * - a closed parent is opened, or the ghost is drawn where nobody can see it.
+ * A ghost is a card the layout knows and the data does not: the tree never
+ * sees it, the chart makes room for it (opening a closed parent), and the view
+ * and focus come back to where the add began.
  */
 const GHOST_ID = 'ghost:new';
 
@@ -2111,11 +1955,8 @@ const ghostCard = (container: HTMLElement) =>
 
 describe('a node being composed', () => {
   /*
-   * THE ONE THAT MATTERS MOST. A phantom in the NODE forest would be counted
-   * by `aria-setsize`, reachable by an arrow and holdable by the selection,
-   * and a screen reader would be told a unit has four children while three
-   * exist. Read as the whole shape rather than as one number, so a ghost that
-   * shifted any node's level, position or expansion fails here too.
+   * A ghost in the node forest would be counted by `aria-setsize` and reached
+   * by the keys, so the tree's whole shape is compared, not one number.
    */
   test('the tree says exactly what it said before the ghost', () => {
     const shape = () =>
@@ -2166,10 +2007,8 @@ describe('a node being composed', () => {
   });
 
   /*
-   * THE CHART MAKES ROOM. The ghost is a card of the layout, placed after the
-   * parent's own children, so the rank it lands in is the rank the new node
-   * will land in and the siblings move aside for it. Its measured size is what
-   * the room is made for: a form, not a name.
+   * The ghost is placed after the parent's children, in the rank the new node
+   * will take, and the room is made for its measured form.
    */
   test('the ghost is placed where the new node will go, and the siblings move', () => {
     const view = mount();
@@ -2217,20 +2056,8 @@ describe('a node being composed', () => {
   });
 
   /*
-   * THE SAME, ON A CHART THAT DOES NOT FIT ITS PANE, which is the only shape
-   * either of the two defects behind this shows up in, and neither was
-   * catchable on the fixture above.
-   *
-   *  - THE VIEW WAS REMEMBERED TOO LATE. A ghost widens the chart, and a
-   *    canvas answers content that changed shape by keeping what it holds
-   *    reachable; asked for the view only once the ghost had been MEASURED,
-   *    what came back was the chart as the ghost had left it.
-   *  - FOCUS GOING BACK TO THE PARENT REVEALED IT. Focusing a node also pans
-   *    the chart the least distance that brings it into view, which is the
-   *    wrong thing one line after the reader's own view has been given back.
-   *
-   * Forty seats under the company is wider than this suite's 1200px pane at
-   * any zoom, which is what makes both of them measurable.
+   * On a chart wider than its pane, the view is remembered before the ghost is
+   * measured, and focus going back to the parent does not pan the view again.
    */
   test('the view comes back on a chart wider than its pane', () => {
     const wide = Array.from({ length: 40 }, (_, at) => `seat:extra${at}`);
@@ -2244,17 +2071,9 @@ describe('a node being composed', () => {
   });
 
   /*
-   * AN ADD ENDS ON THE CHART IT MADE. A composition is left by the node
-   * arriving in the data and the ghost going, in one commit, and the caller
-   * then sends focus to the node it made, as a builder does after every
-   * operation. That commit still holds the ghost's layout: the new card is
-   * drawn and not measured yet, which in a browser is a frame.
-   *
-   * Six more seats at the root make the chart wider than this suite's 1200px
-   * pane at actual size, so its fit is a zoom of its own width, and one more
-   * widens it again. Given back as a transform, the narrower chart's fit left
-   * the new seat past the right edge, and the reveal that focused it then cut
-   * the CEO off at the left.
+   * An add ends in one commit (the node arrives, the ghost goes), then the
+   * caller focuses the new node. Six more seats overflow the 1200px pane, so
+   * the fit is given back for the grown chart, not as the old transform.
    */
   const sixMore = Array.from({ length: 6 }, (_, at) => `seat:extra${at}`);
   const sevenMore = [...sixMore, ADVISOR];
@@ -2407,12 +2226,8 @@ describe('a node being composed', () => {
   });
 
   /*
-   * AND IT IS NOT BLOWN UP TO GET THERE. A ghost holds a FORM, drawn at the
-   * size its controls were designed at; a chart with few nodes has room to
-   * zoom far past that, and the ease took it. Measured on the engine's own
-   * two-node company: the add form was drawn at 233%, its 16px labels at 37px
-   * and its buttons past a finger's width, with the chart around it off the
-   * pane. The ease brings the reader to the form rather than magnifying it.
+   * A ghost holds a form drawn at its design size, so on a small chart the
+   * ease brings the reader to it without magnifying it.
    */
   test('the ease never draws the ghost larger than its own size', () => {
     const view = mount();
@@ -2424,12 +2239,9 @@ describe('a node being composed', () => {
   });
 
   /*
-   * FOCUS GOES INTO THE FORM, on the first control in it and not on the ghost
-   * that holds it. A hidden subtree holds nothing focusable, so this is also
-   * the guard on the ghost being PLACED by the commit the form is focused on:
-   * drawn from the frame being painted rather than from the layout, it had no
-   * position for that one commit, and a reader arrived at a form with the
-   * cursor nowhere.
+   * Focus lands on the form's first control, not the ghost. A hidden subtree
+   * holds nothing focusable, so this also guards that the ghost is placed by
+   * the commit the form is focused on.
    */
   test('focus goes into the form, and back to the node it was added to', () => {
     const view = mount();
@@ -2442,20 +2254,9 @@ describe('a node being composed', () => {
   });
 
   /*
-   * AND IT LANDS ON THE FIRST LAYOUT THAT PLACES THE GHOST, not on the tick
-   * the ghost first renders.
-   *
-   * A card the layout has not placed is drawn with `visibility: hidden`, and
-   * `focus()` on anything inside an invisible element does nothing at all: it
-   * returns having moved nothing, silently, and `visibility` INHERITS, so the
-   * form carries no style of its own to say why. Asked once on that tick, the
-   * form opened with the cursor on the node behind it and Escape reached
-   * nothing.
-   *
-   * REDUCED MOTION IS WHERE THIS BITES, and the case asks for it, because it
-   * is what the ordinary path masks: with the chart's motion on, the entrance
-   * produces further commits and one of them lands the focus by accident.
-   * Measured in a browser, where the failure is certain rather than likely.
+   * An unplaced card is drawn `visibility: hidden`, where focus does nothing,
+   * so the form is focused on the first layout that places it. Reduced motion
+   * is asked for, since the entrance's extra commits would mask a failure.
    */
   test('the form takes focus on the first layout that places it, motion or not', () => {
     stillness(true);
@@ -2476,11 +2277,8 @@ describe('a node being composed', () => {
   });
 
   /*
-   * AND A READER WHO HAS MOVED WITHIN THE FORM IS LEFT THERE. A chart relays
-   * under an open form whenever a push changes the draft, and each relayout is
-   * another pass at putting focus in it: pulled back every time, somebody who
-   * had moved to the second field would be returned to the first half way
-   * through typing.
+   * Every relayout under an open form is another pass at focusing it, so a
+   * reader who moved to another field must be left there.
    */
   test('a relayout under an open form does not pull focus back to its first field', () => {
     const view = mount({ composing: ghost('unit:eng') });
@@ -2493,26 +2291,9 @@ describe('a node being composed', () => {
   });
 
   /*
-   * ESCAPE LEAVES THE COMPOSITION FROM ANYWHERE IN THE CHART. It is a MODE the
-   * chart is in, and a reader leaves a mode with Escape wherever they happen
-   * to be: in the form they are typing in, or on a node behind it, which is
-   * where the press that opened the composition can leave them.
-   */
-  /*
-   * AND IT IS ASKED AGAIN WHEN THE CARD IS PLACED AND THE ATTEMPT STILL FAILS.
-   *
-   * This is the ordering a browser produces and jsdom does not. By the time
-   * the card is placed the composing effect has stopped renewing the request,
-   * because it renews only while the ghost is unplaced; so on that commit the
-   * retry inside the focus effect is the ONLY thing that can ask again. The
-   * case above cannot see it, because there the request is still being renewed
-   * and either mechanism would do: measured, breaking the retry alone turned
-   * nothing red.
-   *
-   * What makes it visible is the lag itself. The DOM is a commit behind the
-   * layout in a browser, so the first attempt on a placed card is refused
-   * although this component believes the card is there; `FOCUS_REFUSALS`
-   * models exactly that and nothing else.
+   * Once the card is placed the request is no longer renewed, so only the
+   * focus effect's retry can ask again. `FOCUS_REFUSALS` models the browser's
+   * one-commit lag that refuses the first attempt on a placed card.
    */
   test('the form is asked again when a placed card still refuses the focus', () => {
     stillness(true);
@@ -2583,17 +2364,12 @@ describe('a node being composed', () => {
 
 describe('the ghost in the stylesheet', () => {
   /*
-   * WIDER THAN A NODE, AND THE SPECIFICITY IS THE WHOLE OF IT. The `node`
-   * appearance caps a card at its name's width with a two-class rule; written
-   * as one class this rule lost the cascade and the ghost was drawn at 16.5rem
-   * with the form spilling out of it. Measured through the cascade rather than
-   * read out of the source, because the source is what looked right.
+   * The ghost's width rule needs two classes to beat the `node` appearance's
+   * name-width cap, so it is measured through the cascade, not read.
    */
   test('the ghost is drawn at a form width, not at a node width', () => {
-    // `installSheets` rather than the themed one: what is measured here is a
-    // LENGTH behind a component's own custom property, and only this one
-    // substitutes a var()'s fallback. The colours are measured where they
-    // live, as this helper's own doc says.
+    // `installSheets`, not the themed one: only it substitutes a var()'s
+    // fallback, and this is a length behind a component's custom property.
     const uninstall = installSheets('TreeCanvas/TreeCanvas.css');
     const { container } = mount({ appearance: 'node', composing: ghost('unit:eng') });
     const card = ghostCard(container)!;
@@ -2627,12 +2403,8 @@ describe('the ghost in the stylesheet', () => {
    */
   test('reduced motion draws the ghost in place', () => {
     /*
-     * THE ONE HALF THE CASCADE CANNOT ANSWER. jsdom applies no `@media` rule
-     * at all, whatever the condition, so what is in the block is read from
-     * the source, EVERY PART OF IT NAMED: read as "the block mentions
-     * composing somewhere" it passed with the ghost card itself dropped out
-     * of it, because the branch selector inside the same block still said the
-     * word. The half that IS drawn is measured below.
+     * jsdom applies no `@media` rule, so the block is read from the source with
+     * every selector in it named; the half that is drawn is measured below.
      */
     const at = SHEET.indexOf(
       '@media (prefers-reduced-motion: reduce)',
@@ -2660,11 +2432,8 @@ describe('the ghost in the stylesheet', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Kind' }));
 
     /*
-     * And what the block holds is put to the cascade, which is the half the
-     * source cannot answer: the card's arrival starts on the chart's class and
-     * its own, and a stop naming its own class alone read perfectly above and
-     * lost on specificity. The form inside it is the caller's, and rises the
-     * same way.
+     * And the block is put to the cascade: the card's arrival starts on two
+     * classes, so a stop naming one loses on specificity. The form rises alike.
      */
     const card = ghostCard(view.container)!;
     const form = [...card.children];
@@ -2683,10 +2452,8 @@ describe('the ghost in the stylesheet', () => {
 
 describe('a strip with nothing drawn in it', () => {
   /*
-   * A node may offer the pointer no control (a company's root) and still hold
-   * the keyboard's menu anchor, which is drawn nowhere. Revealed, that strip
-   * painted the column's rule beside the name with nothing beside it, or a
-   * patch of the strip's ground. It keeps its box and draws neither.
+   * A node with no pointer control still holds the keyboard's menu anchor,
+   * drawn nowhere: its strip keeps its box but draws no rule and no ground.
    */
   function strip(appearance: 'card' | 'node', drawn: boolean) {
     const { container } = render(
@@ -2720,10 +2487,9 @@ describe('a strip with nothing drawn in it', () => {
   });
 
   test("draws no column rule on a node, by the same selector as the ground's", () => {
-    // jsdom measures a pseudo-element through a stand-in CHILD, and
-    // `:has(> :not([data-keyboard-only]))` matches that child itself, so the
-    // rule is read from the sheet: the same condition as the ground above,
-    // cancelling the node's column rule after it in source order.
+    // jsdom measures a pseudo-element through a stand-in child that this
+    // `:has()` matches itself, so the rule is read from the sheet: the same
+    // condition as the ground above, after the node's column rule.
     const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'TreeCanvas.css'), 'utf8');
     const empty = '.crewlet-tree-canvas__actions:not(:has(> :not([data-keyboard-only])))';
     const cancel = sheet.indexOf(`${empty}::before {\n  content: none;\n}`);

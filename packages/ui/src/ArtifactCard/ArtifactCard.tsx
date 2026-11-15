@@ -13,12 +13,8 @@ import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /**
- * What a card's preview draws when there is no cover: the kind's drawing on
- * its tinted ground (`ArtifactKindGround`). Exported for a host whose cover
- * has nothing to draw YET (its content still loading) or at all (a sheet with
- * no columns): a cover that rendered nothing left an empty box where every
- * other card has a picture, since the card cannot know that a cover it was
- * given drew nothing.
+ * A card preview's fallback drawing: the kind's glyph on its tinted ground.
+ * Exported for a host whose cover has nothing to draw, yet or at all.
  */
 export function ArtifactPreviewGlyph({ kind }: { kind: ArtifactKind }) {
   return <ArtifactKindGround kind={kind} />;
@@ -94,26 +90,21 @@ export interface ArtifactCardProps {
   /** Who can open it, drawn as a glyph and its word opening the card's line. Left out, nothing is said about it. */
   access?: ArtifactAccess | undefined;
   /**
-   * The card's own controls (a More menu), drawn OUTSIDE its link in the
-   * preview's top corner and shown on hover and while focus is inside the
-   * card, so they are reachable by keyboard and never nested in the link.
-   * The `card` size only.
+   * The card's own controls (a More menu), drawn outside its link in the
+   * preview's top corner and shown on hover or focus within. `card` size only.
    */
   actions?: ReactNode;
   /**
    * The card can be picked for a bulk action: a box on the preview's foot,
-   * opposite the kind's badge, shown on hover, while focus is inside the card,
-   * on a screen with no hover, and always once the card is picked or the
-   * gallery is choosing (`selecting`). The `card` size only.
+   * shown on hover, focus within, screens with no hover, and while picked or
+   * `selecting`. The `card` size only.
    */
   selectable?: boolean | undefined;
   /** It is picked: its box is ticked, and the card takes the selected edge and fill. */
   selected?: boolean | undefined;
   /**
-   * The gallery is choosing (its Select toggle is on, or something is picked):
-   * every box shows, and the card's body PICKS rather than opens, a label for
-   * its box rather than a link, so a press anywhere on the card ticks it and a
-   * reader is never sent away mid-selection. The More menu stays a menu.
+   * The gallery is choosing: every box shows, and a press on the card's body
+   * ticks its box rather than opening it. The More menu stays a menu.
    */
   selecting?: boolean | undefined;
   /** The box was ticked or cleared, with whether the reader asked for a range. */
@@ -129,23 +120,9 @@ export interface ArtifactCardProps {
 }
 
 /**
- * One artifact, as a card in a gallery or a row in a task's rail.
- *
- * THE CARD (`size="card"`) is a gallery's: a large preview of the artifact's
- * own content on top, the kind's glyph on a badge over the preview's foot,
- * then the title on one line and one quiet line under it, who can open it
- * and when it was last edited ("Edited 20h ago"), with the owner named when
- * the reader is not the owner.
- *
- * THE WHOLE CARD IS ONE LINK, named by the title alone and described by the
- * rest, so a reader moving through a gallery by link hears "Vendor scorecard"
- * and then, if they wait, what it is and who changed it. The card's own
- * controls (`actions`, a More menu) are drawn beside the link rather than
- * inside it, over the preview's corner, so they are real controls a keyboard
- * reaches in turn after the link.
- *
- * THE COMPACT ROW (`size="compact"`) is a task rail's: the kind's glyph, the
- * title and the facts, with no preview and no actions.
+ * One artifact: a gallery card (`size="card"`) or a task rail's compact row.
+ * The whole card is one link named by the title and described by the rest;
+ * its `actions` sit beside the link, never inside it.
  */
 export function ArtifactCard({
   title,
@@ -280,10 +257,8 @@ export function ArtifactCard({
             {pinned ? `, ${text.pinned}` : ''}
           </VisuallyHidden>
           <span className="crewlet-artifact-card__line crewlet-artifact-card__meta">
-            {/* WHO CAN OPEN IT, IN WORDS beside its glyph. Said only to
-                assistive technology, a sighted reader saw a lone lock before
-                "Edited 11m ago". The word gives way with an ellipsis on a
-                narrow card; the glyph stays. */}
+            {/* Access in words beside its glyph; on a narrow card the word
+                truncates and the glyph stays. */}
             {access ? (
               <span className="crewlet-artifact-card__access" title={text.access[access]}>
                 <ArtifactAccessGlyph access={access} />
@@ -328,10 +303,8 @@ export function ArtifactCard({
         </a>
       )}
       {selectable ? (
-        // THE BOX STANDS ON THE PREVIEW'S FOOT, not over its top: a cover's
-        // own title starts at its top corner, and a box there hid its first
-        // words. The anchor has the preview's shape, so the box sits on the
-        // seam opposite the kind's badge whatever the card's width.
+        // The box sits on the preview's foot, opposite the kind's badge, so it
+        // never covers the start of a cover's own title.
         <span className="crewlet-artifact-card__select-anchor">
           <span className="crewlet-artifact-card__select">
             <Checkbox
@@ -356,11 +329,8 @@ export function ArtifactCard({
 }
 
 /**
- * A gallery card while its listing loads: the card's own shape (the preview
- * at its ratio, the badge over its foot, a title line and a meta line), so a
- * gallery that arrives replaces each placeholder in place rather than
- * reflowing the page. Decorative: the host says once what is loading
- * (`Skeleton`'s `label`, or its own status line).
+ * A gallery card's loading placeholder in the card's own shape, so arriving
+ * cards replace it without reflow. Decorative: the host announces the loading.
  */
 export function ArtifactCardSkeleton({ className }: { className?: string | undefined }) {
   return (
@@ -372,10 +342,8 @@ export function ArtifactCardSkeleton({ className }: { className?: string | undef
       </span>
       <span className="crewlet-artifact-card__body">
         <span className="crewlet-artifact-card__badge" />
-        {/* EACH BAR CENTRED IN THE LINE IT STANDS IN FOR, the title's (16px
-            at 1.35) and the facts' (the owner's 20px badge), so the card that
-            arrives takes the placeholder's height. The box's default 32px top
-            margin stood the title's bar 32px under a card's title. */}
+        {/* Each bar is centred in the line it stands in for (title, then facts),
+            so the arriving card keeps the placeholder's height. */}
         <Skeleton variant="box" width="62%" height={18} borderRadius="var(--radius-sm)" marginTop={2} marginBottom={2} />
         <Skeleton variant="box" width="38%" height={12} borderRadius="var(--radius-sm)" marginTop={4} marginBottom={4} />
       </span>

@@ -1,18 +1,6 @@
-// The brand layer (the token package's mapping, `@crewlethq/tokens/css/brand`,
-// then the kit's logo class in src/brand.css), held to its two promises: with
-// no `--brand-*` input set, every token it declares is exactly the theme's own
-// value, in every state of every theme; and with inputs set, one input
-// restyles its whole family in both modes, and the logo draws from the
-// brand's own files or not at all. And held to being one mapping: the kit
-// carries the token package's source verbatim, and the application's scope
-// (`@crewlethq/tokens/css/brand-scope`) declares the same steps in each mode.
-//
-// The cascade is the palette suite's own (`paletteStates`), over the token
-// stylesheets with their brand-driven declarations moved aside exactly as the
-// build moves them, followed by the layer. Custom properties are then
-// resolved the way a browser resolves them on the root element: a var() with
-// no value and no fallback makes the whole declaration invalid, which is what
-// lets a derived step fall back to the theme's value when its input is unset.
+// The brand layer: with no `--brand-*` input set every token is the theme's
+// own value, one input restyles its whole family in both modes, and the kit
+// and the application's scope carry one mapping.
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -37,9 +25,7 @@ const themesCss = `${tokenSheet('@crewlethq/tokens/css/themes')}\n${tokenSheet('
 
 /**
  * The theme's own states, and the same states as the kit paints them: tokens
- * moved aside, then the layer, then the inputs. The kit always carries the
- * theme layer, so its states are the three a theme paints, never the token
- * layer's marketing root alone.
+ * moved aside, then the layer, then the inputs.
  */
 function statesOf(palette, inputs = '') {
   const id = palette === DEFAULT_THEME_ID ? null : palette;
@@ -79,10 +65,9 @@ function splitVar(text, open) {
 }
 
 /**
- * A custom property's value on the element whose declarations `values` are,
- * with every var() substituted, or null where it is invalid at computed-value
- * time (a var() with no value and no fallback, a cycle, or a property declared
- * `initial`, the guaranteed-invalid value).
+ * A custom property's value with every var() substituted, or null where it is
+ * invalid at computed-value time (an unset var() with no fallback, a cycle, or
+ * `initial`).
  */
 function resolveValue(values, text, seen = new Set()) {
   let out = '';

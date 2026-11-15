@@ -6,10 +6,8 @@ export type InlineCodeVariant =
   /** An identifier, a path, a config key, a header name. */
   | 'default'
   /**
-   * A `${NAME}` pointing at a secret or an environment variable. Ligatures are
-   * off everywhere in this component, and this variant holds `${` and `}` to
-   * the name: the chip moves to the next line whole where it fits there, and
-   * breaks inside the name only where it does not fit on a line of its own.
+   * A `${NAME}` pointing at a secret or an environment variable: `${` and `}`
+   * hold to the name, so the chip moves whole where it fits on the next line.
    */
   | 'reference';
 
@@ -29,11 +27,8 @@ export interface InlineCodeProps extends HTMLAttributes<HTMLElement> {
   /** One line, cut with an ellipsis, for a chip inside a dense row. */
   truncate?: boolean | undefined;
   /**
-   * Kept on one line: a short token a reader reads as one (a cron
-   * expression, an event type, a version). The chip moves to the next line
-   * whole rather than splitting, and breaks only in a box no line of which
-   * can hold it. Leave it off for a URL or a path, which has to wrap or it
-   * tears the sentence around it apart.
+   * Kept on one line, for a short token read as one (a cron expression, a
+   * version); it breaks only where no line can hold it. Not for a URL or path.
    */
   whole?: boolean | undefined;
   /**
@@ -65,25 +60,9 @@ function referenceRuns(children: ReactNode): readonly [string, string, string] |
 }
 
 /**
- * One identifier inside a sentence.
- *
- * IT WRAPS, and that is the whole reason it is a component rather than a
- * `code` element with a class. These chips carry public base URLs and config
- * paths, and a URL is ONE UNBREAKABLE WORD to a line breaker: without an
- * explicit break opportunity the chip is pushed whole onto its own line and
- * the sentence around it is torn into fragments.
- *
- * A PATH BREAKS AT ITS SEPARATORS (`pathBreaks`): a break opportunity follows
- * every `/`, so a line ends at "…/v1/" rather than at "…/v1/report" with an
- * "s" carried over. Breaking at any character is the last resort, for one
- * run between separators that no line can hold.
- *
- * ITS GROUND HUGS THE PUNCTUATION AROUND IT. Where a caller hands over the
- * marks that open and close around the chip (`open`, `close`), the ground
- * gives up its inset on that side, so "set." does not read as "set ." with a
- * space before the full stop.
- *
- * For a block of code, several lines of it, use `CodeBlock`.
+ * One identifier inside a sentence. It wraps, a path at its separators
+ * (`pathBreaks`), so a long URL never tears the sentence around it apart.
+ * For several lines of code, use `CodeBlock`.
  */
 export function InlineCode({
   variant = 'default',

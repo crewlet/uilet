@@ -1,84 +1,7 @@
 /**
- * A bounded, pannable and zoomable viewport over positioned content.
- *
- * WHY IT EXISTS. A hierarchy drawn as a chart grows wider than any screen, and
- * the page's own scroller is the wrong instrument for it: an application shell
- * usually has exactly one element allowed to scroll, and a chart that scrolled
- * it sideways would fight the router's scroll memory and every other screen's
- * layout. So the chart lives in its own viewport, the geometry of moving
- * around it is `geometry.ts`, and this component is the wiring from pointers,
- * wheels and keys to that geometry.
- *
- * THE RULES IT KEEPS.
- *
- * - IT FILLS THE HEIGHT ITS CONTAINER GIVES IT and never grows the page. A
- *   screen that wants a full height canvas gives it a full height box.
- * - THE PAGE STILL SCROLLS. A plain wheel pans the canvas only while focus is
- *   inside it; otherwise the wheel belongs to the page, so a reader scrolling
- *   down is never caught by a chart passing under the pointer. Ctrl or Command
- *   with the wheel zooms toward the cursor wherever the pointer is, which is
- *   also what a trackpad pinch sends.
- * - TOUCH IS OPT IN. Until the canvas is tapped, one finger scrolls the page
- *   (`touch-action: pan-y`); a tap activates it, one finger then pans, and a
- *   visible Done control hands the finger back to the page. Two fingers pinch
- *   toward their midpoint at any time, because two fingers are never a scroll.
- * - THE ZOOM KEYS ARE THE CANVAS'S, WHEREVER FOCUS IS INSIDE IT: `+`, `-` and
- *   `0` (and Ctrl or Command with `=`, `-` and `0`) work on an item as well as
- *   on the viewport, because the tab stop a chart hands out is an ITEM and a
- *   reader who has navigated the content is exactly the reader who wants to
- *   zoom it. They are in no other keyboard pattern here, so there is nothing
- *   for them to collide with. The PAN keys are the viewport's own: the arrows
- *   belong to whatever holds focus, so a tree's navigation and a listbox's
- *   selection are never eaten. A text field inside keeps every key it is sent.
- * - HOW FAR IT ZOOMS IS THE CONTENT'S ANSWER: out as far as the fit, because
- *   there is nothing beyond the whole chart to see, and in until the largest
- *   item fills the pane, because that is what a reader pressing Zoom in is
- *   asking for. See `zoomLimits`.
- * - THE ZOOM SAYS WHAT IT IS, between the two steppers, and a reader can type
- *   one. A zoom has a value as well as a direction, and two chevrons say only
- *   the direction: without the readout, getting back to actual size from a
- *   stray pinch is pressing a chevron until it looks right. What is typed goes
- *   through the same clamp as every other zoom.
- * - A FOCUSED ITEM IS NEVER SCROLLED INTO VIEW BEHIND THE TRANSFORM'S BACK.
- *   The viewport clips rather than scrolls, but a browser still scrolls a
- *   clipping box to show a focused descendant; that scroll is converted into a
- *   pan and reset, so the transform stays the one source of truth.
- * - ITS CHROME IS ONE GROUP IN ONE CORNER: the zoom bar, whatever the caller
- *   adds to the end of it, and whatever bars it stacks under it. Everything in
- *   that group acts on the canvas, so it is drawn beside the canvas rather
- *   than in the page's own toolbar.
- * - ITS OVERLAY IS A LayerHost. The untransformed layer over the viewport is
- *   the portal target for every menu, popover and picker opened from an item
- *   inside, so each is placed from its anchor's viewport rectangle rather than
- *   scaled by the zoom or clipped inside a card. The host receives
- *   `LAYER_REPOSITION_EVENT` whenever the content moves beneath it, which is
- *   how an open surface follows its anchor through a pan or a zoom.
- * - FIT HAPPENS ONCE, on the first layout that has both a measured viewport
- *   and content bounds, and again only on request. A data push that changes
- *   the content never moves the operator's view, and nothing is shown before
- *   that first fit. With `refitOnResize`, a RESIZE refits a view nobody has
- *   moved since its last fit: that view was the whole content, and a window
- *   made narrower that kept the old zoom would cut the content off for a
- *   reader who never asked to look at less of it. Once the reader has panned
- *   or zoomed, a resize keeps their view and only keeps the content
- *   reachable. It is opt in because a screen that chooses its own views
- *   after a fit (a chart held at a legible zoom) decides its own refits.
- *   The same "untouched" is what `restoreView` asks: a fit it gives back is
- *   the fit of the content as it stands then, never the old fit's transform.
- * - MOTION ONLY ON REQUEST. A fit, a zoom button or a reveal eases; a drag, a
- *   pinch, a wheel and a relayout anchor never do, and under reduced motion
- *   nothing does. An easing lasts as long as its transition: a clamp that
- *   arrives while one runs (a data push) rides along with it, and one that
- *   arrives after it has settled moves at once, as any move nobody asked for
- *   must. A request that moves nothing starts no easing.
- *
- * Pointer capture is used where the browser has it and the drag is tracked on
- * the window either way, so a drag that leaves the viewport keeps panning.
- * Fullscreen is not this component's concern: a surface that goes fullscreen
- * must take its dialogs and toasts with it, so the screen that owns those
- * decides.
- *
- * Ported from the engine dashboard's `ui/Canvas.tsx`, with its suite.
+ * A pannable, zoomable viewport over positioned content that wires pointers,
+ * wheels and keys to `geometry.ts`. It fits once, on the first measured layout,
+ * then only on request or on a resize of an untouched fit (`refitOnResize`).
  */
 
 import {
@@ -140,12 +63,9 @@ import {
 export type CanvasEase = 'near' | 'travel';
 
 /**
- * AN OPENING WORKED OUT FROM THE VIEWPORT, for a view that cannot be known
- * before the canvas has its size, such as one item drawn in the middle of it.
- * Asked once, when the first content is placed, with `room` (the part of the
- * viewport the canvas's own bars leave, in viewport coordinates) and `fit`
- * (the view that shows all of the content there). Answering null opens on the
- * fit, which then counts as one: see `refitOnResize`.
+ * An opening view worked out from the viewport (such as one item centred),
+ * asked once when the first content is placed, with `room` (what the bars
+ * leave) and `fit`. Null opens on the fit, which then counts as one.
  */
 export type CanvasOpening = (room: CanvasRect, fit: CanvasView) => CanvasView | null;
 
@@ -159,61 +79,28 @@ export interface CanvasHandle {
   zoomTo(scale: number): void;
   /**
    * Pan the least distance that brings a world rectangle into view, clear of
-   * the end bar, as a fit is (see [CanvasProps.overlayEnd]).
-   *
-   * `outside` is where a rectangle lying WHOLLY outside the view is brought:
-   * `edge`, the default, just inside the nearest edge, for a reader stepping
-   * to the next item; `centre`, the middle of the view at the same zoom, for a
-   * reader SENT to an item somewhere else, and that move travels rather than
-   * corrects. A rectangle partly in view moves the least distance either way.
-   * See [revealView].
+   * the end bar. One wholly outside lands inside the nearest edge (`edge`) or
+   * travels to the middle (`centre`, for a reader sent there): [revealView].
    */
   reveal(target: CanvasRect, outside?: 'edge' | 'centre'): void;
   /** Keep a node still on screen across a relayout: see `anchorView`. */
   anchor(before: CanvasPoint, after: CanvasPoint): void;
   /**
-   * Ease onto one world rectangle, remembering the view it left.
-   *
-   * For a surface that is about one item and has to say WHERE that item is:
-   * the chart moves to it, leaves room around it (`regionView`), and gives the
-   * reader their own view back on [restoreView]. Calling it twice remembers
-   * only the first view, so a second region is still left by one restore.
-   *
-   * `context` is how many times the region's own width the visible width comes
-   * to: [CANVAS_FOCUS_CONTEXT] unless it is named, and
-   * [CANVAS_COMPOSE_CONTEXT] for a region a reader has to type into rather
-   * than merely look at. `ceiling` is how far in the ease may zoom, for a
-   * region with a size of its own to respect: see [regionView].
+   * Ease onto one world rectangle, remembering the first view it left for
+   * [restoreView]. `context` and `ceiling` are as in [regionView]; pass
+   * [CANVAS_COMPOSE_CONTEXT] for a region a reader types into.
    */
   focusRegion(target: CanvasRect, context?: number, ceiling?: number): void;
   /**
-   * Remember the view the reader is on NOW, as the one [restoreView] gives
-   * back, without moving anything.
-   *
-   * FOR A REGION THAT DOES NOT EXIST YET. [focusRegion] remembers the view it
-   * leaves, which is the right moment whenever the thing being eased onto was
-   * already on the chart. A node being COMPOSED is not: its card has to be
-   * added to the content and measured before there is a rectangle to ease
-   * onto, and the content growing is itself a change the canvas answers by
-   * keeping what it holds reachable. So by the time `focusRegion` could be
-   * called, the view is no longer the one the reader was on, and what came
-   * back afterwards was the chart as the GHOST had left it. Measured on the
-   * engine's own builder: 198px sideways, every time an add was cancelled.
-   *
-   * Calling it twice keeps the first view, as [focusRegion] does.
+   * Remember the current view for [restoreView] without moving, for a region
+   * not on the chart yet (a node being composed is measured first, and the
+   * content growing moves the view). A second call keeps the first view.
    */
   rememberView(): void;
   /**
-   * Ease back to the view [focusRegion] or [rememberView] left, if it has not
-   * been given back already.
-   *
-   * A FIT IS GIVEN BACK AS A FIT. Where the view left was the untouched fit (a
-   * fit nobody has moved since, as `refitOnResize` counts one), what comes
-   * back is the fit of the content as it stands NOW rather than the old fit's
-   * zoom and pan: a fit says "all of the content", and a surface that changed
-   * the content while it was open (a node added in it, a branch opened for
-   * it) and gave back the old transform cut the new content off at the edges.
-   * A view the reader moved is theirs, and comes back exactly.
+   * Ease back to the view [focusRegion] or [rememberView] left, once. An
+   * untouched fit comes back as the fit of the content as it is now; a view
+   * the reader moved comes back exactly.
    */
   restoreView(): void;
   /** A world rectangle in viewport coordinates, for positioning an overlay. */
@@ -226,16 +113,9 @@ export interface CanvasHandle {
 }
 
 /**
- * The pointer the field shows while nothing is being dragged.
- *
- * `hand` says the field pans, which is what a chart moved by dragging it
- * wants. A surface with tools names the one its tool means: `pointer` for
- * selecting, `crosshair` for placing a thing, `text` for placing text. A pan
- * in progress always shows the closed hand, whatever the tool.
- *
- * Each is the operating system's own pointer (`grab`, `default`, `crosshair`,
- * `text`, and `grabbing` for a pan), the hand a reader already knows from
- * every map and design tool, rather than a drawing of the kit's own.
+ * The pointer the field shows while nothing is dragged, as the system's own
+ * cursor: `hand` (grab) for a field that pans, or a tool's (`pointer`,
+ * `crosshair`, `text`). A pan in progress always shows `grabbing`.
  */
 export type CanvasCursor = 'hand' | 'pointer' | 'crosshair' | 'text';
 
@@ -312,32 +192,21 @@ export interface CanvasProps {
   /** The positioned content: the layer that is panned and zoomed. */
   children: ReactNode;
   /**
-   * Anything drawn over the viewport without the transform, such as a note
-   * about what the chart is showing.
-   *
-   * THE LAYER IS INERT AND ITS CHILDREN ARE NOT. Empty space passes a press
-   * through to the viewport beneath, but each child takes its own presses
-   * back, because a control drawn here has to be pressable. So a note that
-   * must not swallow the drag that pans the chart sets `pointer-events: none`
-   * on itself.
+   * Anything drawn over the viewport without the transform. Empty space passes
+   * presses through but each child takes its own, so a note that must not
+   * block a pan sets `pointer-events: none` on itself.
    */
   overlay?: ReactNode;
   /** The zoom out, zoom in and fit controls. */
   controls?: boolean | undefined;
   /**
-   * Which corner the controls sit in.
-   *
-   * `top-right` is where a chart's own toolbar belongs, and where the console
-   * org chart puts it: out of the way of the content, which a tree grows
-   * DOWNWARD from its root, and beside the first place a reader looks after
-   * the root itself.
+   * Which corner the controls sit in. `top-right` suits a tree, which grows
+   * downward from its root.
    */
   controlsPlacement?: 'top-right' | 'bottom-right' | undefined;
   /**
-   * Anything else in the control bar, drawn after the zoom controls: a
-   * fullscreen toggle, a print, a download. It is in the bar rather than in
-   * the page's own toolbar because it acts on the CANVAS, and a control that
-   * acts on the canvas from 800px away is a control nobody finds.
+   * Anything else in the control bar, after the zoom controls (fullscreen,
+   * print, download): a control that acts on the canvas sits beside it.
    */
   controlsExtra?: ReactNode | undefined;
   /**
@@ -358,58 +227,31 @@ export interface CanvasProps {
    */
   controlsStart?: ReactNode | undefined;
   /**
-   * A bar of the caller's own across the canvas from the control bar, at its
-   * end: the bottom right beside a top-right bar, the top right beside a
-   * bottom-right one. On the bar's surface and inset; it wraps rather than
-   * running off a narrow canvas, and a fit keeps the content clear of it.
+   * A bar of the caller's own at the end across from the control bar, on its
+   * surface and inset. It wraps on a narrow canvas, and a fit keeps the
+   * content clear of it.
    */
   overlayEnd?: ReactNode | undefined;
   /**
-   * A note under the controls, about a key or a state: "Press Esc to leave
-   * fullscreen".
-   *
-   * DECORATION, AND AN ANNOUNCEMENT. It takes no press and no tab stop, so it
-   * never comes between a reader and the chart; it is a `status` region, so a
-   * canvas that puts one up when it enters a state a reader cannot see out of
-   * says so to a reader who cannot see it either. Give it a node whose content
-   * comes and goes rather than the node itself: the region stays in the
-   * document while it is empty, and a live region that was already there when
-   * its message arrives is a message a screen reader announces.
+   * A note under the controls, such as "Press Esc to leave fullscreen", in a
+   * `status` region with no press or tab stop. Keep passing a node and change
+   * its content, so the region exists before the message arrives.
    */
   hint?: ReactNode | undefined;
   /**
-   * The width, in world units, of the largest single item the content draws.
-   *
-   * It is what the largest zoom is derived from ([zoomLimits]): a reader who
-   * keeps pressing Zoom in is asking to look at one item, so the ceiling is
-   * the zoom that gives them one. Unset, the fixed ceiling stands.
+   * The width, in world units, of the largest single item: the largest zoom
+   * fills the viewport with it ([zoomLimits]). Unset, the fixed ceiling stands.
    */
   largestItemWidth?: number | undefined;
   /**
-   * Pushes the content back, for a surface opened OVER the canvas that is
-   * about one part of it.
-   *
-   * The content is blurred and faded rather than covered, so the chart is
-   * still there behind the decision being made about it, which is what the
-   * console chart does while a node is being added. It is a state rather than
-   * an entrance, so a reader who asked for less motion simply gets it.
+   * Blurs and fades the content back, for a surface opened over the canvas
+   * about one part of it. A state, not an entrance, so reduced motion holds.
    */
   dimmed?: boolean | undefined;
   /**
-   * What the field under the content is drawn as.
-   *
-   * `dotted` is for a surface whose content is moved by dragging the field
-   * itself, such as an organization chart: the dots say the field pans before
-   * anybody drags it. They are drawn on the frame rather than on the content,
-   * so they stay put while the content moves over them. `plain`, the default,
-   * is the page's own ground and nothing else.
-   *
-   * `grid` is a design tool's ground: the same dots laid on the content's own
-   * plane, so they pan with it and their pitch follows the zoom (see
-   * [gridOf]). For a canvas of things a person places and arranges, where the
-   * grid is the surface they are placed ON rather than a texture behind a
-   * chart, and a grid that stayed put while the boards moved over it would
-   * read as two planes sliding apart.
+   * The field under the content: `plain` (the page's ground), `dotted` (dots
+   * on the frame that stay put, saying the field pans), or `grid` (dots on the
+   * content's plane that pan and scale with it, see [gridOf]).
    */
   ground?: CanvasGround | undefined;
   /**
@@ -422,18 +264,13 @@ export interface CanvasProps {
   cursor?: CanvasCursor | undefined;
   /**
    * Refit on a resize while the view is still the last fit, rather than keep
-   * the zoom the old size was fitted at. For a surface whose fit is the view
-   * a reader expects back whatever the window does, such as a design's
-   * boards. Off by default: a screen that adjusts the view after each fit
-   * (holding a zoom, revealing a card) runs its own refit.
+   * the old zoom. Off by default: a screen that adjusts the view after each
+   * fit runs its own refit.
    */
   refitOnResize?: boolean | undefined;
   /**
-   * Whether one finger can pan the canvas at all.
-   *
-   * On by default, behind the tap that activates it. Turned off, one finger
-   * always belongs to the page and only a two finger pinch reaches the canvas,
-   * which is what a chart embedded in a long scrolling page wants.
+   * Whether one finger can pan the canvas, after the tap that activates it.
+   * Off, one finger always scrolls the page and only a pinch reaches it.
    */
   touch?: boolean | undefined;
   /** Every string the canvas renders itself, for another language. */
@@ -441,21 +278,14 @@ export interface CanvasProps {
   /** Called once, when the first measured layout has been fitted. */
   onReady?: (() => void) | undefined;
   /**
-   * Called with the view and the viewport's size whenever either changes,
-   * from the first fit on.
-   *
-   * THE VIEW IT IS GIVEN IS WHERE THE CONTENT IS GOING, not where an easing
-   * has got to: a fit or a zoom step reports its destination at once, so a
-   * surface that mounts what is on screen (a design's live artboards) mounts
-   * what the reader will see when the move lands, rather than chasing every
-   * frame of it.
+   * Called with the view and the viewport's size whenever either changes, from
+   * the first fit on. The view is where an easing is going, not where it has
+   * got to.
    */
   onViewChange?: ((view: CanvasView, viewport: CanvasSize) => void) | undefined;
   /**
-   * The view to open on instead of the fit, such as one a reader left and came
-   * back to: read once, when the first content is placed, and kept reachable.
-   * An opening that depends on the viewport's size is a [CanvasOpening],
-   * asked at that moment.
+   * The view to open on instead of the fit, read once when the first content
+   * is placed and kept reachable; a [CanvasOpening] is asked at that moment.
    */
   initialView?: CanvasView | CanvasOpening | undefined;
   ref?: Ref<CanvasHandle> | undefined;
@@ -497,17 +327,9 @@ export function Canvas({
 
   const [view, setView] = useState<CanvasView>(IDENTITY_VIEW);
   /*
-   * WHICH EASE THE WORLD IS RUNNING, rather than whether it is running one.
-   *
-   * `near` is a CORRECTION to a view the reader already has: a fit, a zoom
-   * step, the least pan that brings something into view. It lands quickly
-   * because nothing about it is news.
-   *
-   * `travel` is the chart GOING SOMEWHERE ELSE, which is a gesture rather than
-   * a correction: the reader asked about one node, or is composing one, and
-   * what the movement says is WHERE that place is. At the near step it read as
-   * a jump and the journey was lost, which is the whole of what it is for. See
-   * the stylesheet for the two durations and where they come from.
+   * Which ease is running: `near` corrects a view the reader has (a fit, a
+   * zoom step, a least pan) and lands quickly; `travel` goes somewhere else,
+   * slower so the journey reads. The durations are in the stylesheet.
    */
   const [animate, setAnimate] = useState<CanvasEase | false>(false);
   const [ready, setReady] = useState(false);
@@ -526,11 +348,8 @@ export function Canvas({
   sizeNow.current = size;
 
   /*
-   * HOW FAR THIS CHART MAY BE ZOOMED, which is a fact about the content and
-   * the viewport rather than a constant: out as far as the fit and no further,
-   * in until one card fills the pane. Read through a ref for the reason every
-   * other piece of state here is, and recomputed on every render because all
-   * three of its inputs are already render state.
+   * How far this chart may be zoomed (out to the fit, in until one card fills
+   * the pane): recomputed each render, read through a ref by the handlers.
    */
   /*
    * THE BAND THE END BAR TAKES, at the top or the bottom: a fit is made in the
@@ -572,10 +391,8 @@ export function Canvas({
   const left = useRef<{ view: CanvasView; fit: boolean } | null>(null);
 
   /*
-   * The view the last fit landed on, for as long as it is still the view: a
-   * resize refits it, where a view the reader has moved since is kept. Read
-   * against the view after the fit's own clamp, so a fit that the clamp
-   * nudged still counts as untouched.
+   * The view the last fit landed on, while it is still the view, so a resize
+   * can refit it. Read after the fit's own clamp, so a nudged fit still counts.
    */
   const fitted = useRef<CanvasView | null>(null);
 
@@ -586,10 +403,8 @@ export function Canvas({
     const bounds = contentNow.current;
     const clamped = bounds ? clampPan(next, bounds, sizeNow.current) : next;
     const was = viewNow.current;
-    // Unchanged is not a change: a resize or a data push that leaves the view
-    // where it was must not tell the overlay that anything moved, and a
-    // request that moves nothing must neither start an easing (no transition
-    // would ever end it) nor cut short one already running.
+    // An unchanged view is not a change: it tells the overlay nothing, and it
+    // neither starts an easing (no transition would end it) nor cuts one short.
     if (clamped.x === was.x && clamped.y === was.y && clamped.k === was.k) return;
     if (eased !== undefined) setAnimate(eased);
     viewNow.current = clamped;
@@ -697,11 +512,8 @@ export function Canvas({
     layer?.dispatchEvent(new CustomEvent(LAYER_REPOSITION_EVENT, { detail: view }));
   }, [view, layer]);
 
-  // AN EASING ENDS WITH ITS TRANSITION. Only the world's own transform counts,
-  // not a transition inside a card that bubbled up. The overlay is told once
-  // more, because a surface placed from an item's rectangle while the world
-  // was easing measured the item where the move began, not where it came to
-  // rest.
+  // An easing ends with the world's own transform transition. The overlay is
+  // told once more, since a surface placed mid-ease measured where it began.
   const settled = (event: ReactTransitionEvent<HTMLDivElement>) => {
     // The world also transitions its blur and its fade when the content is
     // pushed back, and neither of those is the move this is waiting for.
@@ -734,10 +546,8 @@ export function Canvas({
       },
       reveal: (target, outside = 'edge') => {
         /*
-         * IN THE ROOM THE END BAR LEAVES, as a fit is: measured against the
-         * whole viewport, a reveal stopped an item at the foot of the pane,
-         * under the legend drawn there. The view is moved into the room's
-         * own coordinates and back.
+         * In the room the end bar leaves, as a fit is: the view is moved into
+         * the room's own coordinates and back.
          */
         const { top, bottom } = bandNow.current;
         const room = { width: sizeNow.current.width, height: Math.max(0, sizeNow.current.height - top - bottom) };
@@ -815,10 +625,8 @@ export function Canvas({
     setPanning(false);
   }, []);
 
-  // CAPTURED ONLY ONCE IT IS A GESTURE. A browser dispatches the click that
-  // ends a captured press at the capturing element, so capturing every press
-  // on arrival would turn a plain click on an item into a click on the
-  // viewport and the item would never hear it.
+  // Captured only once it is a gesture: a browser sends the click that ends a
+  // captured press to the capturing element, so the item would never hear it.
   const capture = useCallback((id: number) => {
     const el = viewport.current;
     if (!el || typeof el.setPointerCapture !== 'function') return;
@@ -943,22 +751,9 @@ export function Canvas({
 
   // ---- keys -------------------------------------------------------------------
   /*
-   * WHOSE KEYS ARE WHOSE.
-   *
-   * The ZOOM keys are the canvas's wherever focus is inside it. They used to
-   * be the viewport ELEMENT's alone, and the tab stop a chart hands out is an
-   * item inside the viewport, not the viewport: so a reader who had navigated
-   * to a node (which is every reader, after their first arrow key) pressed `+`
-   * and nothing happened, while the canvas's own description went on telling
-   * them it would. `+`, `-` and `0` are in no other keyboard pattern here,
-   * so there is nothing for them to collide with.
-   *
-   * The PAN keys stay the viewport's own. The arrows belong to whatever holds
-   * focus: in a tree they walk the nodes, in a listbox they move the
-   * selection, and a canvas that took them would eat both.
-   *
-   * A TEXT FIELD KEEPS EVERYTHING. `-` and `0` are characters, and a zoom
-   * field inside the canvas is the one place both are typed.
+   * Zoom keys work wherever focus is inside the canvas; pan keys only on the
+   * viewport, since the arrows belong to whatever holds focus. A text field
+   * keeps every key.
    */
   function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (!ready) return;
@@ -1016,11 +811,8 @@ export function Canvas({
   };
 
   /*
-   * A ZOOM SOMEBODY TYPED, as a percentage of actual size. It is applied as a
-   * factor rather than set as a scale, so it goes through the one clamp every
-   * other zoom goes through and lands on the same bounds: 40 on a canvas whose
-   * floor is a quarter is a quarter, not a fortieth, and nothing here has to
-   * know what the floor is.
+   * A typed zoom, as a percentage of actual size. Applied as a factor, so it
+   * goes through the one clamp every zoom does.
    */
   const zoomToPercent = (percent: number) => {
     if (!Number.isFinite(percent) || percent <= 0) return;
@@ -1042,13 +834,9 @@ export function Canvas({
     >
       <LayerHost className="crewlet-canvas__layer">
         {/*
-         * A CANVAS VIEWPORT IS A FOCUSABLE GROUP, which is what the two rules
-         * turned off here forbid of a non-interactive role. It has to be: the
-         * zoom and pan keys belong to the viewport itself rather than to any
-         * item in it, and an element nobody can focus can be told no keys. It
-         * is announced as a canvas by aria-roledescription and says what its
-         * keys do through aria-describedby, so it reads as an instrument
-         * rather than as a div somebody hung handlers on.
+         * The viewport is a focusable group that takes the zoom and pan keys,
+         * which the two rules below forbid of a non-interactive role. It is
+         * announced through aria-roledescription and aria-describedby.
          */}
         {/* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex -- see above */}
         <div
@@ -1089,11 +877,8 @@ export function Canvas({
       ) : null}
       {(controls || touchActive || controlsBelow || hint) && (
         /*
-         * ONE GROUP IN ONE CORNER, as a column of bars: the zoom bar, then
-         * whatever the caller stacks under it. The console chart's own
-         * arrangement, and the reason it is a column rather than three things
-         * the page places itself is that all of them act on the canvas, so
-         * they belong beside the canvas and beside each other.
+         * One group in one corner: the zoom bar, then the caller's bars under
+         * it, all acting on the canvas.
          */
         <div className="crewlet-canvas__controls" data-placement={controlsPlacement}>
           {(controls || touchActive) && (
@@ -1187,15 +972,9 @@ function sameView(fit: CanvasView | null, view: CanvasView): boolean {
 }
 
 /**
- * WHERE A `grid` GROUND'S DOTS FALL for a view: their pitch on screen as a
- * multiple of the dotted step, and the screen point one of them sits on.
- *
- * The world's pitch doubles or halves with the zoom so the screen pitch stays
- * between one and two steps, as a design tool's grid does: at every zoom the
- * dots are as dense as the dotted ground's and never twice as sparse, and one
- * of them always sits on the content's origin, so the grid and the content
- * never slide apart. The offset is the view's own translation, since the
- * background repeats from it both ways.
+ * Where a `grid` ground's dots fall for a view: their screen pitch (one to two
+ * dotted steps, halving or doubling with the zoom) and the screen point one
+ * sits on, so the grid never slides off the content's origin.
  */
 export function gridOf(view: CanvasView): { scale: number; x: number; y: number } {
   const k = view.k > 0 && Number.isFinite(view.k) ? view.k : 1;
@@ -1213,25 +992,9 @@ function gridProperties(view: CanvasView): CSSProperties {
 }
 
 /**
- * What the zoom is, and where a reader says what it should be.
- *
- * TWO CONTROLS IN ONE PLACE, and the reason is that a zoom has a value as well
- * as a direction. The buttons either side of it step; between them a reader can
- * SEE where the view stands, which two chevrons never say, and go straight to a
- * number rather than pressing a chevron eight times to get back to actual size.
- *
- * IT IS A BUTTON UNTIL IT IS ASKED FOR, not a box sitting open. A number input
- * parked in a toolbar takes a tab stop on every canvas whether or not anybody
- * ever types in it, and reads as a field somebody must fill in; a button reads
- * as the fact it shows. Pressing it puts a field in its place, Enter applies
- * what was typed, Escape and blur abandon it, and either way focus comes back
- * to the button, so a keyboard reader is never left standing in a control that
- * has just been replaced.
- *
- * The input is TEXT rather than `number`: a spinner in a 4ch box is two targets
- * too small to hit, and the arrow keys belong to the canvas rather than to a
- * stepper nobody asked for. Everything but digits is dropped as it is typed, so
- * there is no such thing as an invalid value to report.
+ * The zoom readout: a button showing the zoom that becomes a text field when
+ * pressed. Enter applies, Escape and blur abandon, and focus returns to the
+ * button; anything but digits is dropped as it is typed.
  */
 function ZoomReadout({
   zoom,
@@ -1252,15 +1015,8 @@ function ZoomReadout({
   const button = useRef<HTMLButtonElement>(null);
   const field = useRef<HTMLInputElement>(null);
   /*
-   * FOCUS FOLLOWS THE SWAP, in the render after it: whichever of the two this
-   * control is showing, focusing it inside the handler focuses nothing, because
-   * the element being shown has not been put in place yet.
-   *
-   * Into the field whenever it opens, which is a press away and never a page
-   * load, so it is a move the reader asked for rather than the `autoFocus` this
-   * package forbids. Back to the button only for a KEY that finished with the
-   * field: a blur closed it because the reader went somewhere else, and
-   * dragging them back would make the field impossible to leave.
+   * Focus follows the swap in the render after it: into the field whenever it
+   * opens, back to the button only when a key closed it, not after a blur.
    */
   const returning = useRef(false);
   useLayoutEffect(() => {
@@ -1323,13 +1079,8 @@ function ZoomReadout({
 }
 
 /**
- * Swallows the click a drag ends with.
- *
- * A drag that started on an item ends in a click on that item, and opening an
- * editor because somebody moved the chart is the canvas lying about what they
- * did. Only a click inside the viewport is swallowed, and the listener goes
- * after one turn of the event loop whether or not a click came, so a later,
- * real click is never eaten.
+ * Swallows the click a drag ends with, inside the viewport only, and stops
+ * listening after one turn of the event loop so a later click is never eaten.
  */
 function swallowNextClick(within: HTMLElement): void {
   const swallow = (event: MouseEvent) => {

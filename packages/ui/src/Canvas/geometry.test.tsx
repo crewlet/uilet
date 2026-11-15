@@ -1,18 +1,7 @@
 /**
- * The viewport's promises, as arithmetic.
- *
- * None of these can be observed in jsdom, which has no layout, so every one of
- * them would otherwise ship on trust: a zoom that drifts off the cursor, a pan
- * that loses the chart, a fit that centres a tree's root off the top of the
- * screen, a reveal that jumps when nothing needed to move.
- *
- * Ported from the engine dashboard's `ui/viewport.test.ts`. Its `placePopup`
- * half moved to the Layer module, where the function now lives.
- *
- * Named `.test.tsx` although nothing here renders: the runner's own suites are
- * `.test.ts` and `.test.tsx`, and the ones beside a component are picked up by
- * extension, so a `.test.ts` here would be collected by nobody and pass by
- * never running.
+ * The viewport's zoom, pan, fit and reveal, as arithmetic: jsdom has no layout.
+ * Named `.test.tsx` although nothing renders, because the suites beside a
+ * component collect `.test.tsx` only: a `.test.ts` here would never run.
  */
 
 import { describe, expect, test } from 'vitest';

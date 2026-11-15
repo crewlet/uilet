@@ -1,11 +1,6 @@
 /**
- * A TRAIL KEEPS ITS WAY BACK OUT beside a busy bar, measured: every ancestor
- * keeps a readable minimum of its words (all of a short name, the first
- * twenty characters of a long title), and where the bar cannot hold that
- * beside its controls it breaks a line rather than cutting the ancestors to
- * stubs. Its floor was measured off the trail as drawn, so beside a busy bar
- * it allowed whatever cut it saw: "D..." for the workspace, nothing at all
- * where that crumb leads with a glyph.
+ * Beside a busy bar every ancestor keeps a readable minimum of its words, and
+ * a bar that cannot hold that beside its controls breaks a line instead.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';

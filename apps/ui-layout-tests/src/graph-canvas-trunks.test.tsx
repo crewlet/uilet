@@ -1,10 +1,6 @@
 /**
- * A TRUNK'S COUNT NEVER STANDS ON ANYTHING, measured in a browser. A count
- * and a cluster's title both hold their size on screen while the gap between
- * two bands shrinks with the zoom, so at the gap's middle a count came to
- * stand on the lower clusters' titles, and two trunks leaving one cluster
- * wrote their counts on each other. Each count now takes a place clear of
- * every title, card and other count, or is not written.
+ * A trunk's count never stands on a title, card or other count, measured in a
+ * browser: each count takes a clear place or is not written.
  */
 import { afterEach, describe, expect, test } from 'vitest';
 import { page } from 'vitest/browser';

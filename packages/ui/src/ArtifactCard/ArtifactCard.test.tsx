@@ -1,8 +1,6 @@
 /**
- * One artifact as a card: one real link named by its title, the facts as its
- * description, the kind on a badge over the preview's foot, who can open it
- * and when it was edited on one quiet line, and the card's own controls
- * beside the link rather than inside it.
+ * One artifact as a card: one real link named by its title and described by
+ * its facts, with the card's own controls beside the link rather than inside.
  */
 
 import { readFileSync } from 'node:fs';

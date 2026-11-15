@@ -1,33 +1,7 @@
 /**
- * The geometry of a pannable, zoomable viewport, as pure functions.
- *
- * WHY IT IS SEPARATE FROM THE COMPONENT. Every rule here is arithmetic a
- * browser-free suite cannot otherwise reach: jsdom has no layout, no pointer
- * capture and no `DOMMatrix`, so a zoom that drifted off the cursor or a fit
- * that cropped the root would pass any component suite. Kept pure, each rule
- * is a function of numbers with a suite of its own, and the component is left
- * with the wiring. `placePopup` in the Layer module is the same idea for the
- * surfaces that float over a canvas.
- *
- * THE MODEL. A view is `{ x, y, k }`: a world point `p` lands on screen at
- * `p * k + (x, y)`, with the origin at the viewport's top left corner. Every
- * function returns a new view and never mutates one.
- *
- * THE RULES IT KEEPS.
- *
- * - A ZOOM KEEPS ITS FOCUS STILL. The world point under the cursor (or the
- *   pinch midpoint, or the viewport centre for a key) stays where it was,
- *   including when the zoom is clamped at a limit.
- * - CONTENT CANNOT BE LOST. A pan leaves at least a margin of the content on
- *   screen on each axis, so nobody drags the chart away and has nothing left
- *   to drag it back by.
- * - A FIT NEVER ENLARGES past one to one, and when the content is too tall to
- *   fit even at the smallest zoom it aligns to the TOP, where a tree's root
- *   is, rather than centring the root off screen.
- * - A REVEAL MOVES AS LITTLE AS IT CAN: nothing when the target is already in
- *   view, otherwise just enough to bring it inside the padding. The one
- *   exception is asked for by name: a target a reader is SENT to that none of
- *   the view shows is drawn in its middle (see [revealView]).
+ * A pannable, zoomable viewport's geometry as pure functions, so jsdom suites
+ * can test it. A world point `p` is drawn at `p * k + (x, y)`, and a fit too
+ * tall for the viewport aligns to the top, where a tree's root is.
  */
 
 export interface CanvasPoint {
@@ -53,63 +27,32 @@ export interface CanvasView {
 export const IDENTITY_VIEW: CanvasView = { x: 0, y: 0, k: 1 };
 
 /**
- * The smallest zoom a canvas with no content to measure will go to. At a
- * quarter size body text is about three pixels tall: past reading, but the
- * shape of the structure and where a card sits in it are still legible.
- *
- * IT IS A BACKSTOP, NOT THE FLOOR. Once the content has been measured the
- * floor is the FIT itself ([zoomLimits]): there is nothing to see past the
- * whole chart, and a reader who has shrunk it to a quarter of that has a
- * screen of grey and no way to tell which way is back. It is what the console
- * chart does, where zooming out lerps toward the fit and snaps to it.
+ * The smallest zoom for content not yet measured; once it is measured, the
+ * floor is the fit itself ([zoomLimits]).
  */
 export const CANVAS_MIN_ZOOM = 0.25;
 
 /**
- * The smallest a canvas's largest zoom may be, for content whose own items
- * were never measured.
- *
- * THE CEILING IS NORMALLY THE CONTENT'S ([zoomLimits]): one item filling the
- * viewport, which is the console chart's own ceiling and the answer to "let me
- * look at THIS one". Double size was the ceiling for every chart once, which
- * on a 180px node in a 1267px viewport is a fifth of the magnification a
- * reader can ask for there.
+ * The smallest a canvas's largest zoom may be, for content whose items were
+ * never measured; normally one item filling the viewport sets it.
  */
 export const CANVAS_MAX_ZOOM = 2;
 
 /**
- * The largest zoom any canvas will go to, however small its largest item.
- *
- * A chart whose widest card is a few dozen pixels would otherwise let a reader
- * zoom to twenty times, where a pan of one wheel notch crosses the whole
- * content and nothing on screen says where they are.
+ * The largest zoom any canvas will go to, however small its largest item, so a
+ * wheel notch never pans across the whole content.
  */
 export const CANVAS_ZOOM_CEILING = 8;
 
 /**
- * How much of the viewport a region focused with [regionView] is given: the
- * visible width is this many times the region's own.
- *
- * Three, because the point of easing onto a region is to say where it is as
- * well as what it is: the region fills the middle third and its surroundings
- * are still drawn either side of it. The console chart's own ghost is 280
- * units wide and it eases to a visible width between 660 and 1040, which is
- * 2.4 to 3.7 times.
+ * The visible width, as a multiple of the region's own, that [regionView] gives
+ * a focused region: it fills the middle third with its surroundings in view.
  */
 export const CANVAS_FOCUS_CONTEXT = 3;
 
 /**
- * How much of the viewport a region a reader has to TYPE INTO is given: the
- * visible width is one and a half times the region's own, so it takes two
- * thirds of the pane rather than a third.
- *
- * A region focused because a surface is ABOUT it is being pointed at, and the
- * point is as much where it is as what it is. A node being COMPOSED in the
- * chart is the other thing: its card holds the form, so what is drawn there
- * has to be read and typed into at a size a pointer can hit. Measured on this
- * build, the builder's add form is 320 by 400 and the pane 900 by 700: at
- * [CANVAS_FOCUS_CONTEXT] it is drawn at 0.58 of its own size, with a 24px
- * target landing on 14 screen pixels. At this step it is drawn at 1.16.
+ * The visible width for a region a reader types into (a node being composed):
+ * one and a half times its own, so its form is drawn near actual size.
  */
 export const CANVAS_COMPOSE_CONTEXT = 1.5;
 
@@ -124,11 +67,8 @@ export const CANVAS_FIT_MAX_ZOOM = 1;
 export const CANVAS_ZOOM_STEP = 1.2;
 
 /**
- * Wheel zoom per pixel of wheel delta, chosen so that one notch of a mouse
- * wheel (which browsers report as about 100 pixels) is exactly one
- * `CANVAS_ZOOM_STEP`: a wheel notch and a key press do the same thing. A
- * trackpad pinch reports small deltas many times a second, which this turns
- * into a smooth zoom.
+ * Wheel zoom per pixel of delta, so one mouse-wheel notch (about 100 pixels)
+ * is exactly one `CANVAS_ZOOM_STEP`.
  */
 export const CANVAS_WHEEL_ZOOM_PER_PIXEL = Math.log2(CANVAS_ZOOM_STEP) / 100;
 
@@ -167,20 +107,9 @@ export interface CanvasZoomLimits {
 export const CANVAS_ZOOM_LIMITS: CanvasZoomLimits = { min: CANVAS_MIN_ZOOM, max: CANVAS_MAX_ZOOM };
 
 /**
- * How far this content, in this viewport, may be zoomed.
- *
- * THE FLOOR IS THE FIT. Everything there is to see is on screen at the fit, so
- * zooming out past it only shrinks the chart away from the reader; the console
- * chart refuses it outright, and this is that refusal. Before the content has
- * been measured there is no fit to floor at, so the backstop stands.
- *
- * THE CEILING IS ONE ITEM FILLING THE VIEWPORT, which is what a reader asking
- * for more zoom is asking for: to look at THIS card. `largestItem` is the
- * width in world units of the widest one, which the chart above this knows
- * because it measured every card; with none given the fixed ceiling stands. It
- * never goes below that fixed ceiling and never above [CANVAS_ZOOM_CEILING].
- *
- * `floor` is the fit's own floor, passed through to [fitView].
+ * How far this content may be zoomed: out to its fit ([fitView] with `floor`,
+ * or `floor` itself unmeasured) and in until its widest item (`largestItem`)
+ * fills the viewport, between [CANVAS_MAX_ZOOM] and [CANVAS_ZOOM_CEILING].
  */
 export function zoomLimits(
   content: CanvasRect | null,
@@ -267,13 +196,9 @@ export function clampPan(
 }
 
 /**
- * The view that shows all of `content`, centred, at no more than actual size.
- *
- * `floor` is the smallest zoom the fit may take, [CANVAS_MIN_ZOOM] unless it
- * is named. A chart of cards keeps that floor, because below it a card is a
- * grey smudge and panning the overflow is the better view. A canvas of pages
- * names a lower one: a design laid out across many 1440px boards is several
- * screens wide, and a fit that stops at a quarter clips it on every side.
+ * The view that shows all of `content`, centred, at no more than actual size
+ * and no less than `floor`: a chart of cards keeps [CANVAS_MIN_ZOOM], a canvas
+ * of wide pages names a lower one.
  */
 export function fitView(
   content: CanvasRect,
@@ -296,17 +221,9 @@ export function fitView(
 }
 
 /**
- * The smallest pan that brings world rectangle `target` inside the padded
- * viewport, at the same zoom.
- *
- * `outside` is where a target lying WHOLLY outside the viewport is brought.
- * `edge`, the default, is the least pan, which leaves it just inside the edge
- * it came in by: right for a reader stepping to the next item, which is
- * beside the one before. `centre` draws its middle on the viewport's middle:
- * for a reader SENT to an item somewhere else (after an operation, an undo or
- * a search), whom the least pan left against the edge with nothing of the
- * content around it on that side. A target partly in view moves the least
- * distance either way, and one in view does not move.
+ * The smallest pan that brings `target` inside the padded viewport, at the same
+ * zoom. A target wholly outside lands just inside the edge it came in by
+ * (`edge`) or in the middle (`centre`, for a reader sent there from elsewhere).
  */
 export function revealView(
   view: CanvasView,
@@ -337,11 +254,8 @@ export function revealView(
 }
 
 /**
- * The view that draws world point `after` where `before` was drawn.
- *
- * What keeps a node still on screen when a relayout moves it in the world: a
- * card grows, its siblings shift, and the one the operator just acted on stays
- * under their eyes instead of jumping away.
+ * The view that draws world point `after` where `before` was drawn, so a node
+ * a relayout moves stays still on screen.
  */
 export function anchorView(view: CanvasView, before: CanvasPoint, after: CanvasPoint): CanvasView {
   return panBy(view, (before.x - after.x) * view.k, (before.y - after.y) * view.k);
@@ -355,11 +269,8 @@ export interface PinchStart {
 }
 
 /**
- * The view for a pinch whose pointers have moved from `start` to `a` and `b`.
- *
- * The spread scales the zoom, and the world point under the starting midpoint
- * follows the current midpoint, so one gesture zooms and pans together the way
- * every touch map does.
+ * The view for a pinch moved from `start` to `a` and `b`: the spread scales the
+ * zoom, and the world point under the first midpoint follows the current one.
  */
 export function pinchView(
   start: PinchStart,
@@ -413,28 +324,9 @@ export function beyondSlop(a: CanvasPoint, b: CanvasPoint, pointerType: string):
 }
 
 /**
- * The view that brings one world rectangle to the middle of the viewport, with
- * room around it.
- *
- * WHAT IT IS FOR: a surface that is about ONE node (a form for the child about
- * to be added under it, say) has to be able to say WHERE that node is, and the
- * chart is the only thing that can say it. Easing onto the region is the
- * console chart's own answer, and it saves the view it left so the reader is
- * put back exactly where they were when the surface closes.
- *
- * THE ZOOM IS THE REGION'S, NOT THE READER'S: the region is given the middle
- * third of the viewport ([CANVAS_FOCUS_CONTEXT]), clamped to what this content
- * allows, so a small region is enlarged and a huge one is shrunk to fit.
- *
- * `ceiling` is how far that may go IN, for a region that has a size of its own
- * to respect. A node being pointed AT has none, so the default is no ceiling
- * and a small chart's node fills the pane; a region holding a FORM was drawn
- * at the size its controls were designed at, and enlarging it is a page zoom
- * nobody asked for. Measured on a two-node company: the engine's add form was
- * drawn at 233%, its 16px labels at 37px and its buttons past a finger's
- * width, with the chart around it off screen. [CANVAS_FIT_MAX_ZOOM] is the
- * ceiling such a caller passes, which is the same "never blown up" this
- * module's fit already keeps.
+ * The view that centres one world rectangle with room around it: the region
+ * gets 1/`context` of the visible width, clamped to `limits` and `ceiling`. A
+ * region holding a form passes [CANVAS_FIT_MAX_ZOOM] so it is never enlarged.
  */
 export function regionView(
   region: CanvasRect,

@@ -3,19 +3,9 @@ import { SearchGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 
 /**
- * Where the field stands, which decides its ground, its height and whether it
- * ever gives up its words.
- *
- * `rail` is the approved design's: the whole width of the sidebar, on the
- * frame, so it takes the SHEET's ground one rung up, and it keeps its label
- * and its hint at every width, because under the shell breakpoint the rail is
- * a drawer as wide as it ever was.
- *
- * `toolbar` stands in a bar on the sheet, so it takes the CARD's ground, at
- * the height of the controls beside it and a width of its own
- * (`--crewlet-search-trigger-width`); under the shell breakpoint it drops its
- * label and its hint and keeps the glyph, because a bar is where the room
- * runs out.
+ * Where the field stands. `rail` spans the sidebar and keeps its words at every
+ * width; `toolbar` sits in a bar at the controls' height and drops its label
+ * and hint under the shell breakpoint, keeping the glyph.
  */
 export type SearchTriggerVariant = 'rail' | 'toolbar';
 
@@ -27,10 +17,8 @@ export interface SearchTriggerProps extends Omit<ButtonHTMLAttributes<HTMLButton
   /** The shortcut hint, as a Kbd with `keys`. Decoration: name the keys in `keyshortcuts`. */
   shortcut?: ReactNode;
   /**
-   * The shortcut in the syntax `aria-keyshortcuts` takes, such as
-   * `"Control+K Meta+K /"`. A screen reader reads it with the control, which
-   * is the only place a reader who cannot see the keycaps learns the shortcut
-   * exists.
+   * The shortcut for `aria-keyshortcuts`, such as `"Control+K Meta+K /"`: the
+   * only way a reader who cannot see the keycaps learns it exists.
    */
   keyshortcuts?: string | undefined;
   /** The leading glyph. A magnifier by default. */
@@ -38,25 +26,9 @@ export interface SearchTriggerProps extends Omit<ButtonHTMLAttributes<HTMLButton
 }
 
 /**
- * The control that opens search, drawn as the field it is standing in for.
- *
- * IT IS A BUTTON, not an input. What it opens is a palette with its own field,
- * and a box that takes focus and then throws the first keystroke away is worse
- * than one that never looked like a field at all.
- *
- * IT IS NAMED BY ITS WORDS, and by nothing else. An `aria-label` replaced
- * them, and the keycap beside them is text in the same box (a checker counts
- * it as shown, hidden from a screen reader or not), so the name never
- * contained what the box shows and a person who says what they see could not
- * reach it. The keycap is decoration: the shortcut reaches a screen reader
- * through `aria-keyshortcuts`, the one place a reader who cannot see the caps
- * learns it.
- *
- * FOLDED, THE WORDS ARE CLIPPED, NOT REMOVED. The toolbar form's narrow
- * layout leaves the glyph alone in the box, and its words stay the button's
- * name out of sight: content under `display: none` names nothing, and the
- * dashboard this comes from had a search button a screen reader announced as
- * "button" at every width under the breakpoint.
+ * The button that opens search, drawn as the field it stands in for. It is
+ * named by its visible words alone, and folded it clips them rather than
+ * removing them, so it keeps that name at every width.
  */
 export const SearchTrigger = forwardRef<HTMLButtonElement, SearchTriggerProps>(function SearchTrigger(
   { label = 'Search', variant = 'rail', shortcut, keyshortcuts, icon, className, type = 'button', ...rest },

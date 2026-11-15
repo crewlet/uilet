@@ -1,10 +1,7 @@
 /**
- * A BRAND SAMPLE'S SMALL WORDS CAN BE READ WHERE IT IS A PREVIEW, measured: in
- * a setup wizard's aside (about 285px) the doc's sentence and its quiet line
- * are drawn at the product's small steps, every line inside the frame; at a
- * thumbnail's width the drawing is still whole; and wide, it is in proportion.
- * Set in proportion alone, the sentence measured 8px and the quiet line 6px at
- * 285px.
+ * A brand sample's small words are drawn at the product's small steps in a
+ * 285px preview, every line inside the frame; a thumbnail is still whole, and
+ * a wide sample is in proportion.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';

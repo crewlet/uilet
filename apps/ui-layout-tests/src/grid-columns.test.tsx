@@ -1,10 +1,6 @@
 /**
- * A FLEXIBLE COLUMN OF SHORT VALUES TAKES WHAT IT HOLDS, measured: where the
- * values do not all fit, a short column keeps exactly its widest value and the
- * long ones share the rest; a shrink column keeps its place ahead of them; and
- * where everything fits, the grid still fills its box. Each flexible column
- * took an equal share whatever it held, so a long name was cut beside a short
- * column with room to spare.
+ * A short flexible column keeps exactly its widest value and the long ones
+ * share the rest, a shrink column keeps its place, and the grid fills its box.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';

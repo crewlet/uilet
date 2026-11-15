@@ -1,9 +1,6 @@
 /**
- * AN IDENTIFIER BREAKS WHERE IT MEANS TO, measured in a real browser: an
- * address or a path in a code chip ends a line at a `/`, never inside a name
- * ("…/v1/report" then "s"), wherever the line runs out; a token in a copy
- * panel fills its lines rather than breaking after a hyphen and leaving a
- * ragged first line; and a chip's ground hugs the full stop a caller hands it.
+ * An identifier breaks where it means to, in a real browser: a path at a `/`,
+ * a copy panel's token fills its lines, and a chip's ground hugs a full stop.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';

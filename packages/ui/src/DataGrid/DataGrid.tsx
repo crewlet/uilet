@@ -72,20 +72,14 @@ export interface DataGridColumn<T> {
    */
   sortable?: boolean | undefined;
   /**
-   * Which edge the column's values and its head share: `left` (the default)
-   * for words, `right` for figures, times and dates (their digits are
-   * tabular, so a column of them reads down one edge), `center` for a column
-   * of one mark per row. The head and every cell take the same edge and the
-   * same inset, so a head never stands off the values it names.
+   * The edge the head and every cell share: `left` (the default) for words,
+   * `right` for figures, times and dates, `center` for one mark per row.
    */
   align?: DataGridAlign | undefined;
   /**
-   * A column of ONE MARK per row (a glyph, a face, a priority): a fixed track
-   * (`DATA_GRID_ICON_TRACK`, the target size and the cell's inset either
-   * side), its head and every cell centred. A run of such columns then reads
-   * as aligned columns rather than marks scattered at their content's width.
-   * Name it with `label`, which the head says to assistive technology and
-   * shows on hover.
+   * A column of one mark per row (a glyph, a face, a priority): a fixed
+   * `DATA_GRID_ICON_TRACK`, centred. Name it with `label`, which the head
+   * says to assistive technology and shows on hover.
    */
   icon?: boolean | undefined;
   /**
@@ -95,20 +89,16 @@ export interface DataGridColumn<T> {
    */
   label?: string | undefined;
   /**
-   * A column of ROW ACTIONS: every cell is a control that names itself (a
-   * "Revoke" button, an icon button with its own label). On the phone's card
-   * such a cell draws no name beside it, since the control is its own name;
-   * its head stays empty, since a word over a column of buttons says nothing
-   * the buttons do not.
+   * A column of row actions, each cell a control that names itself. Its head
+   * stays empty and the phone's card draws no name beside its cells.
    */
   action?: boolean | undefined;
   /** Shrink to content (up to a fifth of the grid) and never wrap. */
   shrink?: boolean | undefined;
   /**
-   * What a value does that is wider than its column: `truncate` cuts it on
-   * one line with an ellipsis, its whole words on hover; `wrap` breaks it over
-   * as many lines as it takes, for prose (a change described in a sentence).
-   * Left out, the cell lays out whatever `cell` draws as it is.
+   * A value wider than its column: `truncate` cuts it with an ellipsis (whole
+   * words on hover), `wrap` breaks it over lines for prose. Left out, the cell
+   * lays out whatever `cell` draws as it is.
    */
   overflow?: 'truncate' | 'wrap' | undefined;
   /**
@@ -130,18 +120,15 @@ export interface DataGridColumn<T> {
   /** Hidden unless the column set (`cols`) names it. */
   optional?: boolean | undefined;
   /**
-   * The narrowest a FLEXIBLE column may be drawn: its track is
-   * `minmax(floor, 1fr)` rather than `minmax(0, 1fr)`. For the column that is
-   * the point of the list (a title, a name), which at zero gave way to every
-   * content-sized column beside it. A flexible column whose widest value is
-   * short takes what it holds instead, never under its floor ([DataGrid]).
+   * The narrowest a flexible column may be drawn: its track is
+   * `minmax(floor, 1fr)`. For the column that is the point of the list (a
+   * title, a name); one whose widest value is short takes what it holds.
    */
   floor?: string | undefined;
   /**
-   * The order this column GIVES WAY in when the grid cannot draw every column
-   * at its size: the lowest number goes first, and a column without one never
-   * goes. A grid that cannot fit drops columns rather than cutting them off at
-   * its clipped edge, and says which it dropped.
+   * The order this column gives way in when the grid cannot fit every column:
+   * the lowest number goes first, a column without one never goes, and the
+   * grid says which it dropped.
    */
   drop?: number | undefined;
 }
@@ -160,15 +147,9 @@ export interface ColumnChoice {
 }
 
 /**
- * The choices a chooser offers, DERIVED from the columns a grid draws, so a
- * column added to a grid appears in its menu with no second edit. The cell
- * renderers are never called: a name and a flag are properties of the column.
- *
- * AN ACTION COLUMN IS NO CHOICE. It holds the row's controls (a Restore, a
- * row's More), not a fact about the row, so a box for it would offer to take
- * away what a reader can do to a row in the list of what they read about it,
- * under a name its empty head does not have. The grid draws it whatever the
- * set names (see [DataGrid]'s `cols`).
+ * The choices a chooser offers, derived from a grid's columns without calling
+ * their cell renderers. An action column is no choice: the grid draws it
+ * whatever the set names (see [DataGrid]'s `cols`).
  */
 export function columnChoicesOf<T>(columns: readonly DataGridColumn<T>[]): ColumnChoice[] {
   return columns
@@ -195,10 +176,8 @@ export interface ChooserListProps<K extends string = string> {
 }
 
 /**
- * A short checklist of what a view shows, in two columns under a quiet
- * heading: the columns a grid draws ([ColumnChooser]), the facts a card
- * carries. Native checkboxes in a named group, each row its box's label, so
- * the whole row takes the pointer.
+ * A short two-column checklist of what a view shows ([ColumnChooser], a
+ * card's facts): native checkboxes in a named group, each row its box's label.
  */
 export function ChooserList<K extends string = string>({ label, items, onToggle }: ChooserListProps<K>) {
   const headingId = useId();
@@ -230,13 +209,9 @@ export interface ColumnChooserProps {
 }
 
 /**
- * The checkbox list a reader chooses a grid's columns with.
- *
- * AN EMPTY VALUE IS THE DEFAULT SET, NOT AN EMPTY GRID, as [DataGrid] reads
- * it, so the boxes show the default until somebody moves one. It writes the
- * DECLARATION order, never the click order: the value carries an order as well
- * as a selection, and a value built from the order boxes were ticked in would
- * rearrange the grid with every tick.
+ * The checkbox list a reader chooses a grid's columns with. An empty value is
+ * the default set, not an empty grid, and it writes the columns in declaration
+ * order, never click order, so a tick never rearranges the grid.
  */
 export function ColumnChooser({ choices, value, onChange, label = 'Columns' }: ColumnChooserProps) {
   const chosen = new Set(value ? value.split(',').filter(Boolean) : []);
@@ -313,10 +288,8 @@ export interface DataGridExpansion<T> {
 export type DataGridRowTone = 'info' | 'warning' | 'danger';
 
 /**
- * Rows a reader puts in order by hand: a handle before the first column,
- * dragged or moved with the arrow keys, every move said aloud. The order is
- * the point of such a list, so a reorderable grid draws its rows in the order
- * given and sorts nothing.
+ * Rows a reader puts in order by hand: a handle dragged or moved with the
+ * arrow keys, every move said aloud. A reorderable grid sorts nothing.
  */
 export interface DataGridReorder<T> {
   /** A finished move: `key` now stands before `beforeKey`, or last where that is null. */
@@ -429,23 +402,16 @@ export interface DataGridProps<T> {
   /** The row the reader is on (the object a page or a side panel shows): tinted and announced as current. */
   isSelected?: ((row: T) => boolean) | undefined;
   /**
-   * Rows picked for a bulk action: a box on every row before the first
-   * column, and one in the head over every row drawn (ticked, clear, or mixed
-   * when some are). Shift with a box picks or clears every row between it and
-   * the box pressed before it, in the order the grid draws them.
-   *
-   * NOT `isSelected`, which is the one row the reader is ON. A picked row is
-   * tinted in the selected fill and its box says it; the current row keeps
-   * its own mark.
+   * Rows picked for a bulk action: a box on every row and one in the head;
+   * Shift picks the range from the last box pressed. Not `isSelected`, which
+   * is the one row the reader is on.
    */
   selection?: DataGridSelection<T> | undefined;
   /** A failed row: the `danger` edge of [rowTone], kept for the grids that only say this. */
   isFailed?: ((row: T) => boolean) | undefined;
   /**
-   * The edge mark a row carries: `danger` for a row that failed or is
-   * refused, `warning` for one that needs the reader, `info` for one worth a
-   * look. A SECOND SIGNAL ONLY: the row's own cells say the state in words.
-   * Wins over `isFailed` where both are given.
+   * The row's edge mark (`danger`, `warning`, `info`), a second signal only:
+   * its cells say the state in words. Wins over `isFailed`.
    */
   rowTone?: ((row: T) => DataGridRowTone | undefined) | undefined;
   /**
@@ -478,10 +444,8 @@ export interface DataGridProps<T> {
    */
   density?: 'default' | 'compact' | undefined;
   /**
-   * The rows are on their way. With none yet, the head stays and the body
-   * draws `loadingRows` placeholder rows (never the empty state), so the
-   * grid's shape does not jump when they land; with rows, they stay. The
-   * table says it is busy either way.
+   * The rows are on their way: with none yet, the body draws `loadingRows`
+   * placeholders (never the empty state); with rows, they stay. Busy either way.
    */
   loading?: boolean | undefined;
   /** How many placeholder rows a loading grid with no rows draws. Three by default. */
@@ -519,10 +483,8 @@ export interface DataGridProps<T> {
   /** "40 of 312 loaded": what an export would actually contain. */
   loadedNote?: string | undefined;
   /**
-   * HOW A ROW IS DRAWN ON A PHONE, where there are no columns: `labelled` (a
-   * card of one named line per value, which every grid can take) or `compact`
-   * (two lines with no names: the lead cells, then every other value as a run
-   * of marks, for a list scanned by the dozen).
+   * A row on a phone: `labelled` (one named line per value) or `compact` (the
+   * lead cells, then every other value as a run of marks, on two lines).
    */
   phoneRows?: 'labelled' | 'compact' | undefined;
   /**
@@ -565,20 +527,9 @@ const NO_DROPS: readonly string[] = [];
 const NO_FIT: GridFit = { set: '', width: 0, dropped: NO_DROPS };
 
 /**
- * The next fit, or null when this one stands. PURE, so the rules are held
- * without a layout engine:
- *
- * - the grid GREW past the width columns were dropped or it stacked at: start
- *   again from all of them as columns (the next pass drops, and stacks, again
- *   only what still does not fit);
- * - a stacked grid that did not grow stays stacked: its rows are cards and
- *   there is no column left to measure;
- * - the tracks OVERRUN the grid: drop the visible column with the lowest
- *   `drop`, if there is one;
- * - nothing is left to drop and the grid still cannot draw its values
- *   (`stack`: the tracks overrun, or a value is cut short): STACK into card
- *   rows, the shape a phone draws, rather than clip;
- * - otherwise remember a narrower width, so growing back past it re-tries.
+ * The next fit, or null when this one stands (pure). A grid that grew starts
+ * again from every column; one that overruns drops the lowest `drop`, and
+ * with nothing left to drop it stacks into card rows rather than clip.
  */
 export function fitGridColumns({
   fit,
@@ -628,10 +579,8 @@ function flexible<T>(column: DataGridColumn<T>): boolean {
 }
 
 /**
- * The width a cell's content takes laid out on one line: each line of its
- * words and marks from its first to its last, the lines added up, and the
- * cell's inset. Read off the text itself (a clipped run is laid out whole),
- * so a cut cell reads as wide as its words. 0 where nothing is laid out.
+ * The width a cell's content takes on one line, read off its text so a cut
+ * cell reads as wide as its words, plus the cell's inset. 0 with no layout.
  */
 function contentWidth(cell: Element): number {
   const lines = new Map<number, [number, number]>();
@@ -685,9 +634,8 @@ function sameWidths(a: Readonly<Record<string, number>>, b: Readonly<Record<stri
 
 /**
  * The flexible columns drawn at what they hold: those measured no wider than
- * `SHORT_COLUMN_PX`, never the widest flexible column, which keeps its share
- * so the grid fills its box. PURE, so the rule is held without a layout
- * engine; nothing measured, nothing is short.
+ * `SHORT_COLUMN_PX`, never the widest, which keeps its share so the grid
+ * fills its box. Nothing measured, nothing is short.
  */
 export function shortColumns<T>(
   visible: readonly Pick<DataGridColumn<T>, 'key' | 'width' | 'shrink' | 'icon' | 'action'>[],
@@ -726,55 +674,15 @@ export function squeezed<T>(
 }
 
 /**
- * A list as columns: sortable heads, optional and give-way columns, bands for
- * a grouped answer, a row link stretched over each row, and a card per row on
- * a phone.
- *
- * ONE TRACK LIST, ON THE GRID. The head, the bands and every row are
- * `subgrid` passthroughs, so a head cell and a cell twenty rows down size the
- * same track; each row being its own grid sized its columns against its own
- * cells alone, and no value sat under the head that named it.
- *
- * A SHRINK COLUMN IS CAPPED (`fit-content(20%)`): `max-content` grows without
- * a ceiling and grid resolves it before any flexible column, so one long value
- * starved the title to zero and still overflowed.
- *
- * A FLEXIBLE COLUMN OF SHORT VALUES TAKES WHAT IT HOLDS. Its widest value is
- * measured after layout (the head and the rows on screen, off their words
- * rather than off the cells that cut them), and one no wider than
- * `SHORT_COLUMN_PX` is drawn at its content, with the shrink columns, while
- * the long ones share what is left at `1fr`. At an equal share every flexible
- * column took the same width whatever it held, so a seat's handle sat in a
- * third of a column of empty room beside a name cut short. The widest
- * flexible column always keeps its share, so the grid still fills its box,
- * and a grid that cannot be measured (no layout) draws every flexible column
- * at its share, as before.
- *
- * COLUMNS THAT DO NOT FIT GIVE WAY IN ORDER (`drop`), measured after every
- * commit in a layout effect so the intermediate shapes never paint, and the
- * foot names what the width took. Not on a phone, where a row is a card.
- *
- * THE ROW'S LINK IS AN OVERLAY, NOT THE ROW: a row that was an anchor made
- * every linking cell an anchor inside an anchor, and the parser closes the
- * outer one at the inner, so the row stopped being clickable from that cell
- * on. Stretched over the row it keeps a real href, and the cells' own links
- * and buttons sit above it.
- *
- * THE GRID'S OWN COLUMNS COME FIRST, in one order: the selection box, the
- * reorder handle, the position, the chevron that opens a row. None of them is
- * in a column set or ever gives way.
- *
- * The grid makes no scrollport of its own (`overflow: clip`), which is what
- * lets its head stick against the page's scroller; an application whose
- * scroller carries a sticky bar sets `--crewlet-data-grid-sticky-top`.
+ * A list as columns. The head, bands and rows are `subgrid` passthroughs of
+ * one track list, and the grid makes no scrollport (`overflow: clip`) so its
+ * head sticks to the page's scroller (`--crewlet-data-grid-sticky-top`).
  */
 
 /**
- * `rows` in a new array, ordered as the grid orders them for `sort`: by the
- * sort column's `sortValue`, an absent value last either way. For a host that
- * pages a list it holds whole and must sort before it slices, so it never
- * keeps a second comparator. Unsorted (no sort, or a column with no
- * `sortValue`), a copy in the given order.
+ * `rows` in a new array, ordered as the grid orders them for `sort` (an absent
+ * `sortValue` last), for a host that sorts before it slices a page. Unsorted,
+ * a copy in the given order.
  */
 export function sortGridRows<T>(
   rows: readonly T[],
@@ -842,12 +750,8 @@ export function DataGrid<T>({
       .map((c) => c.trim())
       .filter(Boolean);
     if (asked.length === 0) return columns.filter((c) => !c.optional);
-    // THE ORDER THE READER ASKED FOR, not the declaration order, among the
-    // columns a reader chooses: an action column is none of them
-    // ([columnChoicesOf]), so it is drawn after the set, in its declared
-    // order, whatever the set names. Dropped with the facts the reader put
-    // away, a grid of rows somebody acts on lost its Restore the moment a
-    // column was chosen.
+    // The reader's order among the chosen columns; action columns are no
+    // choice ([columnChoicesOf]) and are drawn after the set, whatever it names.
     const byKey = new Map(columns.filter((c) => !c.action).map((c) => [c.key, c]));
     const picked = asked.map((key) => byKey.get(key)).filter((c): c is DataGridColumn<T> => !!c);
     if (picked.length === 0) return columns.filter((c) => !c.optional);
@@ -862,10 +766,9 @@ export function DataGrid<T>({
   const phone = useMediaMatch(`(width < ${breakpoint.phone})`);
   const shownKeys = shownColumns.map((c) => c.key).join(',');
   const [fit, setFit] = useState<GridFit>(NO_FIT);
-  // CARD ROWS on a phone, and wherever the grid's own width cannot hold its
-  // columns once every give-way column has gone (`fitGridColumns`): beside an
-  // aside the reader opened, a desktop window can leave a grid a phone's room.
-  // A card is a line per value, so a stacked grid gives back what it dropped.
+  // Card rows on a phone, and wherever the grid cannot hold its columns once
+  // every give-way column has gone (`fitGridColumns`); a stacked grid gives
+  // back what it dropped.
   const stacked = phone || (fit.set === shownKeys && Boolean(fit.stacked));
   const dropped = !stacked && fit.set === shownKeys ? fit.dropped : NO_DROPS;
   const visibleColumns = useMemo(
@@ -1108,10 +1011,8 @@ export function DataGrid<T>({
           body.current?.querySelector<HTMLElement>(`[data-row-index="${next}"]`)?.scrollIntoView({ block: 'nearest' });
           return next;
         }),
-      // THE ROW'S OWN WAY IN, from the keyboard: its handler where it has
-      // one, else its link, followed as a click on it would be (with the
-      // keys held, so a modified Enter opens it elsewhere as a modified
-      // click does). A grid of links only had no Enter at all.
+      // Enter runs the row's handler, else follows its link as a click with
+      // the same modifier keys would.
       activate: (event) => {
         const row = flat[cursor];
         if (row === undefined) return false;
@@ -1220,11 +1121,8 @@ export function DataGrid<T>({
         title={title}
         data-lead={column.phoneLead || undefined}
         data-phone-omit={column.phoneOmit || undefined}
-        // THE CELL CARRIES ITS COLUMN'S OWN NAME, for the phone's card, where
-        // the head is gone: from the head where it is a word and from `label`
-        // where it is not. A cell with no value has no child nodes, so the
-        // card drops its line (`:empty`), and an action column's cell names
-        // itself.
+        // The column's name for the phone's card, where the head is gone. An
+        // empty cell has no child nodes, so the card drops its line (`:empty`).
         data-label={column.action ? undefined : headerWord(column) || column.label || undefined}
       >
         {first}
@@ -1254,12 +1152,9 @@ export function DataGrid<T>({
     const hasAccessory = accessory !== null && accessory !== undefined && accessory !== false;
     const open = Boolean(expansion?.isExpanded(row) && expansion.canExpand?.(row) !== false);
     const pending = ordered && reorder?.pendingKey === key;
-    // THE ROW'S OWN WAY IN IS AN OVERLAY in its first cell, stretched over the
-    // whole row (the row is its containing block): a real link where the row
-    // has an address, a button where it only acts. Either is named by the row
-    // (`aria-labelledby`), since the overlay holds nothing of its own and a
-    // copy of the row's words inside it would be read twice; and described by
-    // its accessory line, which says what the row cannot.
+    // The row's way in is an overlay stretched over the row (a link, else a
+    // button), so the cells' own links are not nested in it. Named by the row
+    // (`aria-labelledby`) so its words are not read twice.
     const described = hasAccessory ? `${rowId}-accessory` : undefined;
     const overlay =
       link !== undefined ? (

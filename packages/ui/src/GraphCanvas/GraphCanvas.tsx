@@ -1,47 +1,7 @@
 /**
- * A layered map on a canvas: entries stand in clusters (lanes) read left to
- * right, bands of clusters under each other, groups that open and close, and
- * right-angled lines from each entry to what it relies on.
- *
- * PURE PRESENTATION. Entries, edges, the selection and the trace come in as
- * props and every decision goes out through a callback; nothing is fetched.
- * The layout is `layout.ts` (pure, tested without a DOM), the walk `walk.ts`
- * and the reach `reach.ts`; this component measures, draws and listens.
- *
- * THREE FAMILIES OF LINE. `flow` is the path a request takes: drawn at rest,
- * with dashes moving along it that say which way it points (direction, never
- * volume). `support` is what something runs on: at rest it is one trunk per
- * pair of clusters, with its count, never a line per entry. `context` is
- * everything around (an account, a repository, a monitor), drawn when the
- * legend turns it on. Each legend switch says whether its family is drawn, so
- * one that reads on draws it and one that reads off draws none of it. The last
- * two are drawn line by line for the entry a reader stands on, which is what
- * keeps a few hundred entries from being a tangle.
- *
- * ONE LOOK, INSIDE THE WORLD ONLY. Outlined boxes on a fine grid, a ruled
- * glyph cell, square corners and mono labels are the drawing of clusters,
- * entries, lines and trunks. The legend, the card, the dock and the zoom bar
- * are the kit's own surfaces.
- *
- * IT STAYS LIGHT AT THOUSANDS OF ENTRIES. Every card is one size, so nothing
- * is measured per card; only the cards near the view are mounted; edges are a
- * few paths rather than one element each; and zoomed out past the least a
- * card can say the cards are drawn as marks on one layer rather than as
- * elements at all.
- *
- * A CARD IS NEVER A BLANK BOX. The map has three levels of detail
- * ([GraphDetail]), and each keeps a signal a reader can use at its size: the
- * whole card; then a tile, its glyph filling the cell and its name held at a
- * size that reads; then a filled mark in its tone, under cluster titles,
- * counts and tallies that hold their size on screen at every zoom.
- *
- * IT OPENS ON THE WHOLE MAP, fitted to the view at whatever level of detail
- * that zoom draws, since every level reads. It fits again when its first
- * entries arrive (a map placed before them fitted its empty lanes), when the
- * caller's `fitKey` moves, and when its box is resized while nobody has moved
- * the view since; a data refresh keeps the reader's view. A map opened on one
- * entry (`initialNode`, such as the one a link names) draws that entry in the
- * middle instead, at a size its card reads.
+ * A layered map on a canvas: clustered entries, groups that open and close,
+ * and lines to what each entry relies on. Pure presentation: data comes in as
+ * props, every decision goes out through a callback, nothing is fetched.
  */
 
 import {
@@ -264,30 +224,20 @@ export const GRAPH_CANVAS_LABELS: GraphCanvasLabels = {
 };
 
 /**
- * How much of an entry the map draws at a zoom.
- *
- * `cards` is the whole card. `tiles` is the card cut to what still reads: its
- * glyph filling the cell, its name held at one size on screen and cut to what
- * fits, its tone on the whole cell. `marks` is every card as a filled shape
- * on one layer, in its tone, with the clusters' titles and counts carrying
- * the words.
+ * How much of an entry the map draws at a zoom: the whole card, a tile (its
+ * glyph and a name held at one size on screen), or a filled mark in its tone.
  */
 export type GraphDetail = 'cards' | 'tiles' | 'marks';
 
 /**
- * THE ZOOM BELOW WHICH CARDS ARE TILES. At half size a 13px name draws at
- * about 6.5px, the least that still reads as words; below it a card's own
- * text is texture, so the name is held at a size on screen instead of being
- * scaled with the map.
+ * The zoom below which cards are tiles: at half size a 13px name draws at
+ * about 6.5px, the least that still reads as words.
  */
 export const GRAPH_CANVAS_DETAIL_ZOOM = 0.5;
 
 /**
- * THE ZOOM BELOW WHICH TILES ARE MARKS. A tile's name is held at 10px on
- * screen, and a card is 38px tall, so at three tenths it is about 11px: the
- * last size one line of that name still fits inside its own card. Below it no
- * word fits a card at all, and at most a few hundred elements were mounted to
- * get here, so every card becomes a filled mark on one layer.
+ * The zoom below which tiles are marks: a 38px card is about 11px tall here,
+ * the last size a tile's 10px name still fits inside it.
  */
 export const GRAPH_CANVAS_TILE_ZOOM = 0.3;
 
@@ -298,18 +248,15 @@ export function graphDetail(zoom: number): GraphDetail {
 }
 
 /**
- * THE MOST A MAP OPENED ON ONE ENTRY ZOOMS IN: a card's 13px name draws at
- * about 10px, with the entries beside it in view. A narrower window takes
- * less, so the card and its padding fit across it; a map whose fit already
- * draws the entry this large opens on the fit, which shows it with the rest.
+ * The most a map opened on one entry zooms in (a 13px name draws at about
+ * 10px); a narrower window takes less, so the card and its padding fit.
  */
 export const GRAPH_CANVAS_FOCUS_ZOOM = 0.75;
 
 /**
  * The view a map opened on one entry takes: its card in the middle of `room`
- * (the part of the viewport the bars leave), at [GRAPH_CANVAS_FOCUS_ZOOM] or
- * at what fits the card and its padding across a narrower room. Null, which
- * opens on the fit, where the fit already draws the card as large.
+ * at up to [GRAPH_CANVAS_FOCUS_ZOOM], or null (open on the fit) where the fit
+ * already draws the card as large.
  */
 export function graphFocusView(item: CanvasRect, room: CanvasRect, fit: CanvasView): CanvasView | null {
   const across = (room.width - 2 * CANVAS_FIT_PADDING) / item.width;
@@ -411,10 +358,9 @@ export interface GraphCanvasProps {
    */
   chrome?: boolean | undefined;
   /**
-   * The fullscreen control in the zoom bar. On by default, taking the map
-   * itself; pass the element to take instead where the map opens something
-   * beside it (a detail sheet), since a fullscreen element paints only its
-   * own subtree.
+   * The fullscreen control in the zoom bar: on by default, taking the map;
+   * pass an element to take instead, since a fullscreen element paints only
+   * its own subtree.
    */
   fullscreen?: boolean | RefObject<HTMLElement | null> | undefined;
   /** A card pushed back, such as one a legend filter leaves out. */
@@ -442,11 +388,9 @@ export interface GraphCanvasProps {
   /** The view to open on instead of the fit. Read once, when the map is first placed. */
   initialView?: CanvasView | undefined;
   /**
-   * The entry to open on instead of the fit, such as the one a link names:
-   * drawn in the middle of the view at up to [GRAPH_CANVAS_FOCUS_ZOOM] (its
-   * closed group's card, where it stands in one, which a selection then
-   * opens in place). Read once, when the map is first placed; an entry the
-   * map does not hold opens on the fit.
+   * The entry to open on instead of the fit, drawn in the middle at up to
+   * [GRAPH_CANVAS_FOCUS_ZOOM] (its closed group's card where it is in one).
+   * Read once, when the map is first placed; an unknown entry opens on the fit.
    */
   initialNode?: string | null | undefined;
   onViewChange?: ((view: CanvasView, viewport: CanvasSize) => void) | undefined;
@@ -751,10 +695,9 @@ export function GraphCanvas({
     );
   }, [layout, chrome, shown, edges, laneOfNode]);
 
-  // EACH TRUNK'S COUNT WHERE NOTHING ELSE IS: measured as drawn at this zoom
-  // (a count and a cluster's title both hold their size on screen) and
-  // written on the elements themselves, as the card beside an entry is, so a
-  // pinch never re-renders the map to move them. See [placeTrunkLabels].
+  // Each trunk's count where nothing else is, measured at this zoom and
+  // written on the elements themselves, so a pinch never re-renders the map.
+  // See [placeTrunkLabels].
   const placeTrunksNow = useRef<() => void>(() => {});
   placeTrunksNow.current = () => {
     const world = worldEl.current;
@@ -990,10 +933,9 @@ export function GraphCanvas({
     [focusItem],
   );
 
-  // A new fit key fits again once its layout is placed, and so do the map's
-  // first entries: a map placed before them was fitted to its empty lanes.
-  // The first placement is the canvas's own fit, and nothing else refits, so
-  // a refresh of the same map keeps the view a reader has made.
+  // A new fit key refits once its layout is placed, and so do the first
+  // entries (a map placed before them fitted its empty lanes); nothing else
+  // refits, so a refresh keeps the reader's view.
   const filled = nodes.length > 0;
   const fittedFor = useRef(fitKey);
   const fittedFilled = useRef(false);
@@ -1769,12 +1711,9 @@ function GraphEmptyLane({
 const SHAPE_CORNER = 2;
 
 /**
- * Every card as a mark on one layer, for a zoom no word fits a card at: a
- * filled rectangle per card, an outlined dashed one per unconfirmed card, and
- * the whole mark in its tone where something needs a person. A card's 4px
- * notch is under a pixel and a half here, so the tone takes the mark: a
- * cluster is read as how much of it is in which tone, beside the tally its
- * title carries in figures.
+ * Every card as a filled mark on one layer, for a zoom no word fits a card
+ * at: an unconfirmed card is a dashed outline, and the tone fills the whole
+ * mark since the card's 4px notch is under a pixel and a half here.
  */
 function Shapes({
   layout,
@@ -1839,10 +1778,9 @@ function intersects(a: CanvasRect, b: CanvasRect): boolean {
 }
 
 /**
- * THE WINDOW MOVES IN STEPS. What is mounted is the view with half a screen
- * of room on every side, and it is replaced only when the view leaves it or
- * shrinks far inside it, so a pan re-renders the map every half screen rather
- * than every frame.
+ * THE WINDOW MOVES IN STEPS: the view plus half a screen on every side,
+ * replaced only when the view leaves it or shrinks far inside it, so a pan
+ * re-renders the map every half screen rather than every frame.
  */
 export function graphWindow(was: GraphWindow | null, view: CanvasView, viewport: CanvasSize): GraphWindow {
   const detail = graphDetail(view.k);

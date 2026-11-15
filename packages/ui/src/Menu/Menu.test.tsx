@@ -22,28 +22,15 @@ import { Menu, type MenuEntry } from './index.js';
 afterEach(cleanup);
 
 /**
- * The stylesheet, with its comments taken out.
- *
- * Read as source because jsdom applies no stylesheet: `getComputedStyle`
- * answers the initial value for every property here and resolves no custom
- * property at all, so a rendered menu cannot see one of these rules. The file
- * is the only place they can be measured, which is where they are measured.
- * `DataTable/styles.test.tsx` carries the long version of this note.
+ * The stylesheet without its comments, read as source because jsdom applies
+ * no stylesheet and resolves no custom property.
  */
 const menuCss = (): string =>
   readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Menu.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
 /**
- * The ink the cascade leaves on a row, or on an element inside one, each
- * described by the classes it carries.
- *
- * WALKED RATHER THAN NAMED. Which of two rules of equal weight wins is their
- * order in the file, and a test that asserts the order asserts the mechanism
- * instead of the result: it stays green through any edit that keeps the order
- * and draws the wrong thing anyway. So every rule whose selector this element
- * satisfies is collected, and the last one at the greatest specificity is the
- * answer, specificity here being a count of classes. Only class selectors are
- * collected: a state is not a row at rest.
+ * The ink the cascade leaves on a row (or an element inside one): the last
+ * matching class-only rule at the greatest specificity, counted in classes.
  */
 function ink(row: string[], inside?: string[]): string | undefined {
   const element = inside ?? row;
@@ -73,14 +60,8 @@ function ink(row: string[], inside?: string[]): string | undefined {
 test('the panel is as wide as its longest row, under a ceiling that still holds', () => {
   const panel = /\.crewlet-menu\s*\{([^}]*)\}/.exec(menuCss())?.[1] ?? '';
   expect(panel).toMatch(/(?<![-\w])width:\s*max-content/);
-  /*
-   * A min-width above a max-width REPLACES it. Spelt as a content minimum,
-   * the panel grew to its longest label however long that label was, the
-   * ceiling was a number nothing read, and a label nobody expected left the
-   * window instead of truncating inside it. The one minimum is a trigger's
-   * floor (`width="trigger"`), and the ceiling is lifted to meet exactly that
-   * floor, so the two can never cross.
-   */
+  // A min-width above a max-width replaces it, so the only minimum is the
+  // trigger's floor and the ceiling is lifted to meet it.
   expect(panel).toMatch(/max-width:\s*max\(320px,\s*var\(--crewlet-menu-floor,\s*0px\)\)/);
   expect(panel).toMatch(/min-width:\s*var\(--crewlet-menu-floor,\s*0px\);/);
 });
@@ -177,12 +158,6 @@ test('a text trigger draws its leading and trailing glyphs as the button icons',
   expect(button.querySelector('.crewlet-btn__label')?.textContent).toBe('Keyword');
 });
 
-/*
- * THE LABEL NAMES A TEXT TRIGGER TOO. A "New" button whose menu makes an
- * artifact read as "New" alone, and `label` was dropped on the floor whenever
- * the trigger had words: the name a screen reader announces is the label,
- * which keeps the visible word in it.
- */
 test('a text trigger is named by the label, which keeps its visible words', () => {
   render(<Menu label="New artifact" trigger="New" items={entries()} />);
   const button = screen.getByRole('button', { name: 'New artifact' });
@@ -476,14 +451,8 @@ test('keys, presses and clicks inside the menu do not reach the element it opene
 });
 
 /**
- * The open panel, with every row shape the restyle draws in it: a group of
- * answers with a check column, a row that carries a second line, a row that
- * carries a hint, a disabled row and a destructive one.
- *
- * Contrast is off because jsdom applies no stylesheet and resolves no custom
- * property; the palette suite measures every ink here on the panel it sits on.
- * What is left is the half a palette cannot see: the roles, the names and the
- * relationships the markup claims.
+ * Every row shape the panel draws. Contrast is off because jsdom resolves no
+ * custom property; the palette suite measures those inks.
  */
 test('the open menu carries no accessibility violation', async () => {
   render(
@@ -516,17 +485,9 @@ test('the open menu carries no accessibility violation', async () => {
 });
 
 /*
- * THE SAME SIZING RULE THE LISTBOX ROW KEEPS, stated again because a menu's
- * rows are deliberately not in that family (see the head of Listbox.css), so
- * the one declaration does not reach here.
- *
- * `.crewlet-menu` is a column flex scroller and `__group` is
- * `display: contents`, so every item is a direct flex item of the panel; an
- * explicit `min-height` replaces the automatic minimum that would otherwise
- * hold a row at its content, and a menu long enough to scroll squeezes its
- * rows first. A plain row escapes by accident — one nowrap line is under the
- * floor — but a `--described` row stacks a label over a wrapping description
- * at roughly 52px, drawn into 28px and over the rows either side.
+ * Every item is a flex item of the scrolling panel, and an explicit
+ * `min-height` replaces the automatic minimum, so without `flex: none` a long
+ * menu squeezes a two-line row into the height of one.
  */
 test('a menu row keeps its floor and cannot be shrunk under its own content', () => {
   const row = /\.crewlet-menu__item\s*\{([^}]*)\}/.exec(menuCss())?.[1] ?? '';
@@ -534,18 +495,8 @@ test('a menu row keeps its floor and cannot be shrunk under its own content', ()
   expect(row).toMatch(/flex:\s*none/);
 });
 
-/*
- * THE PANEL IS RE-PLACED WHEN ITS OWN SIZE CHANGES. The three listeners the
- * placement effect registers all report the ANCHOR moving; none of them fires
- * when a row's label changes or a font settles. This panel is especially
- * exposed because it is `width: max-content` under a `max-width`, so a label
- * change moves its width — and that width is what the `end` alignment and the
- * horizontal clamp are both built from.
- *
- * The suite's ResizeObserver is a no-op, so the callback is captured and fired
- * by hand: what is asserted is that the component subscribed the PANEL and
- * re-places when told it changed.
- */
+// The suite's ResizeObserver is a no-op, so the callback is captured and
+// fired by hand: the panel must be observed and re-placed when it resizes.
 test('a menu whose panel changes size while open is placed again', () => {
   const observed: Element[] = [];
   let fire: (() => void) | undefined;
@@ -589,13 +540,6 @@ test('a menu whose panel changes size while open is placed again', () => {
   }
 });
 
-/*
- * NO NARROWER THAN ITS TRIGGER, when asked. A trigger that spans a column
- * opens a panel that covers it edge to edge and still grows past it for a
- * long row: the floor is a custom property, and the stylesheet lifts the
- * ceiling to meet it so the two never cross. Left alone, the panel is sized
- * by its rows and carries no floor.
- */
 test('a menu given width="trigger" is never narrower than its trigger', () => {
   // The stylesheet's half, the floor and the ceiling that meets it, is held
   // by the panel's own test at the head of this file.
@@ -755,11 +699,8 @@ test('valueTrigger draws the trigger as the value: flush, in the surrounding tex
   );
 });
 
-// A VALUE TRIGGER IS NAMED BY THE VALUE IT SHOWS, then by what it changes.
-// Under an aria-label of "Status of ENG-1" it showed "In progress" and was
-// called something else, so a person who says what they see ("click In
-// progress") reached nothing, and every row's picker was announced alike.
-// The menu itself keeps `label` as its name.
+// A value trigger is named by the value it shows, then by `label`; the menu
+// itself keeps `label` as its name.
 test('a value trigger is named by its value first, and carries no name of its own', () => {
   render(
     <Menu

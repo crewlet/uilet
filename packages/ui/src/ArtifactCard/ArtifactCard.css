@@ -1,16 +1,11 @@
 /*
- * A card in a gallery: the preview on top at a fixed ratio, so a grid of them
- * lines up whatever each preview is, the kind's badge over its foot, then the
- * title and one quiet line. `compact` is a row with the kind's glyph in place
- * of the preview, drawn on Card.
+ * A card in a gallery: the preview on top at a fixed ratio, the kind's badge
+ * over its foot, then the title and one quiet line. `compact` is a row.
  */
 
 /*
- * ON TOP OF CARD, so every rule that changes Card's own layout carries Card's
- * class too. The two sheets meet at equal weight and the bundle orders them
- * by file name, which puts this one first: `.crewlet-card` and
- * `.crewlet-card--p-none` then won, and the compact row was drawn as a
- * padless column with its glyph on a line of its own.
+ * Layered on Card: every rule that changes Card's own layout carries Card's
+ * class too, because the bundle orders this sheet before Card's.
  */
 .crewlet-card.crewlet-artifact-card {
   display: flex;
@@ -51,10 +46,8 @@
   padding: var(--spacing-3);
 }
 
-/* THE TILE CENTRES ON THE TITLE'S LINE. The tile is a control step tall and
-   the title one line, so with both at the row's top the tile's middle stood
-   3px under the title's. The body is lowered by half of what the tile is
-   taller than a line, and the tile keeps its corner inset. */
+/* The tile centres on the title's line: the body is lowered by half of what
+   the tile is taller than a line. */
 .crewlet-artifact-card--compact .crewlet-artifact-card__body {
   padding: max(0px, calc((var(--size-control-md) - 1lh) / 2)) 0 0;
 }
@@ -92,17 +85,8 @@
 }
 
 /*
- * THE FACTS OF ONE LINE ARE A RUN, "Sheet · OPS · v12", each opened by a
- * quiet dot, so two short words never read as one phrase.
- *
- * A LINE NEVER OPENS ON A DOT, as a folder tile's never does (FolderTile.css).
- * A dot typed before every fact but the first opened each line the run broke
- * onto with one: "· 14 changes since you looked" under "2 here now". Every
- * fact carries its dot in the separator's width before it instead, and the run
- * is drawn that width to the left of the facts' own edge, which clips the
- * overhang, so the first fact of every line lays its dot in the clipped strip.
- * The separator is a step of air each side of the dot, the gap and margin the
- * typed dot stood between.
+ * A line's facts are a run, each opened by a quiet dot. The run is drawn one
+ * separator left of its edge and clipped, so a wrapped line never opens on a dot.
  */
 .crewlet-artifact-card__line {
   --crewlet-artifact-card-separator: var(--spacing-5);
@@ -153,15 +137,8 @@
 /* ---- the gallery card ---- */
 
 /*
- * A SOFT PANE WITH A GENEROUS CORNER. The card is the card rung with its
- * hairline, rounded a step past a plain card's because the preview inside it
- * is a picture, and a picture in a tight corner reads as a screenshot pasted
- * into a box.
- *
- * HOVER IS A STEP, NEVER A MOVE: the hairline darkens and a hairline shadow
- * settles under the card, quickly and with the standard ease. A card that rose
- * and cast a wide shadow made a gallery ripple as the pointer crossed it, and
- * the preview inside it never moves.
+ * A soft pane with a generous corner. Hover is a step, never a move: the
+ * hairline darkens and a hairline shadow settles under the card.
  */
 .crewlet-artifact-card--card {
   /* THE BADGE'S SQUARE, which the selection box opposite it is drawn in too,
@@ -229,11 +206,8 @@
 }
 
 /*
- * THE KIND'S BADGE STANDS ON THE PREVIEW'S FOOT, half over the picture and
- * half over the card, the glyph in the kind's ink: what the artifact is, read
- * before its title, in the one place every card has it. Exactly half, as the
- * selection box opposite it stands: risen 2px past half, the badge stood 2px
- * higher than its twin on the same seam.
+ * The kind's badge stands on the preview's foot, exactly half over the
+ * picture, as the selection box opposite it does.
  */
 .crewlet-artifact-card__badge {
   position: relative;
@@ -347,17 +321,9 @@
 }
 
 /*
- * THE SELECTION BOX STANDS ON THE PREVIEW'S FOOT, opposite the kind's badge
- * and drawn as its twin: half over the picture and half over the card, on a
- * raised square in the badge's own size, hairline and shadow. A cover's own
- * title starts at its top corner, and a box over that corner hid its first
- * words; the foot's far corner is where a cover has the least to say.
- *
- * Its anchor has the preview's shape (the card's width at 16:9) and takes no
- * pointer, so the box is placed against the preview's foot at any width
- * without being nested in the link the preview belongs to. Hidden until the
- * card is hovered or holds focus, and always there once the card is picked,
- * while the gallery is choosing, and on a screen with no hover.
+ * The selection box stands on the preview's foot opposite the kind's badge,
+ * as its twin. Its anchor has the preview's shape and takes no pointer, so the
+ * box is placed at any width without being nested in the preview's link.
  */
 .crewlet-artifact-card__select-anchor {
   position: absolute;

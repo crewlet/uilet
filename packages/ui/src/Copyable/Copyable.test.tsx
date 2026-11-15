@@ -1,14 +1,6 @@
 /**
- * The two affordances a value has: copy it, and be told whether that worked.
- *
- * These are asserted rather than assumed because both were WRONG before, and
- * silently. A copy that reached no clipboard clicked exactly like one that
- * did, and `Copyable` awaited `document.execCommand` and reported success
- * whatever it returned, so on the plain http origin anybody reads a remote
- * console at, the tick appeared over an empty clipboard.
- *
- * The CopyButton cases are ported from the engine dashboard's
- * `ui/primitives.test.tsx`.
+ * The two affordances a value has: copy it, and be told whether that worked,
+ * including when the browser refuses the clipboard.
  */
 
 import { readFileSync } from 'node:fs';
@@ -18,11 +10,8 @@ import { StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { Copyable, CopyButton } from './index.js';
-// Through the PACKAGE ROOT rather than the neighbouring file, because "it is
-// exported" is the thing under test: the folder barrel names its exports one
-// by one and the package's `exports` map publishes only `dist/*/index.js`, so
-// a function reachable from the module but missing from the barrel is a
-// function no consumer can import.
+// Through the package root, because "it is exported" is under test: a
+// function missing from the folder barrel is one no consumer can import.
 import { writeClipboard } from '@crewlethq/ui';
 
 afterEach(() => {
@@ -73,19 +62,9 @@ function withHeldClipboard(): { settle: () => void } {
 }
 
 /**
- * Make the fallback path the only one there is, and say what `execCommand`
- * does once it is reached.
- *
- * THE STUB TAKES FOCUS FIRST, and that is the whole reason this helper exists
- * rather than two inline `Object.defineProperty` calls. In every real engine
- * `field.select()` focuses the field — which is exactly why the fallback has
- * to put focus back — but jsdom's `select()` only sets the selection range and
- * leaves `document.activeElement` alone. So in a test focus never left the
- * button in the first place, and an assertion that it was RESTORED passes
- * whether the restoring line is in the source or not. Measured: deleting
- * `held.focus()` from `execCommandCopy` left the whole suite green.
- *
- * Standing the focus move back up here is what gives those assertions teeth.
+ * Make the fallback path the only one, with `execCommand` answering `run`.
+ * The stub takes focus first, as a browser's `select()` does and jsdom's does
+ * not, so the focus-restoring assertions can fail.
  */
 function withFallback(run: boolean | (() => boolean)) {
   vi.stubGlobal('navigator', { ...globalThis.navigator, clipboard: undefined });
@@ -153,14 +132,8 @@ describe('CopyButton', () => {
   });
 
   test('hands focus back to the control after the fallback takes it', async () => {
-    // The fallback SELECTS an off-screen field, which takes focus off the
-    // button that was pressed. Left there, a keyboard reader's next Tab starts
-    // from the top of the document rather than from the control they just
-    // used.
-    //
-    // `withFallback` is what makes this assert anything: jsdom's `select()`
-    // does not move focus, so written against a bare `execCommand` stub this
-    // case passed with the restoration deleted.
+    // The fallback selects an off-screen field, taking focus off the button;
+    // `withFallback` moves focus as a browser would, so this can fail.
     withFallback(true);
 
     render(<CopyButton text="x" />);
@@ -189,16 +162,8 @@ describe('CopyButton', () => {
 
   test('a write that settles after the screen is gone arms nothing', async () => {
     /*
-     * THE GAP IS THE AWAIT. `writeText` is held for as long as the browser
-     * holds its permission prompt, and a reader can answer that prompt by
-     * navigating away. The reset timer used to be armed AFTER that await, so
-     * it was armed after the unmount cleanup had already run and clearing it
-     * was nobody's job any more: one leaked timer per abandoned copy, whose
-     * callback is a state write to a component that no longer exists.
-     *
-     * The timer is what is asserted because it is what is observable — React
-     * drops a state write to an unmounted tree silently — and it is also
-     * sufficient, since the timer IS that state write.
+     * `writeText` can settle after the reader has left; the reset timer is the
+     * observable state write, so none may be armed after unmount.
      */
     vi.useFakeTimers();
     const held = withHeldClipboard();
@@ -219,12 +184,8 @@ describe('CopyButton', () => {
 
   test('still reports under StrictMode, which mounts, unmounts and mounts again', async () => {
     /*
-     * The other edge of the liveness ref. StrictMode runs every effect's
-     * cleanup once on purpose, so a ref that is only ever turned OFF is off
-     * for the rest of a development render — and then every copy takes the
-     * abandoned path and the control never says anything at all. Turning it
-     * back on in the effect BODY is what makes the guard survive that, and
-     * this is the case that says so.
+     * StrictMode runs every effect's cleanup once, so the liveness ref must be
+     * turned back on in the effect body or every copy reads as abandoned.
      */
     const clipboard = withClipboard();
     render(
@@ -468,13 +429,8 @@ describe('Copyable', () => {
 });
 
 /**
- * The write on its own, with no state machine around it.
- *
- * A caller that already owns its feedback — a toast, a form's status line —
- * had to reimplement both paths to get the write, and the second path is the
- * deprecated `execCommand` dance with the focus restoration in it. That is
- * how a copy button ends up sending a keyboard reader back to the top of the
- * page.
+ * The write on its own, with no state machine around it, for a caller that
+ * owns its feedback (a toast, a form's status line).
  */
 describe('writeClipboard', () => {
   test('writes through the Clipboard API and answers true', async () => {

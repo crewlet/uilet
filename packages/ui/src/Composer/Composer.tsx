@@ -15,23 +15,17 @@ export interface ComposerProps
   value: string;
   onChange: (value: string) => void;
   /**
-   * Called on the send key: Enter, or Command+Enter (Control+Enter
-   * elsewhere), while Shift+Enter writes a line (`isSendPress` is the rule).
-   * Never while the composer is disabled or `canSubmit` is false, never mid
-   * composition, and never on a touch keyboard's Return.
+   * Called on the send key (`isSendPress`): never while disabled or
+   * `canSubmit` is false, mid composition, or on a touch keyboard's Return.
    */
   onSubmit?: (() => void) | undefined;
   /**
-   * Whether a send would be taken now; when it is not, the send key does
-   * nothing and writes no line. By default, whether the field holds more than
-   * blank space. A box whose send carries more than its words (an agent's
-   * brief, which may be left empty) passes its own answer.
+   * Whether a send would be taken now; when not, the send key does nothing.
+   * By default, whether the field holds more than blank space.
    */
   canSubmit?: boolean | undefined;
   /**
-   * Draws the send hint in the footer, "Enter to send, Shift+Enter for a new
-   * line". True by default; a box whose send button and placement already say
-   * it (a chat box, a question to the assistant) turns it off. The field's
+   * Draws the send hint in the footer. True by default; the field's
    * description names the keys either way.
    */
   sendHint?: boolean | undefined;
@@ -41,73 +35,42 @@ export interface ComposerProps
   label: string;
   /**
    * `chat` is a conversation's message box, on the transcript's own type and
-   * ground (the `--crewlet-chat-*` scale): the large corner, the transcript's
-   * ground with the row wash and a small shadow, the words at the chat step, a
-   * footer with no rule of its own, a tool whose menu is open drawn pressed,
-   * and the formatting row's glyphs quiet until the box is in use.
+   * ground (the `--crewlet-chat-*` scale).
    */
   appearance?: ComposerAppearance | undefined;
   /** The footer's controls, at its end: Cancel and Submit. */
   actions?: ReactNode;
-  /**
-   * Tools at the footer's START, before the actions: what a chat composer
-   * offers beside sending (attach, emoji, a mention, drafting with the
-   * assistant). They stand where the eye starts, under the words, and the
-   * send control keeps the corner.
-   */
+  /** Tools at the footer's start, before the actions (attach, emoji, mention). */
   tools?: ReactNode;
   /**
-   * A row along the box's top, inside its edge and before everything else: a
-   * formatting `Toolbar` (bold, italic, a list) that acts on the words below.
+   * A formatting `Toolbar` along the box's top that acts on the words below.
    * Pass a `Toolbar` with its own name; the row is laid out, not labelled.
    */
   toolbar?: ReactNode;
   /**
-   * A control on the field's own row, at its end: the send button of a chat
-   * composer (`SendButton`). With one, the field starts at one line and grows
-   * to six before it scrolls, and the control stays on the last line.
+   * A control at the end of the field's row (`SendButton`). With one, the
+   * field starts at one line and grows to six before it scrolls.
    */
   trailing?: ReactNode;
   /**
-   * What travels with the message, drawn above the field inside the
-   * composer's edge: a row of `Tag`s, such as the page a question is asked
-   * about. It is a group named by `attachmentsLabel`, before the field in
-   * reading order, so a reader meets what is attached before what they type.
+   * What travels with the message (a row of `Tag`s), drawn above the field as
+   * a group named by `attachmentsLabel`, before the field in reading order.
    */
   attachments?: ReactNode;
   /** Names the attachments group. "Attached to this message" by default. */
   attachmentsLabel?: string | undefined;
   /**
-   * The composer cannot send right now, and why, in a few words ("Offline",
-   * "You can ask again in 30 seconds"). The whole composer takes the disabled
-   * field's look, the reason stands as the placeholder (so it keeps one line)
-   * and describes the field, and a draft already in it stays. Implies
-   * `disabled`.
+   * Why the composer cannot send right now, in a few words. Shown as the
+   * placeholder and the field's description; keeps the draft. Implies `disabled`.
    */
   disabledReason?: string | undefined;
   className?: string | undefined;
 }
 
 /**
- * A message written in place: a borderless field that grows with its text,
- * and a footer strip holding the tools, the send shortcut, a counter and the
- * actions, in one box that takes the focus ring as a whole. A formatting row
- * (`toolbar`) may stand along the box's top, above the words it acts on.
- *
- * ENTER SENDS AND SHIFT+ENTER WRITES A LINE, as in every message box in the
- * system (`useSendOnEnter`); on a touch keyboard Return writes a line and the
- * send button sends.
- *
- * THE FOOTER IS DRAWN ONLY WITH SOMETHING IN IT. With no hint, counter or
- * actions there is no strip at all, and one holding only the hint goes on a
- * phone, where the hint is not drawn, rather than stand there empty.
- *
- * THE COUNTER IS DRAWN ONLY NEAR THE LIMIT, from [COMPOSER_COUNTER_AT] of
- * `maxLength`: a count under every short reply is noise, and a field that
- * stops taking text with no warning reads as a broken keyboard.
- *
- * THE BOX OWNS THE ONE FOCUS RING, by pointer and by keyboard; the field
- * inside never draws its own, so a click in the field never shows two rings.
+ * A message written in place: a field that grows with its text and a footer
+ * of tools, send hint, counter and actions, in one box that owns the focus ring.
+ * The footer is drawn only with something in it; the counter only near the limit.
  */
 export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function Composer(
   {
@@ -179,10 +142,8 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
           className="crewlet-composer__field"
           aria-label={label}
           role={role}
-          // Said outright for the textbox a textarea is, a field with a
-          // mention list included (it points at the list with
-          // aria-autocomplete, aria-controls and aria-activedescendant, never
-          // a combobox role, which a textarea may not take).
+          // Said outright for the textbox a textarea is; a mention list is
+          // pointed at with aria-autocomplete, never a combobox role.
           aria-multiline={role === undefined || role === 'textbox' ? true : undefined}
           aria-describedby={cx(describedBy, send.describedBy, disabledReason === undefined ? undefined : reasonId) || undefined}
           value={value}

@@ -1,8 +1,7 @@
 /**
- * A LINK INSIDE A SENTENCE CAN BE TOLD FROM THE SENTENCE, measured in a
- * browser in both palettes. Its accent ink against secondary text is 1.18:1
- * in the dark palette, far under the 3:1 a link in running text needs with
- * no other mark, so a link sized for a sentence is underlined at rest.
+ * A link in running text is underlined at rest: its accent ink against
+ * secondary text falls under the 3:1 an unmarked link needs. Measured in a
+ * browser in both palettes.
  */
 import { afterEach, describe, expect, test } from 'vitest';
 import { flushSync } from 'react-dom';

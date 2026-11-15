@@ -159,27 +159,9 @@ export interface CommentThreadProps {
 }
 
 /**
- * A document's comments, oldest first, and a field to add one.
- *
- * A REPLY NAMES WHAT IT ANSWERS in words ("in reply to Maya"), so the thread
- * stays flat and readable in order while each answer still points at its
- * question. Pressing Reply moves focus into the field, which names whom it
- * answers, and the reply can be abandoned from beside it.
- *
- * THE BODY IS THE HOST'S. A remark arrives already rendered (markdown into
- * elements), so this draws it in the kit's document type at the size a remark
- * read beside other things takes, and never parses anything itself.
- *
- * A SUBMIT IS ONE AT A TIME. The submit control is disabled while a post is in
- * flight, so a second press cannot send the same remark twice, and the draft
- * is cleared only once the host says the post landed.
- *
- * THE READER'S OWN REMARKS ARE EDITED AND TAKEN DOWN IN PLACE. Edit swaps the
- * remark's words for a field holding what was written (`source`), saved or
- * left with Cancel; Delete asks in place before it acts, since the words go
- * for everybody. Which remarks offer either is the host's to say (`editable`,
- * `removable`): who may is the server's rule. A remark taken down keeps its
- * row, so a reply to it still reads in order.
+ * A document's comments, oldest first, and a field to add one. A reply names
+ * what it answers, a submit is one at a time, and the host says which remarks
+ * the reader may edit or delete in place (`editable`, `removable`).
  */
 export function CommentThread({
   comments,

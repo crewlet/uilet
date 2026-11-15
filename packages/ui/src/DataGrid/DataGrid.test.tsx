@@ -275,12 +275,7 @@ describe('the heads', () => {
   });
 });
 
-/*
- * THE ALIGNMENT GUARD. A head stood off the values it names three ways: no
- * per-column edge but left and right, a picker's ghost button adding its own
- * inset at the cell's edge, and pills and dates ragged against a left edge. A
- * head and its cells must take one edge and one inset, whatever `align` says.
- */
+/* A head and its cells take one edge and one inset, whatever `align` says. */
 describe('alignment', () => {
   interface Fact {
     id: string;
@@ -371,11 +366,8 @@ describe('alignment', () => {
   });
 
   /*
-   * ONE OUTDENT MECHANISM: Button's flush reads `--crewlet-btn-flush-outdent`,
-   * a ghost control written straight into a cell takes the same declaration,
-   * and the grid's exemptions (its own edge, right and centred columns, card
-   * rows) set that one variable to 0. Two mechanisms let a flush control
-   * bypass the exemptions and pull toward the frame.
+   * One outdent mechanism: Button's flush and a ghost control in a cell both
+   * read `--crewlet-btn-flush-outdent`, which the grid's exemptions set to 0.
    */
   test('a flush control takes the grid exemptions through one variable', () => {
     const css = sheet();
@@ -422,12 +414,9 @@ describe('bands', () => {
 });
 
 /*
- * THE STICKY STACK: the column heads at the application's offset, then one
- * band head per level of grouping, each flush under the one above it and
- * painted over every row. jsdom lays nothing out and its sheet helper folds
- * every var() fallback, so each head's offset and layer are worked out here
- * from the declaration the sheet writes and the custom properties the cascade
- * gives that element (its own, its ancestors', then the tokens).
+ * The column heads, then one band head per level, each flush under the one
+ * above. jsdom lays nothing out, so each offset is worked out from the sheet's
+ * declaration and the custom properties the cascade gives the element.
  */
 describe('the sticky stack', () => {
   const tokens = new Map(
@@ -661,10 +650,8 @@ describe('the fit', () => {
 
   test('only a card row\'s first line shares its width with the actions; every line after it spans the row', () => {
     /*
-     * The actions' track is sized to the actions, and a line placed in the
-     * other track alone gives that width up whether or not anything stands
-     * beside it: at 360px every line of a card ended 110px short of its edge,
-     * a third of the row, and the values wrapped (measured in Chrome).
+     * A line placed in the other track alone gives up the actions' width
+     * whether or not anything stands beside it.
      */
     const css = sheet().replace(/\s+/g, ' ');
     const spanning = [...css.matchAll(/([^{}]+)\{ grid-column: 1 \/ -1; \}/g)]
@@ -699,13 +686,9 @@ describe('the fit', () => {
       .find((s) => s.includes('.crewlet-data-grid__cell') && s.includes(':first-child'));
     expect(selector).toBeTruthy();
     /*
-     * ONLY A PICTURE WITH NO WORDS OF ITS OWN hands the row's baseline to the
-     * words after it: an svg or an img, whose baseline is its bottom edge, or
-     * a box holding nothing else. A monogram avatar or an avatar stack has its
-     * initials' baseline already, and taking part in baseline alignment moved
-     * the shorter words beside it to the top of the row, off the picture's
-     * centre (4px beside a stack, 7px beside a 32px avatar, measured in
-     * Chrome).
+     * Only a picture with no words of its own (an svg, an img, an empty box)
+     * hands the row's baseline to the words after it; a monogram avatar keeps
+     * its initials' baseline.
      */
     const words = (lead: string, id: string) =>
       `<div class="crewlet-data-grid__cell" data-label="Who"><span class="row">${lead}<span data-words="${id}">Words</span></span></div>`;

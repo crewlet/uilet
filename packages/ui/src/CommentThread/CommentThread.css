@@ -73,10 +73,8 @@
   font-size: var(--font-size-xs);
 }
 
-/* The remark's controls (Edit, Delete, Reply) sit at the row's far end,
-   wherever the head wraps, the last one's padding and edge pulled out as a
-   card foot's ghost is (StatusCard.css), so the word ends on the line the
-   hairline under the remark ends on rather than 9px inside. */
+/* The remark's controls sit at the row's far end, the last one's padding
+   pulled out so its word ends where the hairline under the remark ends. */
 .crewlet-comment-thread__actions {
   display: inline-flex;
   align-items: center;

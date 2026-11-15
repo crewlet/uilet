@@ -26,19 +26,9 @@ import {
 } from '../fixtures/atlasMap';
 
 /**
- * UI / GraphCanvas.
- *
- * A layered map: entries stand in clusters read left to right, bands of
- * clusters under each other, and right-angled lines run from each entry to
- * what it relies on, around every card. At rest only the calls are drawn,
- * with dashes moving the way they point; what things run on is one trunk per
- * pair of clusters with its count, and what stands around is drawn for the
- * entry a reader stands on. The legend switches each family on.
- *
- * Try it: rest the pointer on a card for its neighbours and its card, press
- * it to light its whole path, press it again or the ground to clear. Tab onto
- * the map and walk it with the arrow keys; Enter selects, Escape clears,
- * typing a name finds it. Plus and minus zoom, zero fits.
+ * UI / GraphCanvas: a layered map of clusters with lines to what each entry
+ * relies on. Hover a card for its neighbours, press it to light its path; Tab
+ * in and walk with the arrows, Enter selects, Escape clears, zero fits.
  */
 const meta: Meta<typeof GraphCanvas> = {
   title: 'UI/GraphCanvas',
@@ -209,10 +199,9 @@ export const OpenedOnOneEntry: Story = {
 };
 
 /**
- * Under half size a card is a tile: its glyph fills the cell, its name is held
- * at a size that reads and cut to what fits, and its tone takes the cell.
- * Three hundred entries, since a map zooms out no further than the fit of all
- * of it.
+ * Under half size a card is a tile: its glyph fills the cell and its name is
+ * held at a size that reads. Three hundred entries, since a map zooms out no
+ * further than its fit.
  */
 export const Tiles: Story = {
   render: () => (

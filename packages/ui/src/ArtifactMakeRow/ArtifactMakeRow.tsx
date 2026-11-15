@@ -28,22 +28,9 @@ export interface ArtifactMakeRowProps {
 }
 
 /**
- * The kinds a reader can start, as one quiet tray above their work: each
- * kind's glyph on its own tint, its name and what it is for, the whole item
- * one link. A toolbar for making things rather than a hero: one line high on
- * a wide page, the details dropped before a name is cut, and three across on
- * a phone. However many kinds a reader is offered, the tray holds no empty
- * cell: the line has a column per kind, and on a phone a short last row is
- * centred, or four kinds stand two by two.
- *
- * THE TRAY IS A WORKBENCH, Crewlet's dotted field under the kinds the way the
- * org chart's canvas sits under its seats, and an item lifts off it as a card
- * under the pointer. The glyph is the one coloured thing in each item, so six
- * hues read as six kinds and never as six coloured boxes.
- *
- * AN ITEM THAT CANNOT START is still a stop, so a reader moving through the
- * row by keyboard hears why (`disabledReason`) rather than finding a kind
- * missing.
+ * The kinds a reader can start, as one quiet tray of links with no empty cell.
+ * A kind that cannot start stays a stop, so the keyboard hears why
+ * (`disabledReason`) rather than finding it missing.
  */
 export function ArtifactMakeRow({
   items,
@@ -53,12 +40,8 @@ export function ArtifactMakeRow({
 }: ArtifactMakeRowProps) {
   return (
     <div className={cx('crewlet-make-row', className)}>
-      {/*
-        THE COUNT, twice: as the property the wide line takes its columns
-        from, so five kinds stand in five columns rather than in six with an
-        empty sixth, and as an attribute, because the narrow tray chooses how
-        to fill its rows by selector, and a selector cannot read a property.
-      */}
+      {/* The count as a property for the wide line's columns, and as an
+          attribute for the narrow tray's selectors, which cannot read one. */}
       <ul
         className="crewlet-make-row__list"
         aria-label={ariaLabel}
@@ -96,15 +79,8 @@ function MakeItem({ item }: { item: ArtifactMakeRowItem }) {
       </span>
     </>
   );
-  // THE NAME IS THE KIND and the detail its description, so a reader moving
-  // through the row hears "Docs, link" and then what a doc is for, rather
-  // than the two run together as one name.
-  //
-  // THE NAME COMES FROM THE TILE'S OWN WORDS, never an aria-label over them:
-  // the detail line is drawn inside the tile, and a label that replaced the
-  // content was a name that did not contain what the tile shows. So the
-  // detail is taken out of the content's name (aria-hidden) and read through
-  // aria-describedby, which reads a hidden element it names.
+  // The tile's own words name it (the kind); the detail is hidden from the
+  // name and read through aria-describedby, which reads a hidden element.
   const describedBy = detail ? detailId : undefined;
   if (off) {
     return (

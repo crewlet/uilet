@@ -1,8 +1,6 @@
 /**
- * The "Start a new artifact" tray: one link per kind named by the kind, what it
- * is for read as its description, the kind's glyph tinted by the kind and
- * hidden from assistive technology, and a kind a reader cannot start kept as
- * a stop that says why.
+ * The "Start a new artifact" tray: one link per kind, named by the kind and
+ * described by what it is for, and a kind that cannot start kept as a stop.
  */
 
 import { readFileSync } from 'node:fs';
@@ -28,12 +26,8 @@ test('each kind is one link named by the kind, with what it is for as its descri
   expect(screen.getByRole('list', { name: 'Start a new artifact' })).toBeDefined();
 });
 
-// NAMED BY THE WORDS IT SHOWS FOR ITS NAME, never by an aria-label over them.
-// The label replaced a link's content while its detail line stood visible
-// inside it, so the name did not contain what the tile shows (axe
-// label-content-name-mismatch on every tile). The kind's word is the name,
-// from the content, and the detail is drawn out of the name and read as the
-// description.
+// Named by the words it shows, never by an aria-label over them; the detail
+// line is the description.
 test('a tile is named from its own words, with no aria-label over them', () => {
   render(
     <ArtifactMakeRow
@@ -85,12 +79,8 @@ test('a row of every kind carries no axe violation', async () => {
 });
 
 test('the tray lays out the kinds it is given, with no empty cell', () => {
-  /*
-   * Offered five kinds (New design hidden), the tray drew them in six fixed
-   * columns with an empty sixth of dotted field at the end of the line, and
-   * three across on a phone with a hole after the fifth. The count reaches
-   * the stylesheet, and the stylesheet spends it.
-   */
+  /* Five kinds take five columns, not six with an empty sixth: the count
+     reaches the stylesheet. */
   const five = ARTIFACT_KINDS.slice(0, 5).map((kind) => ({ kind, label: kind, href: `#/artifacts/new/${kind}` }));
   render(<ArtifactMakeRow aria-label="Start a new artifact" items={five} />);
   const list = screen.getByRole('list', { name: 'Start a new artifact' });

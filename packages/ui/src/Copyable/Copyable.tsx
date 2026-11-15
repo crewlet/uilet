@@ -46,17 +46,8 @@ const truncateValue = (text: string, length: number, variant: CopyableVariant): 
 };
 
 /**
- * An identifier, with a control that copies it.
- *
- * ONE TAB STOP. The value used to be a `role="button"` span with its own
- * `tabIndex` beside the button that did the same thing, so every id in a table
- * was two stops on the way to the next row, and the first of them was a button
- * that was not one. The value is text now, and the button is the only control.
- *
- * A REFUSAL IS REPORTED. The previous implementation awaited
- * `document.execCommand` and reported success whatever it returned, so on the
- * plain http origin anybody reads a remote dashboard at, the tick appeared and
- * the clipboard was empty.
+ * An identifier with a control that copies it. The value is plain text and the
+ * button the one tab stop; a clipboard the browser refuses is reported.
  */
 export const Copyable = ({
   value,
@@ -84,10 +75,8 @@ export const Copyable = ({
   const resolvedLength = truncateLength ?? (variant === 'chip' ? 14 : 24);
   const shouldTruncate = truncate || (variant === 'chip' && text.length > resolvedLength);
   const rendered = display ?? (shouldTruncate ? truncateValue(text, resolvedLength, variant) : text);
-  // AN OPAQUE VALUE (a token, an id, a key: one run with no space and no `/`)
-  // means nothing in its pieces, so a block breaks it at any character and
-  // fills its lines. Left to the line breaker it broke after a hyphen, and a
-  // token read "cwl_pat_01a1dc5f-3ec7-7cf4-a60d-" over a ragged first line.
+  // An opaque value (a token, an id: one run with no space and no `/`) means
+  // nothing in its pieces, so a block breaks it at any character.
   const opaque = variant === 'block' && display === undefined && !/[\s/]/.test(text);
 
   return (

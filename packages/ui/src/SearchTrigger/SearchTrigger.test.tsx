@@ -18,14 +18,8 @@ import { SearchTrigger } from './index.js';
 afterEach(cleanup);
 
 /**
- * What the stylesheet's breakpoint does to the button, applied as inline
- * styles: the label is clipped out of sight, never taken out with
- * `display: none` (which takes it out of the name too), and the hint is
- * taken out whole.
- *
- * Inline rather than as a style element, which the package's own source
- * scan refuses anywhere under `src`: what a name computation reads is the
- * resolved display of these two elements, and it is the same either way.
+ * The stylesheet's breakpoint as inline styles (the source scan refuses style
+ * elements): the label is clipped, never `display: none`, and the hint goes.
  */
 function narrowLayout(): () => void {
   const labels = [...document.querySelectorAll<HTMLElement>('.crewlet-search-trigger__label')];
@@ -60,14 +54,8 @@ test('the button keeps its name where the narrow layout hides its label', () => 
   }
 });
 
-/*
- * NAMED BY ITS WORDS, NOTHING ELSE. An aria-label replaced the words the box
- * shows, and the keycap inside the box is text too (axe counts it, hidden or
- * not), so "Search everything" over "Search everything Ctrl+K" was a name
- * that did not contain what is on screen. The words are the name, the
- * keycap is decoration, and the shortcut reaches a screen reader through
- * `aria-keyshortcuts`.
- */
+/* The words are the whole name; the keycap is decoration, and the shortcut
+   reaches a screen reader through `aria-keyshortcuts`. */
 test('it is named by its words alone, and the key hint stays out of the name', () => {
   render(
     <SearchTrigger
@@ -118,12 +106,8 @@ test('the shortcut hint is drawn beside the words as one cap', () => {
   expect(caps.map((cap) => cap.textContent)).toEqual(['Ctrl+K']);
 });
 
-/*
- * TWO PLACES, AND THE RAIL IS THE DEFAULT. The approved design puts the field
- * in the sidebar, the width of the rail, on the SHEET's ground one rung above
- * the frame it stands on; a screen's own search stands in its bar on the
- * sheet, on the CARD's ground at the control height.
- */
+/* The rail field (the default) is on the sheet's ground; a screen's own
+   search sits in its bar on the card's ground at the control height. */
 test('the rail field is the sheet across the rail, and the toolbar field the card at the control height', () => {
   for (const theme of ['dark', 'light'] as const) {
     const uninstall = installThemed(theme, 'SearchTrigger/SearchTrigger.css');
@@ -193,10 +177,8 @@ test('a narrow field cuts its label before its shortcut', () => {
 
 test('only the toolbar field folds to its glyph under the shell breakpoint', () => {
   /*
-   * The rail is a drawer under the shell breakpoint, as wide as it ever was,
-   * so a rail field that dropped its words there would be a magnifier alone in
-   * a 236px drawer. jsdom answers no media query, so the rules inside the
-   * shell's query are read: every one of them names the toolbar form.
+   * The rail is a full-width drawer under the breakpoint, so only the toolbar
+   * folds. jsdom answers no media query, so the query's rules are read instead.
    */
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SearchTrigger.css'), 'utf8').replace(
     /\/\*[\s\S]*?\*\//g,
