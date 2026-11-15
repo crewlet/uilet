@@ -573,6 +573,13 @@
     flex: 1 1 100%;
     white-space: normal;
   }
+
+  /* The subtitle has its own line here, so a long title wraps rather than
+     being cut at the controls. A `truncate` title keeps its ellipsis. */
+  .crewlet-card__header:has(> .crewlet-card__subtitle) .crewlet-card__title:not(.crewlet-card__title--truncate) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
 
 /*
