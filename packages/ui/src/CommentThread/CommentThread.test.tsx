@@ -135,3 +135,91 @@ test('a thread with a field carries no violation', async () => {
   });
   expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(', ')}`)).toEqual([]);
 });
+
+const mine: CommentThreadComment[] = [
+  { ...comments[0]!, source: 'Should the rollout wait for the audit?', editable: true, removable: true },
+  comments[1]!,
+  { id: 'c4', author: { id: 'maya', kind: 'person', name: 'Maya Ortiz' }, body: null, createdAt: '2026-10-18T11:55:00Z', removed: true },
+];
+
+test('only the remarks the host marks offer Edit and Delete, and only with their handlers', () => {
+  const { rerender } = render(<CommentThread comments={mine} onSubmit={() => {}} now={NOW} />);
+  expect(screen.queryByRole('button', { name: 'Edit your comment' })).toBeNull();
+  rerender(<CommentThread comments={mine} onSubmit={() => {}} onEdit={() => {}} onRemove={() => {}} now={NOW} />);
+  const items = within(screen.getByRole('list')).getAllByRole('listitem');
+  expect(within(items[0]!).getByRole('button', { name: 'Edit your comment' })).toBeTruthy();
+  expect(within(items[0]!).getByRole('button', { name: 'Delete the comment by Maya Ortiz' })).toBeTruthy();
+  // Somebody else's remark offers neither.
+  expect(within(items[1]!).queryByRole('button', { name: /Edit|Delete/ })).toBeNull();
+});
+
+test('a remark taken down keeps its place and offers nothing', () => {
+  render(<CommentThread comments={mine} onSubmit={() => {}} onEdit={() => {}} onRemove={() => {}} now={NOW} />);
+  const removed = within(screen.getByRole('list')).getAllByRole('listitem')[2]!;
+  expect(removed.textContent).toContain('Maya Ortiz');
+  expect(removed.textContent).toContain('Comment removed.');
+  expect(within(removed).queryByRole('button')).toBeNull();
+});
+
+test('Edit opens a field on the words as written; Save sends them and closes, a refusal keeps it open', async () => {
+  const onEdit = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+  render(<CommentThread comments={mine} onSubmit={() => {}} onEdit={onEdit} now={NOW} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Edit your comment' }));
+  const field = screen.getByRole('textbox', { name: 'Edit your comment' });
+  expect(document.activeElement).toBe(field);
+  expect((field as HTMLTextAreaElement).value).toBe('Should the rollout wait for the audit?');
+  fireEvent.change(field, { target: { value: '  Should the rollout wait for the security audit?  ' } });
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  });
+  expect(onEdit).toHaveBeenLastCalledWith(mine[0], 'Should the rollout wait for the security audit?');
+  expect(screen.getByRole('textbox', { name: 'Edit your comment' })).toBeTruthy();
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  });
+  expect(screen.queryByRole('textbox', { name: 'Edit your comment' })).toBeNull();
+});
+
+test('an edit emptied of words cannot be saved, and Cancel leaves the remark as it was', () => {
+  const onEdit = vi.fn();
+  render(<CommentThread comments={mine} onSubmit={() => {}} onEdit={onEdit} now={NOW} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Edit your comment' }));
+  fireEvent.change(screen.getByRole('textbox', { name: 'Edit your comment' }), { target: { value: '   ' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(onEdit).not.toHaveBeenCalled();
+  expect(screen.getByText('A comment needs words. Delete it instead.')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.queryByRole('textbox', { name: 'Edit your comment' })).toBeNull();
+  expect(screen.getByText('Should the rollout wait for the audit?')).toBeTruthy();
+});
+
+test('Delete asks in place first; Keep it backs out, and the confirm sends the remark', async () => {
+  const onRemove = vi.fn().mockResolvedValue(true);
+  render(<CommentThread comments={mine} onSubmit={() => {}} onRemove={onRemove} now={NOW} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Delete the comment by Maya Ortiz' }));
+  const ask = screen.getByRole('group', { name: /Delete this comment\?/ });
+  fireEvent.click(within(ask).getByRole('button', { name: 'Keep it' }));
+  expect(onRemove).not.toHaveBeenCalled();
+  expect(screen.queryByRole('group', { name: /Delete this comment\?/ })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Delete the comment by Maya Ortiz' }));
+  await act(async () => {
+    fireEvent.click(within(screen.getByRole('group', { name: /Delete this comment\?/ })).getByRole('button', { name: 'Delete' }));
+  });
+  expect(onRemove).toHaveBeenCalledWith(mine[0]);
+  expect(screen.queryByRole('group', { name: /Delete this comment\?/ })).toBeNull();
+});
+
+test("a thread with remarks of the reader's own, one being edited and one asked about, carries no violation", async () => {
+  const { container } = render(
+    <main>
+      <CommentThread comments={mine} onSubmit={() => {}} onEdit={() => {}} onRemove={() => {}} now={NOW} />
+    </main>,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Edit your comment' }));
+  const result = await axe.run(container, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(', ')}`)).toEqual([]);
+});
