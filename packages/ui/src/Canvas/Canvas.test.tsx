@@ -1,14 +1,7 @@
 /**
- * The canvas: who owns a key, a wheel and a finger.
- *
- * The arithmetic is `geometry.test.tsx`. What is asserted here is the wiring
- * jsdom can observe: which element a key belongs to, when the wheel is the
- * page's rather than the chart's, that a finger does not trap the page until
- * the canvas is asked for it, and that a data push never moves the view. jsdom
- * has no layout, so the viewport's size is fed through a controllable
- * ResizeObserver and every rectangle starts at the origin.
- *
- * Ported from the engine dashboard's `ui/Canvas.test.tsx`.
+ * The canvas's wiring: who owns a key, a wheel and a finger, and that a data
+ * push never moves the view. The arithmetic is `geometry.test.tsx`; jsdom has
+ * no layout, so a controllable ResizeObserver feeds the viewport's size.
  */
 
 import { readFileSync } from 'node:fs';
@@ -187,13 +180,9 @@ test('a canvas that refits on resize refits a view nobody has moved since its fi
 });
 
 /*
- * WHOSE KEYS ARE WHOSE. The tab stop a chart hands out is an ITEM inside the
- * viewport, never the viewport, so zoom keys that answered only to the
- * viewport element answered to nobody who had navigated the chart: measured on
- * the running build, `+` on a focused node left the zoom at 120% while the
- * canvas's own description went on saying it would zoom. The ARROWS are the
- * other half of the same rule: they belong to whatever holds focus, so an item
- * keeps them and the viewport pans with them.
+ * The tab stop is an item inside the viewport, never the viewport, so the zoom
+ * keys answer anywhere in the canvas, while the arrows belong to whatever holds
+ * focus.
  */
 test('the zoom keys answer anywhere inside the canvas, and the arrows do not', () => {
   const { container } = mount();
@@ -545,12 +534,7 @@ test('the view is reported from the first fit on, with the viewport, and on ever
 
 /*
  * ───────────────────────────────────────────────────────────────────────────
- * The zoom readout
- *
- * A zoom has a VALUE as well as a direction, and two chevrons say only the
- * direction. What these protect is that the value is shown, that it can be
- * typed, and that typing it neither leaves a field open in the toolbar nor
- * escapes the clamp every other zoom goes through.
+ * The zoom readout: shown, typed, and clamped like every other zoom.
  * ───────────────────────────────────────────────────────────────────────────
  */
 
@@ -616,10 +600,8 @@ test('Enter on an empty field leaves the view alone', () => {
 });
 
 /*
- * THE TYPED ZOOM GOES THROUGH THE SAME CLAMP as every other, because it is
- * applied as a factor rather than set as a scale. A canvas whose floor is a
- * quarter reads 40 as a quarter, not as a fortieth, and nothing in the readout
- * has to know what the floor is.
+ * A typed zoom is applied as a factor, so it goes through the same clamp as
+ * every other: a canvas whose floor is a quarter reads 40 as a quarter.
  */
 test('a zoom beyond the bounds lands on the bound, not past it', () => {
   const { container } = mount();
@@ -636,11 +618,8 @@ test('a zoom beyond the bounds lands on the bound, not past it', () => {
 });
 
 /*
- * OUT AS FAR AS THE FIT AND NO FURTHER. There is nothing beyond the whole
- * chart to see, and a reader who shrank it to a quarter of that had a screen
- * of grey with no way back; the console chart refuses it outright. In as far
- * as ONE ITEM filling the pane, which is what a reader pressing Zoom in is
- * asking for: a fixed ceiling of double size was a fifth of that.
+ * Out no further than the fit, since nothing lies beyond the whole chart, and
+ * in as far as one item filling the pane.
  */
 test('the floor is the fit and the ceiling is one item filling the viewport', () => {
   const { container, handle } = mount();
@@ -661,10 +640,8 @@ test('the floor is the fit and the ceiling is one item filling the viewport', ()
 });
 
 /*
- * A STEPPER AT ITS LIMIT SAYS SO. Every zoom is clamped to the limits, so at
- * the fit Zoom out moved nothing however often it was pressed, and it still
- * looked live. It is held there with its reason, softly so a reader whose
- * focus is on it keeps it, and Zoom in is held the same at the ceiling.
+ * A stepper at its limit is held with its reason, softly, so a reader whose
+ * focus is on it keeps it.
  */
 test('Zoom out is held at the fit and Zoom in at the ceiling, each with its reason', () => {
   const { handle } = mount({ x: 0, y: 0, width: 4000, height: 3000 });
@@ -744,11 +721,8 @@ test('the readout is dead until the canvas has been fitted', () => {
 // ---------------------------------------------------------------------------
 
 /*
- * ONE GROUP IN ONE CORNER. The console chart stacks its toolbar, its key hint
- * and its chart switch in one absolutely placed column at the top right; this
- * canvas's bar had moved to the bottom right and two of its three companions
- * had ended up in the page's own toolbar 800px away, acting on a canvas they
- * were nowhere near.
+ * The bar, the key hint and the caller's controls stand in one group in one
+ * corner of the canvas they act on.
  */
 test('the controls take the corner they are given, with the caller in the same group', () => {
   const uninstall = installSheets('Canvas/Canvas.css');
@@ -886,10 +860,9 @@ test('an initial view opens instead of the fit, held within the zoom range', () 
 });
 
 /*
- * AN OPENING THAT DEPENDS ON THE VIEWPORT, such as an item drawn in the middle
- * of it, cannot be worked out before the canvas has its size: it is asked
- * then, with the room and the fit. Answering nothing is the fit, which is then
- * an untouched fit like any other, so a resize refits it.
+ * An opening that depends on the viewport is asked once the canvas has its
+ * size, with the room and the fit. Answering nothing is an untouched fit, so a
+ * resize refits it.
  */
 test('an opening worked out from the viewport is asked with its room and the fit, and nothing is the fit', () => {
   const asked: Array<[CanvasRect, CanvasView]> = [];
@@ -923,11 +896,8 @@ test('an opening worked out from the viewport is asked with its room and the fit
 });
 
 /*
- * THE BAR DOES NOT MOVE WHEN THE READOUT IS PRESSED. The field replaced the
- * button with an `<input>`, whose own intrinsic width is its `size` attribute:
- * measured on the running build the bar went from 150px to 261px and every
- * button in it moved out from under the pointer. The console chart's is a
- * fixed width in the slot the readout used.
+ * Pressing the readout must not move the bar: an `<input>` is as wide as its
+ * `size` attribute, so the field keeps the readout's fixed width.
  */
 test('typing a zoom does not move the controls beside it', () => {
   const uninstall = installSheets('Canvas/Canvas.css');
@@ -974,10 +944,8 @@ test('the content is dimmed on request, and the chrome over it is not', () => {
 });
 
 /*
- * EASING ONTO ONE REGION, AND BACK. A surface about one node has to be able to
- * say WHERE that node is, and the chart is the only thing that can say it; the
- * view the reader had is given back when the surface closes, which is what the
- * console chart does with the viewBox it saved.
+ * A surface about one node eases the chart onto that node, and the reader's
+ * view is given back when the surface closes.
  */
 test('a region is brought to the middle with room around it, and the view is given back', () => {
   const handle = createRef<CanvasHandle>();
@@ -1003,14 +971,8 @@ test('a region is brought to the middle with room around it, and the view is giv
 });
 
 /*
- * A CORRECTION AND A JOURNEY ARE DIFFERENT MOVEMENTS, and the canvas says
- * which it is running so the stylesheet can give each its own time.
- *
- * A fit, a zoom step and a reveal are corrections to the view the reader
- * already has. Easing onto a region and giving the view back are the chart
- * GOING somewhere, which is the movement that says WHERE the place is: run at
- * the correction's step it read as a jump, 2.7 times faster than the console
- * chart's own 400ms viewBox ease, and the gesture was lost.
+ * A fit, a zoom step and a reveal are corrections; easing onto a region and
+ * back is travel. The canvas says which it runs, so the stylesheet times each.
  */
 test('easing onto a region travels, and a fit or a reveal corrects', () => {
   const handle = createRef<CanvasHandle>();
@@ -1037,11 +999,8 @@ test('easing onto a region travels, and a fit or a reveal corrects', () => {
 });
 
 /*
- * AND BOTH ARE IN THE STYLESHEET, with the travel the longer of the two and
- * both cancelled for a reader who asked for less motion. Read from the source
- * because a duration is not a length: the cascade helper substitutes the
- * length families only, so jsdom drops any declaration naming a motion token
- * and every measurement through it would read zero.
+ * Read from the source: the cascade helper substitutes length tokens only, so
+ * jsdom drops a declaration naming a motion token and would read zero.
  */
 test('the two eases are declared, and reduced motion cancels both', () => {
   const rule = (mode: string) => {
@@ -1082,11 +1041,8 @@ test('the view given back is the one the first region was left from', () => {
 });
 
 /*
- * A FIT IS GIVEN BACK AS A FIT. The fit says "all of the content", which is a
- * statement about the content rather than a transform: a surface that changed
- * the content while it was open (a node added, a branch opened for it) and
- * then gave back the old fit's zoom and pan left the new content cut off at
- * the edges. A view the reader moved is theirs, and comes back as it was.
+ * A fit is given back as a fit of the content as it now stands, so content
+ * added while a surface was open is not cut off. A moved view comes back as is.
  */
 test('a view given back that was the untouched fit is the fit of the content as it now stands', () => {
   const grown: CanvasRect = { x: 0, y: 0, width: 1600, height: 900 };
@@ -1107,11 +1063,8 @@ test('a view given back that was the untouched fit is the fit of the content as 
 });
 
 /*
- * A READER SENT TO AN ITEM SOMEWHERE ELSE FINDS IT IN THE MIDDLE. The least
- * pan is right for a step to the next item, which is beside the one before;
- * for an item the view does not show at all it put the item against the edge,
- * with nothing of the chart around it on one side. One already partly in view
- * still moves the least distance.
+ * The least pan suits a step to the next item; an item wholly out of view is
+ * centred instead, so it does not land against the edge.
  */
 test('a reveal asked to centre brings an item wholly outside the view to the middle, and one partly in it the least distance', () => {
   const content: CanvasRect = { x: 0, y: 0, width: 3000, height: 2000 };
@@ -1183,10 +1136,8 @@ test('a reveal keeps the item clear of the end bar, and centres it in the room t
 });
 
 /*
- * A NOTE UNDER THE CONTROLS, about a key or a state the canvas is in: it is a
- * `status` region, so entering a state a reader cannot see out of is said to a
- * reader who cannot see it either, and it is inert, so a press meant for the
- * chart reaches the chart.
+ * A note under the controls is a `status` region, so a state the canvas enters
+ * is announced, and inert, so a press meant for the chart reaches the chart.
  */
 test('a hint is announced, drawn under the controls, and takes no press', () => {
   const uninstall = installSheets('Canvas/Canvas.css');
@@ -1324,11 +1275,8 @@ function CursorHarness({ cursor }: { cursor?: CanvasCursor }) {
 
 test("the pointer is the operating system's own, the one the canvas names", () => {
   /*
-   * The canvas painted drawn Lucide cursors, so its open hand was a hand
-   * nobody had seen on any other surface. It shows the platform's own
-   * pointers now: the grab hand every map and design tool shows, and the
-   * arrow, crosshair and text beam beside it, so no drawn pointer stands
-   * among native ones.
+   * The canvas shows the platform's own pointers (grab hand, arrow, crosshair,
+   * text beam), so no drawn pointer stands among native ones.
    */
   const uninstall = installSheets('Canvas/Canvas.css');
   try {

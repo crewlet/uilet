@@ -1,13 +1,6 @@
 /**
- * The layered map's layout, routing, walk and reach, without a DOM.
- *
- * What these protect: no two items overlap; every edge has a route that
- * leaves its source and ends at its target's side; no route runs through a
- * card it does not belong to; a closed group folds its members' edges into
- * one card; the ordering sweeps cross fewer edges than the caller's order; the
- * same input gives the same map; the walk reaches every item; and a large map
- * lays out in bounded time. The random maps come from a seeded PRNG, and a
- * failure names its seed.
+ * The layered map's layout, routing, walk and reach, without a DOM. The
+ * random maps come from a seeded PRNG, and a failure names its seed.
  */
 
 import { describe, expect, test } from 'vitest';

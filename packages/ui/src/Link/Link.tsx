@@ -58,31 +58,9 @@ export interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 }
 
 /**
- * A link that reads as one.
- *
- * WHY IT IS NOT A `Text` WITH A COLOUR. The registers used to be utility
- * classes, and a caption-sized link spelled with the caption class took the
- * caption's quiet ink, which won over the anchor rule: four real navigations
- * rendered as dim static micro-text that a reader could only find by hovering.
- * A link is a different thing from a piece of text, so it is a different
- * component, and `size="caption"` sets the caption's SIZE without its ink.
- *
- * `subtle` is for a link whose words are an identity rather than an
- * instruction, a seat's name in a row, say. It is still underlined on hover
- * and still takes the focus ring, because a link a reader cannot find is not
- * quieter, it is hidden.
- *
- * `quiet` is for a reference that sits in a column of rows or inside a
- * sentence, where every row drawing a full accent link would turn the column
- * into a column of links. It keeps an ink of its own, measured to 4.5:1 on
- * every surface and pressed row, so it is still found by colour and by its
- * place, and it keeps the focus ring. It draws no underline even on hover:
- * the ink stepping up to the accent is the signal that it is live.
- *
- * `size="inherit"` sets a link inside a sentence, and there a navigation or an
- * identity is UNDERLINED AT REST: among other words its ink alone does not set
- * it apart (the accent ink against secondary text is 1.18:1 in the dark
- * palette, where running text asks 3:1 or a mark that is not colour).
+ * A link that reads as one: `size="caption"` takes the caption's size, not its
+ * ink. Inside a sentence (`size="inherit"`) a `default` or `subtle` link is
+ * underlined at rest, since its ink alone does not set it apart from the words.
  */
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   {
@@ -111,10 +89,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   const externalMark = external ? (
     <>
       {/*
-        THE MARK TRAVELS WITH THE LAST WORD. A line may break before an inline
-        glyph, so at the end of a line the mark wrapped alone onto the next
-        one. The word joiner holds it to the word before it, and the span that
-        does not wrap holds the joiner to the mark. Hidden, so the joiner is
+        The word joiner keeps the mark on the last word's line; hidden, so it is
         never part of the link's name.
       */}
       <span className="crewlet-link__external-mark" aria-hidden="true">
@@ -122,21 +97,16 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
         <ExternalLinkGlyph className="crewlet-link__external" size="sm" />
       </span>
       {/*
-        The space is a TEXT NODE BESIDE the sentence, not inside it. An
-        accessible name is the concatenation of an element's parts with nothing
-        inserted between them, and whitespace inside a part is trimmed off it,
-        so the link is announced as "Install(opens in a new tab)" without this
-        and with a space inside the span alike.
+        The space sits beside the hidden sentence, not inside it: whitespace
+        inside a part of an accessible name is trimmed off.
       */}
       {' '}
       <VisuallyHidden>{newTabLabel}</VisuallyHidden>
     </>
   ) : null;
 
-  // The MARK, THE SENTENCE AND THE BEHAVIOUR travel together, and they are
-  // spelled once for that reason: set on the anchor branch alone, `asChild`
-  // drew the glyph and read the sentence over a link that opened in this tab
-  // and handed the referrer over on the way.
+  // The mark, the sentence and the new-tab behaviour travel together, so
+  // `asChild` gets them too.
   const externalAttributes = external
     ? { target: '_blank', rel: 'noreferrer' }
     : { target: rest.target, rel: rest.rel };

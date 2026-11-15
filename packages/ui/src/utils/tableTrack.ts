@@ -35,12 +35,9 @@ export const SHRINK_SHARE = 0.2;
 export function tableTrack({ width, shrink, floor, short }: TableTrack): string {
   if (width) return width;
   if (shrink) return `fit-content(${SHRINK_SHARE * 100}%)`;
-  // A SHORT COLUMN TAKES WHAT IT HOLDS, never more than its widest value and
-  // never under its floor: at an equal `1fr` share a seat's handle sat in a
-  // third of a column of empty room beside a name cut to "Maximiliana
-  // Konstanti...". Content-sized, it is resolved with the shrink columns,
-  // before the long ones share what is left, so it gives way by `drop`, never
-  // by a cut.
+  // A short column takes its widest value, never under its floor. Sized to
+  // its content, it resolves before the long ones share what is left, so it
+  // gives way by `drop`, never by a cut.
   if (short) return floor === 'max-content' || !floor ? 'max-content' : `minmax(${floor}, max-content)`;
   return `minmax(${floor ?? 0}, 1fr)`;
 }

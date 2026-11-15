@@ -1,19 +1,10 @@
 /*
  * One identifier inside a sentence: a mono chip on the inset surface.
- *
- * The size is relative (0.92em) rather than a step off the scale, because the
- * chip has to sit inside whatever register its sentence is set in. A fixed
- * size makes it either a shout inside a caption or a whisper inside a lead.
  */
 
 .crewlet-inline-code {
-  /*
-   * RELATIVE, so it is deliberately not a step off the type scale: the chip
-   * sits inside whatever register its sentence is set in, and an absolute size
-   * makes it a shout inside a caption or a whisper inside a lead. The mono
-   * face also runs larger than the sans at the same nominal size, which is
-   * what the reduction corrects.
-   */
+  /* Relative, not a step off the type scale, so the chip sits in its
+     sentence's register; the reduction offsets the mono face's larger size. */
   --crewlet-inline-code-size: 0.92em;
   font-family: var(--font-family-mono);
   /* An identifier is read character by character; a ligature joins two of them
@@ -24,10 +15,8 @@
   border-radius: var(--radius-xs);
   padding: 1px var(--spacing-1);
   color: var(--color-text-secondary);
-  /* A URL IS ONE UNBREAKABLE WORD to a line breaker. The component offers a
-     break after every `/` (`pathBreaks`); this is the last resort, for one run
-     between them that no line can hold, which would otherwise push the chip
-     past its box. */
+  /* Last resort for a run between the `/` breaks (`pathBreaks`) that no line
+     can hold, which would otherwise push the chip past its box. */
   overflow-wrap: anywhere;
   /* SLICED where it breaks, not cloned: a browser leaves a cloned inset out of
      line breaking, so each broken line ran up to the inset past its box. */
@@ -35,39 +24,24 @@
 }
 
 /*
- * A `${NAME}` pointer. It is one token a reader copies, so `${` and `}` are
- * held to the name's first and last characters. THE SAME INK AS ANY OTHER
- * CHIP: drawn a step quieter, it read as decoration rather than as the thing
- * an operator has to type back.
- *
- * THE NAME ITSELF MAY BREAK. Held whole, a long name ran past a dialog at a
- * phone's width. It offers no break of its own, so the chip still moves to
- * the next line whole where it fits there, and breaks only where it does not.
+ * A `${NAME}` pointer: `${` and `}` hold to the name's first and last
+ * characters. The name itself may still break where the chip cannot fit a line.
  */
 .crewlet-inline-code__end {
   white-space: nowrap;
 }
 
 /*
- * Inside a Callout or a field error the chip carries that message's ink, or a
- * calm grey identifier sits in the middle of an alarming sentence.
- *
- * ONLY THE INK. The chip keeps its own ground and its own inset, because they
- * are what says "this is a string you type", and a bare run of monospace
- * inside a sentence is not that. The composite the message's ink then lands on
- * is measured: @crewlethq/tokens' palette suite holds every status ink to
- * 4.5:1 on the inset well drawn over its own callout tint, and the tightest
- * pair is 4.61:1.
+ * Inside a Callout or a field error the chip takes that message's ink only,
+ * keeping its own ground and inset (status inks hold 4.5:1 on that ground).
  */
 .crewlet-inline-code--inherit {
   color: inherit;
 }
 
 /*
- * THE GROUND HUGS THE PUNCTUATION AROUND IT. The inset either side of the
- * words is what reads as a space between "set" and its full stop: "crewlet
- * secrets set ." Beside a mark the caller handed over (`open`, `close`) the
- * ground keeps a hair of it, so the mark sits where it would after a word.
+ * Beside a mark the caller handed over (`open`, `close`) the ground keeps only
+ * a hair of its inset, so the mark sits where it would after a word.
  */
 .crewlet-inline-code--opened {
   padding-inline-start: 1px;

@@ -1,23 +1,7 @@
 /*
- * A company's brand, drawn: a doc's opening or a title slide, in a 16:9 frame
- * that sets every length against its own width, so one drawing reads at a
- * gallery cover's size and at a preview's.
- *
- * ITS SMALL WORDS KEEP A LEGIBLE FLOOR (`--crewlet-brand-sample-floor`). Set
- * in proportion alone, the doc's sentence and its quiet line measured 8px and
- * 6px in a 285px preview (a setup wizard's aside), a texture where the reader
- * was asked to judge the brand's text. Each small run is drawn at its share of
- * the width or at the product's own small step, whichever is larger; and the
- * step itself is capped at a share of the width the frame can still hold
- * (4.3cqi: two lines of the sentence and the quiet line fit the 16:9 height
- * under the heading at any width), so a thumbnail stays whole rather than
- * clipping its last line. Past about 430px the share is the larger and the
- * drawing is in proportion again.
- *
- * It paints with the public tokens, which the sample's BrandScope (pinned to
- * the sample's mode) sets from the brand through the artifact kit's own
- * mapping: the ground, the text, the accent, the highlight and the two faces,
- * and the quiet line in the tertiary text of the sample's pinned mode.
+ * A company's brand drawn in a 16:9 frame sized against its own width, in the
+ * public tokens its BrandScope sets. Small words keep a legible floor
+ * (`--crewlet-brand-sample-floor`), capped at 4.3cqi so a thumbnail stays whole.
  */
 .crewlet-brand-sample {
   /* The frame's corner. A host drawing the sample edge to edge in a cover
@@ -119,12 +103,8 @@
 }
 
 /*
- * A LINK, DRAWN: the accent's ink and its underline, and nothing to follow.
- * THE INK, NOT THE ACCENT: the accent is a fill colour, and drawn as words the
- * product's own read 4.38:1 on the light ground, a light brand colour far
- * less. The ink is the mapping's accent written as text, which clears 4.5:1
- * on the mode's ground whatever the brand's colour (@crewlethq/tokens'
- * `css/brand`).
+ * A link, drawn in the accent's ink rather than the accent: the ink is the
+ * accent written as text, which clears 4.5:1 whatever the brand's colour.
  */
 .crewlet-brand-sample__link {
   color: var(--color-brand-accent-ink);

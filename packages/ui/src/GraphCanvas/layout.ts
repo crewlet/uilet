@@ -1,17 +1,7 @@
 /**
- * The layout of a layered map, as pure functions: lanes read left to right,
- * bands stacked under each other, groups inside a lane, and orthogonal edges.
- *
- * ONE ROW GRID PER BAND. Every card is the same size and stands in a cell of
- * its band's grid, a group's header takes a row of its own, and an empty lane
- * keeps the rows its message needs. Because every lane of a band shares the
- * rows, the gaps between rows are free of cards in every lane at once, so an
- * edge that crosses a lane runs along a gap and never through a card.
- *
- * LANES ARE INPUT. Nothing here assigns ranks: a cycle is an edge drawn back
- * across a lane, and the order inside a lane is a fixed number of barycentric
- * sweeps, ties broken by the caller's order, so the same input always gives
- * the same picture.
+ * The layout of a layered map, as pure functions. Every lane of a band shares
+ * one row grid, so an edge runs along a gap between rows, never through a card.
+ * Lanes are input, and the same input always gives the same picture.
  */
 
 import type { CanvasPoint, CanvasRect } from '../Canvas/geometry.js';
@@ -30,10 +20,8 @@ export interface GraphLayoutNode {
   lane: string;
   group?: string | undefined;
   /**
-   * The column of its lane it stands in, from 0, for a lane wider than one
-   * column whose columns mean something (a depth: what calls stands left of
-   * what is called). Read for a lane that holds no groups; elsewhere the lane
-   * fills row by row.
+   * Its column (from 0) in a lane whose columns mean something, such as call
+   * depth. Read only for a lane with no groups; others fill row by row.
    */
   column?: number | undefined;
 }
@@ -425,10 +413,9 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     return { cells, rows: row };
   };
 
-  // ---- columns: every band as wide as the widest. A lane takes the columns it asks for; a narrower
-  // band shares its spare columns out evenly, then gives each one left to the tallest lane it makes
-  // shorter, so the band ends as soon as it can; when no lane gains from one, the narrowest lane
-  // takes it. An empty lane gains nothing.
+  // ---- columns: every band as wide as the widest. A narrower band splits its spare columns
+  // evenly, then gives each leftover to the tallest lane it shortens, else to the narrowest.
+  // An empty lane gains nothing.
   const asked = (lane: string) => Math.max(1, Math.trunc(input.laneColumns?.get(lane) ?? 1));
   const widthOf = (band: GraphLayoutBand) => band.lanes.reduce((sum, lane) => sum + asked(lane), 0);
   const columns = Math.max(1, ...bands.map(widthOf));
@@ -906,9 +893,8 @@ export interface GraphTrunk {
   label: CanvasPoint;
   /**
    * The gap it crosses: from the upper cluster's foot (`top`) to the lower
-   * one's head (`bottom`), with the level run between them at `y`, from `x1`
-   * (under the upper cluster) to `x2` (over the lower one). Where its count may
-   * be written: see [placeTrunkLabels].
+   * one's head (`bottom`), with its level run at `y` from `x1` to `x2`. Where
+   * its count may be written: see [placeTrunkLabels].
    */
   run: { x1: number; x2: number; y: number; top: number; bottom: number };
   box: CanvasRect;
@@ -980,21 +966,9 @@ const ALONG = [0.5, 0.25, 0.75, 0, 1];
 const ON_THE_CORNER = 8;
 
 /**
- * WHERE EACH TRUNK'S COUNT IS WRITTEN, or null where nowhere in its gap is
- * clear. A count holds its size on screen, as the clusters' titles do, while
- * the gap between two bands shrinks with the zoom, so at its middle a count
- * came to stand on the lower clusters' titles, and two trunks leaving one
- * cluster wrote their counts on each other. Each count is tried along its
- * level run, the middle first, then just past either end of it, at the middle
- * of the gap, hung from the upper cluster's foot, or stood on the lower one's
- * head, and takes the first place that covers no title, no card (`obstacles`,
- * in world units) and no count already placed: a trunk that drops straight
- * down first, since it has one place across, then the largest counts. It may
- * cross a cluster's outline, never what is drawn inside one. A count with nowhere clear is not
- * written: its trunk still is, and the legend says what a trunk is.
- *
- * `sizes` is each count's box in world units, by trunk key, as it is drawn at
- * the zoom the map stands at.
+ * Where each trunk's count is written, or null where no place in its gap is
+ * clear of titles, cards (`obstacles`, world units) and counts already placed.
+ * `sizes` is each count's box in world units at the map's zoom, by trunk key.
  */
 export function placeTrunkLabels(
   trunks: readonly GraphTrunk[],

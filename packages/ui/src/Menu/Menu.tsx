@@ -1,76 +1,6 @@
 /**
- * A menu button: a trigger that opens a short list of actions.
- *
- * WHY IT EXISTS. A row in a table, a card on a chart or a node in a tree has
- * more actions than it has room for buttons, and a row of icons nobody can
- * name is not an interface. The WAI-ARIA menu button pattern is the one a
- * screen reader and a keyboard already know, and it has enough rules that a
- * second hand-written copy misses some of them: the one this replaces put
- * `role="menu"` on two nested elements, moved focus nowhere on open, had no
- * arrows, used native `disabled` items a keyboard reader never met, ran an
- * action before returning focus, did not close on Tab, and let its keys reach
- * the row beneath it.
- *
- * THE RULES IT KEEPS.
- *
- * - OPENING PUTS FOCUS ON THE FIRST ITEM (ArrowUp on the trigger: the last).
- *   Arrows move and wrap, Home and End jump, a letter moves to the next item
- *   starting with it, Enter or Space activates.
- * - IT IS A POPUP ON THE SHARED LAYER STACK: Escape closes the menu before
- *   anything beneath it, and a press outside closes it without also counting
- *   as a press on a veil.
- * - FOCUS GOES BACK TO WHAT OPENED IT on Escape, on Tab (which then carries on
- *   to the next control, as the pattern says) and BEFORE AN ACTION RUNS. The
- *   last is what lets an action open a dialog that returns focus to the right
- *   place: the dialog captures its opener when it first renders, and by then
- *   focus is back on the trigger rather than on an item about to unmount. What
- *   opened it is whatever held focus when it opened, so a menu opened from a
- *   tree item with the Menu key returns to the tree item, not to the
- *   pointer-only button that anchors it.
- * - A DISABLED ITEM STAYS FOCUSABLE and says so (`aria-disabled`), so a
- *   keyboard user learns the action exists and is unavailable rather than
- *   meeting a list that silently skips it.
- * - IT IS PLACED BY ARITHMETIC inside the layer it renders into, follows its
- *   trigger through a pan or a scroll, and closes when the trigger leaves the
- *   bounds. Focus moves in only once it has been placed: until then it is
- *   drawn hidden, so it never flashes at a corner, and a browser refuses focus
- *   to a hidden element anyway.
- * - WHAT HAPPENS IN THE MENU STAYS IN THE MENU. A key, a press or a click
- *   inside it does not reach the element it was opened from. A portal carries
- *   React events up the component tree, not the document, so without this the
- *   Enter that activates "Delete" would also reach the card's own Enter, and
- *   ArrowDown would move the tree's focus as well as the menu's. Escape and
- *   Tab still travel, because the layer stack acts on them at the document,
- *   and so does a chord with Control, Command or Alt.
- * - A CHOICE IS A RADIO ITEM. An item given `checked` is a `menuitemradio`
- *   that says whether it is the current value and draws a check where the
- *   others draw nothing, so a menu that picks one value reads as a choice with
- *   an answer rather than a list of actions that all look alike. Every answer
- *   of such a choice should say `checked`, true or false, so the check column
- *   lines up. The answers that stand together are nested in one `group`, as
- *   the pattern asks of radio items sharing a menu with actions, so a screen
- *   reader counts "2 of 3" among the answers rather than among every item.
- * - IT CAN BE OPENED FROM OUTSIDE (`open`, `onOpenChange`), because a tree item
- *   that holds focus opens its card's menu from the keyboard while the trigger
- *   itself is out of the tab order (`triggerTabIndex={-1}`).
- * - ITS TRIGGER CAN BE THE CALLER'S OWN (`renderTrigger`): a row that IS the
- *   way in, such as the signed-in reader at the foot of the rail, opens the
- *   menu itself rather than sitting beside a second button that does. The
- *   caller spreads the props it is handed on its element, which keeps every
- *   rule above, the focus coming back included.
- * - IT CAN BE NO NARROWER THAN ITS TRIGGER (`width="trigger"`): a trigger
- *   that spans a column, such as the signed-in reader at the foot of the
- *   rail, opens a panel that covers it edge to edge, and that still grows
- *   past it when a row needs the room, so a description reads on one line
- *   rather than wrapping into a column of short lines.
- * - A HEADER SAYS WHAT THE ACTIONS ARE ABOUT (`header`): a line of facts
- *   above the items, such as the access a signed-in reader carries. It is
- *   not an item, so the arrows never stop on it, and it stands OUTSIDE the
- *   element that is the menu, in the same panel: a menu may own only items,
- *   and a header is free to be a description list or a tag. The menu is
- *   described by it, so a screen reader hears it when the menu opens.
- *
- * Ported from the engine dashboard's `ui/Menu.tsx`, with its suite.
+ * A menu button following the WAI-ARIA menu button pattern: a trigger that
+ * opens a short list of actions or one choice, on the shared layer stack.
  */
 
 import {
@@ -174,9 +104,7 @@ export interface MenuTriggerProps {
 export interface MenuProps {
   /**
    * The trigger's accessible name, such as "Actions for Software Engineer".
-   * It names a text trigger too, so "New" can be announced as "New artifact":
-   * keep the trigger's visible words in it, so a person who speaks what they
-   * see still reaches the button.
+   * It names a text trigger too, so keep the trigger's visible words in it.
    */
   label: string;
   items: readonly MenuEntry[];
@@ -192,16 +120,9 @@ export interface MenuProps {
   trailingIcon?: ReactNode;
   triggerVariant?: ButtonVariant | undefined;
   /**
-   * The trigger IS THE VALUE it changes: a status chosen in place, a face
-   * that opens a picker, in a table cell or a properties rail. Its words
-   * start on its box's line ([Button]'s `flush`), so it lines up with the
-   * plain values beside it, and it takes the surrounding text's size, weight
-   * and ink rather than a button label's, so a writer's row reads as a
-   * reader's. Its hover ground and focus ring still say it is a control.
-   *
-   * It is NAMED BY THE VALUE IT SHOWS, then by `label`, which follows it in
-   * words only a screen reader hears ("In progress, Status of ENG-1"): the
-   * name starts with what is on screen. The menu itself is named by `label`.
+   * The trigger is the value it changes: flush, in the surrounding text's
+   * size and ink, and named by the value it shows followed by `label`
+   * ("In progress, Status of ENG-1"). The menu itself is named by `label`.
    */
   valueTrigger?: boolean | undefined;
   /** -1 for a pointer-only trigger whose actions the keyboard reaches another way. */
@@ -232,12 +153,9 @@ export interface MenuProps {
   /** How the panel arrives: `rise` (the default), or `instant`, drawn the frame it is placed. */
   entrance?: PopupEntrance | undefined;
   /**
-   * Focus stays on the menu and the keys move a highlight it points at with
-   * `aria-activedescendant`: it opens with nothing highlighted (ArrowDown or
-   * ArrowUp on the trigger opens on the first or last item), the arrows, Home,
-   * End and a letter move it, Enter or Space runs it, and the pointer moves it
-   * too. The highlighted row is drawn as the accent fill, with no ring. Off by
-   * default: each item takes focus in turn.
+   * Focus stays on the menu and the keys move an `aria-activedescendant`
+   * highlight, opening with nothing highlighted. Off by default: each item
+   * takes focus in turn.
    */
   activeDescendant?: boolean | undefined;
   className?: string | undefined;
@@ -385,19 +303,9 @@ export function Menu({
     window.addEventListener('resize', onLayout);
     window.addEventListener('scroll', onLayout, true);
 
-    /*
-     * AND WHEN THE PANEL ITSELF CHANGES SIZE, which none of the three above
-     * reports: every one of them signals the ANCHOR moving. The panel's own
-     * box is what the alignment offset and `placePopup`'s horizontal clamp are
-     * built from, so content arriving, a row's label changing or a font
-     * loading left the surface placed for a box it no longer has.
-     *
-     * An observer rather than a dependency on the content: it catches a font
-     * settling and an image loading too, neither of which is a render.
-     * FEATURE-CHECKED as every observer in this package is — it is absent in
-     * older embedded browsers and in jsdom, where an unguarded construction
-     * throws and takes the suite with it.
-     */
+    // Also re-place when the panel itself resizes (content, a font loading),
+    // which the listeners above miss. Feature-checked: jsdom and older
+    // embedded browsers have no ResizeObserver.
     const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(onLayout) : null;
     if (panel.current) resize?.observe(panel.current);
     return () => {
@@ -445,7 +353,8 @@ export function Menu({
   }
 
   function onMenuKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    // The menu's own keys go no further: see the module doc.
+    // The menu's keys stop here: a portal bubbles React events to the opener.
+    // Escape, Tab and modifier chords still reach the layer stack.
     if (event.key !== 'Escape' && event.key !== 'Tab' && !event.ctrlKey && !event.metaKey && !event.altKey) {
       event.stopPropagation();
     }
@@ -502,16 +411,13 @@ export function Menu({
 
   function activate(item: MenuItem) {
     if (item.disabled) return;
+    // Focus returns to the opener before the action runs, so a dialog the
+    // action opens captures the trigger rather than an unmounting item.
     close(true);
     item.onSelect();
   }
 
-  /**
-   * ONE ANSWER to "does this row carry a second line", read by both the class
-   * that makes the row taller and the element that fills it. Asked twice, the
-   * two disagreed on every value React draws nothing for but `&&` keeps: a
-   * description of 0 rendered a bare zero in a row drawn for one line.
-   */
+  /** Whether a row has a second line; the row's class and its content both ask this. */
   const described = (entry: MenuItem) =>
     entry.description !== undefined &&
     entry.description !== null &&
@@ -537,10 +443,7 @@ export function Menu({
       className={cx(
         activeDescendant && order.get(entry.key) === active && 'is-active',
         'crewlet-menu__item',
-        // A row with a second line is taller than a row of verbs, and says
-        // so: the row height alone would hold both lines in the space meant
-        // for one, and giving every row the taller padding turns six verbs
-        // into a scroller.
+        // Only a row with a second line gets the taller padding.
         described(entry) ? 'crewlet-menu__item--described' : undefined,
         entry.danger && 'is-danger',
         entry.disabled && 'is-disabled',
@@ -563,9 +466,8 @@ export function Menu({
   );
 
   const list = open ? (
-    // THE PANEL IS NO CONTROL. Its keys are the menu's, bubbled up from the
-    // list or an item, and its presses are stopped so one on the header is
-    // not a press outside that closes the menu.
+    // Not a control: its keys bubble from the list, and its presses stop
+    // here so one on the header is not a press outside that closes the menu.
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={cx(
@@ -597,11 +499,8 @@ export function Menu({
       onClick={(event) => event.stopPropagation()}
     >
       {header ? (
-        // OUTSIDE THE MENU, beside it in the panel. A menu may own only items,
-        // groups of them and separators, and a presentational wrapper removes
-        // its own role, not its contents': a header holding a description
-        // list or a tag was a menu owning a list. It is still the menu's
-        // description, so what it says is heard when the menu opens.
+        // Outside the menu element, which may own only items, groups and
+        // separators; it still describes the menu (`aria-describedby`).
         <div id={headerId} className="crewlet-menu__header">
           {header}
         </div>
@@ -678,12 +577,8 @@ export function Menu({
           : withTip(
               <Button
                 {...shared}
-                // A VALUE TRIGGER IS NAMED BY WHAT IT SHOWS, then by what it
-                // changes: "In progress, Status of ENG-1". Under an aria-label
-                // it showed one thing and was called another, so a person who
-                // says what they see reached nothing, and a column of pickers
-                // read alike. Any other text trigger keeps `label` as its
-                // name ("New" read as "New artifact").
+                // A value trigger is named by what it shows, then by `label`
+                // ("In progress, Status of ENG-1"); other text triggers by `label`.
                 aria-label={valueTrigger ? undefined : label}
                 variant={triggerVariant}
                 size="small"

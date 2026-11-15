@@ -1,28 +1,7 @@
 /**
- * The map's lanes, cards, keys, groups, selection, trace, lines and drawing budget.
- *
- * What these protect:
- * - the three families of line: calls drawn at rest, what things run on as a
- *   trunk with its count under a switch that reads on, and what stands around
- *   only for the entry a reader stands on;
- * - the pointer and focus light an entry's neighbours and open its card, and
- *   an entry another surface points at is lit the same way;
- * - a press on the selected card or on the ground clears the selection;
- * - with its chrome off the map has no zoom bar, legend or trunks;
- * - every lane is a named group with its count, and an empty lane says what
- *   would fill it, as a stop of the walk;
- * - a card says its name, kind, attention and confirmation in words, and its
- *   relations as its description; the badge is drawn only for attention;
- * - one roving tab stop: the arrows walk, Enter selects or opens a group,
- *   Escape clears, typing finds a name;
- * - groups start closed past the caller's threshold, and a selection inside a
- *   closed group opens it;
- * - a selection dims what it does not reach, and draws its edges strong,
- *   including the ones not drawn at rest;
- * - at two thousand entries only the cards near the view are mounted, and
- *   zoomed out past reading none are, the map drawing shapes instead.
- *
- * jsdom has no layout, so `LayoutObserver` reports the sizes a browser would.
+ * The map's lanes, cards, keys, groups, selection, trace, lines and drawing
+ * budget. jsdom has no layout, so `LayoutObserver` reports the sizes a
+ * browser would.
  */
 
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';

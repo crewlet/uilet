@@ -15,12 +15,8 @@ const ui = JSON.parse(readFileSync(new URL('../../packages/ui/package.json', imp
 };
 const runtime = Object.keys(ui.dependencies).filter((name) => !name.startsWith('@crewlethq/'));
 
-// THE FILES THAT MEASURE WHAT A SCROLLBAR TAKES run on a browser that draws
-// scrollbars in the layout, as a reader's does. The runner launches its
-// headless browser with them hidden, and there a scroller that overflows gives
-// up no width, so a box that loses the bar's width in every reader's browser
-// measured whole. The rest of the suite keeps the default, whose fixtures are
-// sized for it.
+// Files that measure a scrollbar's width run on a browser that draws scrollbars
+// in the layout; the runner's headless default hides them, so they take none.
 const SCROLLBARS = 'src/**/*.scrollbars.test.tsx';
 
 export default defineConfig({

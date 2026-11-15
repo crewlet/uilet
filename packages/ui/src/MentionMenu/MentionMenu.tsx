@@ -49,26 +49,21 @@ export interface MentionMenuProps {
    */
   listRef?: Ref<HTMLUListElement> | undefined;
   /**
-   * Whether the reader has taken the list over with the arrow keys. Until then
-   * the active row is drawn quietly, as what Enter or Tab would take, and the
-   * strong highlight arrives with the first arrow press, which commits to that
-   * row rather than moving past it. True by default.
+   * Whether the reader has taken the list over with the arrow keys; until then
+   * the active row is drawn quietly. True by default.
    */
   keyed?: boolean | undefined;
   /** The foot. Left out, it carries the keyboard hints; `null` draws none. */
   footer?: ReactNode;
   labels?: Partial<MentionMenuLabels> | undefined;
   /**
-   * `chat` is a conversation's message box's list: a compact card (the small
-   * corner, at most 480px wide) with no heading, and 32px rows whose face
-   * column fits an extra small `Avatar` (20px). `default` is today's list.
+   * `chat` is a conversation's message box's list: a compact card with no
+   * heading and 32px rows sized for an extra small `Avatar`.
    */
   appearance?: MentionMenuAppearance | undefined;
   /**
-   * The trigger character's distance in px from the left edge of the box the
-   * menu is placed in (`caretPoint`). Given, the card moves along so its face
-   * column stands under the trigger, and stays inside that box. Left out, the
-   * card starts at the box's left edge.
+   * The trigger character's distance in px from the left edge of the menu's
+   * box (`caretPoint`); the card moves to stand under it, inside that box.
    */
   anchor?: number | undefined;
   className?: string | undefined;
@@ -78,26 +73,9 @@ export interface MentionMenuProps {
 export type MentionMenuAppearance = 'default' | 'chat';
 
 /**
- * The suggestions a composer opens on "@" or "#": people and agents with
- * their faces and what they are doing, rooms with their glyphs, and everyone
- * in the room.
- *
- * A LISTBOX THE FIELD OWNS. Focus stays in the message box, which points at
- * the highlighted row with `aria-activedescendant`, so typing goes on while
- * the list narrows. `useListbox` gives the keys (the arrows wrap, Enter and
- * Tab take the row, Escape closes the list and nothing else); the host spreads
- * `aria-autocomplete="list"`, `aria-controls` and `aria-activedescendant` on
- * its field, and finds the word being typed with `mentionQuery`. THE FIELD
- * STAYS THE TEXTBOX a textarea is: ARIA in HTML allows no `combobox` role on
- * a textarea (axe aria-allowed-role), and a textbox takes all three.
- *
- * DRAWN ABOVE THE COMPOSER, never over what is being typed: it is placed
- * against the nearest positioned box round the field, as wide as the field
- * and no wider than a list is read (`--crewlet-mention-menu-width`). With an
- * `anchor` (from `caretPoint`) it moves along to stand under the trigger.
- *
- * ITS ROWS ARE `PersonRow`s, so a face, a name and its detail sit where every
- * other list of people in the product puts them.
+ * The suggestions a composer opens on "@" or "#": a listbox the field owns via
+ * `aria-activedescendant`, so focus and typing stay in the field (a textarea
+ * stays a textbox, never a combobox). Drawn above the composer.
  */
 export function MentionMenu({
   id,

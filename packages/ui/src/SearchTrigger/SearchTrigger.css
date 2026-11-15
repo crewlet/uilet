@@ -1,11 +1,6 @@
 /*
- * A button drawn as the field it stands in for.
- *
- * TWO PLACES, TWO GROUNDS. The approved design draws it in the rail, the
- * whole width of the sidebar on the frame, and in a screen's own bar on the
- * sheet. In each it is one rung up from what it stands on, the sheet on the
- * frame and the card on the sheet, inside the default hairline, so it reads
- * as a field sunk into neither and lifted off both.
+ * A button drawn as the field it stands in for, one rung up from its ground:
+ * the sheet's ground in the rail, the card's in a screen's bar.
  */
 
 .crewlet-search-trigger {
@@ -27,16 +22,9 @@
 }
 
 /*
- * THE RAIL'S FIELD: the width of the slot it stands in, on the SHEET's
- * ground, on the rail's compact step (the small control, 26px, never under
- * the 24px target), with a tighter pad at each end. The rail's search slot
- * names the pad (`--crewlet-rail-field-pad`), so its inset and the field's
- * pad are one measure and the glyph lands on the nav's glyph column; outside
- * that slot the field keeps the trigger's own pad.
- *
- * Its glyph-to-word gap is a nav row's (SidebarNav.css), two steps and a
- * half, so its words start on the rows' word column too: on the trigger's
- * two-step gap the placeholder stood 2px left of every nav label.
+ * The rail's field: the slot's width on the sheet's ground at the small control
+ * step. Its pad (`--crewlet-rail-field-pad`) and glyph gap match a nav row's,
+ * so its glyph and words line up with the nav's columns.
  */
 .crewlet-search-trigger--rail {
   display: flex;

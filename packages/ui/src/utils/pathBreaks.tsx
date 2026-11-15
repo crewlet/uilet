@@ -1,14 +1,9 @@
 import { Children, Fragment, type ReactNode } from 'react';
 
 /**
- * A path's or an address's words with a break opportunity after every `/`,
- * so a line that cannot hold it ends at a separator ("…/v1/" then "reports")
- * rather than wherever the pixels ran out ("…/v1/report" then "s"). A browser
- * offers none inside `https://example.com/a/b`: to a line breaker the whole
- * address is one word, so without these it breaks mid-name.
- *
- * Only plain text is split; anything else is handed back as given. A `<wbr>`
- * adds no character, so a copy of the words is the words.
+ * A path's or address's words with a `<wbr>` after every `/`, so a long one
+ * breaks at a separator rather than mid-name. Only plain text is split, and a
+ * copy of the words is unchanged.
  */
 export function pathBreaks(children: ReactNode): ReactNode {
   const parts = Children.toArray(children);

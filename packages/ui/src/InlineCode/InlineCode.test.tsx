@@ -72,11 +72,8 @@ test('no presentation prop reaches the DOM', () => {
 });
 
 test('a chip inside a message takes its ink and keeps its own ground', () => {
-  // ONLY THE INK. The chip's ground and its inset are what say "this is a
-  // string you type", and a bare run of monospace inside a sentence is not
-  // that. The composite the message's ink then lands on is measured:
-  // @crewlethq/tokens holds every status ink to 4.5:1 on the inset well drawn
-  // over its own callout tint.
+  // Only the ink: the chip keeps its ground and inset, and status inks hold
+  // 4.5:1 on that ground (@crewlethq/tokens).
   const here = dirname(fileURLToPath(import.meta.url));
   const css = readFileSync(join(here, 'InlineCode.css'), 'utf8');
   const at = css.indexOf('.crewlet-inline-code--inherit {');

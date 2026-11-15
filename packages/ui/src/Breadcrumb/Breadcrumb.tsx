@@ -1,41 +1,7 @@
 /**
- * The trail in a top bar: where the reader is, and the way back out.
- *
- * THE LAST CRUMB IS THE PAGE'S HEADING. The bar is the page's banner and sits
- * outside `main`, and the name of the place the reader is at is what a reader
- * navigating by heading lands on first, so the last crumb is the `h1` and every
- * screen's own headings start at level 2 under it. It carries no link: a trail
- * whose final crumb links to the page it is on teaches a reader that the
- * control does nothing.
- *
- * THE HEADING IS WHERE A PAGE SENDS FOCUS when the control holding it goes
- * away (a removed card, a closed view). It is a reading position, not a
- * control: focusable by script only (`tabIndex={-1}`), never a tab stop, and
- * drawn with no ring.
- *
- * A PAGE WHOSE SUBJECT CAN BE SWITCHED draws its control as that heading's
- * words (`current`): a switcher's button names the project the page is about
- * and opens the list of the others, so the reader changes the subject where
- * the subject is named rather than in a second control beside it.
- *
- * THE TRAIL IS A SCROLLPORT, AND WHILE IT OVERFLOWS IT IS A TAB STOP. It
- * scrolls sideways past its floor rather than clipping the ancestry as a box,
- * and its scrollbar is not drawn, because on a bar this short it would sit on
- * the baseline the trail is written on. A pointer can drag a hidden scrollport
- * and a trackpad can swipe it, but a keyboard reaches a scroll container's
- * arrow keys only once it can be focused, and a deep trail overflows on its
- * ancestor spans, which are not links and take no focus of their own. A trail
- * that fits has nowhere for the arrows to go, so the stop is there only while
- * `scrollWidth` exceeds `clientWidth`.
- *
- * ITS FLOOR IS THE WAY BACK OUT (`--crewlet-breadcrumb-floor`): every ancestor
- * at a readable minimum of its words (its first twenty characters, all of
- * them where it has fewer) and the last crumb at its stub, measured. The bar
- * around it breaks a line when that floor cannot sit beside its controls, so
- * a trail that cannot show its ancestry takes a line of its own, and it
- * scrolls only when its ancestry alone is wider than the whole bar.
- *
- * Ported from the engine dashboard's `app/header/PageHeader.tsx`.
+ * The trail in a top bar. Its last crumb is the page's `h1`, unlinked and
+ * focusable by script only. The trail is a hidden-scrollbar scrollport, a tab
+ * stop only while it overflows, so a keyboard can scroll a deep ancestry.
  */
 
 import { useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode, type RefObject } from 'react';
@@ -69,10 +35,8 @@ export interface BreadcrumbCrumb {
 export interface BreadcrumbProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
   crumbs: readonly BreadcrumbCrumb[];
   /**
-   * A control drawn as the last crumb's words, inside the page's heading: a
-   * switcher's button where the page's subject is one of several the reader
-   * can move between. The control carries its own words; the last crumb is
-   * still what the trail is measured by.
+   * A control drawn as the last crumb's words inside the heading, such as a
+   * switcher's button. The last crumb is still what the trail is measured by.
    */
   current?: ReactNode;
   /** Names the navigation landmark. */
@@ -160,36 +124,13 @@ export function Breadcrumb({ crumbs, current, label = 'Breadcrumb', className, s
   );
 }
 
-/**
- * How much of an ancestor's words it keeps before it gives way: its first
- * twenty characters, or all of them where it has fewer. A space's name and a
- * parent page's title read from that much ("Product Management", "ADR 1: Add
- * GPU-awar..."); at a 2ch stub a busy bar cut them to "D..." and "Product
- * Man...", or to nothing where the crumb leads with a glyph.
- */
+/** How many characters an ancestor keeps before it gives way. */
 const KEEP_CHARACTERS = 20;
 
 /**
- * The narrowest the trail can be and still show the way back out: where the
- * trail's first part starts, every ancestor at what it keeps of its words (its
- * `min-width`, `--crewlet-breadcrumb-keep`, measured here), the last part's
- * separator, and the stub the last crumb keeps; or 0 before anything is laid
- * out.
- *
- * NEVER MORE THAN THE ROOM BESIDE WHAT LEADS THE BAR. Below the shell
- * breakpoint the drawer toggle opens the bar's first line, and a floor wider
- * than what the toggle leaves pushed the trail under it: a line holding the
- * toggle alone, then the trail, then the controls. Capped at that room, a trail
- * whose ancestry is wider still scrolls beside the toggle.
- *
- * STABLE UNDER ITS OWN EFFECT. Nothing it reads depends on how wide the trail
- * is drawn: an ancestor's words are measured whole, off their own text rather
- * than off the box that cuts them, and the rest of a part (its separator, its
- * glyph) never gives way. Read off the live layout instead, the floor measured
- * ancestors a busy bar had already cut to stubs, so it allowed exactly the cut
- * it saw and the bar never broke a line. Measured again whenever a crumb or
- * the bar changes size: a screen publishing its object's name, a font
- * finishing loading, the window.
+ * The trail's floor (`--crewlet-breadcrumb-floor`): every ancestor at what it
+ * keeps and the last crumb's stub, capped at the room beside what leads the
+ * bar. Measured off whole words, never the cut boxes, so it is stable.
  */
 function useFloor(el: RefObject<HTMLElement | null>, content: string): number {
   const [floor, setFloor] = useState(0);
@@ -227,10 +168,8 @@ function useFloor(el: RefObject<HTMLElement | null>, content: string): number {
 }
 
 /**
- * How wide an ancestor's part is while it keeps `KEEP_CHARACTERS` of its
- * words: the part as drawn, less its label as drawn, plus what the label
- * keeps. Only the label gives way inside a part, so the rest (the separator,
- * a glyph, a key chip) is the part's width less the label's, however cut.
+ * How wide an ancestor's part is while it keeps `KEEP_CHARACTERS`: the part
+ * as drawn, less its label as drawn, plus what the label keeps.
  */
 function keptWidth(part: HTMLElement): number {
   const label = part.querySelector<HTMLElement>('.crewlet-breadcrumb__text');
@@ -242,10 +181,8 @@ function keptWidth(part: HTMLElement): number {
 }
 
 /**
- * The width of a label's first `KEEP_CHARACTERS`, or of all of it where it is
- * shorter: measured over its text, which is laid out whole on its line however
- * narrow the box that clips it. A layout with no ranges (jsdom) reads the
- * label's whole width instead.
+ * The width of a label's first `KEEP_CHARACTERS`, measured over its text
+ * (laid out whole however it is clipped). Without ranges (jsdom), all of it.
  */
 function labelKeeps(label: HTMLElement): number {
   const text = label.firstChild;
@@ -276,10 +213,8 @@ function roomBeside(bar: HTMLElement, item: HTMLElement): number {
 }
 
 /**
- * Whether `el` is wider inside than it is drawn: a scrollport with somewhere
- * to scroll. Measured after layout, and again whenever the box is resized or
- * `content` changes, because a trail grows when a screen publishes a name for
- * its object, which resizes nothing.
+ * Whether `el` is wider inside than it is drawn. Measured again on resize and
+ * when `content` changes, since a trail can grow without resizing its box.
  */
 function useOverflows(el: RefObject<HTMLElement | null>, content: string): boolean {
   const [overflows, setOverflows] = useState(false);

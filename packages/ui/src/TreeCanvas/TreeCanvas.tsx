@@ -1,79 +1,7 @@
 /**
  * A hierarchy drawn as cards on a canvas, with the ARIA tree pattern over it.
- *
- * WHAT IT OWNS AND WHAT IT DOES NOT. It owns the layout, the connectors, the
- * keyboard pattern, focus and the per node menu state. It draws no card: the
- * caller renders each one and is handed the props that make an element a
- * treeitem, so a card can be anything from a name to a stack of rows without
- * this component knowing what a seat, a unit or a company is.
- *
- * THE KEYBOARD PATTERN IS A TREE, AND ITS ITEMS HOLD NOTHING FOCUSABLE. Each
- * card's header and each row inside a card is a `treeitem` with its level,
- * position and expansion, and focus moves among them by a roving tab stop:
- * arrows walk the visible order, Right and Left open, close and climb, Home
- * and End jump, and typing finds a node by name. A treeitem's own keys act on
- * it: Enter activates, Delete or Backspace removes, the ContextMenu key or
- * Shift+F10 opens its menu. The buttons a pointer uses (expand, add, more)
- * sit BESIDE the treeitem in a strip hidden from assistive technology and out
- * of the tab order, because a control inside a treeitem is a control a screen
- * reader cannot reach and a keyboard user would Tab through by the hundred;
- * the menu they open is the same one the ContextMenu key opens. A press on
- * that strip never leaves focus in it: the treeitem takes the focus, so what
- * holds it is always a node a screen reader can announce and the arrows can
- * move from. `ctx.actions` is what a caller spreads on such a strip.
- *
- * THE POINTER'S CONTROLS ARE QUIET UNTIL THE CARD IS REACHED, and that is why
- * they are the component's to place rather than the caller's. The actions strip
- * is drawn OVER the end of the card and the add control hangs UNDER it
- * (`renderUnder`), both appearing on hover, on focus and on the selected card;
- * so a name has the card's whole width rather than the half left beside three
- * buttons nobody is pointing at, and the chart at rest is cards and connectors
- * rather than a field of chrome. The room each takes is reserved whether or not
- * it is drawn, because a chart that grew under the pointer would move the card
- * somebody was aiming at out from under them.
- *
- * FOCUS NEVER SCROLLS BEHIND THE TRANSFORM'S BACK. A node is focused with
- * `preventScroll` and then revealed by panning the canvas, and a node inside a
- * collapsed card has its ancestors opened first. The caller decides which node
- * is focused after an operation, an undo or a redo, through the handle.
- *
- * THE LAYOUT IS MEASURED. Every card is rendered at the card width variable
- * and measured, the gaps between cards and the space around the whole chart
- * are read from probes drawn with spacing tokens (so density scales them with
- * everything else), and the layout places them: under each parent, or on a
- * band per depth, which is what an org chart is and what the `node`
- * appearance takes (`ranks`). A relayout keeps the node the operator acted on
- * still on screen. Nothing else is an input to the layout: a badge whose text
- * changes inside a slot that keeps its size lays nothing out again.
- *
- * A RUN OF SIBLINGS CAN BE ENCLOSED IN A BOX, a unit round its seats, with a
- * label along its top (`groups`). The box is room the layout KEEPS rather than
- * a rectangle drawn over it afterwards: its padding and header are part of the
- * members' outlines, so a card that is not a member is never drawn inside one
- * and two boxes are never drawn over each other. The label rides OVER the
- * connectors, on the box's own fill, so a branch dropping into a member passes
- * behind the words rather than through them. The box is drawing, like the
- * connectors, and hidden from assistive technology; what it SAYS is given to
- * each member card as its description, which is where a reader of the tree
- * meets it.
- *
- * AND IT MOVES. A chart arrives rank by rank rather than all at once, and a
- * relayout TWEENS every card from where it was to where it is, connectors and
- * all, so adding a seat is visibly the same chart rearranging rather than a
- * new one. Both are `motion.ts`, both are off under `prefers-reduced-motion`,
- * and neither changes what is drawn in the end or what any of it is called.
- *
- * A NODE IS ADDED IN THE CHART, NOT IN A DIALOG OVER IT. `composing` names a
- * GHOST: a card the layout knows about and the data does not, drawn where the
- * new node will be, holding the form that makes it. The chart makes room for
- * it, draws the branch into it, eases onto it and gives the reader their view
- * back when it goes. It is in `cards` and NOT in `nodes`, which is the whole
- * of why the tree is untouched by it: no level, no position, no set size and
- * no key of any real node moves, and no arrow key, type ahead or selection can
- * land on something that is not there yet. See [TreeComposing].
- *
- * Ported from the engine dashboard's org builder canvas, with the generic half
- * of its suite.
+ * The caller renders each card; pointer controls sit beside its treeitem, out
+ * of the tab order, and a press on them lands focus on the treeitem.
  */
 
 import {
@@ -185,22 +113,9 @@ export interface TreeCardContext {
   /** Makes `id` the current node without moving focus, as a pointer action on its card does. */
   activate(id: string): void;
   /**
-   * The whole of a node's pointer-only strip of controls: its class, its
-   * removal from the accessibility tree and the press that lands on the node.
-   * Spread it on the element holding the expand, add and more buttons, and put
-   * that element IMMEDIATELY AFTER the node's own treeitem.
-   *
-   * WHY THE COMPONENT OWNS IT. The strip is drawn OVER the end of the card and
-   * is quiet until the card is reached, so the node's name has the card's whole
-   * width to say itself in rather than the half left over beside three buttons
-   * nobody is pointing at. Where it sits, when it appears and what covers what
-   * are the chart's decisions, not the caller's: left to the caller the strip
-   * was a permanent column and every name in the chart was truncated to fit
-   * beside it. The immediate-sibling rule is what the reveal is keyed on, which
-   * is why it is stated here and not merely implied.
-   *
-   * `press` is the same landing behaviour on its own, for a pointer-only region
-   * that is NOT this strip (a chip drawn along a card's bottom edge, say).
+   * The props of a node's pointer-only strip of controls: its class, hidden
+   * from assistive technology, a press landing on the node. Put that element
+   * IMMEDIATELY AFTER the node's treeitem: the reveal is keyed on it.
    */
   actions(id: string): TreeActionsProps;
   /**
@@ -213,33 +128,19 @@ export interface TreeCardContext {
 }
 
 /**
- * What a screen can ask of a tree drawn on a CANVAS: everything a tree view
- * answers, and the two things only a view with a viewport under it can.
- *
- * Separate from [TreeViewHandle] rather than added to it, because the other
- * view of one hierarchy is a grid of rows with no viewport to move: a handle
- * that promised these there would be a promise kept by doing nothing.
+ * What a screen can ask of a tree drawn on a canvas: a tree view's handle plus
+ * the two moves only a view with a viewport can make.
  */
 export interface TreeCanvasHandle extends TreeViewHandle {
   /**
-   * Open every collapsed ancestor of a node, focus it, and bring it into view.
-   *
-   * A CALLER SENDING FOCUS IS SENDING THE READER SOMEWHERE: to the node an
-   * operation made or moved, to the one an undo or a search names. So a node
-   * that the view does not show at all is brought to the MIDDLE of the view,
-   * at the reader's zoom, with the chart around it on every side; the least
-   * pan left it against the edge it came in by, which after an add was the
-   * edge of the pane with nothing of the chart beyond it. A node partly in
-   * view moves the least distance, and one in view does not move. The tree's
-   * own arrow keys keep the least pan: a step lands beside the node before.
+   * Open every collapsed ancestor of a node, focus it, and bring it into view:
+   * a node out of view comes to the middle at the reader's zoom, one partly in
+   * view moves the least distance, and one in view does not move.
    */
   focusNode(id: string): void;
   /**
-   * Ease onto one node's own card, remembering the view it left.
-   *
-   * For a surface opened ABOUT that node: the view moves to it with room
-   * around it, so the decision being made has the part of the chart it is
-   * about behind it. A node whose card has not been laid out yet is ignored.
+   * Ease onto one node's own card with room around it, remembering the view it
+   * left, for a surface opened about that node. Ignored before it is laid out.
    */
   focusRegion(id: string): void;
   /** Give back the view [focusRegion] left. */
@@ -247,62 +148,21 @@ export interface TreeCanvasHandle extends TreeViewHandle {
 }
 
 /**
- * A node being COMPOSED: the ghost card a new node's form is drawn in, before
- * there is a node to draw.
- *
- * THE PHANTOM IS THE LAYOUT'S AND NOT THE DATA'S. A chart that asked for a
- * child's name in a dialog over itself said nothing about WHERE that child
- * would go, which is the one thing a chart is for. So the card is grafted into
- * the CARD forest, under `parent` and after its existing children, exactly
- * where the new node will land; `nodes` is untouched, and that is what keeps
- * every real node's level, position in set, set size and key the same while a
- * node is being composed. A screen reader is never told a unit has seven
- * children while six exist. Nothing focusable by the tree's own keys is in it,
- * either: the arrows, type ahead and the selection walk `nodes`, so they walk
- * past a ghost that is not in them.
- *
- * IT IS DRAWN OUTSIDE THE TREE ELEMENT for the same reason. A form is not a
- * `treeitem` and a `tree` may hold nothing else, so the ghost is a sibling of
- * the tree in the same transformed world: the layout places it, and what is
- * inside it is an ordinary region of the page that a screen reader reads and
- * Tab walks.
- *
- * WHAT THE CHART DOES ABOUT IT. It opens `parent` if it is closed, eases onto
- * the ghost with the room a form needs rather than the room a label needs
- * ([CANVAS_COMPOSE_CONTEXT]), moves focus to the first control inside it, and
- * on Escape calls `onCancel`. When it goes, focus returns to `parent` and the
- * view the reader left is given back. Under `prefers-reduced-motion` every
- * part of that still happens; only the animations do not.
- *
- * THE VIEW COMES BACK ON THE CHART THE COMPOSITION LEFT. An add ends with the
- * node it made in `nodes` and the ghost gone, in one commit, and the new card
- * is measured a frame later; the view is given back on the first layout that
- * places it, not on the ghost's. A reader who had not moved the fit gets the
- * fit of the chart as it now stands, with the new node and anything the
- * composition opened for it inside; a reader who had moved the view gets it
- * back exactly. A caller that then sends focus to the node it made
- * (`focusNode`, as it does after any operation) has it brought to the middle
- * of that view when the view does not show it.
+ * A node being composed: a ghost card for its form, grafted into the card
+ * forest under `parent` but never into `nodes`, so no real node's level, set
+ * size or key moves. It is drawn outside the tree element.
  */
 export interface TreeComposing {
   /**
-   * The ghost card's own id.
-   *
-   * IT MUST NOT BE AN ID OF `nodes`. A ghost in the node forest is a node, and
-   * then everything this arrangement exists to avoid is back: a set size that
-   * counts it, an arrow key that lands on it and a selection that can hold it.
+   * The ghost card's own id. It must not be an id of `nodes`: there it would be
+   * a node that set sizes count and arrow keys land on.
    */
   id: string;
   /** The card it hangs under, which is the node the new one is being added to. */
   parent: string;
   /**
-   * The accessible name of the ghost, such as "Add to Engineering".
-   *
-   * THE GHOST IS A NAMED REGION rather than an anonymous box with a form in
-   * it, because focus is moved into it: a reader who arrives at a field with
-   * nothing around it has been told what to type and not what they are making
-   * or where it is going. The name says both, and it is the only thing about
-   * the ghost this component cannot work out for itself.
+   * The accessible name of the ghost, such as "Add to Engineering": focus moves
+   * into it, so the name says what is being made and where.
    */
   label: string;
   /** What is drawn inside the ghost: the form that makes the node. */
@@ -324,17 +184,14 @@ export interface TreeCanvasGroup {
    */
   label: string;
   /**
-   * A short key AHEAD of the label, such as the project key chip a unit's
-   * work is filed under: "ENG Engineering · Core", as the approved org chart
-   * reads it and as a rail row's `lead` puts a project's key before its name.
-   * Drawn and described with the label.
+   * A short key ahead of the label, such as a project key chip: "ENG
+   * Engineering · Core". Drawn and described with the label.
    */
   lead?: ReactNode | undefined;
   /**
-   * The CARDS it encloses: ids `cards` returns, all children of one card (or
-   * all roots) and consecutive among them. A member that is not drawn right
-   * now (inside a closed card) is left out, and a group with none drawn is not
-   * drawn at all. Anything else is refused: see [LayoutGroup].
+   * The cards it encloses: ids `cards` returns, consecutive children of one
+   * card (or roots). Undrawn members are left out, a group with none is not
+   * drawn, and anything else is refused (see [LayoutGroup]).
    */
   memberIds: readonly string[];
 }
@@ -349,31 +206,22 @@ export const TREE_ADD_MARK_MIN_ZOOM = 0.4;
 const GAP_PROBE = 'crewlet:tree-canvas-gap';
 
 /**
- * The id of the probe the space around the whole chart is measured from.
- *
- * ITS OWN PROBE rather than a number, for the reason the gaps have one: the
- * margin is a spacing token, so density scales it with everything else, and a
- * constant in TypeScript could not. It is a LAYOUT value and not padding on
- * the scroller, because the canvas clips: drawn as padding, the control under
- * the outermost card is cut off at the frame exactly when a reader has panned
- * to that card.
+ * The id of the probe the space around the whole chart is measured from: a
+ * spacing token so density scales it, and a layout value rather than scroller
+ * padding because the canvas clips.
  */
 const MARGIN_PROBE = 'crewlet:tree-canvas-margin';
 
 /**
- * The id of the probe a group box's padding is measured from: its width is the
- * room beside the outermost members, its height the room under them.
- *
- * A TOKEN FOR THE REASON THE GAPS ARE ONE, and the SAME step as the label's
- * own inset, so a group's label starts on the line its first card's edge does.
+ * The id of the probe a group box's padding is measured from: width beside
+ * the outermost members, height under them. The same step as the label's
+ * inset, so a group's label starts on its first card's edge.
  */
 const GROUP_PAD_PROBE = 'crewlet:tree-canvas-group-pad';
 
 /**
- * The id a group's header is measured under. The header is what the room
- * above the members holds, and it is MEASURED rather than a token because it
- * is a line of text at the reader's own font size plus whatever chip the
- * caller put beside it.
+ * The id a group's header is measured under: measured rather than a token,
+ * since it is a line of text at the reader's font size plus the caller's chip.
  */
 const groupHeadKey = (id: string) => `crewlet:tree-canvas-group:${id}`;
 
@@ -381,22 +229,15 @@ export interface TreeCanvasProps {
   /** The accessible name of the chart, such as "Structure chart". */
   label: string;
   /**
-   * The hierarchy as the tree pattern reads it: every node, nested.
-   *
-   * Keep it stable across renders (a `useMemo` over what it is derived from).
-   * A fresh array each render rebuilds the model, and with it the visible
-   * order and the layout, on every push a parent takes.
+   * The hierarchy as the tree pattern reads it: every node, nested. Keep it
+   * stable across renders (a `useMemo`): a fresh array rebuilds the model and
+   * the layout.
    */
   nodes: readonly TreeInput[];
   /**
-   * Which CARDS the layout draws, and how they nest. A node drawn as a row
-   * inside another node's card is not a card of its own, so this is not always
-   * the node forest: it is asked again whenever the model or the expansion
-   * changes, and is given both.
-   *
-   * Keep it stable too, for the reason `nodes` is: it is asked again whenever
-   * it changes identity, and the tidy layout it feeds is the most expensive
-   * thing this component does.
+   * Which cards the layout draws and how they nest (a node drawn as a row is
+   * not a card). Asked again when the model or expansion changes; keep it
+   * stable, since the layout it feeds is this component's costliest work.
    */
   cards: (model: TreeModel, expanded: ReadonlySet<string>) => TreeCardInput[];
   /** The card a node is drawn in: itself, or the card holding its row. Stable, as `cards` is. */
@@ -404,31 +245,14 @@ export interface TreeCanvasProps {
   /** Draws one card. Everything it needs from the tree is the second argument. */
   renderCard: (id: string, card: TreeCardContext) => ReactNode;
   /**
-   * What hangs UNDER a card, on the branch its children come off: the control
-   * that adds one, normally. Return nothing for a card that takes none.
-   *
-   * IT IS A SLOT RATHER THAN SOMETHING THE CALLER DRAWS ITSELF because of where
-   * it has to be. A control below the card is below the card's MEASURED bottom,
-   * which is where the layout puts the next rank and where the connectors
-   * start, so a caller drawing it itself either has it overlap its own
-   * children or has to tell the layout a height that is not the card's. Drawn
-   * here it is part of the card, so the space is reserved by the same
-   * measurement that reserves the name's, and every connector already leaves
-   * from below it.
-   *
-   * THE ROOM IS KEPT WHETHER OR NOT IT IS DRAWN. It is quiet until the card is
-   * reached, like the actions strip, and a chart that grew a rank taller under
-   * the pointer would move the card somebody was aiming at out from under them.
+   * What hangs under a card, such as the control that adds a child. It is part
+   * of the card, so the layout reserves its room, kept whether or not it is
+   * drawn; return nothing for a card that takes none.
    */
   renderUnder?: ((id: string, card: TreeCardContext) => ReactNode) | undefined;
   /**
-   * The hue a card is tinted with, and the connector arriving at it.
-   *
-   * ONE ANSWER FOR BOTH, because they are one statement. A tinted card reached
-   * by a branch in the chart's neutral ink reads as somebody else's branch
-   * ending on it, and two functions would be two places for that to come
-   * apart. Unset, or answered with nothing, a card is the chart's own neutral
-   * surface and the branch is the chart's own ink.
+   * The hue a card is tinted with and the connector arriving at it: one answer
+   * for both, so they cannot disagree. Unset or empty, both are neutral.
    */
   cardTone?: ((id: string) => TreeCardTone | undefined) | undefined;
   /**
@@ -437,68 +261,37 @@ export interface TreeCanvasProps {
    */
   cardDimmed?: ((id: string) => boolean) | undefined;
   /**
-   * How a card is drawn.
-   *
-   * `card` (the default) is a panel: one width for every card in the chart, its
-   * lines stacked with room around them, and the pointer's controls over its
-   * top right corner. It is what a chart of a few dozen nodes reads best as.
-   *
-   * `node` is an org chart NODE: as wide as its own name between a fixed icon
-   * zone and a fixed actions column, one rank tall, its two lines centred
-   * between them, with the actions as a column down its right edge and the add
-   * hanging under its bottom edge. Denser, and it is the drawing the console's
-   * own org chart uses, which this package is matched to. A chart of a hundred
-   * nodes fits on a screen in it; a card that has more to say than a name and a
-   * caption does not belong in it.
+   * How a card is drawn: `card` (the default), a panel of one width with its
+   * lines stacked; or `node`, an org chart node as wide as its name, one rank
+   * tall, with actions down its right edge and the add hanging under it.
    */
   appearance?: 'card' | 'node' | undefined;
   /**
    * Where a card's top edge sits: under its own parent (`per-parent`) or on a
-   * band shared by every card of its depth (`shared`). See [LayoutRanks].
-   *
-   * Unset, it follows the appearance, because the two are one decision about
-   * what the chart IS. A chart of panels is a hierarchy of things with
-   * contents, where a short card's children riding up beside a tall
-   * neighbour's is tidier; a chart of org chart NODES is an organization,
-   * where a rank is a row a reader scans across and two units of one company
-   * sit on one line whether or not one of them carries a lead.
+   * band per depth (`shared`). Unset, `node` charts share bands and `card`
+   * charts do not. See [LayoutRanks].
    */
   ranks?: LayoutRanks | undefined;
   /**
-   * The shape of the connectors: `elbow` (the default), orthogonal with a
-   * small round corner; `straight`, one segment; or the two older drawings,
-   * the softer `step` and the single `curve` the console's org chart draws.
-   * See [layoutConnectors], which states what each shape costs.
+   * The shape of the connectors: `elbow` (the default), `straight`, `step` or
+   * `curve`. See [layoutConnectors], which states what each shape costs.
    */
   connector?: TreeConnectorShape | undefined;
   /**
-   * Boxes drawn round runs of sibling cards, each with a label along its top:
-   * see [TreeCanvasGroup]. Keep it stable, as `nodes` is: it is an input to
-   * the layout.
-   *
-   * WHAT A GROUP IS FOR. A chart's cards say who reports to whom; a group says
-   * which of them work TOGETHER, the seats of one unit under the lead they
-   * report to, which the lines alone cannot: two units under one lead are two
-   * runs of children with nothing between them. The box is laid out, not
-   * painted over the layout, so a card outside it is never drawn inside it.
+   * Boxes drawn round runs of sibling cards, each labelled along its top (see
+   * [TreeCanvasGroup]). Keep it stable, as `nodes` is: it is a layout input.
    */
   groups?: readonly TreeCanvasGroup[] | undefined;
   /**
-   * Carries out Enter (activate) or Delete and Backspace (remove) on a node.
-   * Return false when the node has no such action, so the key travels on.
-   *
-   * The Menu key is not here: which menu is open is this component's state, so
-   * it opens the node's own menu itself when `hasNodeMenu` says there is one.
+   * Carries out Enter (activate) or Delete and Backspace (remove) on a node;
+   * return false when it has no such action, so the key travels on. The Menu
+   * key opens the node's menu itself (see `hasNodeMenu`).
    */
   onNodeKey?: ((id: string, action: Exclude<TreeItemAction, 'menu'>) => boolean) | undefined;
   /**
-   * Any other key the caller claims on a node, such as Alt with an arrow to
-   * move it among its siblings. Asked FIRST, while the node itself holds
-   * focus; return true when it was handled, and the chart swallows the key.
-   *
-   * The same contract the grid of rows keeps (`TreeGridProps.onRowKeyDown`),
-   * because the two are two views of one hierarchy and a key that moves a node
-   * in one has to move it in the other.
+   * Any other key the caller claims on a node, such as Alt+arrow to move it,
+   * asked first; return true when handled. The same contract as
+   * `TreeGridProps.onRowKeyDown`.
    */
   onNodeKeyDown?: ((id: string, event: KeyboardEvent<HTMLElement>) => boolean) | undefined;
   /** Whether a node has a menu the ContextMenu key and Shift+F10 can open. */
@@ -616,12 +409,8 @@ export function TreeCanvas({
 
   // ---- the node being composed ----------------------------------------------
   /*
-   * READ AS TWO STRINGS rather than as the object, because the object is
-   * built by the caller on every render and the card forest is memoised on it:
-   * the layout is the most expensive thing this component does, and a ghost
-   * whose identity changed each render would rebuild it each render. What the
-   * caller hands in that is NOT stable (the form, the cancel) is used where it
-   * is handed in, never as a dependency.
+   * Read as two strings: the caller rebuilds the object every render, and a
+   * changed ghost identity would rebuild the memoised card forest and layout.
    */
   const composeId = composing?.id ?? null;
   const composeParent = composing?.parent ?? null;
@@ -713,10 +502,8 @@ export function TreeCanvas({
   }, [cardForest, cardIds, measured, sizes, spacing, shownGroups, probes]);
   previousLayout.current = layout;
 
-  // WHAT IS DRAWN THIS FRAME, which during a relayout is on its way to the
-  // layout above rather than at it, and which cards have arrived at all. The
-  // canvas's anchor and everything that reveals a node work on the TARGET,
-  // because where a node is going is where a reader is being taken.
+  // What is drawn this frame (on its way to the layout during a relayout), and
+  // which cards have arrived; the anchor and every reveal work on the target.
   const still = useStillness();
   const drawn = useReflow(layout, still) ?? layout;
   const arrived = useEntrance(layout, still);
@@ -744,10 +531,8 @@ export function TreeCanvas({
     [onViewChange],
   );
   const shownPositions = useRef<ReadonlyMap<string, CanvasPoint> | null>(null);
-  // THE NODE THE OPERATOR ACTED ON stays where it was: the node named by
-  // `anchorNode`, else the node with focus. A node that did not exist before
-  // the relayout (one just added) has no position to keep, so its nearest
-  // ancestor's card is kept still instead.
+  // The node acted on (`anchorNode`, else the focused node) stays where it
+  // was; a node new to this relayout keeps its nearest ancestor's card still.
   const anchorId = useMemo(() => {
     const was = shownPositions.current;
     if (!was) return null;
@@ -766,21 +551,9 @@ export function TreeCanvas({
   }, [positions]);
 
   /*
-   * THE VIEW A COMPOSITION LEFT IS GIVEN BACK ON THE LAYOUT THAT PLACES WHAT
-   * IT LEFT, not on the commit it ends on.
-   *
-   * An add ends with the node it made in `nodes` and the ghost gone, in one
-   * commit, and on that commit the new card is drawn but not measured: the
-   * layout is still the GHOST's. Given back there, the view was decided
-   * against a chart that no longer exists, and a fit was the old fit's zoom
-   * and pan over a chart the add had widened (and the composition may have
-   * opened a branch of), so cards were cut off at both edges. Waiting for
-   * `placed` is a frame for an add and nothing for a cancel, whose cards are
-   * all measured already.
-   *
-   * BEFORE THE FIT KEY AND THE FOCUS, which are declared after it: a refit or
-   * a focus asked for on the same layout is carried out from the view given
-   * back, rather than overridden by it.
+   * The view a composition left is given back on the layout that places what
+   * it left (an add's new card is measured a frame later), and before the fit
+   * key and focus effects, so those act from the view given back.
    */
   useLayoutEffect(() => {
     if (composeId !== null) {
@@ -840,12 +613,9 @@ export function TreeCanvas({
       const el = items.current.get(id);
       const placed = layout?.byId.get(cardOf(id));
       /*
-       * NOT UNTIL THE CARD IS DRAWN, which for a card new to the chart is a
-       * commit after the layout places it: the frame being drawn (`drawn`)
-       * catches up with the layout in its own effect, and until then the card
-       * is drawn hidden. `focus()` inside a hidden element moves nothing, so
-       * the request made on that commit (a caller focusing the node it just
-       * added) was spent having left focus where it was.
+       * Not until the card is drawn: a card new to the chart is drawn hidden
+       * until `drawn` catches up, and `focus()` inside a hidden element moves
+       * nothing.
        */
       if (!el || !el.isConnected || !placed || !drawn?.byId.has(cardOf(id))) return false;
       el.focus({ preventScroll: true });
@@ -912,12 +682,9 @@ export function TreeCanvas({
 
   // ---- what the chart does about a node being composed -----------------------
   /*
-   * A GHOST UNDER A CLOSED PARENT IS A GHOST NOBODY CAN SEE. Opening the
-   * parent is the chart's to do, and it is done ONCE per composition rather
-   * than on every render: a reader who closes the parent while composing has
-   * closed it, and an effect that re-opened it would be arguing with them.
-   * The state it reads is read through a ref for exactly that: naming it as a
-   * dependency is what would make the effect run again on every change to it.
+   * A ghost under a closed parent opens it once per composition, so a reader
+   * who closes it again is not overruled; the state is read through a ref so
+   * the effect does not rerun on it.
    */
   const treeNow = useRef({ model, expanded, toggle, open: tree.open });
   treeNow.current = { model, expanded, toggle, open: tree.open };
@@ -937,35 +704,23 @@ export function TreeCanvas({
   );
 
   /*
-   * THE EASE WAITS FOR THE GHOST TO BE PLACED. A card that has not been
-   * measured has no rectangle to ease onto, and the measurement is a frame
-   * away from the render that added it, so this runs on the layout rather than
-   * on the prop. `eased` is what stops it running again on every later layout:
-   * a chart the reader has since panned must not snap back because a card
-   * somewhere else was measured again.
+   * The ease waits for the ghost to be placed (measured a frame after it is
+   * added), and runs once per composition (`eased`), so a later layout never
+   * snaps back a chart the reader has panned.
    */
   const placedCards = layout?.byId;
   useLayoutEffect(() => {
     const was = eased.current;
     if (composeId !== null) {
       /*
-       * THE VIEW IS REMEMBERED ON THE FIRST COMMIT OF THE COMPOSITION, before
-       * the ghost has been measured and so before it has changed the content
-       * at all. A ghost widens the chart, and a canvas answers content that
-       * changed shape by keeping what it holds reachable: waited for, the view
-       * "the reader left" was already the one that move had produced, and an
-       * add that was cancelled put the reader back 198px sideways from where
-       * they had been (measured on the engine's own builder).
+       * Remembered on the composition's first commit, before the ghost widens
+       * the chart and the canvas shifts the view to keep its content reachable.
        */
       canvas.current?.rememberView();
       remembered.current = true;
       /*
-       * THE FORM IS WANTED FROM THE MOMENT THE COMPOSITION OPENS, which is
-       * before the ghost has been measured and so before it can be focused at
-       * all. Asking here rather than once the card is placed is what makes the
-       * effect below the only thing deciding WHEN it lands, in every ordering:
-       * gated on placement, the request was made on a commit where it always
-       * happened to succeed in jsdom and never did in a browser.
+       * The form is wanted from the moment the composition opens, so the
+       * effect below alone decides when focus lands, in every ordering.
        */
       takeFocus.current = takeFocus.current || eased.current !== composeId;
       const box = placedCards?.get(composeId);
@@ -977,13 +732,9 @@ export function TreeCanvas({
       // to it rather than magnifying it.
       canvas.current?.focusRegion(box, CANVAS_COMPOSE_CONTEXT, CANVAS_FIT_MAX_ZOOM);
       /*
-       * AND NOTHING ELSE IS STILL TRYING TO TAKE IT. A focus the chart could
-       * not carry out yet is retried on EVERY commit until it lands (a node
-       * inside a card the measurement pass had not reached), and the press
-       * that opens a composition asks for one: the node the add hangs from.
-       * Left pending, it landed one commit after the form had been focused
-       * and took the reader back out of it. Opening a composition is a
-       * deliberate move INTO the form, so it cancels what was pending.
+       * And cancels any pending focus (such as the node the add hangs from),
+       * which would otherwise land a commit later and pull the reader out of
+       * the form.
        */
       pendingFocus.current = null;
       return;
@@ -993,15 +744,8 @@ export function TreeCanvas({
     eased.current = null;
     returnTo.current = null;
     /*
-     * FOCUS GOES BACK AT ONCE AND WITHOUT A REVEAL, which is why this is not
-     * `focusNode`. At once, because the form that held it has just gone; the
-     * view comes back on the layout that places what the composition left
-     * (the effect before the fit key's), which for an add is a frame later.
-     * Without a reveal, because focusing a node also pans the chart, and that
-     * is the wrong thing beside a view being given back: on a chart wider
-     * than its pane the reveal won, and the reader was put somewhere they had
-     * never been. The parent is beside the ghost the chart is still on, and
-     * the view given back is the reader's own or the fit.
+     * Focus goes back at once and without a reveal (so not `focusNode`): the
+     * view is given back separately, and a reveal's pan would override it.
      */
     if (back !== null) {
       setActive(back);
@@ -1010,30 +754,9 @@ export function TreeCanvas({
   }, [composeId, composeParent, placedCards, setActive]);
 
   /*
-   * THE FORM TAKES FOCUS AS SOON AS IT IS LAID OUT, which is the same promise
-   * the effect above makes for a node and for the same reason.
-   *
-   * A CARD THE LAYOUT HAS NOT PLACED IS DRAWN HIDDEN, and `focus()` on
-   * anything inside an invisible element does nothing at all: the call returns
-   * having moved nothing, silently. The ghost is unplaced on the tick it first
-   * renders, so a single attempt made then is an attempt that cannot land, and
-   * `visibility` INHERITS, so the form itself carries no style of its own to
-   * say why. With the chart's motion on the entrance produced further commits
-   * and one of them landed it; asked for less motion there were none, and the
-   * form opened with the cursor on the node behind it and Escape reaching
-   * nothing. A frame boundary does not help either, because a frame does not
-   * change an inherited value and fires before the layout effect that places
-   * the card.
-   *
-   * So it is retried from an effect with NO dependency array, which runs after
-   * every layout, and it lands on the first one where the card is placed. In
-   * both motion modes.
-   *
-   * THE FIRST CONTROL IN IT, and the ghost itself where the caller has drawn
-   * something with none: a form that opened without taking focus is a form a
-   * keyboard reader has to hunt for, in a chart whose own tab stop is
-   * somewhere else entirely. A form already holding focus is left alone, so
-   * nothing fights a reader who has moved within it.
+   * The form takes focus once laid out: an unplaced card is drawn hidden and
+   * `focus()` inside it does nothing, so this effect has no dependency array
+   * and retries after every layout; a form holding focus is left alone.
    */
   useLayoutEffect(() => {
     if (!takeFocus.current) return;
@@ -1043,26 +766,14 @@ export function TreeCanvas({
       return;
     }
     /*
-     * THE FIRST CONTROL IN THE BOX, and the ghost itself where the caller drew
-     * something with none.
-     *
-     * NOT WHATEVER THE FORM ASKED FOR, because by here there is nothing left
-     * of the request. A form says which field a reader came to fill in with
-     * `autoFocus`; React acts on that by calling `focus()` at mount and drops
-     * the attribute, and the card is still unplaced and therefore hidden at
-     * mount, so the call does nothing and the intent is gone. A caller that
-     * needs a particular field focuses it from its own effect once the form is
-     * on screen, and this leaves it there.
+     * The first control in the box, or the ghost itself: a form's `autoFocus`
+     * fired while the card was hidden, so a caller wanting a particular field
+     * focuses it from its own effect once the form is on screen.
      */
     (focusables(ghost)[0] ?? ghost).focus({ preventScroll: true });
     /*
-     * AND IT IS ASKED AGAIN UNTIL IT LANDS. The request is spent only by
-     * succeeding, because the commit on which the LAYOUT first holds the card
-     * is not always the commit on which the DOM does: measured in a browser,
-     * the attempt made there returned having moved nothing and the next commit
-     * was the one that worked. jsdom commits the two together, so this line is
-     * guarded by the browser rather than by the suite; the case below covers
-     * everything about the request that jsdom can see.
+     * Asked again until it lands: in a browser the DOM can hold the card a
+     * commit after the layout does (jsdom commits both together).
      */
     takeFocus.current = !ghost.contains(document.activeElement);
   });
@@ -1078,12 +789,8 @@ export function TreeCanvas({
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const target = event.target as HTMLElement;
     /*
-     * ESCAPE LEAVES THE COMPOSITION, from anywhere in the chart rather than
-     * only from inside the ghost. A node being composed is a MODE the chart is
-     * in, and Escape is how a reader leaves a mode; the form's own handler
-     * covers the reader who is typing in it, and this covers the one whose
-     * focus is on a node behind it, which is where a press on the control that
-     * opened the composition can leave it.
+     * Escape leaves the composition from anywhere in the chart, including a
+     * node behind the ghost, where the press that opened it can leave focus.
      */
     if (event.key === 'Escape' && composing !== null) {
       event.preventDefault();
@@ -1128,11 +835,9 @@ export function TreeCanvas({
   });
 
   /*
-   * A MEMBER CARD IS DESCRIBED BY ITS GROUP'S LABEL. The box is drawing and is
-   * hidden, like the connectors; what it says is not, and the card's own node
-   * is where a reader walking the tree meets it. An id per group, from the
-   * chart's own id and the group's position, because a group's id is the
-   * caller's string and need not be a valid id reference.
+   * A member card is described by its group's label (the box is hidden). Ids
+   * come from the chart's id and the group's position, since a group's own id
+   * need not be a valid id reference.
    */
   const uid = useId();
   const headIds = useMemo(
@@ -1185,10 +890,8 @@ export function TreeCanvas({
   const links = useMemo(() => (drawn ? layoutConnectors(drawn, connector) : []), [drawn, connector]);
 
   /*
-   * HOW FAR THE ZOOM GOES IS A FACT ABOUT THE CHART, so the ghost is not in
-   * it: it is wider than any node (it holds a form), it is there for as long
-   * as one add takes, and counted it would quietly lower the ceiling of a
-   * chart the reader goes on using afterwards.
+   * The zoom ceiling comes from the widest real card: the ghost holds a form,
+   * is wider than any node and stays only for one add.
    */
   const widestCard = useMemo(() => {
     let widest = 0;
@@ -1213,10 +916,8 @@ export function TreeCanvas({
         ref={canvas}
         overlay={overlay}
         /*
-         * A CHART'S OWN CORNER IS THE TOP RIGHT, and the `node` appearance is
-         * drawn to a chart that puts its toolbar there. A chart of panels
-         * keeps the canvas's own default, where the content is read downward
-         * and the bottom right is the corner a reader has already left.
+         * `node` charts keep their controls top right, where a chart's toolbar
+         * sits; a chart of panels keeps the canvas's own default.
          */
         controlsPlacement={controlsPlacement ?? (appearance === 'node' ? 'top-right' : undefined)}
         controlsExtra={controlsExtra}
@@ -1273,10 +974,8 @@ export function TreeCanvas({
                 key={link.id}
                 d={link.d}
                 data-tone={link.id === composeId ? undefined : cardTone?.(link.id)}
-                // THE BRANCH INTO THE GHOST IS A GHOST BRANCH: dashed, and
-                // drawn in before the card it arrives at. It is the same path
-                // shape every other branch takes, from the same arithmetic, so
-                // what is being proposed is drawn in the chart's own language.
+                // The branch into the ghost is dashed and drawn in before the
+                // card, from the same path arithmetic as every other branch.
                 data-composing={link.id === composeId ? 'true' : undefined}
                 data-enter={
                   arrived === null ? undefined : arrived.has(link.id) ? 'shown' : 'waiting'
@@ -1285,10 +984,9 @@ export function TreeCanvas({
             ))}
           </svg>
         )}
-        {/* THE LABELS ARE OVER THE BRANCHES and under the cards: a branch
-            dropping into a member passes behind the words, which stand on the
-            box's own fill, rather than striking through them. Each is also
-            what the room above its members is measured from. */}
+        {/* Labels sit over the branches and under the cards, so a branch
+            passes behind the words; each also measures the room above its
+            members. */}
         {shownGroups.map(({ group, members }) => {
           const placed = drawn?.groups?.find((one) => one.id === group.id);
           return (
@@ -1301,10 +999,8 @@ export function TreeCanvas({
               data-enter={enterOf(members, arrived)}
               style={placedStyle(placed, false)}
             >
-              {/* The space is REAL, so the description every member card is
-                  given reads "ENG Engineering · Core" rather than running the
-                  key into the name; the line is a flex row, which draws no
-                  text node of whitespace alone, so it costs the layout nothing. */}
+              {/* The space is real, so a member's description reads "ENG
+                  Engineering · Core"; a flex row draws no whitespace node. */}
               {group.lead === undefined || group.lead === null ? null : (
                 <>
                   <span className="crewlet-tree-canvas__group-lead">{group.lead}</span>{' '}
@@ -1348,21 +1044,12 @@ export function TreeCanvas({
             })}
         </div>
         {/*
-          OUTSIDE THE TREE, IN THE SAME WORLD. A `tree` holds `treeitem`s and
-          groups of them; the ghost holds a form. Drawn as a sibling it is
-          placed by the same layout, travels with the same transform and is
-          measured by the same observer, while what is inside it is an ordinary
-          part of the page rather than something a screen reader has to make
-          sense of as a tree item. It takes the tab stop a form needs, and it
-          is the one card in the chart that does.
+          Outside the tree, in the same world: a `tree` may hold only items, so
+          the ghost's form is a sibling placed by the same layout and transform.
         */}
         {composing !== null && (
-          /* THE REGION LISTENS; IT IS NOT A CONTROL. Escape belongs to the
-             whole form rather than to whichever field the reader happened to
-             be in, so one handler on the boundary catches it from all of them,
-             which is the same arrangement the tree above makes for its items.
-             It takes no tab stop of its own: the -1 is there so focus can be
-             PUT on it before the form has drawn a control. */
+          /* The region catches Escape from every field; it is not a control.
+             Its -1 lets focus be put on it before the form draws a control. */
           // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- see above
           <div
             ref={composeRef}
@@ -1382,17 +1069,9 @@ export function TreeCanvas({
               composing.onCancel();
             }}
             /*
-             * DRAWN where the chart is drawing this frame, exactly as every
-             * other card, and AT ITS TARGET the moment the layout knows one.
-             *
-             * The frame being drawn is a commit behind the layout while a
-             * relayout travels, and a ghost is a card that was not there
-             * before, so for that one commit it had no drawn position and was
-             * hidden. That is also the commit the form is focused on: a hidden
-             * subtree holds nothing focusable, so focus fell back to the
-             * ghost's own box and a reader arrived at a form with the cursor
-             * nowhere. A new card is not tweened anyway (`motion.ts`), so its
-             * target is where it belongs from the first frame.
+             * Drawn where the chart draws this frame, and at its target as
+             * soon as the layout has one: a new card is not tweened, and a
+             * hidden ghost would drop the form's focus.
              */
             style={(() => {
               const placed =
@@ -1413,12 +1092,8 @@ export function TreeCanvas({
 }
 
 /**
- * What hangs under a card, in the strip the layout measures along with it.
- *
- * A COMPONENT RATHER THAN A CALL INLINE, so that a card whose caller returns
- * nothing draws no strip at all and reserves no room for one. Drawn
- * unconditionally, every leaf of the chart would carry an empty band and the
- * ranks would stand a strip apart for a control none of them has.
+ * What hangs under a card, in the strip measured with it. A component so a
+ * card whose caller returns nothing draws and reserves no strip.
  */
 function UnderSlot({
   id,
