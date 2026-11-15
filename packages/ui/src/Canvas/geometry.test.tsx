@@ -188,6 +188,23 @@ describe('revealView', () => {
     expect(drawn.x).toBe(24);
     expect(drawn.y).toBe(24);
   });
+
+  test('asked to centre, a target wholly outside the view is drawn in its middle, at the same zoom', () => {
+    const target = { x: 2000, y: 100, width: 200, height: 80 };
+    const view = revealView({ x: 0, y: 0, k: 0.5 }, target, viewport, 24, 'centre');
+    const drawn = screenRect(view, target);
+    expect(view.k).toBe(0.5);
+    expect(drawn.x + drawn.width / 2).toBe(400);
+    expect(drawn.y + drawn.height / 2).toBe(300);
+  });
+
+  test('asked to centre, a target partly in view still moves the least distance, and one in view not at all', () => {
+    const view = { x: 0, y: 0, k: 1 };
+    const partly = { x: 700, y: 100, width: 200, height: 80 };
+    expect(revealView(view, partly, viewport, 24, 'centre')).toEqual(revealView(view, partly, viewport, 24));
+    const inside = { x: 100, y: 100, width: 200, height: 80 };
+    expect(revealView(view, inside, viewport, 24, 'centre')).toEqual(view);
+  });
 });
 
 test('anchorView draws the moved world point where the old one was drawn', () => {

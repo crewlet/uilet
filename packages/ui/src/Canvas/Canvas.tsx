@@ -63,6 +63,8 @@
  *   or zoomed, a resize keeps their view and only keeps the content
  *   reachable. It is opt in because a screen that chooses its own views
  *   after a fit (a chart held at a legible zoom) decides its own refits.
+ *   The same "untouched" is what `restoreView` asks: a fit it gives back is
+ *   the fit of the content as it stands then, never the old fit's transform.
  * - MOTION ONLY ON REQUEST. A fit, a zoom button or a reveal eases; a drag, a
  *   pinch, a wheel and a relayout anchor never do, and under reduced motion
  *   nothing does. An easing lasts as long as its transition: a clamp that
@@ -107,6 +109,7 @@ import {
   CANVAS_FIT_PADDING,
   CANVAS_MIN_ZOOM,
   CANVAS_PAN_STEP,
+  CANVAS_REVEAL_PADDING,
   CANVAS_ZOOM_STEP,
   IDENTITY_VIEW,
   anchorView,
@@ -154,8 +157,18 @@ export interface CanvasHandle {
   zoomBy(factor: number): void;
   /** Zoom about the viewport centre to one scale, 1 being actual size, within the limits. */
   zoomTo(scale: number): void;
-  /** Pan the least distance that brings a world rectangle into view. */
-  reveal(target: CanvasRect): void;
+  /**
+   * Pan the least distance that brings a world rectangle into view, clear of
+   * the end bar, as a fit is (see [CanvasProps.overlayEnd]).
+   *
+   * `outside` is where a rectangle lying WHOLLY outside the view is brought:
+   * `edge`, the default, just inside the nearest edge, for a reader stepping
+   * to the next item; `centre`, the middle of the view at the same zoom, for a
+   * reader SENT to an item somewhere else, and that move travels rather than
+   * corrects. A rectangle partly in view moves the least distance either way.
+   * See [revealView].
+   */
+  reveal(target: CanvasRect, outside?: 'edge' | 'centre'): void;
   /** Keep a node still on screen across a relayout: see `anchorView`. */
   anchor(before: CanvasPoint, after: CanvasPoint): void;
   /**
@@ -190,7 +203,18 @@ export interface CanvasHandle {
    * Calling it twice keeps the first view, as [focusRegion] does.
    */
   rememberView(): void;
-  /** Ease back to the view [focusRegion] left, if it has not been given back already. */
+  /**
+   * Ease back to the view [focusRegion] or [rememberView] left, if it has not
+   * been given back already.
+   *
+   * A FIT IS GIVEN BACK AS A FIT. Where the view left was the untouched fit (a
+   * fit nobody has moved since, as `refitOnResize` counts one), what comes
+   * back is the fit of the content as it stands NOW rather than the old fit's
+   * zoom and pan: a fit says "all of the content", and a surface that changed
+   * the content while it was open (a node added in it, a branch opened for
+   * it) and gave back the old transform cut the new content off at the edges.
+   * A view the reader moved is theirs, and comes back exactly.
+   */
   restoreView(): void;
   /** A world rectangle in viewport coordinates, for positioning an overlay. */
   screenRect(target: CanvasRect): CanvasRect;
@@ -540,8 +564,12 @@ export function Canvas({
   const initialNow = useRef(initialView);
   initialNow.current = initialView;
 
-  /* The view a `focusRegion` left, to be given back on `restoreView`. */
-  const left = useRef<CanvasView | null>(null);
+  /*
+   * The view a `focusRegion` or a `rememberView` left, to be given back on
+   * `restoreView`, and whether it was the untouched fit: a fit is given back
+   * as the fit of the content as it stands then.
+   */
+  const left = useRef<{ view: CanvasView; fit: boolean } | null>(null);
 
   /*
    * The view the last fit landed on, for as long as it is still the view: a
@@ -645,9 +673,8 @@ export function Canvas({
     if (!ready) return;
     const resized = sizeSeen.current.width !== size.width || sizeSeen.current.height !== size.height;
     sizeSeen.current = size;
-    const was = fitted.current;
     const now = viewNow.current;
-    const untouched = was !== null && was.x === now.x && was.y === now.y && was.k === now.k;
+    const untouched = sameView(fitted.current, now);
     if (refitOnResize && resized && untouched && content) {
       apply(fitOf(content), false);
       fitted.current = viewNow.current;
@@ -705,31 +732,54 @@ export function Canvas({
         const factor = scale / viewNow.current.k;
         apply(zoomAt(viewNow.current, factor, { x: width / 2, y: height / 2 }, limitsNow.current), 'near');
       },
-      reveal: (target) => {
-        const next = revealView(viewNow.current, target, sizeNow.current);
-        if (next.x !== viewNow.current.x || next.y !== viewNow.current.y) apply(next, 'near');
+      reveal: (target, outside = 'edge') => {
+        /*
+         * IN THE ROOM THE END BAR LEAVES, as a fit is: measured against the
+         * whole viewport, a reveal stopped an item at the foot of the pane,
+         * under the legend drawn there. The view is moved into the room's
+         * own coordinates and back.
+         */
+        const { top, bottom } = bandNow.current;
+        const room = { width: sizeNow.current.width, height: Math.max(0, sizeNow.current.height - top - bottom) };
+        const now = viewNow.current;
+        const inRoom = (how: 'edge' | 'centre') => {
+          const next = revealView({ ...now, y: now.y - top }, target, room, CANVAS_REVEAL_PADDING, how);
+          return { ...next, y: next.y + top };
+        };
+        const least = inRoom('edge');
+        const next = outside === 'edge' ? least : inRoom(outside);
+        if (next.x === now.x && next.y === now.y) return;
+        // A move to the middle is the chart going somewhere else; the least pan corrects.
+        apply(next, next.x === least.x && next.y === least.y ? 'near' : 'travel');
       },
       anchor: (before, after) => apply(anchorView(viewNow.current, before, after), false),
       rememberView: () => {
-        left.current ??= viewNow.current;
+        left.current ??= { view: viewNow.current, fit: sameView(fitted.current, viewNow.current) };
       },
       focusRegion: (target, context, ceiling) => {
         // The FIRST view is the one to give back: a second region while a
         // surface is open is still one surface, opened from where the reader
         // was standing before any of it.
-        left.current ??= viewNow.current;
+        left.current ??= { view: viewNow.current, fit: sameView(fitted.current, viewNow.current) };
         apply(regionView(target, sizeNow.current, limitsNow.current, context, ceiling), 'travel');
       },
       restoreView: () => {
         const was = left.current;
         if (!was) return;
         left.current = null;
-        apply(was, 'travel');
+        const bounds = contentNow.current;
+        // An untouched fit comes back as the fit of what is there now: see the handle.
+        if (was.fit && bounds) {
+          apply(fitOf(bounds), 'travel');
+          fitted.current = viewNow.current;
+          return;
+        }
+        apply(was.view, 'travel');
       },
       screenRect: (target) => screenRect(viewNow.current, target),
       worldAt: (client) => toWorld(viewNow.current, local({ clientX: client.x, clientY: client.y })),
     }),
-    [apply, fitNow, local],
+    [apply, fitNow, fitOf, local],
   );
 
   // ---- the wheel -------------------------------------------------------------
@@ -1126,6 +1176,14 @@ export function Canvas({
       <VisuallyHidden id={helpId}>{text.keys}</VisuallyHidden>
     </div>
   );
+}
+
+/**
+ * Whether `view` is still the fit that landed on `fit`: nobody has moved it
+ * since. What a resize refits and what a restore gives back as a fit.
+ */
+function sameView(fit: CanvasView | null, view: CanvasView): boolean {
+  return fit !== null && fit.x === view.x && fit.y === view.y && fit.k === view.k;
 }
 
 /**
