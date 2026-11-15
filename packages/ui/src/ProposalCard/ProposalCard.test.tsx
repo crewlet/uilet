@@ -572,3 +572,73 @@ test('the danger tone, a confirmation and details together carry no axe violatio
     unmount();
   }
 });
+
+const CAUTION = 'Prepared after reading a comment on a task, written outside the company.';
+
+test('a caution leads the body while the card can be decided, and leaves with the decision', () => {
+  const { rerender, container } = render(card('pending', { caution: CAUTION }));
+  const caution = screen.getByText(CAUTION);
+  // A warning, before the summary, so it is read first.
+  expect(caution.closest('.crewlet-callout')?.className).toContain('warning');
+  const body = container.querySelector('.crewlet-status-card__body')!;
+  expect(body.textContent!.indexOf(CAUTION)).toBeLessThan(body.textContent!.indexOf('Show only blocked tasks'));
+  for (const state of ['stepup', 'applying'] as const) {
+    rerender(card(state, { caution: CAUTION }));
+    expect(screen.queryByText(CAUTION), state).not.toBeNull();
+  }
+  for (const state of ['applied', 'declined', 'expired', 'stale', 'failed'] as const) {
+    rerender(card(state, { caution: CAUTION }));
+    expect(screen.queryByText(CAUTION), state).toBeNull();
+  }
+});
+
+test('the foot says a step-up is ahead only while the card waits, since the step-up strip says it after', () => {
+  const ahead = PROPOSAL_CARD_LABELS.stepUpAhead;
+  const { rerender } = render(card('pending', { stepUp: true }));
+  expect(screen.getByText(ahead)).toBeTruthy();
+  rerender(card('pending'));
+  expect(screen.queryByText(ahead)).toBeNull();
+  for (const state of PROPOSAL_STATES.filter((s) => s !== 'pending')) {
+    rerender(card(state, { stepUp: true }));
+    expect(screen.queryByText(ahead), state).toBeNull();
+  }
+});
+
+test('the foot counts down to the expiry on the shared clock, and says once it has passed', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-11-15T10:00:00Z'));
+  const expiresAt = '2026-11-15T10:14:00Z';
+  const { rerender } = render(card('pending', { expiresAt }));
+  const time = screen.getByText(`${PROPOSAL_CARD_LABELS.expires} in 14m`);
+  // The exact instant is the element's own, for a machine and on hover.
+  expect(time.tagName).toBe('TIME');
+  expect(time.getAttribute('datetime')).toBe('2026-11-15T10:14:00.000Z');
+  act(() => {
+    vi.setSystemTime(new Date('2026-11-15T10:14:30Z'));
+    vi.advanceTimersByTime(1000);
+  });
+  expect(screen.getByText(PROPOSAL_CARD_LABELS.lapsed)).toBeTruthy();
+  // Only while it can be decided: a settled or busy card has no time left to count.
+  for (const state of ['applying', 'applied', 'declined', 'expired', 'stale', 'failed'] as const) {
+    rerender(card(state, { expiresAt }));
+    expect(screen.queryByText(PROPOSAL_CARD_LABELS.lapsed), state).toBeNull();
+  }
+  // A value that names no instant draws nothing rather than a guess.
+  rerender(card('pending', { expiresAt: 'not a time' }));
+  expect(document.querySelector('.crewlet-proposal-card__terms')).toBeNull();
+});
+
+test('a caution and the terms carry no axe violation while the card waits', async () => {
+  for (const state of ['pending', 'stepup'] as const) {
+    const { container, unmount } = render(
+      <main>{card(state, { caution: CAUTION, stepUp: true, expiresAt: Date.now() + 600_000 })}</main>,
+    );
+    const result = await axe.run(container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(result.violations, state).toEqual([]);
+    unmount();
+  }
+});

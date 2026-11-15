@@ -247,6 +247,27 @@ export const WithConfirmation: Story = {
 /** WITH DETAILS: the precise request, folded under "Technical details" and collapsed by default. */
 export const WithDetails: Story = { args: { ...create, state: 'pending', details: removeDetails } };
 
+/**
+ * WHAT DECIDING INVOLVES: a change prepared after reading somebody else's
+ * words leads with that caution, and the foot says that approving asks for a
+ * fresh sign-in and how long the card stays open.
+ */
+export const WithCautionAndTerms: Story = {
+  args: {
+    ...create,
+    state: 'pending',
+    caution:
+      'Prepared after reading a comment on a task, which somebody outside the company may have written. Check that this is the change you asked for.',
+    stepUp: true,
+    expiresAt: new Date(Date.now() + 14 * 60 * 1000),
+  },
+};
+
+/** The same card waiting on the sign-in: the strip says it, and the foot keeps only the time left. */
+export const WithCautionAtStepUp: Story = {
+  args: { ...WithCautionAndTerms.args, state: 'stepup' },
+};
+
 /** EVERYTHING TOGETHER: the danger tone, a confirmation and the technical details. */
 export const DangerCombined: Story = {
   args: { ...removeSeat, state: 'pending', confirmation: removeConfirmation, details: removeDetails },

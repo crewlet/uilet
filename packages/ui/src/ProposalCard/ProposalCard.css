@@ -18,6 +18,26 @@
   text-align: end;
 }
 
+/* WHAT APPROVING INVOLVES (a fresh sign-in, the time left), on a line of
+   its own above the decision and at its end, in the foot's quiet register,
+   each term led by its glyph. The terms wrap as units, never mid-term. */
+.crewlet-proposal-card__terms {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--spacing-1) var(--spacing-3);
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-proposal-card__term {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
 /* THE DELIBERATE CONFIRMATION, on a row of its own above the decision. It
    starts at the foot's start edge, unlike the one-line reasons around it: a
    checkbox's sentence wraps under its own first line, and set at the end its
