@@ -179,8 +179,10 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
           className="crewlet-composer__field"
           aria-label={label}
           role={role}
-          // Said outright for the textbox a textarea is; a combobox (a field
-          // with a mention list) takes no such attribute.
+          // Said outright for the textbox a textarea is, a field with a
+          // mention list included (it points at the list with
+          // aria-autocomplete, aria-controls and aria-activedescendant, never
+          // a combobox role, which a textarea may not take).
           aria-multiline={role === undefined || role === 'textbox' ? true : undefined}
           aria-describedby={cx(describedBy, send.describedBy, disabledReason === undefined ? undefined : reasonId) || undefined}
           value={value}

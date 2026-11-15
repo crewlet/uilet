@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { breakpoint, themes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
@@ -19,21 +19,27 @@ afterEach(cleanup);
 
 /**
  * What the stylesheet's breakpoint does to the button, applied as inline
- * styles.
+ * styles: the label is clipped out of sight, never taken out with
+ * `display: none` (which takes it out of the name too), and the hint is
+ * taken out whole.
  *
  * Inline rather than as a style element, which the package's own source
  * scan refuses anywhere under `src`: what a name computation reads is the
  * resolved display of these two elements, and it is the same either way.
  */
 function narrowLayout(): () => void {
-  const hidden = [
-    ...document.querySelectorAll<HTMLElement>(
-      '.crewlet-search-trigger__label, .crewlet-search-trigger__shortcut',
-    ),
-  ];
-  for (const element of hidden) element.style.display = 'none';
+  const labels = [...document.querySelectorAll<HTMLElement>('.crewlet-search-trigger__label')];
+  const hints = [...document.querySelectorAll<HTMLElement>('.crewlet-search-trigger__shortcut')];
+  for (const element of labels) {
+    element.style.position = 'absolute';
+    element.style.width = '1px';
+    element.style.height = '1px';
+    element.style.overflow = 'hidden';
+    element.style.clipPath = 'inset(50%)';
+  }
+  for (const element of hints) element.style.display = 'none';
   return () => {
-    for (const element of hidden) element.style.display = '';
+    for (const element of [...labels, ...hints]) element.removeAttribute('style');
   };
 }
 
@@ -54,6 +60,49 @@ test('the button keeps its name where the narrow layout hides its label', () => 
   }
 });
 
+/*
+ * NAMED BY ITS WORDS, NOTHING ELSE. An aria-label replaced the words the box
+ * shows, and the keycap inside the box is text too (axe counts it, hidden or
+ * not), so "Search everything" over "Search everything Ctrl+K" was a name
+ * that did not contain what is on screen. The words are the name, the
+ * keycap is decoration, and the shortcut reaches a screen reader through
+ * `aria-keyshortcuts`.
+ */
+test('it is named by its words alone, and the key hint stays out of the name', () => {
+  render(
+    <SearchTrigger
+      label="Search everything"
+      keyshortcuts="Control+K Meta+K"
+      shortcut={<Kbd keys={['Mod', 'k']} apple={false} />}
+    />,
+  );
+  const search = screen.getByRole('button', { name: 'Search everything' });
+  expect(search.hasAttribute('aria-label')).toBe(false);
+  const hint = search.querySelector('.crewlet-search-trigger__shortcut');
+  expect(hint?.getAttribute('aria-hidden')).toBe('true');
+  expect(search.getAttribute('aria-keyshortcuts')).toBe('Control+K Meta+K');
+});
+
+/*
+ * FOLDED, THE WORDS ARE CLIPPED, NOT REMOVED: they are the button's name, and
+ * `display: none` would leave a magnifier announced as "button".
+ */
+test('the folded toolbar field clips its label rather than removing it', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SearchTrigger.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const query = css.slice(css.indexOf(`@media (width < ${breakpoint.shell})`));
+  const rule = (selector: string) => {
+    const at = query.indexOf(`${selector} {`);
+    return at < 0 ? '' : query.slice(at, query.indexOf('}', at)).replace(/\s+/g, ' ');
+  };
+  const label = rule('.crewlet-search-trigger--toolbar .crewlet-search-trigger__label');
+  expect(label).toContain('clip-path: inset(50%);');
+  expect(label).not.toContain('display: none');
+  expect(rule('.crewlet-search-trigger--toolbar .crewlet-search-trigger__shortcut')).toContain('display: none;');
+});
+
 test('the label is drawn, and it is the same word the button is called', () => {
   render(<SearchTrigger label="Find anything" />);
   const search = screen.getByRole('button', { name: 'Find anything' });
@@ -62,12 +111,11 @@ test('the label is drawn, and it is the same word the button is called', () => {
   expect(search.textContent).toContain('Find anything');
 });
 
-test('the shortcut hint is drawn beside it as one cap and reads as a sentence', () => {
+test('the shortcut hint is drawn beside the words as one cap', () => {
   render(<SearchTrigger shortcut={<Kbd keys={['Mod', 'k']} apple={false} />} />);
   const search = screen.getByRole('button', { name: 'Search' });
   const caps = [...search.querySelectorAll('.crewlet-kbd')];
   expect(caps.map((cap) => cap.textContent)).toEqual(['Ctrl+K']);
-  expect(within(search).getByText('Control plus K')).toBeDefined();
 });
 
 /*

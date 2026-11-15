@@ -745,7 +745,7 @@ test('an end-aligned menu wider than its trigger\'s right edge opens, held insid
 // trigger is a flush button in the surrounding text's register.
 test('valueTrigger draws the trigger as the value: flush, in the surrounding text', () => {
   render(<Menu label="Status of ENG-1" trigger="In progress" valueTrigger items={[{ key: 'a', label: 'Done', onSelect: () => {} }]} />);
-  const trigger = screen.getByRole('button', { name: 'Status of ENG-1' });
+  const trigger = screen.getByRole('button', { name: 'In progress, Status of ENG-1' });
   expect(trigger.classList.contains('crewlet-btn--flush')).toBe(true);
   expect(trigger.classList.contains('crewlet-menu__value-trigger')).toBe(true);
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Menu.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -753,6 +753,34 @@ test('valueTrigger draws the trigger as the value: flush, in the surrounding tex
   expect(css).toMatch(
     /\.crewlet-menu-anchor > \.crewlet-btn\.crewlet-menu__value-trigger \{[^}]*font-size: inherit;[^}]*font-weight: inherit;[^}]*color: inherit;/,
   );
+});
+
+// A VALUE TRIGGER IS NAMED BY THE VALUE IT SHOWS, then by what it changes.
+// Under an aria-label of "Status of ENG-1" it showed "In progress" and was
+// called something else, so a person who says what they see ("click In
+// progress") reached nothing, and every row's picker was announced alike.
+// The menu itself keeps `label` as its name.
+test('a value trigger is named by its value first, and carries no name of its own', () => {
+  render(
+    <Menu
+      label="Status of ENG-1"
+      trigger={<span className="badge">In progress</span>}
+      valueTrigger
+      items={[{ key: 'a', label: 'Done', onSelect: () => {} }]}
+    />,
+  );
+  const trigger = screen.getByRole('button', { name: 'In progress, Status of ENG-1' });
+  expect(trigger.hasAttribute('aria-label')).toBe(false);
+  expect(trigger.textContent?.startsWith('In progress')).toBe(true);
+  fireEvent.click(trigger);
+  expect(screen.getByRole('menu', { name: 'Status of ENG-1' })).toBeDefined();
+});
+
+// A TEXT TRIGGER THAT IS NOT A VALUE keeps `label` as its name ("New" read as
+// "New artifact"), which the label is written to contain.
+test('a text trigger that is not a value is still named by its label', () => {
+  render(<Menu label="New artifact" trigger="New" items={[{ key: 'a', label: 'Doc', onSelect: () => {} }]} />);
+  expect(screen.getByRole('button', { name: 'New artifact' })).toBeDefined();
 });
 
 describe('a tooltip on the trigger', () => {

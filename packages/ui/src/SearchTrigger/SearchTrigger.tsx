@@ -20,11 +20,11 @@ import { cx } from '../utils/cx.js';
 export type SearchTriggerVariant = 'rail' | 'toolbar';
 
 export interface SearchTriggerProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'aria-label'> {
-  /** What it is called, drawn inside the box and used as its name. */
+  /** What it is called: drawn inside the box, and the button's whole name. */
   label?: string | undefined;
   /** Where it stands. The sidebar field by default. See the type. */
   variant?: SearchTriggerVariant | undefined;
-  /** The shortcut hint, as a Kbd with `keys`. */
+  /** The shortcut hint, as a Kbd with `keys`. Decoration: name the keys in `keyshortcuts`. */
   shortcut?: ReactNode;
   /**
    * The shortcut in the syntax `aria-keyshortcuts` takes, such as
@@ -44,11 +44,19 @@ export interface SearchTriggerProps extends Omit<ButtonHTMLAttributes<HTMLButton
  * and a box that takes focus and then throws the first keystroke away is worse
  * than one that never looked like a field at all.
  *
- * ITS NAME IS ON THE BUTTON, not in its text. The toolbar form's narrow
- * layout hides the label and the hint and leaves the glyph, and content under
- * `display: none` names nothing: the dashboard this comes from had a search
- * button that a screen reader announced as "button" at every width under the
- * breakpoint.
+ * IT IS NAMED BY ITS WORDS, and by nothing else. An `aria-label` replaced
+ * them, and the keycap beside them is text in the same box (a checker counts
+ * it as shown, hidden from a screen reader or not), so the name never
+ * contained what the box shows and a person who says what they see could not
+ * reach it. The keycap is decoration: the shortcut reaches a screen reader
+ * through `aria-keyshortcuts`, the one place a reader who cannot see the caps
+ * learns it.
+ *
+ * FOLDED, THE WORDS ARE CLIPPED, NOT REMOVED. The toolbar form's narrow
+ * layout leaves the glyph alone in the box, and its words stay the button's
+ * name out of sight: content under `display: none` names nothing, and the
+ * dashboard this comes from had a search button a screen reader announced as
+ * "button" at every width under the breakpoint.
  */
 export const SearchTrigger = forwardRef<HTMLButtonElement, SearchTriggerProps>(function SearchTrigger(
   { label = 'Search', variant = 'rail', shortcut, keyshortcuts, icon, className, type = 'button', ...rest },
@@ -60,12 +68,17 @@ export const SearchTrigger = forwardRef<HTMLButtonElement, SearchTriggerProps>(f
       ref={ref}
       type={type}
       className={cx('crewlet-search-trigger', `crewlet-search-trigger--${variant}`, className)}
-      aria-label={label}
       aria-keyshortcuts={keyshortcuts}
     >
-      <span className="crewlet-search-trigger__icon">{icon ?? <SearchGlyph size="sm" />}</span>
+      <span className="crewlet-search-trigger__icon" aria-hidden="true">
+        {icon ?? <SearchGlyph size="sm" />}
+      </span>
       <span className="crewlet-search-trigger__label">{label}</span>
-      {shortcut ? <span className="crewlet-search-trigger__shortcut">{shortcut}</span> : null}
+      {shortcut ? (
+        <span className="crewlet-search-trigger__shortcut" aria-hidden="true">
+          {shortcut}
+        </span>
+      ) : null}
     </button>
   );
 });

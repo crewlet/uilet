@@ -89,7 +89,7 @@ function MakeItem({ item }: { item: ArtifactMakeRowItem }) {
       <span className="crewlet-make-row__words">
         <span className="crewlet-make-row__name">{label}</span>
         {detail ? (
-          <span id={detailId} className="crewlet-make-row__detail">
+          <span id={detailId} className="crewlet-make-row__detail" aria-hidden="true">
             {detail}
           </span>
         ) : null}
@@ -99,6 +99,12 @@ function MakeItem({ item }: { item: ArtifactMakeRowItem }) {
   // THE NAME IS THE KIND and the detail its description, so a reader moving
   // through the row hears "Docs, link" and then what a doc is for, rather
   // than the two run together as one name.
+  //
+  // THE NAME COMES FROM THE TILE'S OWN WORDS, never an aria-label over them:
+  // the detail line is drawn inside the tile, and a label that replaced the
+  // content was a name that did not contain what the tile shows. So the
+  // detail is taken out of the content's name (aria-hidden) and read through
+  // aria-describedby, which reads a hidden element it names.
   const describedBy = detail ? detailId : undefined;
   if (off) {
     return (
@@ -106,7 +112,6 @@ function MakeItem({ item }: { item: ArtifactMakeRowItem }) {
         <span
           role="link"
           tabIndex={0}
-          aria-label={label}
           aria-disabled="true"
           aria-describedby={disabledReason ? reasonId : describedBy}
           title={disabledReason}
@@ -119,7 +124,7 @@ function MakeItem({ item }: { item: ArtifactMakeRowItem }) {
     );
   }
   return (
-    <a href={href} aria-label={label} aria-describedby={describedBy} className={cx('crewlet-make-row__item', HIT_AREA_CLASS)}>
+    <a href={href} aria-describedby={describedBy} className={cx('crewlet-make-row__item', HIT_AREA_CLASS)}>
       {body}
     </a>
   );
