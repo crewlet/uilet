@@ -113,6 +113,21 @@ export const OnADisabledControl: Story = {
 };
 
 /**
+ * A held control's tip opens on hover, keyboard focus and a press, so touch
+ * can ask why too.
+ */
+export const HeldControlAnswersAPress: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 'var(--spacing-4)', padding: 'var(--spacing-10)' }}>
+      <IconButton label="Change Time zone" icon={<ClockGlyph size="md" />} tooltip disabledReason="Changing settings needs Admin." />
+      <Button variant="primary" tooltip disabledReason="Type the repository's new name first.">
+        Rename
+      </Button>
+    </div>
+  ),
+};
+
+/**
  * Inside a LayerHost, which is what a container that can go fullscreen needs: a
  * fullscreen element paints only its own subtree, so a panel portalled to the
  * body is not drawn at all.

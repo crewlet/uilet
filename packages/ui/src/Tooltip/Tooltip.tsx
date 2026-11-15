@@ -68,6 +68,11 @@ export interface TooltipProps extends TriggerAttributes {
   align?: TooltipAlign | undefined;
   /** Nothing opens: for a trigger whose tip is only worth showing sometimes. */
   disabled?: boolean | undefined;
+  /**
+   * A press opens the tip and pins it until dismissed, for a held control:
+   * on touch the press is the only way to ask why.
+   */
+  pressOpens?: boolean | undefined;
   /** Milliseconds a pointer rests on the trigger before the panel appears. Focus never waits. */
   openDelay?: number | undefined;
   /**
@@ -115,6 +120,8 @@ const TOOLTIP_GAP = Number.parseFloat(spacing['2']);
  * a reader must have is on the page. This is a hint about a control that
  * already has a name.
  *
+ * A held control's press opens its tip instead (`pressOpens`).
+ *
  * IT IS ONE LINE. A list of paths, a table of values or a paragraph belongs in
  * a `Popover` with `role="dialog"` or in a `Disclosure`, both of which a reader
  * can keep open and scroll.
@@ -150,6 +157,7 @@ export function Tooltip({
   placement = 'top',
   align = 'center',
   disabled = false,
+  pressOpens = false,
   openDelay = OPEN_DELAY,
   closeDelay = CLOSE_DELAY,
   className,
@@ -166,8 +174,8 @@ export function Tooltip({
   // Hover and focus are counted separately: a control focused by the keyboard
   // and then passed over by the pointer must not close when the pointer leaves.
   // `pressed` is a press that answered the tip: it stays shut until the
-  // pointer leaves and comes back.
-  const over = useRef({ pointer: false, focus: false, pressed: false });
+  // pointer leaves and comes back. `pinned` is a `pressOpens` press: open until dismissed.
+  const over = useRef({ pointer: false, focus: false, pressed: false, pinned: false });
   const [place, setPlace] = useState<{ left: number; top: number; side: 'above' | 'below' } | null>(null);
   const container = useLayerContainer();
 
@@ -193,7 +201,7 @@ export function Tooltip({
     (delay: number) => {
       clear();
       const leave = () => {
-        if (over.current.pointer || over.current.focus) return;
+        if (over.current.pointer || over.current.focus || over.current.pinned) return;
         setOpen(false);
       };
       if (delay <= 0) {
@@ -208,7 +216,7 @@ export function Tooltip({
   // Escape, and a press anywhere else, close it at once: a reader dismissing a
   // panel has already decided, and a delay there is just a panel that ignores
   // them.
-  const layer = usePopupLayer({ open, onDismiss: () => { over.current = { pointer: false, focus: false, pressed: false }; clear(); setOpen(false); } });
+  const layer = usePopupLayer({ open, onDismiss: () => { over.current = { pointer: false, focus: false, pressed: false, pinned: false }; clear(); setOpen(false); } });
 
   useEffect(() => clear, [clear]);
   useEffect(() => {
@@ -217,6 +225,12 @@ export function Tooltip({
       setOpen(false);
     }
   }, [disabled, clear]);
+  // A pinned tip closes once its control is no longer held.
+  useEffect(() => {
+    if (pressOpens || !over.current.pinned) return;
+    over.current.pinned = false;
+    hide(0);
+  }, [pressOpens, hide]);
 
   const position = useCallback(() => {
     const at = anchor.current;
@@ -340,11 +354,20 @@ export function Tooltip({
     },
     // A press answers the tip: it closes at once and stays shut while the
     // pointer is still on the control, whatever focus the press brought.
+    // With `pressOpens` the press pins it open instead, and a second press closes it.
     onPointerDown: (event: PointerEvent) => {
-      over.current.pressed = true;
       over.current.focus = false;
       clear();
-      setOpen(false);
+      if (pressOpens) {
+        const pinned = !(over.current.pinned && open);
+        over.current.pinned = pinned;
+        over.current.pressed = !pinned;
+        if (pinned && !disabled) setOpen(true);
+        else setOpen(false);
+      } else {
+        over.current.pressed = true;
+        setOpen(false);
+      }
       call('onPointerDown', event);
     },
     // KEYBOARD focus opens with NO delay: a keyboard reader who reached this
@@ -360,6 +383,7 @@ export function Tooltip({
     onBlur: (event: FocusEvent) => {
       over.current.focus = false;
       over.current.pressed = false;
+      over.current.pinned = false;
       hide(0);
       call('onBlur', event);
     },
