@@ -308,3 +308,57 @@ export const LeadingAndHint: Story = {
     );
   },
 };
+
+const levels: SelectOption[] = [
+  {
+    value: 'read',
+    label: 'Read',
+    description:
+      'Reads zones, zone settings, DNS, cache rules, transform rules, firewall and WAF rules, IP lists, SSL and analytics.',
+  },
+  { value: 'operate', label: 'Operate', description: 'Everything Read does, plus purging the cache and editing cache rules.' },
+  {
+    value: 'configure',
+    label: 'Configure',
+    description:
+      'Everything Operate does, plus editing transform rules, compression rules and every zone setting, the SSL mode and security level included.',
+  },
+  {
+    value: 'secure',
+    label: 'Secure',
+    description:
+      "Everything Configure does, plus editing the zones' WAF rules and the account's IP lists. It can leave access behind that outlives the agent's token: an allow or skip rule, or an address added to an IP list.",
+  },
+];
+
+/**
+ * A LONG DESCRIPTION FROM A NARROW FIELD: an access level picked in a table
+ * cell about 115px wide, each level a name over the sentence saying what it
+ * grants. The list is set at a reading width (never narrower than its floor,
+ * never wider than its measure or the window) rather than at the field's, so
+ * the sentences wrap a phrase to a line, and it opens on whichever side of
+ * the field has the room, so the answer stays in view. A plain list of names
+ * from the same cell still matches its field.
+ */
+export const LongDescriptions: Story = {
+  render: function Render() {
+    const [level, setLevel] = useState<SelectValue | SelectValue[] | undefined>('secure');
+    const [plain, setPlain] = useState<SelectValue | SelectValue[] | undefined>('operate');
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '160px 115px 1fr', gap: 12, alignItems: 'center' }}>
+        <span>Site Reliability Engineer</span>
+        <Select size="sm" ariaLabel="Access" options={levels} value={level} onChange={(next) => setLevel(next)} />
+        <span style={{ color: 'var(--color-text-tertiary)' }}>Grants beside the level</span>
+        <span>Release Manager</span>
+        <Select
+          size="sm"
+          ariaLabel="Access, names only"
+          options={levels.map(({ value, label }) => ({ value, label }))}
+          value={plain}
+          onChange={(next) => setPlain(next)}
+        />
+        <span style={{ color: 'var(--color-text-tertiary)' }}>Grants beside the level</span>
+      </div>
+    );
+  },
+};
