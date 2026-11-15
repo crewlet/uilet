@@ -113,6 +113,23 @@ export const OnADisabledControl: Story = {
 };
 
 /**
+ * A held control's own tip, through its `tooltip` prop: on hover and keyboard
+ * focus as every tip, and on a PRESS too, since a held control's press does
+ * nothing else and a touch screen has no other gesture to ask with. The press
+ * pins it until a press elsewhere, Escape or a second press puts it away.
+ */
+export const HeldControlAnswersAPress: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 'var(--spacing-4)', padding: 'var(--spacing-10)' }}>
+      <IconButton label="Change Time zone" icon={<ClockGlyph size="md" />} tooltip disabledReason="Changing settings needs Admin." />
+      <Button variant="primary" tooltip disabledReason="Type the repository's new name first.">
+        Rename
+      </Button>
+    </div>
+  ),
+};
+
+/**
  * Inside a LayerHost, which is what a container that can go fullscreen needs: a
  * fullscreen element paints only its own subtree, so a panel portalled to the
  * body is not drawn at all.

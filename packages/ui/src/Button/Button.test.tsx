@@ -512,6 +512,52 @@ describe('a held control says why in the kit Tooltip, when asked to', () => {
   });
 });
 
+describe('a held control answers a press with its reason, which is how touch is told', () => {
+  const tip = () => document.querySelector<HTMLElement>('[role="tooltip"]');
+
+  test('a press on a held icon button opens its tip, and the press does nothing else', () => {
+    const onClick = vi.fn();
+    render(
+      <IconButton
+        label="Change Time zone"
+        icon={<EllipsisVerticalGlyph />}
+        tooltip
+        disabledReason="Changing settings needs Admin."
+        onClick={onClick}
+      />,
+    );
+    const held = screen.getByRole('button', { name: 'Change Time zone' });
+    fireEvent.pointerDown(held, { pointerType: 'touch' });
+    fireEvent.pointerLeave(held, { pointerType: 'touch' });
+    fireEvent.click(held);
+    expect(tip()?.textContent).toBe('Change Time zone. Changing settings needs Admin.');
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  test('a press on a held button opens its tip; a press on one that is not held does what it says', () => {
+    const onSave = vi.fn();
+    render(
+      <>
+        <Button tooltip disabledReason="Type a name first.">
+          Rename
+        </Button>
+        <Button tooltip="Save the name" onClick={onSave}>
+          Save
+        </Button>
+      </>,
+    );
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Rename' }), { pointerType: 'touch' });
+    expect(tip()?.textContent).toBe('Type a name first.');
+    const save = screen.getByRole('button', { name: 'Save' });
+    fireEvent.pointerDown(save, { pointerType: 'touch' });
+    fireEvent.click(save);
+    // The press elsewhere put the held one's tip away, and the live one's own
+    // press answers its hint rather than opening it.
+    expect(tip()).toBeNull();
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("a button drawn as a link keeps its own ink", () => {
   const sheet = () => readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Button.css'), 'utf8');
 
