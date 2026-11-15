@@ -60,6 +60,25 @@ test('says who can open it by a glyph and its words, for each audience', () => {
   expect(said).toEqual(['Private', 'Shared', 'Shared with the company']);
 });
 
+test('prints who can open it beside its glyph, never for assistive technology alone', () => {
+  for (const [access, word] of [
+    ['private', 'Private'],
+    ['shared', 'Shared'],
+    ['company', 'Shared with the company'],
+  ] as const) {
+    const { unmount } = render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} access={access} now={NOW} />);
+    const said = document.querySelector('.crewlet-artifact-card__access')!;
+    // The word is drawn: no part of it sits in a visually hidden span.
+    expect(said.querySelector('.crewlet-visually-hidden'), access).toBeNull();
+    expect(said.querySelector('.crewlet-artifact-card__access-word')?.textContent, access).toBe(word);
+    unmount();
+  }
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ArtifactCard.css'), 'utf8');
+  // On a narrow card the word gives way with an ellipsis, and the glyph does not.
+  expect(css).toMatch(/\.crewlet-artifact-card__access-word\s*\{[^}]*text-overflow:\s*ellipsis/);
+  expect(css).toMatch(/\.crewlet-artifact-card__access > svg\s*\{\s*flex:\s*none;/);
+});
+
 test('says when it was edited, and by whom only when that is not the owner already named', () => {
   const said = () => document.querySelector('.crewlet-artifact-card__meta')?.textContent ?? '';
   const { rerender } = render(<ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a" owner={MAYA} updatedAt={NOW - 4 * 60_000} updatedBy="Ana" now={NOW} />);
