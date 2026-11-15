@@ -825,6 +825,45 @@ describe('the palettes and the theme registry', () => {
   });
 });
 
+describe('the code host family', () => {
+  const FAMILY = /^--color-(diff|syntax|change-(open|merged|closed|draft)|code|file)-/;
+  const isFamily = (name) => FAMILY.test(name);
+  const declaring = (css) => parseBlocks(css).filter((block) => [...block.declarations.keys()].some(isFamily));
+
+  test('it is declared once, on the root and on a brand scope layer, with the same 39 aliases', () => {
+    const blocks = declaring(tokensCss);
+    assert.deepEqual(blocks.map((block) => [block.atRule, block.selector]), [[null, ':root'], [null, '[class~="crewlet-brand-scope__layer"]']]);
+    const [rootBlock, layer] = blocks.map((block) => [...block.declarations].filter(([name]) => isFamily(name)));
+    assert.equal(rootBlock.length, 39);
+    assert.deepEqual(layer, rootBlock);
+    assert.equal(blocks[1].declarations.size, 39, 'the layer carries the family and nothing else');
+    // A consumer may take the first `.crewlet-` selector in its first sheet as the components' start.
+    assert.doesNotMatch(tokensCss, /\.crewlet-[a-z]/, 'tokens.css names no component class');
+  });
+
+  test('each value is one var() of a step outside the family that every palette paints', () => {
+    const dark = parseBlocks(themesCss).find((block) => block.atRule === null && block.selector === ':root').declarations;
+    for (const [name, value] of declaring(tokensCss)[0].declarations) {
+      if (!isFamily(name)) continue;
+      const step = /^var\((--[a-z0-9-]+)\)$/.exec(value)?.[1];
+      assert.ok(step && !isFamily(step), `${name}: ${value}`);
+      assert.ok(dark.has(step), `${name} aliases ${step}, which the theme layer does not paint`);
+    }
+  });
+
+  test('no theme sheet and not the brand scope sheet declares it', () => {
+    const sheets = ['themes.css', 'themes/all.css', 'brand-scope.css', ...themeRegistry.filter((theme) => theme.id !== DEFAULT_THEME_ID).map((theme) => `themes/${theme.id}.css`)];
+    for (const sheet of sheets) assert.deepEqual(declaring(read(sheet)), [], sheet);
+  });
+
+  test('the typed export does not carry it, and the change mark stays', () => {
+    for (const tree of [exported.color, themes.dark.color, themes.light.color]) {
+      for (const group of ['diff', 'syntax', 'change', 'code', 'file']) assert.equal(tree[group], undefined, group);
+    }
+    assert.equal(typeof exported.color.changeMark, 'string');
+  });
+});
+
 describe('the colour maths at runtime', () => {
   test('the package exports the implementation the palette suite measures with', () => {
     // One implementation: the published entry and the published suite hand a

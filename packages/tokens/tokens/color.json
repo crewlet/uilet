@@ -139,6 +139,71 @@
       "ink": { "value": "#ffffff", "comment": "The controls' glyphs and the position on the projection ground: white over a 60% black, which clears 4.5:1 over any slide behind it." },
       "hover": { "value": "rgba(255, 255, 255, 0.16)", "comment": "A control under the pointer on the projection ground." },
       "rule": { "value": "rgba(255, 255, 255, 0.24)", "comment": "The hairline that sets the show's own controls (full screen) apart from Previous and Next on the projection ground." }
+    },
+    "diff": {
+      "added": {
+        "row": { "value": "{color.feedback.successSoft}", "comment": "Code read in a code host (README): every token of the family aliases a step every palette already paints." },
+        "gutter": { "value": "{color.fill.row}" },
+        "word": { "value": "{color.feedback.successLine}" },
+        "sign": { "value": "{color.feedback.successInk}" },
+        "mark": { "value": "{color.feedback.success}" }
+      },
+      "removed": {
+        "row": { "value": "{color.feedback.dangerSoft}" },
+        "gutter": { "value": "{color.fill.row}" },
+        "word": { "value": "{color.feedback.dangerLine}" },
+        "sign": { "value": "{color.feedback.dangerInk}" },
+        "mark": { "value": "{color.feedback.danger}" }
+      },
+      "hunk": {
+        "row": { "value": "{color.brand.accentSoft}" },
+        "gutter": { "value": "{color.fill.row}" }
+      }
+    },
+    "syntax": {
+      "keyword": { "value": "{color.brand.accentInk}" },
+      "string": { "value": "{color.feedback.successInk}" },
+      "number": { "value": "{color.feedback.warningInk}" },
+      "function": { "value": "{color.feedback.infoInk}" },
+      "type": { "value": "{color.feedback.dangerInk}" },
+      "comment": { "value": "{color.text.tertiary}" },
+      "punctuation": { "value": "{color.text.secondary}" }
+    },
+    "change": {
+      "open": {
+        "fill": { "value": "{color.feedback.successInk}", "comment": "The family's one ground in an ink step: no label clears the success fill in both modes." },
+        "label": { "value": "{color.text.inverse}" },
+        "ink": { "value": "{color.feedback.successInk}" }
+      },
+      "merged": {
+        "fill": { "value": "{color.brand.accent}" },
+        "label": { "value": "{color.text.onAccent}" },
+        "ink": { "value": "{color.brand.accentInk}" }
+      },
+      "closed": {
+        "fill": { "value": "{color.feedback.danger}" },
+        "label": { "value": "{color.text.onDanger}" },
+        "ink": { "value": "{color.feedback.dangerInk}" }
+      },
+      "draft": {
+        "fill": { "value": "{color.surface.elevated}" },
+        "edge": { "value": "{color.border.strong}" },
+        "label": { "value": "{color.text.secondary}" },
+        "ink": { "value": "{color.text.tertiary}" }
+      }
+    },
+    "code": {
+      "ref": {
+        "fill": { "value": "{color.brand.accentSoft}" },
+        "ink": { "value": "{color.brand.accentInk}" }
+      },
+      "match": { "value": "{color.feedback.warningLine}", "comment": "Amber, not the accent: in code the accent already marks the hunk row, a pick, a branch chip and keywords." }
+    },
+    "file": {
+      "added": { "ink": { "value": "{color.feedback.successInk}" } },
+      "modified": { "ink": { "value": "{color.feedback.warningInk}" } },
+      "deleted": { "ink": { "value": "{color.feedback.dangerInk}" } },
+      "renamed": { "ink": { "value": "{color.text.tertiary}" } }
     }
   }
 }

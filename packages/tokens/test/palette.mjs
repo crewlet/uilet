@@ -380,6 +380,50 @@ export const ARTIFACT_KIND_DE = 8;
 export const ARTIFACT_KIND_GROUNDS = ['ground', 'ground-strong'];
 
 // ---------------------------------------------------------------------------
+// Code read in a code host
+// ---------------------------------------------------------------------------
+
+/** The grounds code is read on: the sheet and the card (a code block, a diff's body, a code host's lists). */
+export const CODE_GROUNDS = ['--color-surface-background', '--color-surface-subtle'];
+/** A picked line, or one a finding marks: the selected tint, in place of its diff tint. */
+export const CODE_PICK = '--color-surface-selected';
+export const SYNTAX_INKS = ['keyword', 'string', 'number', 'function', 'type', 'comment', 'punctuation'].map((kind) => `--color-syntax-${kind}`);
+/** The code's own text, which a changed word and a match carry. */
+export const CODE_TEXT = '--color-text-primary';
+/** A changed line's steps. The gutter and the word are drawn over the row. */
+export const DIFF_ROWS = ['added', 'removed'].map((kind) => ({
+  kind,
+  row: `--color-diff-${kind}-row`,
+  gutter: `--color-diff-${kind}-gutter`,
+  word: `--color-diff-${kind}-word`,
+  sign: `--color-diff-${kind}-sign`,
+  mark: `--color-diff-${kind}-mark`,
+}));
+export const DIFF_HUNK = { row: '--color-diff-hunk-row', gutter: '--color-diff-hunk-gutter' };
+/** A row, a word, the hunk row and a match: tints a reader looks for, in OKLab dE. */
+export const DIFF_SEEN_DE = 3;
+/** A gutter, and the hunk row beside a changed row: found by what they hold too. */
+export const DIFF_GUTTER_DE = 1.5;
+/** An added row from a removed one; the sign says which as well. */
+export const DIFF_APART_DE = 3;
+/** Two hued syntax inks, under normal vision. */
+export const SYNTAX_APART_DE = 3;
+/** A change's state as [state, fill, label, ink]. */
+export const CHANGE_STATES = ['open', 'merged', 'closed', 'draft'].map((state) => [
+  state,
+  `--color-change-${state}-fill`,
+  `--color-change-${state}-label`,
+  `--color-change-${state}-ink`,
+]);
+/** The draft chip as [fill, edge]: the RAISED_CHIP pair. */
+export const CHANGE_DRAFT_CHIP = ['--color-change-draft-fill', '--color-change-draft-edge'];
+export const FILE_STATUSES = ['added', 'modified', 'deleted', 'renamed'].map((status) => `--color-file-${status}-ink`);
+/** A branch chip as [ink, fill]. */
+export const CODE_REF = ['--color-code-ref-ink', '--color-code-ref-fill'];
+/** A search match's ground, under the code text. */
+export const CODE_MATCH = '--color-code-match';
+
+// ---------------------------------------------------------------------------
 // The rail
 // ---------------------------------------------------------------------------
 
@@ -1040,6 +1084,78 @@ function checkState(state, values, profile, push, theme = { tint: null, contrast
     }
   }
 
+  // CODE READ IN A CODE HOST. Each token is an alias, followed to the step it names; a pair an
+  // existing rule already holds is asserted by checkStructure, not measured again.
+  {
+    const ink = high ? HIGH_CONTRAST.ink : 4.5;
+    const inkOf = (name) => colour(dereference(values, name));
+    const over = (name, grounds) => grounds.map(([where, rgb]) => [`${name} on ${where}`, flatten(values.get(dereference(values, name)), rgb)]);
+    const code = opaque.filter(([name]) => CODE_GROUNDS.includes(name));
+    const rows = DIFF_ROWS.map((diff) => {
+      const lines = over(diff.row, code);
+      return { ...diff, lines, gutters: over(diff.gutter, lines), words: over(diff.word, lines) };
+    });
+    const hunk = over(DIFF_HUNK.row, code);
+    const hunkGutters = over(DIFF_HUNK.gutter, hunk);
+    const hovered = over('--color-surface-hover', code);
+    const picked = over(CODE_PICK, code);
+    const floor = (rule, subject, low, min) => say(rule, low.ratio >= min, subject, low.ratio, `${low.ratio.toFixed(2)}:1 >= ${min} (worst on ${low.name})`);
+
+    const read = [...code, ...hovered, ...rows.flatMap((diff) => diff.lines), ...hunk, ...picked];
+    // Rule 1 leaves the code text to TEXT_STEPS (7:1), which no tint here brings near 4.5.
+    for (const name of [...SYNTAX_INKS, CODE_TEXT]) {
+      if (name !== CODE_TEXT) floor('a syntax ink clears its floor on code and on a changed line', name, worst(inkOf(name), read), ink);
+      floor("a code ink clears 3:1 as a glyph on the hunk row's gutter", name, worst(inkOf(name), hunkGutters), 3);
+    }
+    for (const diff of rows) {
+      floor("a changed line's sign clears its floor on its line and its gutter", diff.sign, worst(inkOf(diff.sign), [...diff.lines, ...diff.gutters]), ink);
+    }
+    {
+      const marks = [...rows.flatMap((diff) => diff.words), ...over(CODE_MATCH, code)];
+      floor('the code text clears its floor on a changed word and on a match', CODE_TEXT, worst(inkOf(CODE_TEXT), marks), ink);
+    }
+    {
+      // The open pill alone: merged and closed are LABEL_ON_FILL pairs.
+      const [, fill, label] = CHANGE_STATES.find(([state]) => state === 'open');
+      floor("an open pill's label clears 4.5:1 on its fill", `${label} on ${fill}`, worst(inkOf(label), over(fill, opaque)), 4.5);
+    }
+    {
+      // A chip at rest and on a hovered row; on a selected row it draws no ground.
+      const [refInk, refFill] = CODE_REF;
+      const grounds = [...over(refFill, code), ...over(refFill, hovered), ...picked];
+      floor("a branch chip's ink clears its floor on its chip and on a selected row", refInk, worst(inkOf(refInk), grounds), ink);
+    }
+    if (profile === 'full') {
+      const apart = (rule, a, b, min, subject) => {
+        const low = a.reduce((least, [where, rgb], i) => {
+          const measured = deltaE(rgb, b[i][1]);
+          return measured < least.measured ? { measured, where } : least;
+        }, { measured: Infinity, where: '' });
+        say(rule, low.measured >= min, subject, low.measured, `dE ${low.measured.toFixed(2)} >= ${min} (closest ${low.where})`);
+      };
+      const SEEN = 'a diff tint is seen on what it is drawn over';
+      const GUTTER = 'a gutter reads on its line';
+      for (const diff of rows) {
+        apart(SEEN, diff.lines, code, DIFF_SEEN_DE, diff.row);
+        apart(SEEN, diff.words, diff.lines, DIFF_SEEN_DE, diff.word);
+        apart(GUTTER, diff.gutters, diff.lines, DIFF_GUTTER_DE, diff.gutter);
+        apart('the hunk row reads apart from a changed line', hunk, diff.lines, DIFF_GUTTER_DE, `${DIFF_HUNK.row} vs ${diff.row}`);
+      }
+      apart(SEEN, hunk, code, DIFF_SEEN_DE, DIFF_HUNK.row);
+      apart(SEEN, over(CODE_MATCH, code), code, DIFF_SEEN_DE, CODE_MATCH);
+      apart(GUTTER, hunkGutters, hunk, DIFF_GUTTER_DE, DIFF_HUNK.gutter);
+      const [added, removed] = rows;
+      apart('added and removed lines read apart', added.lines, removed.lines, DIFF_APART_DE, `${added.row} vs ${removed.row}`);
+      const hued = SYNTAX_INKS.filter((name) => !name.endsWith('-comment') && !name.endsWith('-punctuation'));
+      for (let i = 0; i < hued.length; i += 1) {
+        for (let j = i + 1; j < hued.length; j += 1) {
+          const measured = deltaE(inkOf(hued[i]), inkOf(hued[j]));
+          say('syntax inks stay apart', measured >= SYNTAX_APART_DE, `${hued[i]} vs ${hued[j]}`, measured, `dE ${measured.toFixed(1)} >= ${SYNTAX_APART_DE}`);
+        }
+      }
+    }
+  }
+
   // THE PRIMARY ACTION'S STEPS. See ACTION_STEPS.
   for (const [rule, step, from] of ACTION_STEPS) {
     const name = labelOf(step);
@@ -1547,6 +1663,44 @@ function checkStructure(sources, states, push) {
       ? `all ${literal.length} literal steps differ between the palettes (${SHADOW_STEPS.length - literal.length} repaint through var())`
       : `the same value in both palettes: ${invariant.map((name) => `${name} (${lightBlock.get(name)})`).join('; ')}`,
   );
+
+  // A CODE HOST ALIAS NAMES A STEP HELD FOR ITS USE. Value-independent, so a fit never moves it:
+  // it asserts the aliases that put the family's pills, glyphs and marks under existing rules.
+  {
+    const rule = 'a code host alias names a step held for its use';
+    const values = states.dark;
+    const named = (name) => dereference(values, name);
+    const among = (name, steps) => steps.some((step) => named(step) === named(name));
+    const inks = [...INK_STEPS, ...TEXT_STEPS.map(([name]) => name)];
+    const check = (subject, problems) =>
+      say(rule, problems.length === 0, subject, problems.length === 0 ? 'each alias names a step held for its use' : problems.join('; '));
+    const expect = (ok, name, should) => (ok ? [] : [`${name} names ${named(name)}, not ${should}`]);
+    for (const [state, fill, label, ink] of CHANGE_STATES) {
+      const problems = [];
+      if (state === 'open') {
+        problems.push(...expect(among(fill, [...INK_STEPS, ...FILL_STEPS]), fill, 'an INK_STEPS or FILL_STEPS step'));
+      } else if (state === 'draft') {
+        const [chipFill, edge] = CHANGE_DRAFT_CHIP;
+        problems.push(...expect(named(chipFill) === named(RAISED_CHIP[0]), chipFill, RAISED_CHIP[0]));
+        problems.push(...expect(named(edge) === named(RAISED_CHIP[1]), edge, RAISED_CHIP[1]));
+        problems.push(...expect(among(label, TEXT_STEPS.map(([name]) => name)), label, 'a TEXT_STEPS step'));
+      } else {
+        const paired = LABEL_ON_FILL.some(([l, f]) => named(l) === named(label) && named(f) === named(fill));
+        problems.push(...expect(paired, `${label} on ${fill}`, 'a LABEL_ON_FILL pair'));
+        problems.push(...expect(among(fill, FILL_STEPS), fill, 'a FILL_STEPS step'));
+      }
+      problems.push(...expect(among(ink, inks), ink, 'an INK_STEPS or TEXT_STEPS step'));
+      check(`--color-change-${state}`, problems);
+    }
+    for (const name of FILE_STATUSES) check(name, expect(among(name, inks), name, 'an INK_STEPS or TEXT_STEPS step'));
+    for (const { mark } of DIFF_ROWS) check(mark, expect(among(mark, FILL_STEPS), mark, 'a FILL_STEPS step'));
+    // No two states share a fill or an ink; within one state the open pill's fill is its ink.
+    const changes = CHANGE_STATES.flatMap(([, fill, , ink]) => (named(fill) === named(ink) ? [fill] : [fill, ink]));
+    for (const [group, list] of [['the change states', changes], ['the file statuses', FILE_STATUSES]]) {
+      const shared = list.filter((name, i) => list.findIndex((other) => named(other) === named(name)) !== i);
+      check(group, shared.map((name) => `${name} names ${named(name)}, as another does`));
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

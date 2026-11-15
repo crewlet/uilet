@@ -21,11 +21,16 @@ import {
   ARTIFACT_KIND_HUES,
   ARTIFACT_KINDS,
   CARD_HAIRLINE,
+  CHANGE_DRAFT_CHIP,
+  CHANGE_STATES,
+  CODE_REF,
   DATA,
   DATA_ADJACENT_DE,
   DATA_ADJACENT_NORMAL_DE,
   describeFailure,
+  DIFF_ROWS,
   DIMMED_TEXT,
+  FILE_STATUSES,
   fromOklab,
   hex,
   MARK_ON_FILL,
@@ -39,6 +44,7 @@ import {
   RAISED_CHIP,
   runPalette,
   RUNG_STEPS,
+  SYNTAX_INKS,
   tightest,
   toOklab,
   VEIL_ALPHA,
@@ -566,6 +572,113 @@ describe('the state and chart hues', () => {
     for (const state of STATES) {
       assert.equal(checks.filter((check) => check.state === state && check.rule === DESTRUCTIVE_RULE).length, 1, state);
     }
+  });
+});
+
+describe('code read in a code host', () => {
+  const { checks } = runPalette(sources);
+  const RULES = [
+    'a syntax ink clears its floor on code and on a changed line',
+    "a code ink clears 3:1 as a glyph on the hunk row's gutter",
+    "a changed line's sign clears its floor on its line and its gutter",
+    'the code text clears its floor on a changed word and on a match',
+    "an open pill's label clears 4.5:1 on its fill",
+    "a branch chip's ink clears its floor on its chip and on a selected row",
+    'a diff tint is seen on what it is drawn over',
+    'a gutter reads on its line',
+    'the hunk row reads apart from a changed line',
+    'added and removed lines read apart',
+    'syntax inks stay apart',
+    'a code host alias names a step held for its use',
+  ];
+  const rule = (n) => RULES[n - 1];
+
+  /** The rules that fail, each once and sorted, once one family alias in tokens.css names another value. */
+  function familyAfter(name, value) {
+    const tokens = sources.tokens.replace(new RegExp(`(${name}: )[^;]+;`), `$1${value};`);
+    assert.notEqual(tokens, sources.tokens, `${name} is not declared in tokens.css`);
+    const states = [...THEME_STATES, 'the token files'];
+    return [...new Set(runPalette({ ...sources, tokens }).failures.filter((check) => states.includes(check.state)).map((check) => check.rule))].sort();
+  }
+  const expect = (...numbers) => numbers.map(rule).sort();
+
+  test('rules 1 to 11 run in every theme state and rule 12 over the token files', () => {
+    for (const name of RULES.slice(0, 11)) {
+      for (const state of THEME_STATES) assert.ok(checks.some((check) => check.state === state && check.rule === name), `${name} in ${state}`);
+    }
+    assert.ok(checks.some((check) => check.state === 'the token files' && check.rule === rule(12)));
+    assert.equal(SYNTAX_INKS.length, 7);
+    assert.deepEqual(DIFF_ROWS.map((diff) => diff.kind), ['added', 'removed']);
+    assert.deepEqual(CHANGE_STATES.map(([state]) => state), ['open', 'merged', 'closed', 'draft']);
+    assert.equal(FILE_STATUSES.length, 4);
+    assert.equal(CHANGE_DRAFT_CHIP.length, 2);
+    assert.equal(CODE_REF.length, 2);
+  });
+
+  test('a comment in the decorative step is caught on code and on the hunk gutter', () => {
+    assert.deepEqual(familyAfter('--color-syntax-comment', 'var(--color-text-muted)'), expect(1, 2));
+    assert.deepEqual(familyAfter('--color-diff-hunk-gutter', 'var(--color-text-muted)'), expect(2));
+  });
+  test('a sign in its fill step is caught on its own row, and on its gutter', () => {
+    assert.deepEqual(familyAfter('--color-diff-removed-sign', 'var(--color-feedback-danger)'), expect(3));
+    assert.deepEqual(familyAfter('--color-diff-removed-gutter', 'var(--color-feedback-danger-line)'), expect(3));
+  });
+  test('a picked line in a stronger tint is caught under code and under a branch chip', () => {
+    assert.deepEqual(familyAfter('--color-surface-selected', 'var(--color-brand-accent-soft-strong)'), expect(1, 6));
+  });
+  test('a changed word or a match drawn as a solid fill is caught under the code text', () => {
+    assert.deepEqual(familyAfter('--color-diff-added-word', 'var(--color-feedback-success)'), expect(4));
+    assert.deepEqual(familyAfter('--color-code-match', 'var(--color-feedback-warning)'), expect(4));
+  });
+  test('an open pill labelled in the on-accent step is caught', () => {
+    assert.deepEqual(familyAfter('--color-change-open-label', 'var(--color-text-on-accent)'), expect(5));
+  });
+  test('a branch chip in the decorative step, or on a red ground, is caught', () => {
+    assert.deepEqual(familyAfter('--color-code-ref-ink', 'var(--color-text-muted)'), expect(6));
+    // Fails on a hovered row only.
+    assert.deepEqual(familyAfter('--color-code-ref-fill', 'var(--color-feedback-danger-soft)'), expect(6));
+  });
+  test('a row, a word, the hunk row or a match nobody can see, and a gutter with no band, are caught', () => {
+    for (const name of ['--color-diff-added-row', '--color-diff-removed-word', '--color-diff-hunk-row', '--color-code-match']) {
+      assert.deepEqual(familyAfter(name, 'var(--color-fill-row)'), expect(7), name);
+    }
+    // Literals the build refuses, so only this suite can catch them.
+    assert.deepEqual(familyAfter('--color-diff-added-gutter', 'rgba(0, 0, 0, 0)'), expect(8));
+    assert.deepEqual(familyAfter('--color-diff-hunk-gutter', 'rgba(0, 0, 0, 0)'), expect(8));
+  });
+  test('a hunk row in the removed tint, and a removed row in the added tint, are caught', () => {
+    assert.deepEqual(familyAfter('--color-diff-hunk-row', 'var(--color-feedback-danger-soft)'), expect(9));
+    assert.deepEqual(familyAfter('--color-diff-removed-row', 'var(--color-feedback-success-soft)'), expect(10));
+  });
+  test('two syntax kinds in one ink are caught', () => {
+    assert.deepEqual(familyAfter('--color-syntax-function', 'var(--color-brand-accent-ink)'), expect(11));
+  });
+  test('an alias that leaves the step its rules hold is caught by the structure alone', () => {
+    for (const [name, value] of [
+      ['--color-change-closed-fill', 'var(--color-surface-frame)'],
+      ['--color-change-merged-ink', 'var(--color-brand-accent)'],
+      ['--color-change-draft-fill', 'var(--color-surface-subtle)'],
+      ['--color-file-renamed-ink', 'var(--color-text-muted)'],
+      ['--color-file-added-ink', 'var(--color-feedback-danger-ink)'],
+      ['--color-diff-added-mark', 'var(--color-feedback-success-ink)'],
+      ['--color-change-merged-label', 'var(--color-text-inverse)'],
+      ['--color-change-draft-edge', 'var(--color-border-default)'],
+      ['--color-change-draft-label', 'var(--color-text-muted)'],
+      ['--color-change-open-ink', 'var(--color-brand-accent-ink)'],
+      ['--color-change-open-fill', 'var(--color-text-primary)'],
+      ['--color-change-open-fill', 'var(--color-feedback-danger-ink)'],
+    ]) {
+      assert.deepEqual(familyAfter(name, value), expect(12), `${name}: ${value}`);
+    }
+  });
+  test('high contrast holds the family to its own floors', () => {
+    const theme = byId('high-contrast');
+    const failing = (edit) => [...new Set(runPalette({ ...namedSources(theme), tokens: edit(sources.tokens) }).failures.map((check) => check.rule))].sort();
+    const gutter = (tokens) => tokens.replace(/(--color-diff-removed-gutter: )[^;]+;/, '$1var(--color-feedback-info-soft);');
+    assert.deepEqual(failing((tokens) => tokens), []);
+    // Clears 4.5:1 in the default theme, not 7:1 here.
+    assert.deepEqual(familyAfter('--color-diff-removed-gutter', 'var(--color-feedback-info-soft)'), []);
+    assert.deepEqual(failing(gutter), expect(3));
   });
 });
 

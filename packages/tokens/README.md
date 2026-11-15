@@ -83,6 +83,15 @@ nearestContrastShade('#00baba', '#f6f7fb', WCAG_CONTRAST.aaLarge); // '#00a0a0',
 
 Show the ratio of the value it returns, measured with `contrast`, rather than the floor it was asked for.
 
+## Added: the code host's colours
+
+Colours for code read in a code host: a diff's rows, gutters, words, signs and diffstat, syntax, a change's state, a branch, a search match and a file's status. Each is an alias of a step every palette already paints, declared once in `css` and resolved wherever a palette is painted, a brand scope's layer included.
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| `--color-diff-*`, `--color-syntax-*`, `--color-change-{open,merged,closed,draft}-*`, `--color-code-ref-fill`, `--color-code-ref-ink`, `--color-code-match` and `--color-file-*-ink` are new, in `css` only. | Nothing. | [Code read in a code host](#code-read-in-a-code-host) |
+| In `@crewlethq/tokens/test/palette`, the rules `a syntax ink clears its floor on code and on a changed line`, `a code ink clears 3:1 as a glyph on the hunk row's gutter`, `a changed line's sign clears its floor on its line and its gutter`, `the code text clears its floor on a changed word and on a match`, `an open pill's label clears 4.5:1 on its fill`, `a branch chip's ink clears its floor on its chip and on a selected row`, `a diff tint is seen on what it is drawn over`, `a gutter reads on its line`, `the hunk row reads apart from a changed line`, `added and removed lines read apart`, `syntax inks stay apart` and `a code host alias names a step held for its use` are new, with the exports `CODE_GROUNDS`, `CODE_PICK`, `SYNTAX_INKS`, `CODE_TEXT`, `DIFF_ROWS`, `DIFF_HUNK`, `DIFF_SEEN_DE`, `DIFF_GUTTER_DE`, `DIFF_APART_DE`, `SYNTAX_APART_DE`, `CHANGE_STATES`, `CHANGE_DRAFT_CHIP`, `FILE_STATUSES`, `CODE_REF` and `CODE_MATCH`. Every theme already clears them. | Nothing, unless an application's own palette override moves a step the family aliases under one of them. | [The palette suite](#the-palette-suite) |
+
 ## Added: the layered map's drawing
 
 The layered map (`GraphCanvas` in `@crewlethq/ui`) draws a fine grid, see-through panes and hairlines. Each is a step of the palette at a fixed share, derived per palette and per mode by the build, so a theme repaints the map without declaring it. They are tokens rather than mixes in the component because a mix is a colour nobody measured.
@@ -641,6 +650,35 @@ Each kind of artifact is drawn in a hue of its own wherever its kind is pictured
 
 The first six are aliases of the six node hues, so every theme repaints them with no value of its own. `brand`, a company's brand kit, came after every node hue was taken, so every theme declares it beside its node hues (ink `#dabcdb` in dark and `#74246a` in light), and the build derives its fill and line from it at the node alphas. The palette suite holds every kind's hue at 3:1 as a mark on every rung, its ink at 4.5:1 on its own fill and on every rung, and every pair of kind hues dE 8 apart under normal vision, in every palette of every theme.
 
+### Code read in a code host
+
+The diff and syntax tokens colour code where an application shows it, and the change, ref and file tokens mark a code host's change, branch or file wherever one is listed. Inside them a hue is a kind, never a state or an action: green is an added line, an open change or a string, never done, and the accent is a keyword, a merged change, a branch or the hunk row, never what to act on. Each is drawn beside its sign, word, letter or glyph, never alone.
+
+Code views read them, and so do the kit's `DiffView` and `DiffSummary`. Each is an alias declared once in `css`, not in the typed export, so a theme repaints the family without declaring it.
+
+| Tokens | Alias of | Drawn as |
+| --- | --- | --- |
+| `--color-diff-{added,removed}-row` | the success and danger `-soft` steps | a changed line's ground, on the sheet or a card |
+| `--color-diff-{added,removed,hunk}-gutter` | `--color-fill-row` | the band a line's numbers stand in, over its row |
+| `--color-diff-{added,removed}-word` | the success and danger `-line` steps | a changed word, over its row, in the primary text |
+| `--color-diff-{added,removed}-sign` | the success and danger inks | a changed line's sign, and its numbers where a gutter is drawn |
+| `--color-diff-{added,removed}-mark` | the success and danger fills | a diffstat's squares |
+| `--color-diff-hunk-row` | `--color-brand-accent-soft` | the hunk row |
+| `--color-syntax-{keyword,string,number,function,type}` | the accent, success, warning, info and danger inks | code |
+| `--color-syntax-comment`, `-punctuation` | `--color-text-tertiary`, `--color-text-secondary` | a comment (also italic) and punctuation |
+| `--color-change-{open,merged,closed}-fill`, `-label` | the success ink and the inverse text; the accent and on-accent; danger and on-danger | a state pill |
+| `--color-change-draft-fill`, `-edge`, `-label` | raised, the strong hairline, the secondary text | the draft chip |
+| `--color-change-{open,merged,closed,draft}-ink` | the success, accent and danger inks, and the tertiary text | a state's glyph on a row |
+| `--color-code-ref-fill`, `--color-code-ref-ink` | the accent's soft step and ink | a branch chip, on the sheet or a card |
+| `--color-code-match` | the warning `-line` step | a search match, in the primary text |
+| `--color-file-{added,modified,deleted,renamed}-ink` | the success, warning and danger inks, and the tertiary text | a file's status in a tree; a type change reads as modified |
+
+Here `-fill` is the ground a label or an ink stands on and `-label` the word on a pill. Two carve-outs: the open pill stands on the success ink, the family's one ground in an `-ink` step, because no label clears the success fill in both modes; and a match is amber, because in code the accent already marks the hunk row, a picked line, a branch chip and keywords.
+
+A picked line, or one a finding or a link marks, takes `--color-surface-selected` in place of its tint and its gutter, never over them, and keeps its sign and an accent bar at its start, since its tint is the hunk row's; no tinted line takes the hover overlay. On a selected row a branch chip draws no ground of its own.
+
+Under forced colours every tint gives way to the canvas: a changed line keeps its sign and its word, a state pill its word and a 1px border, and a match takes `Mark` and `MarkText`, as `Highlight` does. A diffstat's squares give way too, so draw them in `CanvasText` and the rest in `GrayText` there, as `SegmentedMeter`'s segments do, and give a branch chip a transparent 1px border, as a pill has.
+
 ### The accent
 
 The accent is a violet, and it is **per palette**:
@@ -746,7 +784,7 @@ The marketing root keeps its own state and series values (`tokens/color.json`), 
 
 ## The palette suite
 
-`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), the step between a word and a dimmed one, every ink on its own soft tint, every fill as a mark, each status glyph's ink on its fill, the primary action's three fills under its label and the steps between them, the destructive action's fill and its hover under the same label, the focus ring, the control boundary, the rail's current row, the steps between the rungs, the hairline that finds a card and the strong hairline round a raised chip, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision (the states from each other, the chart series from their neighbours and from the danger red, and every hue from the accent), each artifact kind's hue as a mark, its ink on its own fill and the kind hues apart from each other, and the structure of the theme file itself. The WCAG maths it measures with is the package's own runtime export (see [Contrast at runtime](#contrast-at-runtime)), re-exported from `test/color.mjs`. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
+`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), the step between a word and a dimmed one, every ink on its own soft tint, every fill as a mark, each status glyph's ink on its fill, the primary action's three fills under its label and the steps between them, the destructive action's fill and its hover under the same label, the focus ring, the control boundary, the rail's current row, the steps between the rungs, the hairline that finds a card and the strong hairline round a raised chip, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision (the states from each other, the chart series from their neighbours and from the danger red, and every hue from the accent), each artifact kind's hue as a mark, its ink on its own fill and the kind hues apart from each other, the code host's family on its grounds and tints, and the structure of the theme file itself. The WCAG maths it measures with is the package's own runtime export (see [Contrast at runtime](#contrast-at-runtime)), re-exported from `test/color.mjs`. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself. The code host's rules hold the shared steps the family aliases (the state inks and tints, the accent's soft step and ink, the tertiary text), so a fit holds those floors as well.
 
 The module is **published**, as `@crewlethq/tokens/test/palette`, so a consumer runs the same rules over the version it installed:
 
