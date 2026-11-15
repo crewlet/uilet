@@ -191,10 +191,15 @@ describe('with a brand', () => {
         assert.equal(valueOf(values, '--color-brand-accent-soft-strong'), 'color-mix(in srgb, #0a7f5a 32%, transparent)', `${id} ${state}`);
         assert.equal(valueOf(values, '--color-border-selected'), 'color-mix(in srgb, #0a7f5a 60%, transparent)', `${id} ${state}`);
         assert.equal(valueOf(values, '--shadow-glow'), '0 4px 24px color-mix(in srgb, #0a7f5a 30%, transparent)', `${id} ${state}`);
-        // The ink is the accent as text: lighter on the dark ground, darker on the light one.
-        assert.equal(
-          valueOf(values, '--color-brand-accent-ink'),
-          light ? 'color-mix(in oklab, #0a7f5a 70%, black)' : 'color-mix(in oklab, #0a7f5a 55%, white)',
+        // The ink is the accent as text: lighter on the dark ground, darker on the light one, and taken
+        // further only as far as 4.5:1 on the mode's ground needs (a luminance of at most 0.15 on the
+        // light ground, at least 0.265 on the dark one).
+        const ink = valueOf(values, '--color-brand-accent-ink');
+        assert.match(
+          ink,
+          light
+            ? /^color\(\s*from color-mix\(in oklab, #0a7f5a 70%, black\) srgb-linear\s+calc\(r \* min\(1, 0\.15 \//
+            : /^color\(\s*from color-mix\(in oklab, #0a7f5a 55%, white\) srgb-linear\s+calc\(r \+ \(1 - r\) \* max\(0, \(0\.265 - /,
           `${id} ${state}`,
         );
         assert.equal(
