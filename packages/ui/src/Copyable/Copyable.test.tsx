@@ -425,6 +425,26 @@ describe('Copyable', () => {
     expect(rule).not.toMatch(/overflow-x:\s*auto/);
   });
 
+  test('a block breaks an address after each slash, and an opaque token at any character', () => {
+    const url = 'https://app.example.com/integrations/oauth/callback';
+    const token = 'cwl_pat_01a1dc5f-3ec7-7cf4-a60d-30e3034af0a7';
+    const { container } = render(
+      <>
+        <Copyable value={url} variant="block" monospace />
+        <Copyable value={token} variant="block" monospace />
+        <Copyable value="crewlet config import -file company.yaml" variant="block" monospace />
+      </>,
+    );
+    const [address, opaque, command] = [...container.querySelectorAll('.crewlet-copyable')];
+    expect(address!.querySelectorAll('wbr')).toHaveLength(5);
+    expect(address!.querySelector('.crewlet-copyable__value')!.textContent).toBe(url);
+    expect(address!.classList.contains('crewlet-copyable--opaque')).toBe(false);
+    expect(opaque!.classList.contains('crewlet-copyable--opaque')).toBe(true);
+    expect(command!.classList.contains('crewlet-copyable--opaque')).toBe(false);
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Copyable.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(css).toMatch(/\.crewlet-copyable--opaque \.crewlet-copyable__value \{\s*word-break:\s*break-all;\s*\}/);
+  });
+
   test('an absent value draws nothing at all', () => {
     const { container } = render(<Copyable value={null} />);
     expect(container.innerHTML).toBe('');

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { IconButton } from '../IconButton/index.js';
 import { cx } from '../utils/cx.js';
+import { pathBreaks } from '../utils/pathBreaks.js';
 import { useClipboard } from '../utils/useClipboard.js';
 import { CopyStatus, copyGlyph } from './CopyButton.js';
 
@@ -83,6 +84,11 @@ export const Copyable = ({
   const resolvedLength = truncateLength ?? (variant === 'chip' ? 14 : 24);
   const shouldTruncate = truncate || (variant === 'chip' && text.length > resolvedLength);
   const rendered = display ?? (shouldTruncate ? truncateValue(text, resolvedLength, variant) : text);
+  // AN OPAQUE VALUE (a token, an id, a key: one run with no space and no `/`)
+  // means nothing in its pieces, so a block breaks it at any character and
+  // fills its lines. Left to the line breaker it broke after a hyphen, and a
+  // token read "cwl_pat_01a1dc5f-3ec7-7cf4-a60d-" over a ragged first line.
+  const opaque = variant === 'block' && display === undefined && !/[\s/]/.test(text);
 
   return (
     <span
@@ -90,6 +96,7 @@ export const Copyable = ({
         'crewlet-copyable',
         `crewlet-copyable--${variant}`,
         monospace && 'crewlet-copyable--monospace',
+        opaque && 'crewlet-copyable--opaque',
         state === 'copied' && 'is-copied',
         state === 'failed' && 'is-failed',
         className,
@@ -97,7 +104,8 @@ export const Copyable = ({
     >
       {/* The whole value in the tooltip, because the drawn one may be cut. */}
       <span className="crewlet-copyable__value" title={text}>
-        {rendered}
+        {/* A PATH OR AN ADDRESS BREAKS AT ITS SEPARATORS where it wraps (`pathBreaks`). */}
+        {variant === 'chip' || shouldTruncate ? rendered : pathBreaks(rendered)}
       </span>
       <IconButton
         className="crewlet-copyable__button"

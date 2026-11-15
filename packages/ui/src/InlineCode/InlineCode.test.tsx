@@ -149,3 +149,43 @@ test('a whole chip and its punctuation are one box, and a running chip just has 
   expect(running.querySelector('.crewlet-inline-code-bound')).toBeNull();
   expect(running.querySelector('p')?.textContent).toBe('(/srv/releases/worker.tar)');
 });
+
+test('a path offers a break after every slash and nowhere else, and its words are unchanged', () => {
+  const path = 'https://reports.example.com/v1/reports';
+  const { container } = render(<InlineCode>{path}</InlineCode>);
+  const code = container.querySelector('code')!;
+  expect(code.textContent).toBe(path);
+  // Each <wbr> follows a run that ends in its slash.
+  const before = [...code.querySelectorAll('wbr')].map((wbr) => wbr.previousSibling?.textContent ?? '');
+  expect(before).toEqual(['https:/', '/', 'reports.example.com/', 'v1/']);
+});
+
+test('a chip with no slash, or one that is not words, is drawn as given', () => {
+  const { container } = render(
+    <>
+      <InlineCode>artifacts.limits.company_bytes</InlineCode>
+      <InlineCode>
+        <span>a/b</span>
+      </InlineCode>
+    </>,
+  );
+  expect(container.querySelectorAll('wbr')).toHaveLength(0);
+});
+
+test('a chip gives up its inset beside the punctuation handed to it, and only there', () => {
+  const { container } = render(
+    <>
+      <InlineCode close=".">crewlet secrets set</InlineCode>
+      <InlineCode open="(">make deploy</InlineCode>
+      <InlineCode>plain</InlineCode>
+    </>,
+  );
+  const [closed, opened, plain] = [...container.querySelectorAll('code')];
+  expect(closed!.className).toContain('crewlet-inline-code--closed');
+  expect(closed!.className).not.toContain('crewlet-inline-code--opened');
+  expect(opened!.className).toContain('crewlet-inline-code--opened');
+  expect(plain!.className).not.toMatch(/--(opened|closed)/);
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'InlineCode.css'), 'utf8');
+  expect(css).toMatch(/\.crewlet-inline-code--closed\s*\{\s*padding-inline-end:\s*1px;\s*\}/);
+  expect(css).toMatch(/\.crewlet-inline-code--opened\s*\{\s*padding-inline-start:\s*1px;\s*\}/);
+});

@@ -24,8 +24,10 @@
   border-radius: var(--radius-xs);
   padding: 1px var(--spacing-1);
   color: var(--color-text-secondary);
-  /* A URL IS ONE UNBREAKABLE WORD to a line breaker. Without this the chip is
-     pushed whole onto its own line and the sentence around it is torn up. */
+  /* A URL IS ONE UNBREAKABLE WORD to a line breaker. The component offers a
+     break after every `/` (`pathBreaks`); this is the last resort, for one run
+     between them that no line can hold, which would otherwise push the chip
+     past its box. */
   overflow-wrap: anywhere;
   /* SLICED where it breaks, not cloned: a browser leaves a cloned inset out of
      line breaking, so each broken line ran up to the inset past its box. */
@@ -59,6 +61,20 @@
  */
 .crewlet-inline-code--inherit {
   color: inherit;
+}
+
+/*
+ * THE GROUND HUGS THE PUNCTUATION AROUND IT. The inset either side of the
+ * words is what reads as a space between "set" and its full stop: "crewlet
+ * secrets set ." Beside a mark the caller handed over (`open`, `close`) the
+ * ground keeps a hair of it, so the mark sits where it would after a word.
+ */
+.crewlet-inline-code--opened {
+  padding-inline-start: 1px;
+}
+
+.crewlet-inline-code--closed {
+  padding-inline-end: 1px;
 }
 
 /* A whole chip and the punctuation around it are one atomic box, so a line
