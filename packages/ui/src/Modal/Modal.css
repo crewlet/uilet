@@ -448,6 +448,8 @@
   font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-tight);
   color: var(--color-text-primary);
+  /* An identifier in a title (a secret's name) breaks where it must rather than run under the close control. */
+  overflow-wrap: anywhere;
 }
 
 /*
