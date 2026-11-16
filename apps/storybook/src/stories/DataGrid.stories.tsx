@@ -251,6 +251,29 @@ export const CompactOnAPhone: Story = {
   parameters: { viewport: { defaultViewport: 'mobile1' } },
 };
 
+function ExpandableWithActions() {
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  return (
+    <DataGrid
+      rows={TASKS}
+      columns={COLUMNS}
+      rowKey={(t: Task) => t.key}
+      expansion={{
+        isExpanded: (t) => open.has(t.key),
+        onToggle: (t) => setOpen((was) => new Set(was.has(t.key) ? [...was].filter((k) => k !== t.key) : [...was, t.key])),
+        label: (t, isOpen) => `${isOpen ? 'Hide' : 'Show'} ${t.key}`,
+        render: (t) => <p style={{ margin: 0 }}>{t.title}</p>,
+      }}
+    />
+  );
+}
+
+/** On a phone a row that opens in place and carries its own action draws both on its first line, apart. */
+export const ExpandableWithActionsOnAPhone: Story = {
+  render: () => <ExpandableWithActions />,
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
+};
+
 /** A grouped answer: each band carries the source's count beside the rows loaded, a band inside a band for a second axis. */
 export const Bands: Story = {
   render: () => (
