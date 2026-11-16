@@ -1,0 +1,114 @@
+/* DocumentDiff: a change drawn as the document it changed (DocumentDiff.tsx).
+   No hue: a block's or a run's kind is its mark, a word read in its place, and
+   one surface step off the diff's own ground, raised for added and sunk for
+   removed. */
+.crewlet-document-diff {
+  /* An excerpt's blocks sit closer than a page's. */
+  --crewlet-document-gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) var(--spacing-1);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+/* The mark's track and the block's own, so every block's words share one edge. */
+.crewlet-document-diff__block,
+.crewlet-document-diff__skip {
+  display: grid;
+  grid-template-columns: var(--spacing-4) minmax(0, 1fr);
+  column-gap: var(--spacing-1);
+  align-items: baseline;
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-document-diff__mark {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  text-align: center;
+  user-select: none;
+}
+
+.crewlet-document-diff__content {
+  min-width: 0;
+}
+
+.crewlet-document-diff__content > * + * {
+  margin-block-start: var(--crewlet-document-gap);
+}
+
+.crewlet-document-diff__block--added,
+.crewlet-document-diff__block--removed {
+  padding-block: var(--spacing-1);
+}
+
+.crewlet-document-diff__block--added {
+  background: var(--color-surface-elevated);
+}
+
+.crewlet-document-diff__block--removed {
+  background: var(--color-surface-background);
+}
+
+/* Neighbouring blocks of one kind read as one region: no gap, no inner corners. */
+.crewlet-document-diff__block--added + .crewlet-document-diff__block--added,
+.crewlet-document-diff__block--removed + .crewlet-document-diff__block--removed {
+  margin-block-start: 0;
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+}
+
+.crewlet-document-diff__block--added:has(+ .crewlet-document-diff__block--added),
+.crewlet-document-diff__block--removed:has(+ .crewlet-document-diff__block--removed) {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.crewlet-document-diff__block--removed .crewlet-document-diff__content {
+  color: var(--color-text-tertiary);
+  text-decoration-line: line-through;
+  text-decoration-thickness: from-font;
+}
+
+/* What was removed takes the quiet ink throughout: its headings, strong words and links too. */
+.crewlet-document-diff__block--removed .crewlet-document-diff__content *,
+.crewlet-document-diff__removed * {
+  color: inherit;
+}
+
+/* Changed words inside a block. A run that wraps keeps its ground on every line. */
+.crewlet-document-diff__added,
+.crewlet-document-diff__removed {
+  border-radius: var(--radius-xs);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.crewlet-document-diff__added {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  text-decoration-line: underline;
+  text-decoration-thickness: from-font;
+  text-underline-position: under;
+}
+
+.crewlet-document-diff__removed {
+  background: var(--color-surface-background);
+  color: var(--color-text-tertiary);
+  text-decoration-line: line-through;
+  text-decoration-thickness: from-font;
+}
+
+/* Two runs that touch stand a word space apart, so they never read as one word. */
+.crewlet-document-diff__removed:has(+ :is(.crewlet-document-diff__added, .crewlet-document-diff__removed)) {
+  margin-inline-end: var(--spacing-1);
+}
+
+.crewlet-document-diff__added + .crewlet-document-diff__removed {
+  margin-inline-start: var(--spacing-1);
+}
+
+/* A folded run says how many blocks it stands for, and of what kind. */
+.crewlet-document-diff__skip {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}

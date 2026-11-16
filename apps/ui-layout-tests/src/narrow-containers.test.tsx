@@ -15,6 +15,9 @@ import {
   ChangeList,
   ChatThread,
   CodeBlock,
+  DocumentDiff,
+  DocumentDiffAdded,
+  DocumentDiffRemoved,
   InlineCode,
   InlineRef,
   ListDetail,
@@ -90,6 +93,21 @@ function Hostile() {
         Asked <MentionChip>{`${WHOLE}-on-call-${WHOLE}`}</MentionChip> to look.
       </p>
       <ChangeList rows={[{ kind: 'changed', label: 'Mount path', from: PATH, to: `${PATH}.restored` }]} />
+      <DocumentDiff
+        blocks={[
+          {
+            change: 'changed',
+            content: (
+              <p>
+                Restored from <DocumentDiffRemoved>{PATH}</DocumentDiffRemoved>
+                <DocumentDiffAdded>{`${PATH}.restored`}</DocumentDiffAdded> after the reset.
+              </p>
+            ),
+          },
+          { change: 'removed', content: <p>{ADDRESS}</p> },
+          { change: 'skipped', count: 3 },
+        ]}
+      />
       <Table
         caption="Restarts"
         headers={['Host', 'Service', 'Volume', 'Mount path', 'Last restart', 'Exit code', 'Restarts', 'Owner']}
