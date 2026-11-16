@@ -208,6 +208,13 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.140.0
+
+### A change drawn as the document it changed
+
+- **`DocumentDiff`** draws a save to a page as the page reads: each block rendered in `Document`'s type, a whole new block raised one surface step and marked `+`, a removed one sunk, struck and marked `−`, and a run of blocks left out folded to a count (`{ change: 'skipped', count, of }`: "3 unchanged paragraphs", "4 more paragraphs removed"). The host parses and renders the blocks, as with `Document`.
+- **`DocumentDiffAdded` and `DocumentDiffRemoved`** mark the words a change added and removed inside a block: an underline on the raised step and a strike in the tertiary ink on the sunk one, each with "added:" or "removed:" read first (`DOCUMENT_DIFF_LABELS`). No hue: a removed word is not a failure and an added one is not a success.
+
 ## Changes in 0.137.0
 
 ### A passing tab and a reviewer's verdict
