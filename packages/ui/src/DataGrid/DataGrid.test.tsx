@@ -727,6 +727,25 @@ describe('the frame', () => {
     expect(sheet()).toMatch(/\.crewlet-card > \.crewlet-data-grid,/);
   });
 
+  test('draws an empty grid that is one part of a page inline, with no glyph', () => {
+    const { container, rerender } = render(
+      <DataGrid rows={[]} columns={COLUMNS} rowKey={(r) => r.id} empty={{ title: 'No open invitations', hint: 'An invitation shows here until it is used.' }} />,
+    );
+    expect(container.querySelector('.crewlet-empty-state--compact')).not.toBeNull();
+    expect(container.querySelector('.crewlet-empty-state__mark')).not.toBeNull();
+    rerender(
+      <DataGrid
+        rows={[]}
+        columns={COLUMNS}
+        rowKey={(r) => r.id}
+        empty={{ title: 'No open invitations', hint: 'An invitation shows here until it is used.', size: 'inline' }}
+      />,
+    );
+    expect(container.querySelector('.crewlet-empty-state--inline')).not.toBeNull();
+    expect(container.querySelector('.crewlet-empty-state__mark')).toBeNull();
+    expect(screen.getByText('An invitation shows here until it is used.')).toBeTruthy();
+  });
+
   test('marks a compact phone grid and its lead cells', () => {
     const columns: DataGridColumn<Row>[] = [{ ...COLUMNS[0]!, phoneLead: true }, COLUMNS[2]!];
     const { container } = render(<DataGrid rows={ROWS} columns={columns} rowKey={(r) => r.id} phoneRows="compact" />);

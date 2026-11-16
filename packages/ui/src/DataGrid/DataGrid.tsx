@@ -476,8 +476,13 @@ export interface DataGridProps<T> {
   cols?: string | undefined;
   /** The way back from a column set: drawn as "Show every column" while one is set. */
   onColsChange?: ((cols: string) => void) | undefined;
-  /** What an empty grid says, and the one control that is its next step. */
-  empty?: { title: ReactNode; hint?: ReactNode; icon?: ReactNode; action?: ReactNode } | undefined;
+  /**
+   * What an empty grid says, and the one control that is its next step.
+   * `size: 'inline'` draws it with no glyph, for a grid that is one part of a full page.
+   */
+  empty?:
+    | { title: ReactNode; hint?: ReactNode; icon?: ReactNode; action?: ReactNode; size?: 'compact' | 'inline' | undefined }
+    | undefined;
   footer?: ReactNode;
   onLoadMore?: (() => void) | undefined;
   /** "40 of 312 loaded": what an export would actually contain. */
@@ -1061,7 +1066,7 @@ export function DataGrid<T>({
     return (
       <div className={cx('crewlet-data-grid', className)} data-flush={flush || undefined}>
         <EmptyState
-          size="compact"
+          size={empty.size ?? 'compact'}
           icon={empty.icon}
           title={empty.title}
           description={empty.hint}
