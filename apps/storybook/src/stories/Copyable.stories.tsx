@@ -37,6 +37,22 @@ export const InlineInADetailList: Story = {
   ),
 };
 
+/** Words in an identifier's place (a credential's kind, copying its id) take the row's face; a short id stays mono. */
+export const WordsInAnIdentifiersPlace: Story = {
+  render: () => (
+    <DescriptionList
+      fit
+      items={[
+        [
+          'Through',
+          <Copyable key="through" value="01a1e319-46d8-784c" display="Signed-in session" displayWords variant="inline" />,
+        ],
+        ['Commit', <Copyable key="commit" value="5f2fb65cc4a1" display="5f2fb65" variant="inline" />],
+      ]}
+    />
+  ),
+};
+
 export const Block: Story = {
   args: {
     variant: 'block',

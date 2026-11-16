@@ -483,3 +483,15 @@ test('an inline value takes the size and ink of the row it stands in, a value am
   // Whole: the inline variant never cuts a value it was not asked to.
   expect(container.querySelector('.crewlet-copyable__value')!.textContent).toBe('https://api.example.com/v1/');
 });
+
+test('words drawn in an identifier\'s place take the surrounding face, and a short id stays mono', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Copyable.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = /\.crewlet-copyable--words \.crewlet-copyable__value \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(rule).toMatch(/font-family: inherit/);
+  const words = render(<Copyable value="01a1e319-46d8" display="Signed-in session" displayWords variant="inline" />);
+  expect(words.container.querySelector('.crewlet-copyable')!.classList.contains('crewlet-copyable--words')).toBe(true);
+  expect(words.container.querySelector('.crewlet-copyable__value')!.textContent).toBe('Signed-in session');
+  cleanup();
+  const id = render(<Copyable value="5f2fb65cc4a1" display="5f2fb65" variant="inline" />);
+  expect(id.container.querySelector('.crewlet-copyable--words')).toBeNull();
+});
