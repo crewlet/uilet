@@ -68,6 +68,7 @@ export const MessageAction = forwardRef<HTMLButtonElement, MessageActionProps>(f
         variant="ghost"
         pressed={pressed}
         disabledReason={disabledReason}
+        tooltip={false}
       />
     </Tooltip>
   );

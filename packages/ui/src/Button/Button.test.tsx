@@ -368,10 +368,10 @@ describe('IconButton', () => {
   test('is named by its label, which is also what its tooltip says', () => {
     render(<IconButton label="Row actions" icon={<EllipsisVerticalGlyph />} />);
     const button = screen.getByRole('button', { name: 'Row actions' });
-    // The LABEL names it. The tooltip repeats the same words, so a name read
-    // out of the title alone would look right while the prop did nothing.
+    // The LABEL names it, and the kit's tip repeats the same words, so no
+    // native title is drawn beside the tip.
     expect(button.getAttribute('aria-label')).toBe('Row actions');
-    expect(button.getAttribute('title')).toBe('Row actions');
+    expect(button.getAttribute('title')).toBe('');
     expect(button.className).toContain('crewlet-icon-btn--md');
   });
 
@@ -495,16 +495,17 @@ describe('a held control says why in the kit Tooltip, when asked to', () => {
     try {
       render(
         <>
-          <IconButton label="Pause Product Lead" icon={<EllipsisVerticalGlyph />} tooltip disabledReason="Pausing needs Admin access." />
-          <IconButton label="More actions" icon={<EllipsisVerticalGlyph />} />
+          <IconButton label="Pause Product Lead" icon={<EllipsisVerticalGlyph />} disabledReason="Pausing needs Admin access." />
+          <IconButton label="More actions" icon={<EllipsisVerticalGlyph />} tooltip={false} />
         </>,
       );
+      // ON BY DEFAULT: no prop is needed for a glyph to say what it does.
       const held = screen.getByRole('button', { name: 'Pause Product Lead' });
       expect(held.getAttribute('title')).toBe('');
       fireEvent.pointerEnter(held);
       rest();
       expect(tip()?.textContent).toBe('Pause Product Lead. Pausing needs Admin access.');
-      // Without the prop, the native title stays as it was.
+      // Turned off for a caller's own Tooltip, the native title stays as it was.
       expect(screen.getByRole('button', { name: 'More actions' }).getAttribute('title')).toBe('More actions');
     } finally {
       vi.useRealTimers();

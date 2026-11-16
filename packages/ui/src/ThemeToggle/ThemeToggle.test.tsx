@@ -141,7 +141,8 @@ test('it is a named action, not a pressed state, and it draws where it goes', ()
   const { container } = render(<ThemeToggle storageKey="toggle_theme" />);
   const button = screen.getByRole('button', { name: TO_LIGHT });
   expect(button.hasAttribute('aria-pressed')).toBe(false);
-  expect(button.getAttribute('title')).toBe(TO_LIGHT);
+  // Its words are its name and its tip, so no native title repeats them.
+  expect(button.getAttribute('title')).toBe('');
   const sun = container.innerHTML;
   fireEvent.click(button);
   // The sun on a dark page, the moon on a light one: a different drawing.

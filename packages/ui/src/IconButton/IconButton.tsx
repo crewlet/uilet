@@ -54,10 +54,10 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   /** Unavailable, and why. See Button's own prop for why it is not `disabled`. */
   disabledReason?: string | undefined;
   /**
-   * The kit Tooltip on hover and keyboard focus, in place of the native title:
-   * `true` for the label, or a hint of its own, then the reason while held.
-   * Shown and not read, since the name and the reason already are. While held,
-   * a press opens it too.
+   * The kit Tooltip on hover and keyboard focus, ON BY DEFAULT: the label, or
+   * a hint of its own, then the reason while held. Shown and not read, since
+   * the name and the reason already are. While held, a press opens it too.
+   * `false` only where a Tooltip of the caller's own already says it.
    */
   tooltip?: string | boolean | undefined;
   /** Render the single child element with these classes instead of a button. */
@@ -76,6 +76,10 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
  *
  * Distinct from Button, which has a label slot and a text size. Anything with
  * a word beside the glyph is a Button.
+ *
+ * IT SAYS WHAT IT DOES on hover and on keyboard focus, with no delay a native
+ * title has and on the focus a native title ignores: a glyph is a guess until
+ * then.
  */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
   {
@@ -85,7 +89,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     variant = 'ghost',
     pressed,
     disabledReason,
-    tooltip,
+    tooltip = true,
     className,
     type = 'button',
     asChild = false,

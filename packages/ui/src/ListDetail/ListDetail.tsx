@@ -1,7 +1,6 @@
 import type { HTMLAttributes, MouseEventHandler, ReactNode } from 'react';
 import { ChevronLeftGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
-import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
 
 export type ListDetailPane = 'list' | 'detail';
@@ -110,9 +109,7 @@ export interface ListDetailBackProps {
 export function ListDetailBack({ label, onClick, className }: ListDetailBackProps) {
   return (
     <span className={cx('crewlet-list-detail__back', className)}>
-      <Tooltip content={label}>
-        <IconButton label={label} size="md" variant="ghost" icon={<ChevronLeftGlyph />} onClick={onClick} />
-      </Tooltip>
+      <IconButton label={label} size="md" variant="ghost" icon={<ChevronLeftGlyph />} onClick={onClick} />
     </span>
   );
 }

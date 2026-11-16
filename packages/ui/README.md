@@ -208,6 +208,15 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.144.0
+
+### An icon button says what it does
+
+- **`IconButton` shows its kit `Tooltip` by default**: its label on hover, and at once on keyboard focus, then the reason while it is held. A native `title` waited for a resting pointer and showed nothing to a keyboard, so a glyph stayed a guess. `tooltip` still takes a hint of its own; `tooltip={false}` is for a caller whose own `Tooltip` already says it.
+- `ListDetailBack`, a `CodeBlock`'s copy and a `SheetGrid`'s add column use the default in place of a `Tooltip` of their own. `MessageAction` and the `ArtifactBar` tools keep theirs, which carry a shortcut or a placement, and turn the default off.
+
+What to change: an `IconButton` inside a `Tooltip` of the caller's own takes `tooltip={false}`, or drops the wrapper for `tooltip="..."`; otherwise both tips open. A test that read an icon button's `title` reads its name instead: the title is empty while the tip is on.
+
 ## Changes in 0.142.0
 
 ### Notices said once, with one action each

@@ -76,6 +76,7 @@ export function CanvasToolbar<Id extends string>({
             size="sm"
             label={tool.label}
             title=""
+            tooltip={false}
             icon={tool.icon}
             pressed={tool.id === value}
             onClick={() => onChange(tool.id)}

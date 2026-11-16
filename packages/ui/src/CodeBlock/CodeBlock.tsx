@@ -11,7 +11,6 @@ import {
 import { CopyButton } from '../Copyable/index.js';
 import { copyGlyph, CopyStatus } from '../Copyable/CopyButton.js';
 import { IconButton } from '../IconButton/index.js';
-import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
 import { useClipboard } from '../utils/useClipboard.js';
 
@@ -355,9 +354,7 @@ function CornerCopy({ text, label }: { text: string; label: string }) {
   const hint = state === 'copied' ? 'Copied' : state === 'failed' ? 'Copy failed' : label;
   return (
     <span className="crewlet-codeblock__corner">
-      <Tooltip content={hint}>
-        <IconButton label={label} size="sm" variant="ghost" icon={copyGlyph(state)} onClick={() => void copy(text)} />
-      </Tooltip>
+      <IconButton label={label} size="sm" variant="ghost" icon={copyGlyph(state)} tooltip={hint} onClick={() => void copy(text)} />
       <CopyStatus
         state={state}
         attempt={attempt}

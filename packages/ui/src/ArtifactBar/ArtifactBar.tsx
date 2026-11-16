@@ -346,6 +346,7 @@ function ToolButton({ tool, apple }: { tool: ArtifactBarTool; apple: boolean }) 
           variant="ghost"
           // The tooltip carries the name; a native one beside it is a second tip.
           title=""
+          tooltip={false}
           pressed={tool.pressed}
           disabledReason={tool.disabledReason}
           aria-keyshortcuts={tool.keys ? ariaKeyshortcuts(tool.keys, apple) : undefined}
@@ -413,6 +414,7 @@ function LabelledTool({ tool, apple }: { tool: ArtifactBarTool; apple: boolean }
             size="sm"
             variant="ghost"
             title=""
+            tooltip={false}
             pressed={tool.pressed}
             disabledReason={tool.disabledReason}
             aria-keyshortcuts={shortcut}
