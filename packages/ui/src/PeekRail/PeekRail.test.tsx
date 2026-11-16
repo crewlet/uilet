@@ -5,7 +5,7 @@
  * which presses on a row peek and which open elsewhere.
  */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -54,8 +54,8 @@ test('the stepper steps, Open goes to the page, and the hints are the tooltips',
   fireEvent.click(screen.getByRole('button', { name: 'Next' }));
   expect(onStep.mock.calls).toEqual([[-1], [1]]);
   expect(screen.getByRole('link', { name: 'Open' }).getAttribute('href')).toBe('#/work/ENG-12');
-  expect(screen.getByRole('button', { name: 'Previous' }).getAttribute('title')).toBe('Previous ([)');
-  expect(screen.getByRole('button', { name: 'Close' }).getAttribute('title')).toBe('Close (esc)');
+  expect(tipOf(screen.getByRole('button', { name: 'Previous' }))).toBe('Previous ([)');
+  expect(tipOf(screen.getByRole('button', { name: 'Close' }))).toBe('Close (esc)');
 });
 
 test('as a column the grip is a separator the keyboard moves, and the width and floor are on the rail', () => {
@@ -254,3 +254,23 @@ test('carries no violation as a column with every control', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+/** What the kit's tip says on hover, with no native title beside it. */
+function tipOf(el: HTMLElement): string | null | undefined {
+  expect(el.getAttribute('title')).toBe('');
+  vi.useFakeTimers();
+  try {
+    fireEvent.pointerEnter(el);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    const said = document.querySelector('[role="tooltip"]')?.textContent;
+    fireEvent.pointerLeave(el);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    return said;
+  } finally {
+    vi.useRealTimers();
+  }
+}

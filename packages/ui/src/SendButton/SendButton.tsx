@@ -72,9 +72,8 @@ export const SendButton = forwardRef<HTMLButtonElement, SendButtonProps>(functio
       size="md"
       variant={stopping ? 'secondary' : 'primary'}
       label={name}
-      // A pointer reader is told the reason where a screen reader is: the
-      // tooltip on a held button says why, not only what it would have done.
-      title={disabledReason ?? title ?? name}
+      // The kit tip says what it does, then why while it is held.
+      title={title}
       icon={
         <span className="crewlet-send-button__glyphs" aria-hidden="true">
           <ArrowUpGlyph className="crewlet-send-button__glyph crewlet-send-button__glyph--send" />

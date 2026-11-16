@@ -141,3 +141,19 @@ test("a caller's own tooltip turns the default off, so the pointer meets one tip
     vi.useRealTimers();
   }
 });
+
+test("a caller's title is what the tip says, and no native title is drawn beside it", () => {
+  vi.useFakeTimers();
+  try {
+    render(<IconButton label="Previous" icon={<svg />} title="Previous ([)" />);
+    const button = screen.getByRole('button', { name: 'Previous' });
+    expect(button.getAttribute('title')).toBe('');
+    fireEvent.pointerEnter(button);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(document.querySelector('[role="tooltip"]')?.textContent).toBe('Previous ([)');
+  } finally {
+    vi.useRealTimers();
+  }
+});

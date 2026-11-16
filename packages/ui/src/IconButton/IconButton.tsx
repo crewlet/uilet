@@ -54,8 +54,8 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   /** Unavailable, and why. See Button's own prop for why it is not `disabled`. */
   disabledReason?: string | undefined;
   /**
-   * The kit Tooltip on hover and keyboard focus, ON BY DEFAULT: the label, or
-   * a hint of its own, then the reason while held. Shown and not read, since
+   * The kit Tooltip on hover and keyboard focus, ON BY DEFAULT: the label (or
+   * a `title` given), or a hint of its own, then the reason while held. Shown and not read, since
    * the name and the reason already are. While held, a press opens it too.
    * `false` only where a Tooltip of the caller's own already says it.
    */
@@ -120,7 +120,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   }
 
   const inert = disabledReason !== undefined;
-  const hint = typeof tooltip === 'string' ? tooltip : tooltip ? label : undefined;
+  // A caller's own title is the hint the tip says; the native title stays empty beside it.
+  const hint = typeof tooltip === 'string' ? tooltip : tooltip ? title || label : undefined;
   const tip = hint === undefined ? undefined : heldHint(hint, disabledReason);
   const button = (
     <button
@@ -131,7 +132,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       disabled={disabled}
       // The tooltip repeats the name rather than adding to it, so a pointer
       // reader and a screen reader are told the same thing.
-      title={title ?? (tip === undefined ? label : '')}
+      title={tip === undefined ? (title ?? label) : ''}
       aria-label={label}
       aria-pressed={pressed}
       aria-disabled={inert || undefined}
