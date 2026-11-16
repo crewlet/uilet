@@ -98,6 +98,19 @@
   text-decoration-thickness: from-font;
 }
 
+/* A decoration stops at an inline-block (a link's chip, a code span), so each one draws its own mark. */
+.crewlet-document-diff__added * {
+  text-decoration-line: underline;
+  text-decoration-thickness: from-font;
+  text-underline-position: under;
+}
+
+.crewlet-document-diff__removed *,
+.crewlet-document-diff__block--removed .crewlet-document-diff__content * {
+  text-decoration-line: line-through;
+  text-decoration-thickness: from-font;
+}
+
 /* Two runs that touch stand a word space apart, so they never read as one word. */
 .crewlet-document-diff__removed:has(+ :is(.crewlet-document-diff__added, .crewlet-document-diff__removed)) {
   margin-inline-end: var(--spacing-1);

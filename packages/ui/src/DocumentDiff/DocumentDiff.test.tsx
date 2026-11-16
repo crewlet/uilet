@@ -111,3 +111,22 @@ test('a mark outside a diff still says what it is', () => {
   expect(document.querySelector('ins')?.textContent).toBe('added: new');
   expect(document.querySelector('del')?.textContent).toBe('removed: old');
 });
+
+test('a mark reaches what the host drew inside it, a link among them', () => {
+  render(
+    <DocumentDiff
+      blocks={[
+        {
+          change: 'changed',
+          content: (
+            <p>
+              See the <DocumentDiffAdded><a href="#plans">plans page</a></DocumentDiffAdded>.
+            </p>
+          ),
+        },
+      ]}
+    />,
+  );
+  expect(screen.getByRole('link', { name: 'plans page' }).closest('ins')?.className).toBe('crewlet-document-diff__added');
+});
+
