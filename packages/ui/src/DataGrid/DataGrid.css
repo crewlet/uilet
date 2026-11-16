@@ -957,6 +957,27 @@ button.crewlet-data-grid__row-link {
   align-self: center;
 }
 
+/* A row with a leading control (its expander) and its own actions puts them side by side on that line. */
+:where(.crewlet-data-grid[data-stacked]:not([data-phone-rows='compact']))
+  .crewlet-data-grid__row:has(
+    > .crewlet-data-grid__cell--action
+      ~ .crewlet-data-grid__cell:not(.crewlet-data-grid__cell--action)
+      ~ .crewlet-data-grid__cell--action
+  ) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+:where(.crewlet-data-grid[data-stacked]:not([data-phone-rows='compact']))
+  .crewlet-data-grid__row:has(
+    > .crewlet-data-grid__cell--action
+      ~ .crewlet-data-grid__cell:not(.crewlet-data-grid__cell--action)
+      ~ .crewlet-data-grid__cell--action
+  )
+  > .crewlet-data-grid__cell:not(.crewlet-data-grid__cell--action)
+  ~ .crewlet-data-grid__cell--action {
+  grid-column: 3;
+}
+
 /* ---- THE COMPACT ROW (`phoneRows="compact"`) ---------------------------
    TWO LINES, NO LABELS: what the row is, then its marks. One flex run that
    breaks once: the lead cells first, a zero-height full-width `::after`
