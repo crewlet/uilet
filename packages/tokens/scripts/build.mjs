@@ -16,7 +16,7 @@ import { contrast, formatHex, oklabHex, parseHex, parseRgba, toOklab, withAlpha 
 // The brand mapping's one source is stylesheets/brand.css; the scope's
 // stylesheet is written from it by the same module the artifact kit reads the
 // mapping's public tokens through, so the two cannot disagree about it.
-import { brandScopeCss } from '../src/brand.ts';
+import { BRAND_SCOPE_LAYER_CLASS, brandScopeCss } from '../src/brand.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
@@ -600,6 +600,38 @@ function validate(tokens, where) {
   return tokens;
 }
 
+// The code host's family (README, "Code read in a code host"): aliases declared once on the
+// root and on a brand scope's layer, so each resolves against the palette painted there.
+const CODE_HOST_GROUPS = new Set(['diff', 'syntax', 'change', 'code', 'file']);
+const isCodeHost = (token) => token.path[0] === 'color' && CODE_HOST_GROUPS.has(token.path[1]);
+
+/** The family's block: each token as a var() of the step outside the family it aliases. */
+async function codeHostBlock(tokens) {
+  const sd = new StyleDictionary(
+    { tokens, log: { warnings: 'error' }, platforms: { css: { transformGroup: 'crewlet/css', buildPath: cssDir + '/', files: [] } } },
+    { init: false },
+  );
+  await sd.init();
+  const { allTokens } = await sd.getPlatformTokens('css');
+  const byPath = new Map(allTokens.map((token) => [token.path.join('.'), token]));
+  const declarations = allTokens.filter(isCodeHost).map((token) => {
+    const alias = /^\{([^}]+)\}$/.exec(String(token.original.value));
+    const step = alias === null ? undefined : byPath.get(alias[1]);
+    if (step === undefined || isCodeHost(step)) {
+      throw new Error(`tokens/color.json: ${token.path.join('.')} is "${token.original.value}"; the code host's family aliases a step outside it`);
+    }
+    return `  --${token.name}: var(--${step.name});`;
+  });
+  // The layer as an attribute selector (same weight as the class): a consumer may read the first
+  // `.crewlet-` selector in its first sheet as the start of the component rules.
+  return `/* The code host's colours, resolved where a palette is painted. */
+:root,
+[class~="${BRAND_SCOPE_LAYER_CLASS}"] {
+${declarations.join('\n')}
+}
+`;
+}
+
 function baseConfig(tokens) {
   return {
     tokens,
@@ -622,6 +654,7 @@ function baseConfig(tokens) {
             // other: an override on body, a theme class or any narrower
             // selector has to set the alias as well.
             options: { selector: ':root', outputReferences: true },
+            filter: (token) => !isCodeHost(token),
           },
         ],
       },
@@ -632,6 +665,8 @@ function baseConfig(tokens) {
           {
             destination: 'index.ts',
             format: 'crewlet/ts-module',
+            // CSS only: an alias resolves per palette, which the typed export cannot.
+            filter: (token) => !isCodeHost(token),
           },
         ],
       },
@@ -1166,7 +1201,7 @@ async function build() {
   // The token layer on its own (the marketing palette) honours a request for
   // more contrast too, so an edge read from tokens.css alone is never the
   // calm step for a reader who asked for outlines.
-  await appendFile(resolve(cssDir, 'tokens.css'), `\n${contrastBlock([':root'])}`);
+  await appendFile(resolve(cssDir, 'tokens.css'), `\n${await codeHostBlock(base)}\n${contrastBlock([':root'])}`);
 
   await mkdir(cssDir, { recursive: true });
   await writeFile(resolve(cssDir, 'legacy.css'), legacyAliases);

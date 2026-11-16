@@ -222,3 +222,28 @@ export const ARTIFACT_KIND_FILL_ALPHA: number;
 export const ARTIFACT_KIND_DE: number;
 /** The kind ground steps the primary text is held to 4.5:1 on, over the card rung (`ground`, `ground-strong`). */
 export const ARTIFACT_KIND_GROUNDS: readonly string[];
+
+/** The grounds code is read on, the sheet and the card. */
+export const CODE_GROUNDS: readonly string[];
+/** The selected tint a picked or marked line takes in place of its diff tint. */
+export const CODE_PICK: string;
+/** The seven syntax inks, by custom-property name. */
+export const SYNTAX_INKS: readonly string[];
+/** The code's own text, which a changed word and a match carry. */
+export const CODE_TEXT: string;
+/** A changed line's steps, added then removed. */
+export const DIFF_ROWS: readonly { kind: string; row: string; gutter: string; word: string; sign: string; mark: string }[];
+export const DIFF_HUNK: { readonly row: string; readonly gutter: string };
+export const DIFF_SEEN_DE: number;
+export const DIFF_GUTTER_DE: number;
+export const DIFF_APART_DE: number;
+export const SYNTAX_APART_DE: number;
+/** Each change state as [state, fill, label, ink]: open, merged, closed, draft. */
+export const CHANGE_STATES: readonly (readonly [string, string, string, string])[];
+/** The draft chip as [fill, edge]. */
+export const CHANGE_DRAFT_CHIP: readonly [string, string];
+/** A file's status inks: added, modified, deleted, renamed. */
+export const FILE_STATUSES: readonly string[];
+/** A branch chip as [ink, fill]. */
+export const CODE_REF: readonly [string, string];
+export const CODE_MATCH: string;
