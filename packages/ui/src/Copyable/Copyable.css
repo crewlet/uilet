@@ -75,6 +75,13 @@
   color: inherit;
 }
 
+/* Words drawn in an identifier's place take the face of the text around them. */
+.crewlet-copyable--words .crewlet-copyable__value {
+  font-family: inherit;
+  font-variant-ligatures: normal;
+  letter-spacing: inherit;
+}
+
 /* ---- block ------------------------------------------------------------- */
 
 .crewlet-copyable--block {

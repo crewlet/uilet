@@ -12,6 +12,8 @@ export interface CopyableProps {
   value: string | number | null | undefined;
   /** Shown instead of the value, when the value itself is not what to read. */
   display?: string | undefined;
+  /** `display` is words rather than a shortened identifier: drawn in the surrounding face, not mono. */
+  displayWords?: boolean | undefined;
   variant?: CopyableVariant | undefined;
   monospace?: boolean | undefined;
   truncate?: boolean | undefined;
@@ -52,6 +54,7 @@ const truncateValue = (text: string, length: number, variant: CopyableVariant): 
 export const Copyable = ({
   value,
   display,
+  displayWords = false,
   variant = 'chip',
   monospace = false,
   truncate = false,
@@ -85,6 +88,7 @@ export const Copyable = ({
         'crewlet-copyable',
         `crewlet-copyable--${variant}`,
         monospace && 'crewlet-copyable--monospace',
+        displayWords && display !== undefined && 'crewlet-copyable--words',
         opaque && 'crewlet-copyable--opaque',
         state === 'copied' && 'is-copied',
         state === 'failed' && 'is-failed',
