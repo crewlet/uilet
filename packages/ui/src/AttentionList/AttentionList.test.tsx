@@ -171,3 +171,21 @@ test('has no accessibility violations', async () => {
   const result = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
   expect(result.violations).toEqual([]);
 });
+
+test('names a row by its subject and folds its specifics after four', () => {
+  const { container } = render(
+    <AttentionList
+      items={[
+        {
+          key: 'aux',
+          tone: 'info',
+          subject: '9 agents',
+          title: 'Learning runs on the work model',
+          lines: [{ items: ['CEO', 'CTO', 'PM', 'SWE', 'SRE', 'QA', 'Ops'] }],
+        },
+      ]}
+    />,
+  );
+  expect(container.querySelector('.crewlet-attention-list__subject')!.textContent).toBe('9 agents');
+  expect(container.querySelector('.crewlet-attention-list__items')!.textContent).toBe('CEO, CTO, PM, SWE and 3 more');
+});

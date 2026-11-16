@@ -134,6 +134,18 @@
   white-space: nowrap;
 }
 
+.crewlet-attention-list__subject {
+  font-weight: var(--font-weight-semibold);
+}
+
+/* A row's specifics: the meta line's ink and size, wrapping, folded after a few. */
+.crewlet-attention-list__items {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
 .crewlet-attention-list__meta {
   overflow: hidden;
   color: var(--color-text-secondary);

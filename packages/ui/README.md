@@ -216,6 +216,8 @@ places:
 
 **`groupNotices` merges repeats**: entries of one `kind` become one notice. One subject lists its `item`s; several subjects without items become a count (`count`, "9 agents") with the names listed; several with items get a line each. Kinds keep their order inside each tone, worst tone first.
 
+**`AttentionList` rows take a `subject` and `lines`**: the row's subject in bold before its title, and its specifics under the title, folded as a `NoticeList`'s are, so a panel says a repeated finding once.
+
 **`Callout` takes `onDismiss`**: an X after the action, named by `dismissLabel` ("Dismiss"), for a notice the reader may put away.
 
 ## Changes in 0.140.0

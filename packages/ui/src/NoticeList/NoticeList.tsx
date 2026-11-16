@@ -3,6 +3,7 @@ import { CircleAlertGlyph, CircleCheckGlyph, InfoGlyph, TriangleAlertGlyph } fro
 import { Button } from '../Button/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
+import { NoticeLineView } from './NoticeLineView.js';
 import type { Tone } from '../utils/tone.js';
 
 export type NoticeTone = Exclude<Tone, 'brand'>;
@@ -107,7 +108,7 @@ export function NoticeList({
                 {notice.title}
               </p>
               {notice.lines?.map((line, i) => (
-                <FoldedLine key={i} line={line} shown={itemsShown} andMore={words.andMore} />
+                <NoticeLineView key={i} line={line} shown={itemsShown} andMore={words.andMore} />
               ))}
               {notice.detail != null ? <p className="crewlet-notice-list__detail">{notice.detail}</p> : null}
             </div>
@@ -128,36 +129,5 @@ export function NoticeList({
         </Button>
       ) : null}
     </div>
-  );
-}
-
-function FoldedLine({ line, shown, andMore }: { line: NoticeLine; shown: number; andMore: (hidden: number) => string }) {
-  const [open, setOpen] = useState(false);
-  // Folds only when it hides two or more, so "and 1 more" never takes the place of the one name.
-  const folds = line.items.length > shown + 1 && !open;
-  const items = folds ? line.items.slice(0, shown) : line.items;
-  return (
-    <p className="crewlet-notice-list__line">
-      {line.subject != null ? (
-        <>
-          <strong className="crewlet-notice-list__subject">{line.subject}</strong>
-          {': '}
-        </>
-      ) : null}
-      {items.map((item, i) => (
-        <span key={i}>
-          {i > 0 ? ', ' : null}
-          {item}
-        </span>
-      ))}
-      {folds ? (
-        <>
-          {' '}
-          <button type="button" className="crewlet-notice-list__and-more" onClick={() => setOpen(true)}>
-            {andMore(line.items.length - shown)}
-          </button>
-        </>
-      ) : null}
-    </p>
   );
 }
