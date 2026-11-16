@@ -449,6 +449,31 @@ export const InACardAndEmpty: Story = {
   ),
 };
 
+/** An empty grid that is one part of a full page is a gap, not a moment: inline, with no glyph. */
+export const EmptyInlineOnAFullPage: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-4)', maxWidth: 960 }}>
+      <Card padding="none">
+        <Card.Header>
+          <Card.Title>Open tasks</Card.Title>
+        </Card.Header>
+        <DataGrid rows={TASKS} columns={COLUMNS} rowKey={(t: Task) => t.key} />
+      </Card>
+      <Card padding="none">
+        <Card.Header>
+          <Card.Title>Invitations</Card.Title>
+        </Card.Header>
+        <DataGrid
+          rows={[]}
+          columns={COLUMNS}
+          rowKey={(t: Task) => t.key}
+          empty={{ title: 'No open invitations', hint: 'An invitation shows here until it is used or expires.', size: 'inline' }}
+        />
+      </Card>
+    </div>
+  ),
+};
+
 function Facts() {
   const [hidden, setHidden] = useState<Set<string>>(new Set(['owner']));
   const facts = [
