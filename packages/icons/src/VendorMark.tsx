@@ -99,6 +99,10 @@
  * generic drawing that claims nothing about AWS. It is the glyph component
  * itself rather than a copy in svg/vendor, so it draws as every glyph does,
  * a stroke in the current text colour on either theme.
+ *
+ * The coding harnesses' marks are their owners' own files, sourced in README.md;
+ * Copilot draws GitHub's, as GitHub's brand toolkit does. Codex, Muse Code and
+ * Kimi Code have none: no file is published, or the terms do not allow one.
  */
 
 import type { ComponentType, SVGProps } from 'react';
@@ -108,6 +112,7 @@ import type { GlyphSize } from './Glyph.js';
 import { cssLength } from './Glyph.js';
 import CrewletIcon from './generated/CrewletIcon.js';
 import CloudGlyph from './generated/glyphs/CloudGlyph.js';
+import * as darkMarks from './generated/vendors/dark/index.js';
 import * as marks from './generated/vendors/index.js';
 
 /** The apps this package draws on a catalogue tile, Crewlet's own services and SSH among them. */
@@ -117,21 +122,28 @@ export const VENDORS = [
   'claude',
   'clickup',
   'cloudflare',
+  'copilot',
   'crewlet',
+  'cursor',
   'datadog',
   'digitalocean',
   'discord',
   'expo',
   'figma',
+  'gemini-cli',
   'github',
   'gitlab',
   'google-cloud',
+  'grok',
+  'hermes',
   'linear',
   'mattermost',
   'microsoft-teams',
   'notion',
   'opencode',
+  'pi',
   'postgresql',
+  'qwen',
   'scaleway',
   'sentry',
   'slack',
@@ -161,21 +173,28 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   claude: marks.Claude,
   clickup: marks.Clickup,
   cloudflare: marks.Cloudflare,
+  copilot: marks.Github,
   crewlet: CrewletIcon,
+  cursor: marks.Cursor,
   datadog: marks.Datadog,
   digitalocean: marks.Digitalocean,
   discord: marks.Discord,
   expo: marks.Expo,
   figma: marks.Figma,
+  'gemini-cli': marks.GeminiCli,
   github: marks.Github,
   gitlab: marks.Gitlab,
   'google-cloud': marks.GoogleCloud,
+  grok: marks.Grok,
+  hermes: marks.Hermes,
   linear: marks.Linear,
   mattermost: marks.Mattermost,
   'microsoft-teams': marks.MicrosoftTeams,
   notion: marks.Notion,
   opencode: marks.Opencode,
+  pi: marks.Pi,
   postgresql: marks.Postgresql,
+  qwen: marks.Qwen,
   scaleway: marks.Scaleway,
   sentry: marks.Sentry,
   slack: marks.Slack,
@@ -202,6 +221,12 @@ const FRAMES: Partial<Record<Vendor, string>> = {
   crewlet: '110 -107 1280 1280',
 };
 
+/** The vendor's own drawing for a dark ground, where it is a second file rather than a colour. */
+const DARK: Partial<Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>>> = {
+  grok: darkMarks.Grok,
+  hermes: darkMarks.Hermes,
+};
+
 export function VendorMark({ vendor, size, title, muted = false, className, ...rest }: VendorMarkProps) {
   const Drawing = drawings[vendor];
   const frame = FRAMES[vendor];
@@ -217,6 +242,16 @@ export function VendorMark({ vendor, size, title, muted = false, className, ...r
   const classes = ['crewlet-vendor-mark', `crewlet-vendor-mark--${vendor}`];
   if (muted) classes.push('crewlet-vendor-mark--muted');
   if (className !== undefined) classes.push(className);
+  const Dark = DARK[vendor];
+  if (Dark !== undefined) {
+    // Both drawings in one frame; the dark one is hidden until a dark theme's rule shows it.
+    return (
+      <svg width={dimension} height={dimension} {...semantics} className={classes.join(' ')} {...rest}>
+        <Drawing width="100%" height="100%" className="crewlet-vendor-mark__light" />
+        <Dark width="100%" height="100%" className="crewlet-vendor-mark__dark" display="none" />
+      </svg>
+    );
+  }
   return (
     <Drawing
       width={dimension}
