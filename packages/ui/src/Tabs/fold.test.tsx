@@ -187,6 +187,18 @@ describe('a tab list that folds', () => {
     expect(item.textContent).toContain('running now');
     expect(item.querySelector('.crewlet-status-dot')).not.toBeNull();
   });
+
+  test('a marked tab folded into More says its marker as the second line', async () => {
+    const passing = TABS.map((tab) =>
+      tab.value === 'schedules' ? { ...tab, marker: { tone: 'success' as const, label: 'Every check passed' } } : tab,
+    );
+    lay(280);
+    render(<Harness items={passing} />);
+    await waitFor(() => expect(drawn()).toHaveLength(2));
+    await openMore();
+    const item = screen.getByRole('menuitem', { name: /Schedules/ });
+    expect(item.textContent).toContain('Every check passed');
+  });
 });
 
 describe('a row of links that folds', () => {

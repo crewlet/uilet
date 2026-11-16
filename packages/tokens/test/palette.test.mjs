@@ -437,14 +437,14 @@ describe('the state and chart hues', () => {
   const DESTRUCTIVE_RULE = ACTION_STEPS[2][0];
   const summary = (check) => `${check.rule}: ${check.subject}: ${check.detail}`;
 
-  test('every status glyph is measured on its fill, in every state', () => {
-    // An avatar's status badge is a state fill carrying a glyph. A table that
-    // stopped measuring one of the three would pass the one badge nobody can
-    // read: white on the dark info step is 1.6:1.
+  test('every status and verdict glyph is measured on its fill, in every state', () => {
+    // An avatar's status or verdict badge is a state fill carrying a glyph. A
+    // table that stopped measuring one of the four would pass the one badge
+    // nobody can read: white on the dark info step is 1.6:1.
     const GLYPH_RULE = 'a glyph clears 3:1 on its own fill';
     assert.deepEqual(
       MARK_ON_FILL.map(([, fill]) => fill),
-      ['--color-feedback-info', '--color-feedback-warning', '--color-feedback-danger'],
+      ['--color-feedback-info', '--color-feedback-warning', '--color-feedback-danger', '--color-feedback-success'],
     );
     for (const state of THEME_STATES) {
       for (const [ink, fill] of MARK_ON_FILL) {
@@ -453,11 +453,15 @@ describe('the state and chart hues', () => {
         assert.ok(measured[0].ok, `${state}: ${describeFailure(measured[0])}`);
       }
     }
-    // And it can fail: white glyphs on the dark info step.
+    // And it can fail: white glyphs on the dark info, warning and success steps.
     const white = checksAfter('dark', '--color-text-inverse', '#ffffff').filter((check) => check.rule === GLYPH_RULE);
     assert.deepEqual(
       white.map((check) => check.subject),
-      ['--color-text-inverse on --color-feedback-info', '--color-text-inverse on --color-feedback-warning'],
+      [
+        '--color-text-inverse on --color-feedback-info',
+        '--color-text-inverse on --color-feedback-warning',
+        '--color-text-inverse on --color-feedback-success',
+      ],
     );
   });
 

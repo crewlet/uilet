@@ -16,11 +16,11 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRef } from 'react';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { installSheets, pseudoElement, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { installForcedColors, installSheets, installThemed, pseudoElement, px, themeColour } from '../../../../apps/ui-tests/src/cascade.js';
 import { DENSITIES, installSheetsAtDensity } from '../../../../apps/ui-tests/src/density.js';
 import { afterEach, expect, test, vi } from 'vitest';
 import { SegmentedControl } from '../SegmentedControl/index.js';
-import { TabPanel, Tabs, tabId } from './Tabs.js';
+import { TABS_MARKER_TONES, TabPanel, Tabs, tabId } from './Tabs.js';
 
 afterEach(cleanup);
 
@@ -647,6 +647,89 @@ test('a danger count stands in for the tab\'s own count, so two figures never si
   const tab = screen.getByRole('tab');
   expect(tab.textContent).toBe('Checks22 problems');
   expect(tab.textContent).not.toContain('7');
+});
+
+test('the marker tones are listed most urgent first, and a pass is last', () => {
+  expect(TABS_MARKER_TONES).toEqual(['danger', 'warning', 'changed', 'success']);
+});
+
+test('a passing tab draws a success dot after its count and says its words', () => {
+  render(
+    <Tabs
+      variant="underline"
+      ariaLabel="Sections"
+      value="checks"
+      items={[{ value: 'checks', label: 'Checks', count: 7, marker: { tone: 'success', label: 'Every check passed' } }]}
+    />,
+  );
+  const tab = screen.getByRole('tab', { name: /Every check passed/ });
+  expect(tab.textContent).toBe('Checks7Every check passed');
+  const count = within(tab).getByText('7');
+  const dot = tab.querySelector('.crewlet-tabs__marker--success')!;
+  expect(dot).not.toBeNull();
+  expect(count.compareDocumentPosition(dot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+const DOT_TONES = ['warning', 'changed', 'success'] as const;
+
+/** Prefixed at use: the package's variable check reads a quoted custom property in a .tsx file as a declaration. */
+const property = (name: string) => `--${name}`;
+
+function mountDots() {
+  return render(
+    <Tabs
+      variant="underline"
+      ariaLabel="Sections"
+      value="warning"
+      items={DOT_TONES.map((tone) => ({ value: tone, label: tone, marker: { tone, label: tone } }))}
+    />,
+  );
+}
+
+test('the success dot is the dots\' 6px circle in the success fill', () => {
+  for (const theme of ['dark', 'light'] as const) {
+    const uninstall = installThemed(theme, 'Tabs/Tabs.css');
+    try {
+      const { container } = mountDots();
+      const dot = container.querySelector('.crewlet-tabs__marker--success')!;
+      const fill = document.createElement('i');
+      fill.style.backgroundColor = themeColour(theme, property('color-feedback-success'));
+      document.body.append(fill);
+      expect(getComputedStyle(dot).backgroundColor, theme).toBe(getComputedStyle(fill).backgroundColor);
+      fill.remove();
+      expect(getComputedStyle(dot).width, theme).toBe('6px');
+      expect(getComputedStyle(dot).height, theme).toBe('6px');
+    } finally {
+      uninstall();
+    }
+    cleanup();
+  }
+});
+
+test('in forced colors every dot is drawn in CanvasText', () => {
+  // The mode repaints author backgrounds to Canvas, so a dot drawn in a token
+  // would vanish; a system colour survives. jsdom resolves one to a value of its own.
+  const system = (keyword: string) => {
+    const probe = document.createElement('i');
+    probe.style.backgroundColor = keyword;
+    document.body.append(probe);
+    const value = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return value;
+  };
+  for (const theme of ['dark', 'light'] as const) {
+    const uninstall = installForcedColors('active', theme, 'Tabs/Tabs.css');
+    try {
+      const { container } = mountDots();
+      for (const tone of DOT_TONES) {
+        const dot = container.querySelector(`.crewlet-tabs__marker--${tone}`)!;
+        expect(getComputedStyle(dot).backgroundColor, `${theme} ${tone}`).toBe(system('CanvasText'));
+      }
+    } finally {
+      uninstall();
+    }
+    cleanup();
+  }
 });
 
 test('the chip variant outlines the lens that is on in the accent, and a focused chip draws the ring in its place', () => {

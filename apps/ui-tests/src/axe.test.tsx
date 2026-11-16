@@ -375,6 +375,10 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
         <span>
           <Avatar name="Product Manager" character="gemlet" hue="rose" status="stopped" decorative /> Product Manager
         </span>
+        <Avatar name="Code Reviewer" kind="human" verdict="approved" />{' '}
+        <span>
+          <Avatar name="Code Reviewer" kind="human" verdict="changes-requested" decorative /> Code Reviewer
+        </span>
       </p>
       <p>
         <AvatarStack

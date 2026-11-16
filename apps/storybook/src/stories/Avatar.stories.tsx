@@ -2,7 +2,15 @@ import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
 import { BotGlyph, KeyGlyph } from '@crewlethq/icons/glyphs';
-import { AVATAR_STATUSES, Avatar, AvatarStack, Card, NODE_HUES, type AvatarStackMember } from '@crewlethq/ui';
+import {
+  AVATAR_STATUSES,
+  AVATAR_VERDICTS,
+  Avatar,
+  AvatarStack,
+  Card,
+  NODE_HUES,
+  type AvatarStackMember,
+} from '@crewlethq/ui';
 import samplePortrait from '../fixtures/sample-portrait.svg';
 
 const meta: Meta<typeof Avatar> = {
@@ -249,6 +257,58 @@ export const StatusSizes: Story = {
           ))}
           <Avatar name="Product Manager" character="crewlet" hue="rose" size={64} status={status} />
           <span style={caption}>{status}</span>
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * A REVIEWER'S VERDICT on the status corner: a check on the success fill, or an
+ * exclamation mark on the danger fill. Asked with a status and a mark too, it wins.
+ */
+export const Verdict: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 16 }}>
+      {['var(--color-surface-background)', 'var(--color-surface-subtle)'].map((ground) => (
+        <div key={ground} style={{ ...row, gap: 24, padding: 16, background: ground, borderRadius: 12 }}>
+          {[undefined, ...AVATAR_VERDICTS].map((verdict) => (
+            <div key={verdict ?? 'none'} style={{ display: 'grid', justifyItems: 'center', gap: 8 }}>
+              <div style={{ ...row, gap: 12 }}>
+                <Avatar name="Code Reviewer" character="hexlet" hue="green" verdict={verdict} />
+                <Avatar name="Code Reviewer" verdict={verdict} />
+                <Avatar src={samplePortrait} name="Jane Founder" kind="human" verdict={verdict} />
+              </div>
+              <span style={caption}>{verdict ?? 'no verdict'}</span>
+            </div>
+          ))}
+          <div style={{ display: 'grid', justifyItems: 'center', gap: 8 }}>
+            <Avatar
+              name="Code Reviewer"
+              verdict="approved"
+              status="working"
+              mark={<KeyGlyph size="xs" />}
+              markLabel="signed in with an API token"
+            />
+            <span style={caption}>verdict, status and mark</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/** Both verdicts at every size, where the 8px floor is the one to read the glyphs at. */
+export const VerdictSizes: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 16, padding: 16, background: 'var(--color-surface-subtle)', borderRadius: 12 }}>
+      {AVATAR_VERDICTS.map((verdict) => (
+        <div key={verdict} style={{ ...row, gap: 20 }}>
+          {(['xs', 'sm', 'md', 'lg'] as const).map((size) => (
+            <Avatar key={size} name="Jane Founder" kind="human" size={size} verdict={verdict} />
+          ))}
+          <Avatar name="Jane Founder" kind="human" size={64} verdict={verdict} />
+          <span style={caption}>{verdict}</span>
         </div>
       ))}
     </div>

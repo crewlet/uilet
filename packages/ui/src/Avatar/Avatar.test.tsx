@@ -33,6 +33,8 @@ import {
   AVATAR_SIZES,
   AVATAR_STATUS_LABELS,
   AVATAR_STATUSES,
+  AVATAR_VERDICT_LABELS,
+  AVATAR_VERDICTS,
   Avatar,
   avatarCorner,
   avatarTint,
@@ -42,6 +44,7 @@ import {
   type AvatarRing,
   type AvatarStatus,
   type AvatarTone,
+  type AvatarVerdict,
 } from './index.js';
 
 let uninstall: (() => void) | undefined;
@@ -74,6 +77,12 @@ const STATUS_FILL: Record<AvatarStatus, string> = {
   working: 'color-feedback-info',
   needs: 'color-feedback-warning',
   stopped: 'color-feedback-danger',
+};
+
+/** The state fill each verdict badge stands on. */
+const VERDICT_FILL: Record<AvatarVerdict, string> = {
+  approved: 'color-feedback-success',
+  'changes-requested': 'color-feedback-danger',
 };
 
 describe('getInitials', () => {
@@ -461,7 +470,11 @@ describe('the status', () => {
     // THE STYLESHEET'S PAIRS ARE THE GATE'S. @crewlethq/tokens holds each
     // [ink, fill] in MARK_ON_FILL at 3:1 over every ground; a badge drawn on
     // a fill or in an ink the table does not list is one nothing measures.
-    const pairs = AVATAR_STATUSES.map((status) => [property('color-text-inverse'), property(STATUS_FILL[status])]);
+    const corners = [
+      ...AVATAR_STATUSES.map((status) => ({ name: status, props: { status }, fill: STATUS_FILL[status] })),
+      ...AVATAR_VERDICTS.map((verdict) => ({ name: verdict, props: { verdict }, fill: VERDICT_FILL[verdict] })),
+    ];
+    const pairs = [...new Set(corners.map(({ fill }) => fill))].map((fill) => [property('color-text-inverse'), property(fill)]);
     expect(pairs).toEqual(MARK_ON_FILL.map(([ink, fill]) => [ink, fill]));
     for (const theme of ['dark', 'light'] as const) {
       uninstall?.();
@@ -471,18 +484,20 @@ describe('the status', () => {
       const token = (name: string) => parseHex(palette.get(property(name)) ?? '');
       const { container } = render(
         <>
-          {AVATAR_STATUSES.map((status) => (
-            <Avatar key={status} name={status} status={status} />
+          {corners.map(({ name, props }) => (
+            <Avatar key={name} name={name} {...props} />
           ))}
         </>,
       );
       const badges = [...container.querySelectorAll('.crewlet-avatar__status')];
+      expect(badges).toHaveLength(corners.length);
       badges.forEach((badge, index) => {
         const drawn = getComputedStyle(badge);
-        const status = AVATAR_STATUSES[index]!;
-        expect(channels(drawn.backgroundColor), `${theme} ${status}`).toEqual(token(STATUS_FILL[status]));
-        expect(channels(drawn.color), `${theme} ${status}`).toEqual(token('color-text-inverse'));
-        expect(drawn.position, `${theme} ${status}`).toBe('absolute');
+        const { name, fill } = corners[index]!;
+        const what = `${theme} ${name}`;
+        expect(channels(drawn.backgroundColor), what).toEqual(token(fill));
+        expect(channels(drawn.color), what).toEqual(token('color-text-inverse'));
+        expect(drawn.position, what).toBe('absolute');
       });
     }
   });
@@ -787,6 +802,91 @@ describe('a badge with a glyph for a face', () => {
   test('an agent character still wins over it', () => {
     render(<Avatar name="Agent PM" character="crewlet" icon={<KeyGlyph size="sm" />} />);
     expect(screen.getByRole('img', { name: 'Agent PM avatar' }).querySelector('.crewlet-avatar__icon')).toBeNull();
+  });
+});
+
+describe('the verdict', () => {
+  test('is a corner badge per verdict, in the notch a status uses', () => {
+    const { container } = render(
+      <>
+        {AVATAR_VERDICTS.map((verdict) => (
+          <Avatar key={verdict} name="Code Reviewer" kind="human" verdict={verdict} />
+        ))}
+      </>,
+    );
+    expect(AVATAR_VERDICTS).toEqual(['approved', 'changes-requested']);
+    const frames = [...container.children];
+    expect(frames.map((frame) => frame.className)).toEqual(AVATAR_VERDICTS.map(() => 'crewlet-avatar-frame'));
+    frames.forEach((frame, index) => {
+      expect(frame.querySelector('.crewlet-avatar')!.className).toContain('crewlet-avatar--notched');
+      const corner = frame.querySelector('.crewlet-avatar__status')!;
+      expect(corner.className).toBe(`crewlet-avatar__status crewlet-avatar__status--${AVATAR_VERDICTS[index]}`);
+      expect(corner.getAttribute('aria-hidden')).toBe('true');
+    });
+  });
+
+  test('draws a shape of its own, apart from every status', () => {
+    // Changes requested shares the danger fill with stopped, so the glyph is
+    // what tells them apart, in forced colours above all.
+    const { container } = render(
+      <>
+        {AVATAR_STATUSES.map((status) => (
+          <Avatar key={status} name={status} status={status} />
+        ))}
+        {AVATAR_VERDICTS.map((verdict) => (
+          <Avatar key={verdict} name={verdict} verdict={verdict} />
+        ))}
+      </>,
+    );
+    const glyphs = [...container.querySelectorAll('.crewlet-avatar__status > svg')];
+    expect(glyphs).toHaveLength(AVATAR_STATUSES.length + AVATAR_VERDICTS.length);
+    expect(new Set(glyphs.map((glyph) => glyph.innerHTML)).size).toBe(glyphs.length);
+    for (const glyph of glyphs) {
+      expect(glyph.getAttribute('viewBox')).toBe('0 0 14 14');
+      expect(glyph.getAttribute('focusable')).toBe('false');
+      expect(glyph.innerHTML).toContain('currentColor');
+    }
+  });
+
+  test('wins over a status and a mark: one corner, and its words alone', () => {
+    const { container } = render(
+      <Avatar
+        name="Code Reviewer"
+        verdict="approved"
+        status="working"
+        mark={<KeyGlyph size="xs" />}
+        markLabel="signed in with an API token"
+      />,
+    );
+    const corners = container.querySelectorAll('.crewlet-avatar__status');
+    expect(corners).toHaveLength(1);
+    expect(corners[0]!.className).toContain('crewlet-avatar__status--approved');
+    expect(screen.getByRole('img').getAttribute('aria-label')).toBe('Code Reviewer avatar, approved');
+  });
+
+  test('is said in the name of a badge that names itself, in an image\'s alt, and not by a decorative one', () => {
+    render(
+      <>
+        <Avatar name="Code Reviewer" verdict="approved" />
+        <Avatar name="Code Reviewer" kind="human" verdict="changes-requested" />
+        <Avatar name="Code Reviewer" kind="human" src="data:image/png;base64," verdict="changes-requested" />
+        <span>
+          <Avatar name="Code Reviewer" verdict="approved" decorative /> Code Reviewer
+        </span>
+      </>,
+    );
+    const named = screen.getAllByRole('img');
+    expect(named.map((badge) => badge.getAttribute('aria-label') ?? badge.getAttribute('alt'))).toEqual([
+      'Code Reviewer avatar, approved',
+      'Code Reviewer avatar, requested changes',
+      'Code Reviewer, requested changes',
+    ]);
+    expect(AVATAR_VERDICT_LABELS).toEqual({ approved: 'approved', 'changes-requested': 'requested changes' });
+  });
+
+  test('a badge with a verdict draws no ring, since the notch is cut from the outline the ring follows', () => {
+    const { container } = render(<Avatar name="Code Reviewer" ring="brand" verdict="approved" />);
+    expect(container.innerHTML).not.toContain('ring-');
   });
 });
 

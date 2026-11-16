@@ -436,6 +436,15 @@
   background: var(--color-feedback-danger);
 }
 
+/* A verdict: approved on the success fill, changes requested on the danger fill. */
+.crewlet-avatar__status--approved {
+  background: var(--color-feedback-success);
+}
+
+.crewlet-avatar__status--changes-requested {
+  background: var(--color-feedback-danger);
+}
+
 /*
  * A MARK (`mark`): how a principal is present, not a state, so it is drawn
  * quiet rather than in a state's fill: the neutral badge's raised rung, its
