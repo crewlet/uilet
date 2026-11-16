@@ -595,8 +595,8 @@
 }
 
 /* ── markers ──────────────────────────────────────────────────────────────
-   What needs the reader behind a tab: a danger count for problems, a 6px
-   dot for a warning or an unsaved change. One per tab, the most urgent. */
+   What the reader should know behind a tab: a danger count for problems, a
+   6px dot for a warning, an unsaved change or a pass. One per tab, the most urgent. */
 .crewlet-tabs__marker {
   display: inline-flex;
   align-items: center;
@@ -622,7 +622,8 @@
   line-height: var(--crewlet-tabs-marker-size);
 }
 .crewlet-tabs__marker--warning,
-.crewlet-tabs__marker--changed {
+.crewlet-tabs__marker--changed,
+.crewlet-tabs__marker--success {
   width: 6px;
   height: 6px;
   border-radius: var(--radius-circle);
@@ -632,4 +633,15 @@
 }
 .crewlet-tabs__marker--changed {
   background: var(--color-brand-accent);
+}
+.crewlet-tabs__marker--success {
+  background: var(--color-feedback-success);
+}
+/* Forced colours repaint backgrounds to Canvas; a system colour survives. */
+@media (forced-colors: active) {
+  .crewlet-tabs__marker--warning,
+  .crewlet-tabs__marker--changed,
+  .crewlet-tabs__marker--success {
+    background: CanvasText;
+  }
 }

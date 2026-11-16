@@ -339,16 +339,18 @@ function MarkedTabs() {
         { value: 'agents', label: 'Agents', count: 5, marker: { tone: 'warning', label: 'Needs attention' } },
         { value: 'tools', label: 'Integrations' },
         { value: 'advanced', label: 'Advanced', count: 6 },
+        { value: 'checks', label: 'Checks', marker: { tone: 'success', label: 'Every check passed' } },
       ]}
     />
   );
 }
 
 /**
- * MARKERS: what needs the reader behind a tab. Problems are a danger count, a
- * warning or an unsaved change a 6px dot; one per tab, the most urgent. A
- * danger count stands in for the tab's count while it is set; a dot sits after
- * the count ("Agents 5" with a warning).
+ * MARKERS: what needs the reader behind a tab. Problems are a danger count; a
+ * warning, an unsaved change or a pass is a 6px dot. One per tab, the most
+ * urgent that applies (a pass is the least). A danger count stands in for the
+ * tab's count while it is set; a dot sits after the count ("Agents 5" with a
+ * warning).
  */
 export const Markers: Story = { render: () => <MarkedTabs /> };
 

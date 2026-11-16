@@ -77,6 +77,18 @@ export const AVATAR_STATUS_LABELS: Readonly<Record<AvatarStatus, string>> = {
   stopped: 'stopped',
 };
 
+/** A reviewer's verdict, drawn on the corner: a check on the success fill, or an exclamation mark on the danger fill. */
+export type AvatarVerdict = 'approved' | 'changes-requested';
+
+/** Every verdict, in the order a legend lists them. */
+export const AVATAR_VERDICTS = ['approved', 'changes-requested'] as const satisfies readonly AvatarVerdict[];
+
+/** What each verdict is called in a sentence: the accessible name's last words. */
+export const AVATAR_VERDICT_LABELS: Readonly<Record<AvatarVerdict, string>> = {
+  approved: 'approved',
+  'changes-requested': 'requested changes',
+};
+
 /** The four steps, in px. A number is accepted for anything outside them. */
 export const AVATAR_SIZES = { xs: 20, sm: 26, md: 32, lg: 40 } as const;
 
@@ -126,19 +138,22 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
   kind?: AvatarKind | undefined;
   tone?: AvatarTone | undefined;
   /**
-   * The selected ring, or none. Not drawn on a badge with a `status`: the
-   * corner badge is cut out of the outline the ring would follow.
+   * The selected ring, or none. Not drawn on a badge with a corner (a
+   * verdict, status or mark): the corner is cut out of the outline the ring
+   * would follow.
    */
   ring?: AvatarRing | undefined;
   /** What the agent is doing, as a corner badge; none is idle. */
   status?: AvatarStatus | undefined;
+  /** A reviewer's verdict, on the corner a status uses, winning over a status and a mark. */
+  verdict?: AvatarVerdict | undefined;
   /**
    * A glyph on the corner saying HOW a principal is present rather than what
    * it is doing: a person's or a seat's badge acting through an API token
    * wears a key there, so the face stays theirs and the credential is still
    * shown. It sits where a status sits, cut into the same notch, in the
-   * neutral badge's raised fill, and a `status` wins over it. A component,
-   * drawn at the corner's own scale.
+   * neutral badge's raised fill, and a `verdict` or `status` wins over it. A
+   * component, drawn at the corner's own scale.
    */
   mark?: ReactNode;
   /**
@@ -321,6 +336,7 @@ export const Avatar = ({
   tone = 'neutral',
   ring,
   status,
+  verdict,
   mark,
   markLabel,
   decorative = false,
@@ -361,11 +377,19 @@ export const Avatar = ({
       : {};
 
   const seeded = tone === 'seeded' ? avatarTint(colorSeed ?? name ?? '') : null;
-  // A STATUS WINS OVER A MARK: there is one corner, and what an agent is
-  // doing is the more urgent of the two.
-  const marked = status === undefined && mark !== undefined && mark !== null;
-  const framed = status !== undefined || marked;
-  const corner = status !== undefined ? AVATAR_STATUS_LABELS[status] : marked ? markLabel : undefined;
+  // ONE CORNER: a verdict, else a status, else a mark. A verdict is asked for
+  // only where the face stands for a review.
+  const shownStatus = verdict === undefined ? status : undefined;
+  const marked = verdict === undefined && shownStatus === undefined && mark !== undefined && mark !== null;
+  const framed = verdict !== undefined || shownStatus !== undefined || marked;
+  const corner =
+    verdict !== undefined
+      ? AVATAR_VERDICT_LABELS[verdict]
+      : shownStatus !== undefined
+        ? AVATAR_STATUS_LABELS[shownStatus]
+        : marked
+          ? markLabel
+          : undefined;
   const label = name ? `${name} avatar` : 'Avatar';
   const spoken = corner ? `${label}, ${corner}` : label;
 
@@ -465,9 +489,13 @@ export const Avatar = ({
       style={(text ? style : { '--crewlet-avatar-size': `${pixels}px`, ...style }) as CSSProperties}
     >
       {face}
-      {status !== undefined ? (
-        <span className={`crewlet-avatar__status crewlet-avatar__status--${status}`} aria-hidden="true">
-          {STATUS_GLYPHS[status]}
+      {verdict !== undefined ? (
+        <span className={`crewlet-avatar__status crewlet-avatar__status--${verdict}`} aria-hidden="true">
+          {VERDICT_GLYPHS[verdict]}
+        </span>
+      ) : shownStatus !== undefined ? (
+        <span className={`crewlet-avatar__status crewlet-avatar__status--${shownStatus}`} aria-hidden="true">
+          {STATUS_GLYPHS[shownStatus]}
         </span>
       ) : (
         <span className="crewlet-avatar__status crewlet-avatar__status--mark" aria-hidden="true">
@@ -505,6 +533,31 @@ const STATUS_GLYPHS: Readonly<Record<AvatarStatus, ReactElement>> = {
   stopped: (
     <svg viewBox="0 0 14 14" focusable="false">
       <rect x="4.6" y="4.6" width="4.8" height="4.8" rx=".7" fill="currentColor" />
+    </svg>
+  ),
+};
+
+/**
+ * Each verdict's glyph, on the status grid: a check stroke, and an exclamation
+ * mark filled as a bar and a dot, so it parts from `stopped`'s square by shape.
+ */
+const VERDICT_GLYPHS: Readonly<Record<AvatarVerdict, ReactElement>> = {
+  approved: (
+    <svg viewBox="0 0 14 14" focusable="false">
+      <path
+        d="M4.4 7.2 6.3 9.1 9.6 5.3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  'changes-requested': (
+    <svg viewBox="0 0 14 14" focusable="false">
+      <rect x="6.1" y="3.1" width="1.8" height="4.6" rx=".9" fill="currentColor" />
+      <circle cx="7" cy="10.1" r=".95" fill="currentColor" />
     </svg>
   ),
 };

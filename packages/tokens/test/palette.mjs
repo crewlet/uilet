@@ -261,8 +261,8 @@ export const LABEL_ON_FILL = [
 ];
 
 /**
- * A fill with the GLYPH a component draws inside it: an avatar's status badge,
- * which is a state's fill step carrying a small play, question or stop mark in
+ * A fill with the GLYPH a component draws inside it: an avatar's corner, a
+ * status or a verdict, which is a state's fill step carrying a small glyph in
  * the inverse ink. A glyph is a graphic rather than running text, so it is
  * held to the 3:1 a mark is held to rather than to a label's 4.5:1.
  *
@@ -275,6 +275,7 @@ export const MARK_ON_FILL = [
   ['--color-text-inverse', '--color-feedback-info'],
   ['--color-text-inverse', '--color-feedback-warning'],
   ['--color-text-inverse', '--color-feedback-danger'],
+  ['--color-text-inverse', '--color-feedback-success'],
 ];
 
 /**

@@ -1,7 +1,7 @@
 import '../HitArea/HitArea.css';
 import './Tabs.css';
 
-export { TabPanel, Tabs, tabId } from './Tabs.js';
+export { TABS_MARKER_TONES, TabPanel, Tabs, tabId } from './Tabs.js';
 export type {
   TabPanelProps,
   TabsDensity,

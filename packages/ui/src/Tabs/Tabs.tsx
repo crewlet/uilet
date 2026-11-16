@@ -46,12 +46,12 @@ export interface TabsItem {
    */
   count?: number | string | null;
   /**
-   * What needs the reader behind this tab, drawn after the label: problems
-   * as a danger count, a warning or an unsaved change as a 6px dot. A danger
-   * count replaces the tab's count while it is set, since two figures side by
-   * side read as one; a dot sits after the count, since how many things are
-   * behind a tab and whether one needs the reader are two facts ("Agents 5"
-   * with a warning). `label` is what a screen reader hears.
+   * What the reader should know behind this tab, drawn after the label:
+   * problems as a danger count; a warning, an unsaved change or a pass as a
+   * 6px dot. A danger count replaces the tab's count while it is set, since
+   * two figures side by side read as one; a dot sits after the count, since
+   * how many things are behind a tab and whether one needs the reader are two
+   * facts ("Agents 5" with a warning). `label` is what a screen reader hears.
    */
   marker?: TabsMarker | undefined;
   /**
@@ -72,12 +72,15 @@ export interface TabsItem {
 }
 
 /**
- * A tab's marker. ONE PER TAB, the most urgent: a problem, then a warning,
- * then a change, so a row of tabs reads as "where is something wrong" first.
+ * A tab's marker. ONE PER TAB, the most urgent (`TABS_MARKER_TONES`), so a
+ * row of tabs reads as "where is something wrong" first.
  */
 export type TabsMarker =
   | { tone: 'danger'; count: number; label: string }
-  | { tone: 'warning' | 'changed'; label: string };
+  | { tone: 'warning' | 'changed' | 'success'; label: string };
+
+/** The marker tones, most urgent first: a tab with several facts shows the first that applies. */
+export const TABS_MARKER_TONES = ['danger', 'warning', 'changed', 'success'] as const satisfies readonly TabsMarker['tone'][];
 
 export interface TabsRenderItemProps {
   item: TabsItem;

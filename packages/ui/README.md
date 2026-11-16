@@ -208,6 +208,15 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.137.0
+
+### A passing tab and a reviewer's verdict
+
+- **A `Tabs` marker can say a tab passes.** `{ tone: 'success', label }` draws a 6px dot in the success fill after the tab's count, the least urgent in `TABS_MARKER_TONES`. Every dot marker is drawn in the system ink under forced colours.
+- **`Avatar` takes `verdict`**: `approved`, a check on the success fill, or `changes-requested`, an exclamation mark on the danger fill, on the corner a status uses. A verdict wins over a status, which wins over a mark, and a badge that names itself appends `AVATAR_VERDICT_LABELS` ("approved", "requested changes").
+
+What to change: nothing, unless a `Record<TabsMarker['tone'], ...>` lists every tone; it adds `success`.
+
 ## Changes in 0.130.1
 
 ### Columns, trails and identifiers that keep their words
