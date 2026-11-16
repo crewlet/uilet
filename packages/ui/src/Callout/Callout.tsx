@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import { CircleAlertGlyph, CircleCheckGlyph, InfoGlyph, TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
+import { CircleAlertGlyph, CircleCheckGlyph, InfoGlyph, TriangleAlertGlyph, XGlyph } from '@crewlethq/icons/glyphs';
+import { IconButton } from '../IconButton/index.js';
 import { cx } from '../utils/cx.js';
 import type { Tone } from '../utils/tone.js';
 
@@ -47,8 +48,12 @@ export interface CalloutProps extends Omit<HTMLAttributes<HTMLDivElement>, 'titl
   icon?: ReactNode;
   layout?: CalloutLayout | undefined;
   appearance?: CalloutAppearance | undefined;
-  /** A control at the trailing edge: "Reconnect", "Open the log", "Dismiss". */
+  /** The one control at the trailing edge: "Reconnect", "Open Schedules". */
   action?: ReactNode;
+  /** Puts the callout away: an X after the action. Only where the reader may. */
+  onDismiss?: (() => void) | undefined;
+  /** The X's name for a screen reader. */
+  dismissLabel?: string | undefined;
   /**
    * Announce this when it appears. OFF by default, which is the change from
    * 0.2.0: every static banner on a screen was a live region, so a screen
@@ -93,6 +98,8 @@ export const Callout = ({
   layout = 'card',
   appearance = 'tinted',
   action,
+  onDismiss,
+  dismissLabel = 'Dismiss',
   live,
   className,
   children,
@@ -116,6 +123,19 @@ export const Callout = ({
       {title ? <span className="crewlet-callout__title">{title}</span> : null}
       {children}
     </div>
-    {action ? <div className="crewlet-callout__action">{action}</div> : null}
+    {action || onDismiss ? (
+      <div className="crewlet-callout__action">
+        {action}
+        {onDismiss ? (
+          <IconButton
+            className="crewlet-callout__dismiss"
+            label={dismissLabel}
+            icon={<XGlyph size="sm" />}
+            size="sm"
+            onClick={onDismiss}
+          />
+        ) : null}
+      </div>
+    ) : null}
   </div>
 );
