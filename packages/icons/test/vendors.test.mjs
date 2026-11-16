@@ -20,12 +20,22 @@ import { extent, markPaths } from '../scripts/mark.mjs';
 import { PACKAGE, attribute, render } from './support.mjs';
 
 describe('the vendor list', () => {
-  it('is exactly the drawings the package carries, Crewlet, and AWS', async () => {
+  it('is exactly the drawings the package carries, Crewlet, AWS and Copilot', async () => {
     const files = (await readdir(resolve(PACKAGE, 'svg/vendor')))
       .filter((file) => file.endsWith('.svg'))
       .map((file) => file.slice(0, -'.svg'.length))
       .sort();
-    assert.deepEqual(VENDORS.filter((vendor) => vendor !== 'crewlet' && vendor !== 'aws').sort(), files);
+    const borrowed = ['aws', 'copilot', 'crewlet'];
+    assert.deepEqual(VENDORS.filter((vendor) => !borrowed.includes(vendor)).sort(), files);
+  });
+
+  it("draws Copilot with GitHub's mark, as GitHub's own brand toolkit does", () => {
+    // GitHub retired Copilot's standalone logo in 2025 and sets the Invertocat
+    // beside the product's name, so the mark is the GitHub drawing itself.
+    const paths = (markup) => [...markup.matchAll(/\sd="([^"]+)"/g)].map((match) => match[1]);
+    const mark = render(VendorMark, { vendor: 'copilot' });
+    assert.deepEqual(paths(mark), paths(render(VendorMark, { vendor: 'github' })));
+    assert.match(attribute(mark, 'class') ?? '', /(^| )crewlet-vendor-mark--copilot( |$)/);
   });
 
   it("draws AWS as the cloud glyph in the text colour, and nothing of AWS's own", () => {
@@ -55,10 +65,16 @@ describe('the vendor list', () => {
   it('gives each vendor its own drawing', () => {
     // A typo in the map from a vendor to its component draws the wrong
     // company's mark beside the right company's name, and every other rule
-    // here would still pass.
-    const drawn = new Map(VENDORS.map((vendor) => [vendor, render(VendorMark, { vendor })]));
+    // here would still pass. The vendor's own class is left out, since it
+    // names the vendor whatever is drawn; Copilot is GitHub's mark by design.
+    const drawn = new Map(
+      VENDORS.map((vendor) => [vendor, render(VendorMark, { vendor }).replace(` crewlet-vendor-mark--${vendor}`, '')]),
+    );
+    const meant = new Set(['copilot github', 'github copilot']);
     for (const [vendor, markup] of drawn) {
-      const twins = [...drawn].filter(([other, theirs]) => other !== vendor && theirs === markup).map(([other]) => other);
+      const twins = [...drawn]
+        .filter(([other, theirs]) => other !== vendor && theirs === markup && !meant.has(`${vendor} ${other}`))
+        .map(([other]) => other);
       assert.deepEqual(twins, [], `${vendor} draws the same mark as ${twins.join(', ')}`);
     }
   });
@@ -142,14 +158,14 @@ describe('a vendor mark', () => {
 
   it('draws the monochrome marks in the current text colour and nobody else in it', () => {
     /*
-     * GitHub, Notion, OpenCode, Expo and DigitalOcean each publish one mark,
+     * GitHub, Notion, OpenCode, Expo, DigitalOcean and Cursor each publish one mark,
      * dark on a light ground and light on a dark one, so the current text
      * colour is the vendor's own instruction and a fixed hex would be wrong in
      * one theme whichever was picked. Every other mark is the vendor's own colours, which is the one
      * sanctioned exception to colour carrying state rather than identity, and
      * a mark quietly joining this list is a mark that has lost them.
      */
-    const monochrome = ['digitalocean', 'expo', 'github', 'notion', 'opencode'];
+    const monochrome = ['copilot', 'cursor', 'digitalocean', 'expo', 'github', 'notion', 'opencode'];
     // Monochrome is the current text colour AND no colour of the mark's own
     // beneath it: Crewlet's drawing is rooted in currentColor, as every
     // illustration is, and paints its brand violet on the group inside. SSH's
@@ -170,8 +186,8 @@ describe('a vendor mark', () => {
     }
   });
 
-  it('draws Mattermost, Scaleway and Sentry reversed on the dark themes, as each publishes its mark for a dark ground', async () => {
-    // Mattermost's blue under 3:1, and Scaleway's purple and Sentry's violet
+  it('draws Mattermost, Qwen, Scaleway and Sentry reversed on the dark themes, as each publishes its mark for a dark ground', async () => {
+    // Mattermost's blue under 3:1, Qwen's under 2.5:1, and Scaleway's purple and Sentry's violet
     // under 2:1, on the dark ground; reversed, each is the text's ink. The dark themes are chosen as
     // the tokens choose them: dark is the default, unless the document or the
     // system asks for light.
@@ -183,12 +199,12 @@ describe('a vendor mark', () => {
       for (const selector of selectors) assert.ok(block.includes(selector), `${selector} is not in the rule`);
       assert.match(block, /\{\s*fill: currentColor;/);
     };
-    for (const vendor of ['mattermost', 'scaleway', 'sentry']) {
+    for (const vendor of ['mattermost', 'qwen', 'scaleway', 'sentry']) {
       rule([`:root[data-theme='dark'] .crewlet-vendor-mark--${vendor}`]);
     }
     const media = sheet.slice(sheet.indexOf('@media not (prefers-color-scheme: light)'));
     assert.ok(media.length < sheet.length, 'the system-dark rule is missing');
-    for (const vendor of ['mattermost', 'scaleway', 'sentry']) {
+    for (const vendor of ['mattermost', 'qwen', 'scaleway', 'sentry']) {
       assert.ok(
         media.slice(0, media.indexOf('}')).includes(`:root:not([data-theme='light']) .crewlet-vendor-mark--${vendor}`),
         `${vendor} is not reversed on a system dark ground`,
@@ -196,6 +212,7 @@ describe('a vendor mark', () => {
     }
     rule([
       `:root:not([data-theme='light']) .crewlet-vendor-mark--mattermost`,
+      `:root:not([data-theme='light']) .crewlet-vendor-mark--qwen`,
       `:root:not([data-theme='light']) .crewlet-vendor-mark--scaleway`,
       `:root:not([data-theme='light']) .crewlet-vendor-mark--sentry`,
     ]);
@@ -209,10 +226,8 @@ describe('a vendor mark', () => {
      * Slack aubergine is not Slack's, and the next contrast sweep would have
      * every reason to move it.
      */
-    const directory = resolve(PACKAGE, 'svg/vendor');
-    const files = (await readdir(directory)).filter((file) => file.endsWith('.svg'));
-    for (const file of files) {
-      const source = await readFile(resolve(directory, file), 'utf8');
+    for (const file of await vendorFiles()) {
+      const source = await readFile(resolve(PACKAGE, 'svg/vendor', file), 'utf8');
       assert.doesNotMatch(source, /var\(\s*--/, `${file} paints from a token`);
     }
   });
@@ -226,6 +241,74 @@ describe('a vendor mark', () => {
     for (const id of ids) assert.match(id, /^crewlet-vendor-atlassian/);
   });
 });
+
+describe('a vendor mark with a drawing of its own for a dark ground', () => {
+  const twoDrawings = ['grok', 'hermes'];
+
+  it('is a vendor that publishes one, and every dark drawing has its light one', async () => {
+    const dark = (await readdir(resolve(PACKAGE, 'svg/vendor/dark'))).filter((name) => name.endsWith('.svg')).map((name) => name.slice(0, -4));
+    assert.deepEqual(dark.sort(), twoDrawings);
+    for (const vendor of dark) assert.ok(VENDORS.includes(vendor), `${vendor} has a dark drawing and no vendor`);
+  });
+
+  it('mounts both drawings in one frame, the dark one hidden until a dark theme shows it', () => {
+    for (const vendor of twoDrawings) {
+      const markup = render(VendorMark, { vendor, size: 24, title: vendor });
+      // The frame is the mark: it is named, sized and classed, and the drawings inside are not.
+      assert.equal(attribute(markup, 'role'), 'img', vendor);
+      assert.equal(attribute(markup, 'aria-label'), vendor, vendor);
+      assert.equal(attribute(markup, 'width'), '24px', vendor);
+      assert.match(attribute(markup, 'class') ?? '', new RegExp(`(^| )crewlet-vendor-mark--${vendor}( |$)`));
+      const inner = [...markup.matchAll(/<svg\b[^>]*>/g)].slice(1).map(([tag]) => tag);
+      assert.equal(inner.length, 2, vendor);
+      const [light, dark] = inner;
+      assert.equal(attribute(light, 'class'), 'crewlet-vendor-mark__light', vendor);
+      assert.equal(attribute(light, 'display'), null, vendor);
+      assert.equal(attribute(dark, 'class'), 'crewlet-vendor-mark__dark', vendor);
+      assert.equal(attribute(dark, 'display'), 'none', vendor);
+      for (const tag of inner) assert.equal(attribute(tag, 'width'), '100%', vendor);
+      assert.match(attribute(render(VendorMark, { vendor, muted: true }), 'class'), /--muted/);
+    }
+  });
+
+  it('swaps the drawings on the dark themes, chosen as the tokens choose them', async () => {
+    const sheet = await readFile(resolve(PACKAGE, 'src/VendorMark.css'), 'utf8');
+    // Hidden by a class too, since a host's `svg { display: block }` beats the attribute.
+    assert.match(sheet, /\n\.crewlet-vendor-mark \.crewlet-vendor-mark__dark \{\s*display: none;/);
+    const rules = (scope) =>
+      ['light', 'dark'].map((part) => new RegExp(`${scope.replace(/[[\]()']/g, '\\$&')} \\.crewlet-vendor-mark__${part} \\{\\s*display: ([a-z]+);`).exec(sheet)?.[1]);
+    assert.deepEqual(rules(":root[data-theme='dark']"), ['none', 'inline']);
+    const media = sheet.slice(sheet.lastIndexOf('@media not (prefers-color-scheme: light)'));
+    assert.ok(media.includes(":root:not([data-theme='light']) .crewlet-vendor-mark__light"), 'the system-dark swap is missing');
+    assert.deepEqual(rules(":root:not([data-theme='light'])"), ['none', 'inline']);
+  });
+
+  it("draws Grok's two files as xAI publishes them: one drawing, in its black and in white", async () => {
+    // xAI asks for its logos exactly as provided, so neither is recoloured.
+    const read = (file) => readFile(resolve(PACKAGE, 'svg/vendor', file), 'utf8');
+    const [light, dark] = [await read('grok.svg'), await read('dark/grok.svg')];
+    assert.deepEqual(markPaths(light), markPaths(dark));
+    assert.deepEqual([...new Set([...light.matchAll(/<path\b[^>]*\sfill="([^"]+)"/g)].map(([, fill]) => fill))], ['#0A0A0A']);
+    assert.deepEqual([...new Set([...dark.matchAll(/<path\b[^>]*\sfill="([^"]+)"/g)].map(([, fill]) => fill))], ['white']);
+  });
+
+  it('keeps the ids of each drawing to itself, so the light one never paints with the dark one', () => {
+    const markup = render(VendorMark, { vendor: 'hermes' });
+    const [light, dark] = markup.split('class="crewlet-vendor-mark__dark"');
+    const ids = (part) => [...part.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
+    assert.ok(ids(light).length > 0 && ids(dark).length > 0);
+    for (const id of ids(light)) assert.match(id, /^crewlet-vendor-hermes__/);
+    for (const id of ids(dark)) assert.match(id, /^crewlet-vendor-dark-hermes__/);
+  });
+});
+
+/** Every vendor drawing, the dark ones as `dark/<vendor>.svg`. */
+async function vendorFiles() {
+  const directory = resolve(PACKAGE, 'svg/vendor');
+  const files = (await readdir(directory)).filter((name) => name.endsWith('.svg'));
+  const dark = (await readdir(resolve(directory, 'dark'))).filter((name) => name.endsWith('.svg'));
+  return [...files, ...dark.map((name) => `dark/${name}`)];
+}
 
 /**
  * The points a path's commands end on, in user units: enough to tell how much
@@ -294,12 +377,23 @@ describe('a vendor mark in its square', () => {
      * fifths rather than the whole, because end points sit inside the curves
      * between them: Figma's round shapes fill their frame and their end points
      * span 83 percent of it.
+     * A clipped path is measured inside the frame, once its clip is held to it
+     * (Hermes's portrait runs past its tile, which clips it).
      */
-    const directory = resolve(PACKAGE, 'svg/vendor');
-    for (const file of (await readdir(directory)).filter((name) => name.endsWith('.svg'))) {
-      const source = await readFile(resolve(directory, file), 'utf8');
+    for (const file of await vendorFiles()) {
+      const source = await readFile(resolve(PACKAGE, 'svg/vendor', file), 'utf8');
       const [x, y, width, height] = attribute(/<svg\b[^>]*>/.exec(source)[0], 'viewBox').split(/\s+/).map(Number);
-      const points = markPaths(source).flatMap(anchors);
+      for (const [, clip] of source.matchAll(/<clipPath\b[^>]*>([\s\S]*?)<\/clipPath>/g)) {
+        const box = /^\s*<rect\b[^>]*\/>\s*$/.exec(clip)?.[0];
+        assert.ok(box, `${file} clips to a shape other than a rectangle, which this test cannot measure`);
+        const [cx, cy, cw, ch] = ['x', 'y', 'width', 'height'].map((name) => Number(attribute(box, name) ?? 0));
+        assert.ok(cx >= x && cy >= y && cx + cw <= x + width && cy + ch <= y + height, `${file} clips to a box outside its frame`);
+      }
+      const clipped = new Set([...source.matchAll(/<g\b[^>]*\sclip-path="[^"]*"[^>]*>([\s\S]*?)<\/g>/g)].flatMap(([, group]) => markPaths(group)));
+      const clamp = (value, low, size) => Math.min(Math.max(value, low), low + size);
+      const points = markPaths(source).flatMap((d) =>
+        clipped.has(d) ? anchors(d).map(([px, py]) => [clamp(px, x, width), clamp(py, y, height)]) : anchors(d),
+      );
       const xs = points.map(([px]) => px);
       const ys = points.map(([, py]) => py);
       const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));

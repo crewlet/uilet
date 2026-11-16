@@ -73,18 +73,34 @@ import { VendorMark } from '@crewlethq/icons';
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `vendor` | `Vendor`: `'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'crewlet' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'github' \| 'gitlab' \| 'google-cloud' \| 'linear' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'opencode' \| 'postgresql' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
+| `vendor` | `Vendor`: `'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'copilot' \| 'crewlet' \| 'cursor' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'gemini-cli' \| 'github' \| 'gitlab' \| 'google-cloud' \| 'grok' \| 'hermes' \| 'linear' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'opencode' \| 'pi' \| 'postgresql' \| 'qwen' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `muted` | boolean | `false` | Drains the colour, for an application that is available but not connected. |
 
 **This is the one place the design system draws somebody else's colours.** Colour here carries state and never identity, and a third-party application's mark is the deliberate exception: identity is exactly what a mark is for, and a recoloured Slack mark is not Slack's. No hue in `svg/vendor/` is a token, nothing reads state from a mark, and a mark appears only beside the name of the application it belongs to.
 
-GitHub's, Notion's, OpenCode's, Expo's and DigitalOcean's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
+GitHub's (and so Copilot's), Notion's, OpenCode's, Expo's, DigitalOcean's and Cursor's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
 
-Mattermost's blue mark, Scaleway's purple one and Sentry's violet one are each drawn for a light ground, and each vendor publishes the same drawing in white for a dark one, which is what the dark themes draw: on the dark ground Mattermost's blue falls under 3:1, and Scaleway's purple and Sentry's violet under 2:1, and each mark all but disappears.
+Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's violet one are each drawn for a light ground, and each vendor publishes the same drawing in white or in the text colour for a dark one, which is what the dark themes draw: on the dark ground Mattermost's blue falls under 3:1, Qwen's under 2.5:1, and Scaleway's purple and Sentry's violet under 2:1, and each mark all but disappears.
 
-**`claude` and `opencode` name the coding CLI a model runs** (Claude Code and OpenCode). Claude's is the Claude Spark (Clay) from Anthropic's press kit at anthropic.com/press-kit; OpenCode's is the logo from opencode.ai/brand. Each mark is its owner's trademark.
+**Grok and Hermes publish a second drawing for a dark ground** (`svg/vendor/dark/`). The mark mounts both, and `VendorMark.css` shows the one for the document's theme.
+
+**`claude`, `cursor`, `gemini-cli`, `copilot`, `grok`, `hermes`, `opencode`, `pi` and `qwen` name the coding harness a model runs.** Each is its owner's trademark, from the owner's own file (the new ones read on 2026-11-16):
+
+| Vendor | Source | Terms or licence | As drawn |
+| ------ | ------ | ---------------- | -------- |
+| `claude` | anthropic.com/press-kit, Claude Spark (Clay) | Press kit | Unchanged |
+| `cursor` | cursor.com/brand, `Cube/SVG/CUBE_2D_*.svg` | Brand assets | Text colour (Cursor's pair is #26251e and #edecec) |
+| `gemini-cli` | geminicli.com/brand-kit, `gemini-cli-icon_full-color.svg` | Never alter the assets | No-op full-frame clip removed |
+| `copilot` | brand.github.com/brand-identity/copilot | Copilot's own logo retired in 2025; lockups use the Invertocat | The `github` drawing |
+| `grok` | x.ai/legal/brand-guidelines, `Grok_Logomark_Dark.svg` and `_Light.svg` | Use only exactly as provided | Both files unchanged |
+| `hermes` | github.com/NousResearch/hermes-agent, `assets/icon-master.svg` and `-dark.svg` | MIT | Nested viewport folded into the paths |
+| `opencode` | opencode.ai/brand | Brand page | No-op clip and mask removed, text colour |
+| `pi` | pi.dev/press-kit, `logo.svg` | MIT | Framed to its drawing |
+| `qwen` | github.com/QwenLM/qwen-code, `packages/desktop/bootstrap/qwen-code-logo.svg` | Apache-2.0 | Blue moved to the root |
+
+**Codex, Muse Code and Kimi Code draw no mark:** no Codex or Muse Code file is published for this use, OpenAI and Meta approve each use of their logos, and Kimi's terms allow non-commercial use only.
 
 **`expo` is Expo's mark**, from Expo's own logo pack (github.com/expo/logos, `svg/logo-type-a.svg`, the download that expo.dev/brand links), its path unchanged and its black taken from the text, as Expo's own site and documentation draw it.
 
@@ -298,7 +314,7 @@ Loading the built entry in plain Node, with no bundler, therefore fails on the s
 2. Run `npm run build`.
 3. The new illustration is exported from `@crewlethq/icons` and appears in `ICON_NAMES`.
 
-A vendor mark goes into `svg/vendor/` instead, and is added to the `VENDORS` list and the `Vendor` union in `src/VendorMark.tsx`. A glyph is vendored rather than drawn; see [`glyphs/README.md`](./glyphs/README.md).
+A vendor mark goes into `svg/vendor/` instead, and is added to the `VENDORS` list and the `Vendor` union in `src/VendorMark.tsx`; a second drawing the vendor publishes for a dark ground goes into `svg/vendor/dark/` under the same name, and into the `DARK` map there. A glyph is vendored rather than drawn; see [`glyphs/README.md`](./glyphs/README.md).
 
 ## Conventions for source SVGs
 

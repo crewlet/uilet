@@ -21,12 +21,13 @@
 }
 
 /*
- * MATTERMOST, SCALEWAY AND SENTRY REVERSED ON A DARK GROUND, as each
+ * MATTERMOST, QWEN, SCALEWAY AND SENTRY REVERSED ON A DARK GROUND, as each
  * publishes its mark for one (VendorMark.tsx). Dark is the tokens' default, so it is dark unless
  * the document or the system asks for light: the same three cases the theme
  * itself is chosen by. On a light ground each drawing keeps its own hue.
  */
 :root[data-theme='dark'] .crewlet-vendor-mark--mattermost,
+:root[data-theme='dark'] .crewlet-vendor-mark--qwen,
 :root[data-theme='dark'] .crewlet-vendor-mark--scaleway,
 :root[data-theme='dark'] .crewlet-vendor-mark--sentry {
   fill: currentColor;
@@ -34,9 +35,36 @@
 
 @media not (prefers-color-scheme: light) {
   :root:not([data-theme='light']) .crewlet-vendor-mark--mattermost,
+  :root:not([data-theme='light']) .crewlet-vendor-mark--qwen,
   :root:not([data-theme='light']) .crewlet-vendor-mark--scaleway,
   :root:not([data-theme='light']) .crewlet-vendor-mark--sentry {
     fill: currentColor;
+  }
+}
+
+/*
+ * Grok's and Hermes's dark drawings, on the same three cases. A class hides the
+ * dark one, since a reset's `svg { display: block }` beats its display="none".
+ */
+.crewlet-vendor-mark .crewlet-vendor-mark__dark {
+  display: none;
+}
+
+:root[data-theme='dark'] .crewlet-vendor-mark__light {
+  display: none;
+}
+
+:root[data-theme='dark'] .crewlet-vendor-mark__dark {
+  display: inline;
+}
+
+@media not (prefers-color-scheme: light) {
+  :root:not([data-theme='light']) .crewlet-vendor-mark__light {
+    display: none;
+  }
+
+  :root:not([data-theme='light']) .crewlet-vendor-mark__dark {
+    display: inline;
   }
 }
 
