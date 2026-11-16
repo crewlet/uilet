@@ -53,10 +53,22 @@ const ARTBOARD = [
   'square-kanban', 'star', 'sun', 'table', 'triangle-alert', 'user', 'users', 'wand-sparkles', 'wrench', 'x', 'zap',
 ];
 
+// The drawings the code host's screens (Gitlet) draw beyond the artboards above.
+const GITLET_ARTBOARDS = [
+  'git-commit-vertical', 'git-merge', 'git-pull-request', 'git-pull-request-closed', 'git-pull-request-draft',
+  'git-compare', 'tag', 'file', 'file-diff', 'circle-x', 'circle-dot', 'scale', 'unfold-vertical', 'rows-2',
+  'columns-2', 'train-front', 'square-plus', 'square-dot', 'square-minus', 'square-arrow-right',
+];
+
 describe('the vendored drawings', () => {
   it('carry every drawing the approved artboards draw', () => {
     assert.equal(new Set(ARTBOARD).size, 59);
     assert.deepEqual(ARTBOARD.filter((name) => !glyphs.has(name)), []);
+  });
+
+  it('carry every drawing the code host screens draw', () => {
+    assert.equal(new Set(GITLET_ARTBOARDS).size, 20);
+    assert.deepEqual(GITLET_ARTBOARDS.filter((name) => !glyphs.has(name)), []);
   });
 
   it('are each a round-capped stroke drawing on the 24 grid', async () => {

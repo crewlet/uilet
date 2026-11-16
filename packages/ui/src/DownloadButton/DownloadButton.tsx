@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { CheckGlyph, CircleAlertGlyph, SaveGlyph } from '@crewlethq/icons/glyphs';
+import { ArrowDownToLineGlyph, CheckGlyph, CircleAlertGlyph } from '@crewlethq/icons/glyphs';
 import { Button, type ButtonSize, type ButtonVariant } from '../Button/index.js';
 import { safeFilename, useDownload, type DownloadState } from '../utils/useDownload.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -7,7 +7,7 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 function downloadGlyph(state: DownloadState): ReactNode {
   if (state === 'started') return <CheckGlyph size="sm" />;
   if (state === 'failed') return <CircleAlertGlyph size="sm" />;
-  return <SaveGlyph size="sm" />;
+  return <ArrowDownToLineGlyph size="sm" />;
 }
 
 /**
