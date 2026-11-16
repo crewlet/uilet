@@ -324,6 +324,13 @@ export interface CanvasBoardProps {
   canvasLabels?: Partial<CanvasLabels> | undefined;
   /** The canvas underneath, for a caller that reveals or fits a board. */
   canvasRef?: Ref<CanvasHandle> | undefined;
+  /**
+   * Drawn over the canvas, above the boards, such as comment pins: place each
+   * item with the canvas handle's `screenRect` of its world point.
+   */
+  overlay?: ReactNode | undefined;
+  /** The view moved (a pan, a zoom or a resize): an overlay is placed again. */
+  onViewChange?: ((view: CanvasView, viewport: CanvasSize) => void) | undefined;
   className?: string | undefined;
 }
 
@@ -613,6 +620,8 @@ export function CanvasBoard({
   labels,
   canvasLabels,
   canvasRef,
+  overlay,
+  onViewChange,
   className,
 }: CanvasBoardProps) {
   const text = { ...LABELS, ...labels };
@@ -822,15 +831,21 @@ export function CanvasBoard({
         hint={hint}
         labels={canvasLabels}
         overlay={
-          toolbar ? (
-            <div className="crewlet-canvas-board__tools">
-              <CanvasToolbar label={text.tools} tools={tools} value={tool} onChange={setTool} />
-            </div>
+          toolbar || overlay ? (
+            <>
+              {overlay}
+              {toolbar ? (
+                <div className="crewlet-canvas-board__tools">
+                  <CanvasToolbar label={text.tools} tools={tools} value={tool} onChange={setTool} />
+                </div>
+              ) : null}
+            </>
           ) : undefined
         }
         onViewChange={(nextView, size) => {
           setView(nextView);
           setViewport(size);
+          onViewChange?.(nextView, size);
         }}
         ref={canvas}
       >

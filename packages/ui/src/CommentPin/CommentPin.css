@@ -1,0 +1,77 @@
+/* A comment thread's marker (CommentPin.tsx): a bubble whose bottom-start corner is the point. */
+
+.crewlet-comment-pin {
+  position: absolute;
+  z-index: var(--z-index-presence);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--color-surface-elevated);
+  border-radius: var(--radius-pill) var(--radius-pill) var(--radius-pill) 0;
+  background: var(--color-brand-accent);
+  box-shadow: var(--shadow-cursor);
+  color: var(--color-text-on-accent);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-100%);
+  transform-origin: bottom left;
+  transition:
+    transform var(--motion-duration-fast) ease,
+    box-shadow var(--motion-duration-fast) ease;
+}
+
+[dir='rtl'] .crewlet-comment-pin {
+  border-radius: var(--radius-pill) var(--radius-pill) 0 var(--radius-pill);
+  transform: translate(-100%, -100%);
+  transform-origin: bottom right;
+}
+
+.crewlet-comment-pin:hover {
+  transform: translateY(-100%) scale(1.08);
+}
+
+/* The pin draws an edge, so its ring sits over that edge rather than off it. */
+.crewlet-comment-pin:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-comment-pin--selected {
+  box-shadow:
+    0 0 0 2px var(--color-surface-elevated),
+    0 0 0 4px var(--color-brand-accent),
+    var(--shadow-cursor);
+  transform: translateY(-100%) scale(1.12);
+}
+
+.crewlet-comment-pin--resolved {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-default);
+}
+
+.crewlet-comment-pin--draft {
+  background: var(--color-surface-elevated);
+  border: 2px dashed var(--color-brand-accent);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-comment-pin__mark {
+  max-width: 2.5ch;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-comment-pin {
+    transition: none;
+  }
+}
