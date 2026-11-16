@@ -4,6 +4,8 @@ import { Button } from '../Button/index.js';
 import { Card } from '../Card/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
+import { NOTICE_LIST_LABELS, type NoticeLine } from '../NoticeList/NoticeList.js';
+import { NoticeLineView } from '../NoticeList/NoticeLineView.js';
 import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/headingLevel.js';
 
 /** How much an item matters: something broken, something owed, or news. */
@@ -15,8 +17,12 @@ export interface AttentionItem {
   tone: AttentionTone;
   /** What it is about, as a picture beside the title: a vendor's mark. Decorative. */
   media?: ReactNode;
+  /** Who or what it is about, in bold before the title. */
+  subject?: ReactNode;
   /** One line: what is wrong. */
   title: ReactNode;
+  /** The specifics under the title, one line per subject, folded after a few. */
+  lines?: readonly NoticeLine[] | undefined;
   /** One quieter line: who it stops, since when. */
   meta?: ReactNode;
   /** Its one fix, at the row's end: a small secondary button or link. */
@@ -33,6 +39,8 @@ export interface AttentionListLabels {
   details: string;
   /** The control that shows the rows past the first few: "Show 3 more". */
   more: (hidden: number) => string;
+  /** The fold at the end of a row's specifics: "and 6 more". */
+  andMore: (hidden: number) => string;
   less: string;
   /** The heading's counts in words, for a screen reader: "1 problem, 2 warnings". */
   summary: (counts: Record<AttentionTone, number>) => string;
@@ -45,6 +53,7 @@ export const ATTENTION_LIST_LABELS: AttentionListLabels = {
   tones: { danger: 'Problem', warning: 'Warning', info: 'Note' },
   details: 'Details',
   more: (hidden) => `Show ${hidden} more`,
+  andMore: NOTICE_LIST_LABELS.andMore,
   less: 'Show fewer',
   summary: (c) =>
     [
@@ -171,8 +180,23 @@ export function AttentionList({ items, collapseAfter = 3, labels: overrides, hea
                   <span className="crewlet-attention-list__text">
                     <span className="crewlet-attention-list__line">
                       <VisuallyHidden>{`${words.tones[item.tone]}: `}</VisuallyHidden>
+                      {item.subject != null ? (
+                        <>
+                          <strong className="crewlet-attention-list__subject">{item.subject}</strong>
+                          {': '}
+                        </>
+                      ) : null}
                       {item.title}
                     </span>
+                    {item.lines?.map((line, i) => (
+                      <NoticeLineView
+                        key={i}
+                        line={line}
+                        shown={4}
+                        andMore={words.andMore}
+                        className="crewlet-attention-list__items"
+                      />
+                    ))}
                     {item.meta ? <span className="crewlet-attention-list__meta">{item.meta}</span> : null}
                   </span>
                   <span className="crewlet-attention-list__end">
