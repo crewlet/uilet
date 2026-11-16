@@ -38,9 +38,10 @@
   transform: translateY(-100%) scale(1.08);
 }
 
+/* The pin draws an edge, so its ring sits over that edge rather than off it. */
 .crewlet-comment-pin:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-comment-pin--selected {
