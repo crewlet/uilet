@@ -2,12 +2,13 @@
  * The icon-only link: a place reached by its glyph, named in words, and saying
  * when the reader is already there.
  */
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { channels, installSheets, installThemed, px, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
+import { Tooltip } from '../Tooltip/index.js';
 import { IconButton, IconButtonLink } from './index.js';
 
 afterEach(cleanup);
@@ -103,5 +104,56 @@ test("a header's control is the md square with an 18px glyph, where the md squar
     expect(px(md.querySelector('svg')!, 'width')).toBe(14);
   } finally {
     uninstall();
+  }
+});
+
+// A GLYPH SAYS WHAT IT DOES without the caller asking: on keyboard focus at
+// once, where a native title shows nothing, and on hover in the kit's tip.
+test('an icon button says what it does on keyboard focus by default, with no native title beside it', () => {
+  vi.useFakeTimers();
+  try {
+    render(<IconButton label="Mark all read" icon={<svg />} />);
+    const button = screen.getByRole('button', { name: 'Mark all read' });
+    expect(button.getAttribute('title')).toBe('');
+    act(() => button.focus());
+    const tip = document.querySelector<HTMLElement>('[role="tooltip"]');
+    expect(tip?.textContent).toBe('Mark all read');
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("a caller's own tooltip turns the default off, so the pointer meets one tip", () => {
+  vi.useFakeTimers();
+  try {
+    render(
+      <Tooltip content="New message (N)">
+        <IconButton label="New message" icon={<svg />} tooltip={false} />
+      </Tooltip>,
+    );
+    fireEvent.pointerEnter(screen.getByRole('button', { name: 'New message' }));
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    const tips = document.querySelectorAll('[role="tooltip"]');
+    expect([...tips].map((t) => t.textContent)).toEqual(['New message (N)']);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("a caller's title is what the tip says, and no native title is drawn beside it", () => {
+  vi.useFakeTimers();
+  try {
+    render(<IconButton label="Previous" icon={<svg />} title="Previous ([)" />);
+    const button = screen.getByRole('button', { name: 'Previous' });
+    expect(button.getAttribute('title')).toBe('');
+    fireEvent.pointerEnter(button);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(document.querySelector('[role="tooltip"]')?.textContent).toBe('Previous ([)');
+  } finally {
+    vi.useRealTimers();
   }
 });

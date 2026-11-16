@@ -746,6 +746,7 @@ function RailFold({
           label={label}
           size="sm"
           variant="ghost"
+          tooltip={false}
           icon={compact ? <ChevronsRightGlyph size="sm" /> : <ChevronsLeftGlyph size="sm" />}
           aria-controls={railId}
           aria-expanded={!compact}

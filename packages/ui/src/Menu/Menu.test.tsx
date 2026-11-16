@@ -760,7 +760,7 @@ describe('a tooltip on the trigger', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  test('a text trigger takes it too, and a menu without one keeps the icon title', () => {
+  test('a text trigger takes it too, and an icon trigger without one says its label', () => {
     render(
       <>
         <Menu label="Add to the organization" trigger="Add" tooltip="Add a seat or a team" items={ACTIONS} />
@@ -771,7 +771,13 @@ describe('a tooltip on the trigger', () => {
     fireEvent.pointerEnter(text);
     settle();
     expect(tip()?.textContent).toBe('Add a seat or a team');
-    expect(screen.getByRole('button', { name: 'Row actions' }).getAttribute('title')).toBe('Row actions');
+    fireEvent.pointerLeave(text);
+    settle();
+    const icon = screen.getByRole('button', { name: 'Row actions' });
+    expect(icon.getAttribute('title')).toBe('');
+    fireEvent.pointerEnter(icon);
+    settle();
+    expect(tip()?.textContent).toBe('Row actions');
   });
 });
 

@@ -895,6 +895,7 @@ export function Canvas({
                       size="sm"
                       label={text.zoomOut}
                       title=""
+                      tooltip={false}
                       icon={<ZoomOutGlyph />}
                       onClick={() => centreZoom(1 / CANVAS_ZOOM_STEP)}
                       disabled={!ready}
@@ -913,6 +914,7 @@ export function Canvas({
                       size="sm"
                       label={text.zoomIn}
                       title=""
+                      tooltip={false}
                       icon={<ZoomInGlyph />}
                       onClick={() => centreZoom(CANVAS_ZOOM_STEP)}
                       disabled={!ready}
@@ -940,6 +942,7 @@ export function Canvas({
                       size="sm"
                       label={text.fit}
                       title=""
+                      tooltip={false}
                       icon={<FullscreenGlyph />}
                       onClick={() => content && fitNow(content)}
                       disabled={!ready}

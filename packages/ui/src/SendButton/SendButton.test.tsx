@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
 import { SendButton } from './index.js';
@@ -50,7 +50,7 @@ test('a reason holds Send, soft disabled, described and in the tooltip', () => {
   const send = screen.getByRole('button', { name: 'Send' });
   expect(send.getAttribute('aria-disabled')).toBe('true');
   expect(document.getElementById(send.getAttribute('aria-describedby')!)!.textContent).toBe('Write a question first');
-  expect(send.getAttribute('title')).toBe('Write a question first');
+  expect(tipOf(send)).toBe('Send. Write a question first');
   fireEvent.click(send);
   expect(onPress).not.toHaveBeenCalled();
 });
@@ -60,12 +60,12 @@ test('Stop runs freely, and a stop already under way holds a second press', () =
   const { rerender } = render(<SendButton mode="stop" onPress={onPress} />);
   const stop = screen.getByRole('button', { name: 'Stop' });
   expect(stop.hasAttribute('aria-disabled')).toBe(false);
-  expect(stop.getAttribute('title')).toBe('Stop');
+  expect(tipOf(stop)).toBe('Stop');
   fireEvent.click(stop);
   expect(onPress).toHaveBeenCalledTimes(1);
   rerender(<SendButton mode="stop" onPress={onPress} disabledReason="Stopping" />);
   expect(stop.getAttribute('aria-disabled')).toBe('true');
-  expect(stop.getAttribute('title')).toBe('Stopping');
+  expect(tipOf(stop)).toBe('Stop. Stopping');
   fireEvent.click(stop);
   expect(onPress).toHaveBeenCalledTimes(1);
 });
@@ -73,7 +73,7 @@ test('Stop runs freely, and a stop already under way holds a second press', () =
 test('takes its words from labels, and a title of its own while it can be pressed', () => {
   render(<SendButton mode="stop" onPress={() => {}} labels={{ stop: 'Stop answering' }} title="Stop answering (Esc)" />);
   const stop = screen.getByRole('button', { name: 'Stop answering' });
-  expect(stop.getAttribute('title')).toBe('Stop answering (Esc)');
+  expect(tipOf(stop)).toBe('Stop answering (Esc)');
 });
 
 test('the running arc and the glyph change stop under a reduced-motion preference', () => {
@@ -99,3 +99,23 @@ test('carries no axe violation in any state', async () => {
   });
   expect(result.violations).toEqual([]);
 });
+
+/** What the kit's tip says on hover, with no native title beside it. */
+function tipOf(el: HTMLElement): string | null | undefined {
+  expect(el.getAttribute('title')).toBe('');
+  vi.useFakeTimers();
+  try {
+    fireEvent.pointerEnter(el);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    const said = document.querySelector('[role="tooltip"]')?.textContent;
+    fireEvent.pointerLeave(el);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    return said;
+  } finally {
+    vi.useRealTimers();
+  }
+}

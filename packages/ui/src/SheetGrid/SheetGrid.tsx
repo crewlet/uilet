@@ -1113,7 +1113,7 @@ export function SheetGrid({
                             // grid's first column, and a centred tip hung past the grid.
                             <Tooltip content={actionsLabel} align="start">
                               {/* The tooltip carries the name; a native one beside it is a second tip. */}
-                              <IconButton {...trigger} label={actionsLabel} icon={<EllipsisGlyph />} size="sm" title="" />
+                              <IconButton {...trigger} label={actionsLabel} icon={<EllipsisGlyph />} size="sm" title="" tooltip={false} />
                             </Tooltip>
                           )}
                           items={[
@@ -1247,9 +1247,7 @@ export function SheetGrid({
           // control stands beside the header row, sticks with it, and is its
           // own tab stop after the grid's.
           <div className={cx('crewlet-sheet-grid__add-column', headOnFloor && 'crewlet-sheet-grid__add-column--floor')} style={{ height: `${headerHeight}px` }}>
-            <Tooltip content={labels.addColumn}>
-              <IconButton label={labels.addColumn} icon={<PlusGlyph size="xs" />} size="sm" title="" onClick={onAddColumn} />
-            </Tooltip>
+            <IconButton label={labels.addColumn} icon={<PlusGlyph size="xs" />} size="sm" onClick={onAddColumn} />
           </div>
         ) : null}
       </div>

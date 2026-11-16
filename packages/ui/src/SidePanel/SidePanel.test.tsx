@@ -313,6 +313,12 @@ test('as a sheet it is a modal dialog: Tab stays in it, Escape closes it, focus 
   field.focus();
   fireEvent.keyDown(field, { key: 'Tab' });
   expect(dialog.contains(document.activeElement)).toBe(true);
+  // The focused control's tip is the top layer, so the first Escape closes it.
+  if (screen.queryByRole('tooltip')) {
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    expect(screen.queryByRole('tooltip')).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Ask Crewlet' })).toBe(dialog);
+  }
   fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
   expect(screen.queryByRole('dialog')).toBeNull();
   expect(document.activeElement).toBe(ask);

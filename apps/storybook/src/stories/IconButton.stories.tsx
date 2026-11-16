@@ -86,6 +86,21 @@ export const WithDisabledReason: Story = {
   },
 };
 
+/**
+ * It says what it does on hover and keyboard focus without being asked: Tab
+ * to it, or rest the pointer on it. `tooltip={false}` is for a caller whose
+ * own Tooltip already says it.
+ */
+export const SaysWhatItDoes: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 32 }}>
+      <IconButton variant="ghost" icon={<SlidersVerticalGlyph />} label="Display" />
+      <IconButton variant="ghost" icon={<CopyGlyph />} label="Copy the link" tooltip="Copy the link to this page" />
+      <IconButton variant="ghost" icon={<TrashGlyph />} label="Delete" disabledReason="Only an admin can delete it." />
+    </div>
+  ),
+};
+
 /** Every step is a control token, so the smallest is 24px at every density. */
 export const Sizes: Story = {
   render: () => (

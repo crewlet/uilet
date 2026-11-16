@@ -549,11 +549,11 @@ export function Menu({
     onKeyDown: onTriggerKeyDown,
   };
 
-  // The tip steps aside while the menu is open, and the icon's own title gives way to it.
+  // The tip steps aside while the menu is open. An icon trigger always has one: its label, unless `tooltip` says more.
   const tipped = tooltip !== undefined && tooltip !== null;
-  const withTip = (element: ReactElement) =>
-    tipped ? (
-      <Tooltip content={<span aria-hidden="true">{tooltip}</span>} disabled={open}>
+  const withTip = (element: ReactElement, tip: ReactNode = tooltip) =>
+    tip !== undefined && tip !== null ? (
+      <Tooltip content={<span aria-hidden="true">{tip}</span>} disabled={open}>
         {element}
       </Tooltip>
     ) : (
@@ -566,13 +566,8 @@ export function Menu({
         ? renderTrigger(shared)
         : trigger === undefined
           ? withTip(
-              <IconButton
-                {...shared}
-                label={label}
-                icon={icon ?? <EllipsisVerticalGlyph />}
-                size="sm"
-                {...(tipped ? { title: '' } : {})}
-              />,
+              <IconButton {...shared} label={label} icon={icon ?? <EllipsisVerticalGlyph />} size="sm" title="" tooltip={false} />,
+              tipped ? tooltip : label,
             )
           : withTip(
               <Button
