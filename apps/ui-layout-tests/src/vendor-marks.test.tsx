@@ -1,0 +1,67 @@
+/**
+ * The coding harnesses' marks at 24px on a light and a dark document: one
+ * drawing shown for Grok and Hermes, Qwen reversed on dark, every square filled.
+ */
+import { afterEach, describe, expect, test } from 'vitest';
+import { page } from 'vitest/browser';
+import { flushSync } from 'react-dom';
+import { createRoot, type Root } from 'react-dom/client';
+import { VendorMark, type Vendor } from '@crewlethq/icons';
+
+let root: Root | null = null;
+let host: HTMLDivElement | null = null;
+
+afterEach(() => {
+  flushSync(() => root?.unmount());
+  host?.remove();
+  root = null;
+  host = null;
+  document.documentElement.removeAttribute('data-theme');
+});
+
+const HARNESSES: Vendor[] = ['claude', 'copilot', 'cursor', 'gemini-cli', 'grok', 'hermes', 'opencode', 'pi', 'qwen'];
+
+async function mount(theme: 'light' | 'dark', vendor: Vendor): Promise<SVGSVGElement> {
+  await page.viewport(800, 600);
+  document.documentElement.setAttribute('data-theme', theme);
+  host = document.createElement('div');
+  host.style.color = theme === 'dark' ? 'rgb(240, 240, 240)' : 'rgb(20, 20, 20)';
+  document.body.append(host);
+  root = createRoot(host);
+  flushSync(() => root!.render(<VendorMark vendor={vendor} size={24} />));
+  return host.querySelector('svg')!;
+}
+
+const shown = (element: Element) => getComputedStyle(element).display !== 'none';
+
+describe.each(['light', 'dark'] as const)('on a %s document', (theme) => {
+  test.each(['grok', 'hermes'] as const)("%s shows the vendor's drawing for the ground, filling the mark", async (vendor) => {
+    const mark = await mount(theme, vendor);
+    const light = mark.querySelector('.crewlet-vendor-mark__light')!;
+    const dark = mark.querySelector('.crewlet-vendor-mark__dark')!;
+    expect([shown(light), shown(dark)]).toEqual(theme === 'light' ? [true, false] : [false, true]);
+    // The drawing's own viewport, which its content is fitted into, is the mark's square.
+    const drawing = (theme === 'light' ? light : dark) as SVGSVGElement;
+    expect([drawing.width.baseVal.value, drawing.height.baseVal.value]).toEqual([24, 24]);
+  });
+
+  test("Qwen keeps its blue on the light ground and takes the text's ink on the dark one", async () => {
+    const mark = await mount(theme, 'qwen');
+    expect(getComputedStyle(mark.querySelector('path')!).fill).toBe(theme === 'light' ? 'rgb(8, 45, 255)' : 'rgb(240, 240, 240)');
+  });
+
+  test.each(HARNESSES)('%s is a 24px square its drawing spans', async (vendor) => {
+    const mark = await mount(theme, vendor);
+    const frame = mark.getBoundingClientRect();
+    expect([frame.width, frame.height]).toEqual([24, 24]);
+    // The paths of the drawing that is shown: a mark with two hides one of them.
+    const painted = [...mark.querySelectorAll('path')].filter((path) => shown(path.closest('svg')!));
+    const boxes = painted.map((path) => path.getBoundingClientRect()).filter((box) => box.width > 0);
+    expect(boxes.length).toBeGreaterThan(0);
+    const left = Math.min(...boxes.map((box) => box.left));
+    const right = Math.max(...boxes.map((box) => box.right));
+    const top = Math.min(...boxes.map((box) => box.top));
+    const bottom = Math.max(...boxes.map((box) => box.bottom));
+    expect(Math.max(right - left, bottom - top)).toBeGreaterThanOrEqual(24 * 0.8);
+  });
+});
