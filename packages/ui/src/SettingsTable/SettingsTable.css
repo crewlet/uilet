@@ -116,6 +116,24 @@
   color: var(--color-text-tertiary);
 }
 
+/* Where a pointer can hover, the key shows with its row, its focus or a copy's outcome, and keeps its place unseen otherwise. */
+@media (hover: hover) {
+  .crewlet-settings-table__key {
+    opacity: 0;
+  }
+
+  .crewlet-settings-table__row:is(:hover, :focus-within) .crewlet-settings-table__key,
+  .crewlet-settings-table__key:not([data-copy='idle']) {
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .crewlet-settings-table__key {
+    transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+  }
+}
+
 /* Tabular figures, so a column of numbers reads down its digits. */
 .crewlet-settings-table__value {
   min-width: 0;

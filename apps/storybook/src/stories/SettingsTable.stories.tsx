@@ -12,8 +12,9 @@ export default meta;
 type Story = StoryObj<typeof SettingsTable>;
 
 /**
- * One group of settings in a card: the name with its document key under it,
- * the value in tabular figures and where it comes from. Only the value that
+ * One group of settings in a card: the name with the control that copies its
+ * document key (shown with its row where a pointer can hover), the value in
+ * tabular figures and where it comes from. Only the value that
  * differs from its default carries a mark. The card is `padding="none"`, so
  * the rows' hairlines reach its edges.
  */

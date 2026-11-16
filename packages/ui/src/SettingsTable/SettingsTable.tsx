@@ -86,7 +86,8 @@ export interface SettingsTableRowProps extends HTMLAttributes<HTMLDivElement> {
    * The setting's address in the document it is written in
    * (`turn_engine.max_iterations`), for the reader who will go and change it
    * there. It is not drawn as words: a copy control after the name shows it
-   * on hover and focus and puts it on the clipboard.
+   * on hover and focus and puts it on the clipboard. Where a pointer can
+   * hover, the control itself shows only with its row.
    */
   settingKey?: string | undefined;
   /** The value in force, in its own unit. Drawn in tabular figures. */
@@ -151,7 +152,7 @@ SettingsTable.Row = SettingsTableRow;
 function SettingKey({ settingKey }: { settingKey: string }) {
   const { state, attempt, copy } = useClipboard({ failedResetMs: null });
   return (
-    <span className="crewlet-settings-table__key">
+    <span className="crewlet-settings-table__key" data-copy={state}>
       <IconButton
         size="sm"
         variant="ghost"
