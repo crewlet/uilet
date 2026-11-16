@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { CSSProperties } from 'react';
-import { VENDORS, VendorMark } from '@crewlethq/icons';
+import { VENDORS, VendorMark, type Vendor } from '@crewlethq/icons';
 import { themeScope } from '../themeScope';
 
 /*
@@ -13,6 +13,7 @@ import { themeScope } from '../themeScope';
  * GitHub's, Notion's, OpenCode's, Expo's and DigitalOcean's are the current
  * text colour and invert with the theme. SSH's key is Crewlet's own drawing,
  * in the brand mark's violet on every theme.
+ * Marks that follow the document's theme (Grok, Hermes, Qwen) are in the pinned stories below.
  * The muted state is the answer to "available, not connected", and it drains
  * the mark's own colour rather than inventing a second palette for somebody
  * else's brand.
@@ -131,32 +132,57 @@ export const OneWeight: StoryObj = {
   ),
 };
 
-/**
- * The coding CLIs a model runs, each mark beside the CLI's own name, in both
- * themes: Claude's Clay spark holds on either ground, and OpenCode's mark
- * takes the text colour.
- */
-export const CodingCLIs: StoryObj = {
-  render: () => (
-    <div style={{ padding: 'var(--spacing-5)', display: 'grid', gap: 'var(--spacing-5)', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-      {(['light', 'dark'] as const).map((theme) => (
-        <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
-          <p style={caption}>{theme}</p>
-          <div style={row}>
-            <span style={label}>
-              <VendorMark vendor="claude" size={20} />
-              Claude Code
-            </span>
-            <span style={label}>
-              <VendorMark vendor="opencode" size={20} />
-              OpenCode
-            </span>
-          </div>
-        </div>
+/** The coding harnesses a model runs that have a mark, each beside the harness's own name. */
+const HARNESSES = [
+  ['claude', 'Claude Code'],
+  ['cursor', 'Cursor'],
+  ['gemini-cli', 'Gemini CLI'],
+  ['copilot', 'GitHub Copilot'],
+  ['grok', 'Grok'],
+  ['hermes', 'Hermes Agent'],
+  ['opencode', 'OpenCode'],
+  ['pi', 'Pi'],
+  ['qwen', 'Qwen Code'],
+] as const satisfies readonly (readonly [Vendor, string])[];
+
+/** Every mark at the dashboard's 24px on the document's theme: the harnesses by name, muted, then every vendor. */
+const everyMark = () => (
+  <div style={{ ...panel, margin: 'var(--spacing-5)' }}>
+    <p style={caption}>coding harnesses, 24px</p>
+    <div style={row}>
+      {HARNESSES.map(([vendor, name]) => (
+        <span key={vendor} style={label}>
+          <VendorMark vendor={vendor} size={24} />
+          {name}
+        </span>
       ))}
     </div>
-  ),
-};
+    <p style={caption}>muted</p>
+    <div style={row}>
+      {HARNESSES.map(([vendor, name]) => (
+        <span key={vendor} style={label}>
+          <VendorMark vendor={vendor} size={24} muted />
+          {name}
+        </span>
+      ))}
+    </div>
+    <p style={caption}>every vendor, 24px</p>
+    <div style={row}>
+      {VENDORS.map((vendor) => (
+        <span key={vendor} style={label}>
+          <VendorMark vendor={vendor} size={24} />
+          {vendor}
+        </span>
+      ))}
+    </div>
+  </div>
+);
+
+/** EVERY MARK ON A LIGHT DOCUMENT, at 24px. */
+export const EveryMarkLight: StoryObj = { render: everyMark, globals: { theme: 'light' } };
+
+/** The same marks on a dark document: Grok and Hermes draw their dark files, and Qwen reverses. */
+export const EveryMarkDark: StoryObj = { render: everyMark, globals: { theme: 'dark' } };
 
 /**
  * SSH, BESIDE THE MARKS IT SITS AMONG. The SSH Connection integration is
