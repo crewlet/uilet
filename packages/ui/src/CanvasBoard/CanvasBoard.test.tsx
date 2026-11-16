@@ -698,3 +698,17 @@ test('a hidden open control takes no room from its board\'s name, and a touch sc
   expect(getComputedStyle(open()).opacity).not.toBe('0');
   uninstall();
 });
+
+// ---- a caller's overlay ------------------------------------------------------
+
+test("a caller's overlay is drawn over the canvas beside the tools, and hears every view change", () => {
+  const onViewChange = vi.fn();
+  const { container } = mount({ overlay: <span data-pin="1">pin</span>, onViewChange });
+  const overlay = container.querySelector('.crewlet-canvas__overlay')!;
+  expect(overlay.querySelector('[data-pin="1"]')).not.toBeNull();
+  expect(overlay.querySelector('.crewlet-canvas-board__tools')).not.toBeNull();
+  expect(onViewChange).toHaveBeenCalled();
+  const [view, viewport] = onViewChange.mock.lastCall!;
+  expect(viewport).toEqual({ width: 1200, height: 800 });
+  expect(view.k).toBeGreaterThan(0);
+});
