@@ -69,6 +69,13 @@ export interface TooltipProps extends TriggerAttributes {
   /** Nothing opens: for a trigger whose tip is only worth showing sometimes. */
   disabled?: boolean | undefined;
   /**
+   * Whether the tip describes its trigger (true by default). False for a tip
+   * that repeats what the trigger's own name already says, such as an icon
+   * button's label: the panel is then hidden from assistive technology rather
+   * than linked and read twice.
+   */
+  describes?: boolean | undefined;
+  /**
    * A press opens the tip and pins it until dismissed, for a held control:
    * on touch the press is the only way to ask why.
    */
@@ -157,6 +164,7 @@ export function Tooltip({
   placement = 'top',
   align = 'center',
   disabled = false,
+  describes = true,
   pressOpens = false,
   openDelay = OPEN_DELAY,
   closeDelay = CLOSE_DELAY,
@@ -340,7 +348,7 @@ export function Tooltip({
   const trigger = cloneElement(child, {
     ...passed,
     ref: triggerRef,
-    'aria-describedby': open ? cx(describedBy, panelId) : describedBy,
+    'aria-describedby': open && describes ? cx(describedBy, panelId) : describedBy,
     onPointerEnter: (event: PointerEvent) => {
       over.current.pointer = true;
       if (!over.current.pressed) show(openDelay);
@@ -403,6 +411,7 @@ export function Tooltip({
       }}
       id={panelId}
       role="tooltip"
+      aria-hidden={describes ? undefined : true}
       className={cx(
         'crewlet-tooltip',
         `crewlet-tooltip--${place?.side ?? (placement === 'top' ? 'above' : 'below')}`,

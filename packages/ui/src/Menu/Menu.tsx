@@ -553,7 +553,7 @@ export function Menu({
   const tipped = tooltip !== undefined && tooltip !== null;
   const withTip = (element: ReactElement, tip: ReactNode = tooltip) =>
     tip !== undefined && tip !== null ? (
-      <Tooltip content={<span aria-hidden="true">{tip}</span>} disabled={open}>
+      <Tooltip content={tip} describes={false} disabled={open}>
         {element}
       </Tooltip>
     ) : (

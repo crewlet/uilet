@@ -180,8 +180,6 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'CommandPalette/CommandPalette.css | .crewlet-palette__step:focus-visible',
       // A link preview unfurled under a message: a bar and words, no box.
       'LinkCard/LinkCard.css | .crewlet-link-card:focus-visible',
-      // A receipt's "and 4 more", a plain text button in the line's words.
-      'DeliveryReceipt/DeliveryReceipt.css | .crewlet-delivery-receipt__more:focus-visible',
       // NOT HERE: a box that clips its words and draws its link's ring for it
       // (a header fact's value, an org label's name, truncating text). Its
       // ring is inside its own box, since one standing off it is cut by the

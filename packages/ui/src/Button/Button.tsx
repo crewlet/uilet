@@ -212,7 +212,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   );
   return (
     <>
-      {tip ? <Tooltip content={<span aria-hidden="true">{tip}</span>} pressOpens={disabledReason !== undefined}>{button}</Tooltip> : button}
+      {tip ? <Tooltip content={tip} describes={false} pressOpens={disabledReason !== undefined}>{button}</Tooltip> : button}
       {disabledReason === undefined ? null : <VisuallyHidden id={reasonId}>{disabledReason}</VisuallyHidden>}
     </>
   );

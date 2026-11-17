@@ -45,6 +45,7 @@ npm run dev`,
 export const YamlConfigWithFilename: Story = {
   args: {
     filename: 'company.yaml',
+    language: 'yaml',
     showLineNumbers: true,
     code: `mission: Ship the product and keep customers happy.
 org_units:
@@ -186,6 +187,47 @@ export const CopyInTheCorner: Story = {
         language="sh"
         copyPlacement="corner"
         copyLabel="Copy the commands"
+      />
+    </div>
+  ),
+};
+
+const CONFIG = `{
+  "company": "Acme",
+  "seats": 12,
+  "live": true,
+  "budget": { "monthly_usd": 2500.5, "alert_at": 0.8 },
+  "owner": null,
+  "providers": [
+    { "id": "claude", "harness": "claude-code", "fallback": false },
+    { "id": "local", "endpoint": "https://models.example.com/v1/a-very-long-path/that-keeps-going/and-wraps-inside-the-block" }
+  ]
+}`;
+
+/**
+ * A `json` or `yaml` block coloured by kind: keys, strings, numbers, booleans,
+ * null and punctuation each in their own syntax ink, and a long value wrapped
+ * inside the block. The inks are aliases the page's theme resolves, so switch
+ * the theme from the toolbar rather than scoping one panel.
+ */
+export const ColouredByKind: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-3)', maxWidth: 560 }}>
+      <CodeBlock language="json" code={CONFIG} />
+      <CodeBlock
+        language="yaml"
+        showLineNumbers
+        code={`# the company
+company: Acme
+seats: 12
+live: true
+owner: ~
+prompt: |
+  You review: every change
+roles:
+  - handle: cto
+    kind: human
+tags: [ops, "on call", 3]`}
       />
     </div>
   ),

@@ -1,5 +1,12 @@
-import { useState, type HTMLAttributes, type ReactNode } from "react";
-import { CheckGlyph, TriangleAlertGlyph } from "@crewlethq/icons/glyphs";
+import type { HTMLAttributes, ReactNode } from "react";
+import {
+  CheckGlyph,
+  CircleDashedGlyph,
+  TriangleAlertGlyph,
+  UsersGlyph,
+} from "@crewlethq/icons/glyphs";
+import { Tooltip } from "../Tooltip/index.js";
+import { VisuallyHidden } from "../VisuallyHidden/index.js";
 import { cx } from "../utils/cx.js";
 
 /** One seat a message reached, or will reach. */
@@ -9,53 +16,68 @@ export interface DeliveryReceiptRecipient {
   /** How the reader knows the seat: "pm", "Product Manager". */
   name: string;
   /**
-   * Why the message reached the seat, in the caller's words, drawn in
-   * brackets after the seats that share it: "every message". Leave it out
-   * where the reason needs no note (a mention, a reply to their thread).
+   * Why the message reached the seat, in the caller's words, noted after the
+   * seats that share it: "every message". Leave it out where the reason
+   * needs no note (a mention, a reply to their thread).
    */
   reason?: string | undefined;
   /** The seat has answered: it replied in the thread, or in the conversation. */
   answered?: boolean | undefined;
+  /** When it answered, in the caller's words: "10:44". Read only with `answered`. */
+  answeredAt?: string | undefined;
 }
 
 /**
- * `sent` is a receipt under a message that was posted ("Reached pm"); `draft`
- * is the composer's word on what a post will do before it is sent ("Will
- * reach pm").
+ * `sent` is a receipt under a message that was posted; `draft` is what a post
+ * will do before it is sent, over a composer.
  */
 export type DeliveryReceiptTense = "sent" | "draft";
 
+/**
+ * Where a receipt stands, which its mark draws: reached and `waiting`,
+ * `partly` answered, all `answered`, reached `none`, or a `draft`.
+ */
+export type DeliveryReceiptState = "waiting" | "partly" | "answered" | "none" | "draft";
+
 export interface DeliveryReceiptLabels {
   /** A posted message nobody it reached has answered yet: "Reached pm and qa". */
-  reached: (who: ReactNode) => ReactNode;
-  /**
-   * A posted message every seat it reached has answered, how many they are
-   * given: "Reached pm, who answered"; "Reached pm and qa, who both answered".
-   */
-  reachedAnswered: (who: ReactNode, count: number) => ReactNode;
-  /**
-   * A posted message some of the seats it reached have answered, each seat
-   * named once: "pm answered, waiting on qa and sre".
-   */
-  partlyAnswered: (answered: ReactNode, waiting: ReactNode) => ReactNode;
+  reached: (who: string) => string;
+  /** Every seat it reached answered: "Reached pm, who answered"; "Reached pm and qa, who both answered". */
+  reachedAnswered: (who: string, count: number) => string;
+  /** Some of the seats answered, each named once: "pm answered, waiting on qa and sre". */
+  partlyAnswered: (answered: string, waiting: string) => string;
   /** The reach of a draft: "Will reach pm". */
-  reaches: (who: ReactNode) => ReactNode;
+  reaches: (who: string) => string;
   /** A posted message that reached no agent. */
   none: string;
   /** A draft that will reach no agent. */
   noneDraft: string;
-  /** The seats in one reason's group, every one printed: "qa and sre", "pm, qa and sre". */
+  /** The seats in one reason's group: "qa and sre", "pm, qa and sre". */
   list: (names: readonly string[]) => string;
   /** One reason's note: "(every message)". */
   reason: (words: string) => string;
   /** The groups of different reasons, joined: "pm; qa and sre (every message)". */
   groups: (groups: readonly string[]) => string;
-  /** A routing cap left seats out: a sentence after the receipt's own. */
+  /** A routing cap left seats out. */
   truncated: string;
-  /** The names past `max`, as the button that shows them: "and 4 more". */
+  /** The names past `max` in the tip: "4 more". */
   more: (count: number) => string;
-  /** The same button once every name is shown. */
-  fewer: string;
+  /** The tip's head over a receipt nobody has answered yet. */
+  waitingTitle: string;
+  /** The tip's head over a receipt some seats answered: "1 of 3 answered". */
+  partlyTitle: (answered: number, total: number) => string;
+  /** The tip's head over a receipt every seat answered: "Answered", "All 3 answered". */
+  answeredTitle: (count: number) => string;
+  /** The tip's row of the seats a receipt reached. */
+  reachedRow: string;
+  /** The tip's row of the seats that answered, and the word before each answer's time. */
+  answeredRow: string;
+  /** The tip's row of the seats still to answer. */
+  waitingRow: string;
+  /** The tip's row of when the message was sent. */
+  sentRow: string;
+  /** One seat that answered and when: "pm, 10:44". */
+  answeredAt: (name: string, at: string) => string;
 }
 
 /** "pm", "pm and qa", "pm, qa and sre". */
@@ -65,26 +87,26 @@ function andList(names: readonly string[]): string {
 }
 
 export const DELIVERY_RECEIPT_LABELS: DeliveryReceiptLabels = {
-  reached: (who) => <>Reached {who}</>,
-  reachedAnswered: (who, count) => (
-    <>
-      Reached {who}, who {count === 2 ? "both " : count > 2 ? "all " : ""}answered
-    </>
-  ),
-  partlyAnswered: (answered, waiting) => (
-    <>
-      {answered} answered, waiting on {waiting}
-    </>
-  ),
-  reaches: (who) => <>Will reach {who}</>,
+  reached: (who) => `Reached ${who}`,
+  reachedAnswered: (who, count) =>
+    `Reached ${who}, who ${count === 2 ? "both " : count > 2 ? "all " : ""}answered`,
+  partlyAnswered: (answered, waiting) => `${answered} answered, waiting on ${waiting}`,
+  reaches: (who) => `Will reach ${who}`,
   none: "Reached no agent",
   noneDraft: "Will reach no agent",
   list: andList,
   reason: (words) => `(${words})`,
   groups: (groups) => groups.join("; "),
   truncated: "Some seats were not reached",
-  more: (count) => `and ${count} more`,
-  fewer: "Show fewer",
+  more: (count) => `${count} more`,
+  waitingTitle: "No answer yet",
+  partlyTitle: (answered, total) => `${answered} of ${total} answered`,
+  answeredTitle: (count) => (count === 1 ? "Answered" : `All ${count} answered`),
+  reachedRow: "Reached",
+  answeredRow: "Answered",
+  waitingRow: "Waiting on",
+  sentRow: "Sent",
+  answeredAt: (name, at) => `${name}, ${at}`,
 };
 
 export interface DeliveryReceiptProps extends Omit<
@@ -100,57 +122,91 @@ export interface DeliveryReceiptProps extends Omit<
    * room), so the list is not everybody the message named.
    */
   truncated?: boolean | undefined;
+  /** When a sent message was posted, in the caller's words: "10:42". */
+  sentAt?: string | undefined;
   /**
-   * A short sentence after a "no agent" line, saying why or what to do:
+   * What to do about a receipt that reached no agent, after its words:
    * "This room has no agent members. Mention one to ask it."
    */
-  hint?: ReactNode;
+  hint?: string | undefined;
   /**
-   * Whether the line is its own polite live region (false by default). A
-   * composer's draft line that changes as a mention is typed is announced
-   * by passing true; a receipt in a transcript is not, since a log that
-   * announced every receipt would talk over the conversation.
+   * The faces of the seats a draft reaches (a decorative `AvatarStack`),
+   * drawn in place of its mark.
+   */
+  faces?: ReactNode;
+  /**
+   * Whether the receipt is its own polite live region (false by default). A
+   * composer's draft receipt that changes as a mention is typed passes true;
+   * a receipt in a transcript does not, or it would talk over the conversation.
    */
   announce?: boolean | undefined;
   /**
-   * How many names each list in the sentence prints before the rest are
-   * counted in a button that shows them all. 1 by default; a whole number of
-   * at least 1, or Infinity for every name. A single name past the cap is
-   * printed rather than counted, as it costs no more room than "and 1 more".
+   * How many names each list in the tip shows before counting the rest: 4 by
+   * default, a whole number of at least 1, or Infinity. One name past the cap
+   * is shown, as it costs no more room than "1 more". The receipt's
+   * accessible name always carries every one.
    */
   max?: number | undefined;
   labels?: Partial<DeliveryReceiptLabels> | undefined;
 }
 
+/** One list of seats as words: grouped by reason in routing order, past `cap` counted. */
+function seats(
+  list: readonly DeliveryReceiptRecipient[],
+  withReasons: boolean,
+  cap: number,
+  labels: DeliveryReceiptLabels,
+): string {
+  const shown = list.length > cap + 1 ? list.slice(0, cap) : list;
+  const hidden = list.length - shown.length;
+  const order: string[] = [];
+  const byReason = new Map<string, string[]>();
+  for (const r of shown) {
+    const key = withReasons ? (r.reason ?? "") : "";
+    const names = byReason.get(key);
+    if (names) names.push(r.name);
+    else {
+      order.push(key);
+      byReason.set(key, [r.name]);
+    }
+  }
+  return labels.groups(
+    order.map((key, index) => {
+      const names = [...(byReason.get(key) ?? [])];
+      if (hidden > 0 && index === order.length - 1) names.push(labels.more(hidden));
+      const joined = labels.list(names);
+      return key ? `${joined} ${labels.reason(key)}` : joined;
+    }),
+  );
+}
+
 /**
- * Who a person's message reached, and who answered, as ONE SENTENCE that
- * names each seat once: "Reached pm"; "Reached pm, who answered"; "Reached pm
- * and qa, who both answered"; "pm answered, waiting on qa and sre"; "Reached
- * no agent". Over a composer, the same line in the future tense says who a
- * post WILL reach before it is sent.
+ * Who a person's message reached, and who answered, as a quiet MARK whose
+ * facts open in a kit Tooltip on hover, keyboard focus or a press: a dashed
+ * circle while nobody has answered, a check once somebody has (with the count
+ * while others are still to answer), and a warning where it reached no agent.
+ * Over a composer the same receipt, in the future tense, says who a post WILL
+ * reach, drawn as their faces where the caller has them.
  *
- * ONE SENTENCE, NOT TWO PARTS. It used to say whom the message reached and
- * then, after a dot, who answered, so every seat that answered was named
- * twice ("Reached pm · pm answered"), and the full stop a screen reader was
- * given in place of the dot turned up beside it in a copy (". ·"). What the
- * eye reads is now exactly what a screen reader reads and what a copy
- * carries, real punctuation included.
+ * THE WORDS ARE THE NAME. The trigger's accessible name is the receipt in
+ * full, every seat named once, so a screen reader hears what the tip shows
+ * without opening it; the tip lays the same facts out for the eye and is
+ * hidden from assistive technology (`describes={false}`).
  *
- * QUIET BY DESIGN. It sits in a message's footer at the compact step in the
- * tertiary ink, because it is a fact a person checks rather than reads: an
- * answer lifts it to the secondary ink with a check, and the one tone it
- * raises is the warning on a message that reached no agent, the case where a
- * person would otherwise wait for an answer nobody was asked for. Colour is
- * never alone: the mark and the words say it, and the marks are hidden from
- * a screen reader, which has the words.
+ * QUIET BY DESIGN. It sits at the meta step in the tertiary ink, an answer
+ * lifts it to the secondary ink, and the one raised tone is the warning on a
+ * message that reached no agent. Colour is never alone: each state has its
+ * own mark and its own words.
  */
 export function DeliveryReceipt({
   recipients,
   tense = "sent",
   truncated = false,
+  sentAt,
   hint,
+  faces,
   announce = false,
-  max = 1,
+  max = 4,
   labels: overrides,
   className,
   ...rest
@@ -160,119 +216,138 @@ export function DeliveryReceipt({
       `DeliveryReceipt max must be a whole number of at least 1; it was ${max}`,
     );
   }
-  const [expanded, setExpanded] = useState(false);
   const labels = overrides
     ? { ...DELIVERY_RECEIPT_LABELS, ...overrides }
     : DELIVERY_RECEIPT_LABELS;
-  const cap = expanded ? Infinity : max;
-  const none = recipients.length === 0;
   // A draft has nobody who answered it yet, whatever a caller passed.
-  const answered =
-    tense === "sent" ? recipients.filter((r) => r.answered) : [];
-  const waiting =
-    tense === "sent" ? recipients.filter((r) => !r.answered) : recipients;
+  const answered = tense === "sent" ? recipients.filter((r) => r.answered) : [];
+  const waiting = tense === "sent" ? recipients.filter((r) => !r.answered) : recipients;
+  const state: DeliveryReceiptState =
+    recipients.length === 0
+      ? "none"
+      : tense === "draft"
+        ? "draft"
+        : answered.length === 0
+          ? "waiting"
+          : waiting.length === 0
+            ? "answered"
+            : "partly";
 
-  // The names past the cap are a button rather than a tooltip, so a keyboard
-  // and a touch reader can open the whole list in place. One state opens
-  // every list in the sentence.
-  let capped = false;
-  const toggle = (count: number) => (
-    <button
-      type="button"
-      className="crewlet-delivery-receipt__more"
-      aria-expanded={expanded}
-      onClick={() => setExpanded((was) => !was)}
-    >
-      {expanded ? labels.fewer : labels.more(count)}
-    </button>
+  // The sentence names every seat: nothing expands a capped list in a name.
+  const every = (list: readonly DeliveryReceiptRecipient[], withReasons: boolean) =>
+    seats(list, withReasons, Infinity, labels);
+  const capped = (list: readonly DeliveryReceiptRecipient[], withReasons: boolean) =>
+    seats(list, withReasons, max, labels);
+  const sentence = {
+    none: tense === "draft" ? labels.noneDraft : labels.none,
+    draft: labels.reaches(every(recipients, true)),
+    waiting: labels.reached(every(recipients, true)),
+    answered: labels.reachedAnswered(every(recipients, true), answered.length),
+    partly: labels.partlyAnswered(every(answered, false), every(waiting, true)),
+  }[state];
+
+  // THE TIP: a head saying where it stands, then one row a fact.
+  const head = {
+    none: sentence,
+    draft: labels.reaches(capped(recipients, true)),
+    waiting: labels.waitingTitle,
+    answered: labels.answeredTitle(answered.length),
+    partly: labels.partlyTitle(answered.length, recipients.length),
+  }[state];
+  const answers = (() => {
+    const shown = answered.length > max + 1 ? answered.slice(0, max) : answered;
+    const lines = shown.map((r) => (r.answeredAt ? labels.answeredAt(r.name, r.answeredAt) : r.name));
+    if (shown.length < answered.length) lines.push(labels.more(answered.length - shown.length));
+    return lines;
+  })();
+  const rows: { key: string; values: string[] }[] = [];
+  if (state === "waiting") rows.push({ key: labels.reachedRow, values: [capped(recipients, true)] });
+  if (state === "partly" || state === "answered") rows.push({ key: labels.answeredRow, values: answers });
+  if (state === "partly") rows.push({ key: labels.waitingRow, values: [capped(waiting, true)] });
+  if (tense === "sent" && sentAt) rows.push({ key: labels.sentRow, values: [sentAt] });
+  const notes: string[] = [];
+  if (truncated && state !== "none") notes.push(labels.truncated);
+  if (state === "none" && hint) notes.push(hint);
+
+  // What a screen reader is told: the sentence, then each fact the tip adds to it.
+  const said = [
+    sentence,
+    ...answered
+      .filter((r) => r.answeredAt)
+      .map((r) => `${labels.answeredRow} ${labels.answeredAt(r.name, r.answeredAt!)}`),
+    ...(tense === "sent" && sentAt ? [`${labels.sentRow} ${sentAt}`] : []),
+    ...notes,
+  ].join(". ");
+
+  const tip = (
+    <span className="crewlet-delivery-receipt__tip">
+      <span className="crewlet-delivery-receipt__tip-head">{head}</span>
+      {rows.length > 0 ? (
+        <span className="crewlet-delivery-receipt__tip-facts">
+          {rows.map((row) => (
+            <span key={row.key} className="crewlet-delivery-receipt__tip-row">
+              <span className="crewlet-delivery-receipt__tip-key">{row.key}</span>
+              <span className="crewlet-delivery-receipt__tip-values">
+                {row.values.map((value, i) => (
+                  <span key={i}>{value}</span>
+                ))}
+              </span>
+            </span>
+          ))}
+        </span>
+      ) : null}
+      {notes.map((note) => (
+        <span key={note} className="crewlet-delivery-receipt__tip-note">
+          {note}
+        </span>
+      ))}
+    </span>
   );
-  // One list of seats in the sentence: grouped by reason in the order the
-  // routing reached them, its names past the cap counted in the button.
-  const seats = (
-    list: readonly DeliveryReceiptRecipient[],
-    withReasons: boolean,
-  ): ReactNode => {
-    const shown = list.length > cap + 1 ? list.slice(0, cap) : list;
-    const hidden = list.length - shown.length;
-    if (hidden > 0) capped = true;
-    const order: string[] = [];
-    const byReason = new Map<string, string[]>();
-    for (const r of shown) {
-      const key = withReasons ? (r.reason ?? "") : "";
-      const names = byReason.get(key);
-      if (names) names.push(r.name);
-      else {
-        order.push(key);
-        byReason.set(key, [r.name]);
-      }
-    }
-    const words = labels.groups(
-      order.map((key) => {
-        const names = byReason.get(key) ?? [];
-        // A list the button continues is printed with commas, so the
-        // button's "and 4 more" closes it.
-        const joined = hidden > 0 ? names.join(", ") : labels.list(names);
-        return key ? `${joined} ${labels.reason(key)}` : joined;
-      }),
-    );
-    return hidden > 0 ? (
-      <>
-        {words} {toggle(hidden)}
-      </>
-    ) : (
-      words
-    );
-  };
 
-  let sentence: ReactNode;
-  if (none) sentence = tense === "draft" ? labels.noneDraft : labels.none;
-  else if (tense === "draft") sentence = labels.reaches(seats(recipients, true));
-  else if (answered.length === 0) sentence = labels.reached(seats(recipients, true));
-  else if (waiting.length === 0)
-    sentence = labels.reachedAnswered(seats(recipients, true), answered.length);
-  else sentence = labels.partlyAnswered(seats(answered, false), seats(waiting, true));
-  // Opened, every list shows every name and no "and N more" is left to close
-  // it again, so "Show fewer" stands once, at the end of the sentence.
-  const fewer = expanded && !capped ? toggle(0) : null;
+  const drawnFaces = state === "draft" && faces !== undefined && faces !== null;
+  const mark = {
+    none: <TriangleAlertGlyph size="sm" />,
+    draft: drawnFaces ? null : <UsersGlyph size="sm" />,
+    waiting: <CircleDashedGlyph size="sm" />,
+    answered: <CheckGlyph size="sm" />,
+    partly: <CheckGlyph size="sm" />,
+  }[state];
 
-  // The sentences after the receipt's own, each after a real full stop.
-  const after: { key: string; className?: string; words: ReactNode }[] = [];
-  if (truncated && !none) after.push({ key: "truncated", words: labels.truncated });
-  if (none && hint)
-    after.push({ key: "hint", className: "crewlet-delivery-receipt__hint", words: hint });
-
-  const mark = none ? (
-    <TriangleAlertGlyph size="xs" />
-  ) : answered.length > 0 ? (
-    <CheckGlyph size="xs" />
-  ) : null;
   return (
-    <p
+    <span
       {...rest}
-      role={announce ? "status" : undefined}
       data-tense={tense}
+      data-state={state}
       className={cx(
         "crewlet-delivery-receipt",
-        none && "crewlet-delivery-receipt--none",
-        answered.length > 0 && "crewlet-delivery-receipt--answered",
+        `crewlet-delivery-receipt--${state}`,
         className,
       )}
     >
-      {mark ? (
-        <span className="crewlet-delivery-receipt__mark" aria-hidden="true">
-          {mark}
+      <Tooltip content={tip} describes={false} pressOpens align="start">
+        <button type="button" className="crewlet-delivery-receipt__trigger" aria-label={said}>
+          {drawnFaces ? (
+            <span className="crewlet-delivery-receipt__faces" aria-hidden="true">
+              {faces}
+            </span>
+          ) : null}
+          {mark ? (
+            <span className="crewlet-delivery-receipt__mark" aria-hidden="true">
+              {mark}
+            </span>
+          ) : null}
+          {state === "partly" ? (
+            <span className="crewlet-delivery-receipt__count" aria-hidden="true">
+              {answered.length}/{recipients.length}
+            </span>
+          ) : null}
+        </button>
+      </Tooltip>
+      {announce ? (
+        <span role="status">
+          <VisuallyHidden>{said}</VisuallyHidden>
         </span>
       ) : null}
-      <span className="crewlet-delivery-receipt__words">
-        {sentence}
-        {fewer ? <> {fewer}</> : null}
-        {after.map((part) => (
-          <span key={part.key} className={part.className}>
-            {". "}
-            {part.words}
-          </span>
-        ))}
-      </span>
-    </p>
+    </span>
   );
 }

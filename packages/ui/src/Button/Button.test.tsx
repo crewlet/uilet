@@ -452,7 +452,7 @@ describe('a held control says why in the kit Tooltip, when asked to', () => {
       rest();
       expect(tip()?.textContent).toBe('Changing the configuration needs Admin access.');
       // Shown, not read: the reason is already the button's description.
-      expect(tip()?.querySelector('[aria-hidden="true"]')).not.toBeNull();
+      expect(tip()?.getAttribute('aria-hidden')).toBe('true');
       // The description as it is read: what an element says, past anything hidden from it.
       const read = (el: HTMLElement | null) => {
         const copy = el?.cloneNode(true) as HTMLElement | undefined;

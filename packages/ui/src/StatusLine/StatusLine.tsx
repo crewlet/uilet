@@ -52,7 +52,7 @@ export function StatusLine({ label, tone, pulse = false, notes = [], detail, ove
       data-quiet={tone === undefined ? '' : undefined}
     >
       {described ? (
-        <Tooltip content={<span aria-hidden="true">{detail}</span>} placement="top">
+        <Tooltip content={detail} describes={false} placement="top">
           <span className="crewlet-status-line__main">{word}</span>
         </Tooltip>
       ) : (

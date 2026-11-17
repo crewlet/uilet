@@ -1,64 +1,90 @@
 /*
- * Who a person's message reached and who answered, under its words; and the
- * same line over a composer, before the message is sent.
- *
- * ONE LINE OF TEXT: a sentence that wraps like any other, with its mark
- * standing at its start. It was a row of flex parts with a dot between them,
- * which made two facts out of one and named the seats that answered twice.
+ * Who a person's message reached and who answered, as a mark under its words
+ * or beside a composer, whose facts open in the kit tooltip.
  */
 .crewlet-delivery-receipt {
+  display: inline-flex;
+  align-items: center;
   max-width: 100%;
-  margin: 0;
   color: var(--color-text-tertiary);
   font-size: var(--crewlet-chat-meta);
   line-height: var(--font-line-height-snug);
-  overflow-wrap: anywhere;
 }
 
-/* The mark stands on the sentence's first line, centred on it, a step
-   before the words. */
-.crewlet-delivery-receipt__mark {
+/* The mark is the control: a quiet text-ink button whose hit area reaches past
+   the glyph without moving the line around it. */
+.crewlet-delivery-receipt__trigger {
   display: inline-flex;
-  vertical-align: middle;
-  margin-inline-end: var(--spacing-1);
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: var(--size-target-min);
+  min-height: var(--size-target-min);
+  margin: calc(var(--spacing-1) * -1);
+  padding: var(--spacing-1);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: default;
 }
 
-/* An answer lifts the line to the secondary ink, check and all. */
-.crewlet-delivery-receipt--answered {
+.crewlet-delivery-receipt__trigger:hover {
   color: var(--color-text-secondary);
 }
 
-/* The one raised tone: a message nobody was asked to answer. Its mark takes
-   the warning ink, its words the secondary ink; the hint stays quiet. */
-.crewlet-delivery-receipt--none {
+.crewlet-delivery-receipt__trigger:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-delivery-receipt__mark,
+.crewlet-delivery-receipt__faces {
+  display: inline-flex;
+  flex: none;
+}
+
+.crewlet-delivery-receipt__count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* An answer lifts the receipt to the secondary ink, check and all. */
+.crewlet-delivery-receipt--answered,
+.crewlet-delivery-receipt--partly {
   color: var(--color-text-secondary);
 }
 
+/* The one raised tone: a message nobody was asked to answer. */
 .crewlet-delivery-receipt--none .crewlet-delivery-receipt__mark {
   color: var(--color-feedback-warning-ink);
 }
 
-.crewlet-delivery-receipt__hint {
-  color: var(--color-text-tertiary);
+/* ── the tip ──────────────────────────────────────────────────────────── */
+
+/* A head saying where it stands, then a key and its values a row. */
+.crewlet-delivery-receipt__tip {
+  display: grid;
+  gap: var(--spacing-1);
 }
 
-/* The names past the cap: a quiet text button in the line's own type, so the
-   receipt keeps its register; it underlines under the pointer as a link does. */
-.crewlet-delivery-receipt__more {
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-xs);
-  background: none;
-  color: var(--color-text-secondary);
-  font: inherit;
-  cursor: pointer;
+.crewlet-delivery-receipt__tip-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--spacing-1) var(--spacing-2);
+  font-weight: var(--font-weight-regular);
 }
 
-.crewlet-delivery-receipt__more:hover {
-  text-decoration: underline;
+.crewlet-delivery-receipt__tip-row {
+  display: contents;
 }
 
-.crewlet-delivery-receipt__more:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+.crewlet-delivery-receipt__tip-key,
+.crewlet-delivery-receipt__tip-note {
+  color: var(--color-tooltip-meta);
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-delivery-receipt__tip-values {
+  display: grid;
+  min-width: 0;
 }

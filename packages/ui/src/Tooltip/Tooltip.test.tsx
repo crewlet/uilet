@@ -61,6 +61,21 @@ test('the pointer resting on the trigger opens it, and the trigger is described 
   expect(trigger.getAttribute('aria-describedby')).toBe(panel.id);
 });
 
+test('a tip that repeats its trigger\'s name is hidden from assistive technology rather than read twice', async () => {
+  render(
+    <Tooltip content="Copy" describes={false}>
+      <button aria-label="Copy">C</button>
+    </Tooltip>,
+  );
+  const trigger = screen.getByRole('button', { name: 'Copy' });
+  tabTo(trigger);
+  const panel = tip()!;
+  expect(panel.getAttribute('aria-hidden')).toBe('true');
+  expect(trigger.getAttribute('aria-describedby')).toBeNull();
+  vi.useRealTimers();
+  expect((await axe.run(document.body, { resultTypes: ['violations'] })).violations).toEqual([]);
+});
+
 test('focus opens it at once, because a keyboard reader asked for it', () => {
   render(
     <Tooltip content="Runs at 09:00">

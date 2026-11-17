@@ -519,3 +519,84 @@ describe('copy in the corner', () => {
     }
   });
 });
+
+describe('coloured by kind', () => {
+  const CONFIG = '{\n  "name": "Acme",\n  "seats": 12,\n  "live": true,\n  "owner": null,\n  "tags": ["a", "b"]\n}';
+
+  const kinds = (root: Element) =>
+    [...root.querySelectorAll('.crewlet-codeblock__tok')].map((span) => [
+      span.className.replace(/.*crewlet-codeblock__tok--/, ''),
+      span.textContent,
+    ]);
+
+  test('a JSON block draws each key, string, number, boolean, null and sign in its own kind', () => {
+    const { container } = render(<CodeBlock code={CONFIG} language="json" />);
+    const code = container.querySelector('code')!;
+    expect(kinds(code)).toEqual([
+      ['punctuation', '{'],
+      ['key', '"name"'],
+      ['punctuation', ':'],
+      ['string', '"Acme"'],
+      ['punctuation', ','],
+      ['key', '"seats"'],
+      ['punctuation', ':'],
+      ['number', '12'],
+      ['punctuation', ','],
+      ['key', '"live"'],
+      ['punctuation', ':'],
+      ['boolean', 'true'],
+      ['punctuation', ','],
+      ['key', '"owner"'],
+      ['punctuation', ':'],
+      ['null', 'null'],
+      ['punctuation', ','],
+      ['key', '"tags"'],
+      ['punctuation', ':'],
+      ['punctuation', '['],
+      ['string', '"a"'],
+      ['punctuation', ','],
+      ['string', '"b"'],
+      ['punctuation', ']'],
+      ['punctuation', '}'],
+    ]);
+    // The text is the code, character for character, so a copy and a find still work.
+    expect(code.textContent).toBe(CONFIG);
+  });
+
+  test('numbered lines are coloured too, and keep their text', () => {
+    const { container } = render(<CodeBlock code={CONFIG} language="json" showLineNumbers />);
+    const lines = [...container.querySelectorAll('.crewlet-codeblock__linecontent')];
+    expect(lines.map((line) => line.textContent).join('\n')).toBe(CONFIG);
+    expect(kinds(lines[1]!)).toEqual([
+      ['key', '"name"'],
+      ['punctuation', ':'],
+      ['string', '"Acme"'],
+      ['punctuation', ','],
+    ]);
+  });
+
+  // Mutation: render a token with innerHTML and the image is created.
+  test('markup in a value stays text', () => {
+    const code = '{"bio": "<img src=x onerror=alert(1)>"}';
+    const { container } = render(<CodeBlock code={code} language="json" />);
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('code')!.textContent).toBe(code);
+  });
+
+  test('another language, or highlight off, is drawn plain', () => {
+    const { container, rerender } = render(<CodeBlock code={CONFIG} language="go" />);
+    expect(container.querySelector('.crewlet-codeblock__tok')).toBeNull();
+    rerender(<CodeBlock code={CONFIG} language="json" highlight={false} />);
+    expect(container.querySelector('.crewlet-codeblock__tok')).toBeNull();
+    expect(container.querySelector('code')!.textContent).toBe(CONFIG);
+  });
+
+  test('each kind takes its own syntax ink', () => {
+    const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'CodeBlock.css'), 'utf8');
+    const inks = Object.fromEntries(
+      [...sheet.matchAll(/\.crewlet-codeblock__tok--(\w+) \{\s*color: var\((--color-syntax-[\w-]+)\);/g)].map((m) => [m[1], m[2]]),
+    );
+    expect(Object.keys(inks).sort()).toEqual(['boolean', 'comment', 'key', 'null', 'number', 'punctuation', 'string']);
+    expect(new Set(Object.values(inks)).size).toBe(7);
+  });
+});

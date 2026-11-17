@@ -107,12 +107,25 @@
   /*
    * AN INLINE BLOCK, not a flex box, because it sits inside words a reader
    * copies: a browser copies a line break before an inline flex container,
-   * so "ask @miles" came out over two lines. Its face is centred by its line
-   * instead (`line-height` is its own height).
+   * so "ask @miles" came out over two lines. Its initials are centred on the
+   * strut below, so the face's own line takes no height.
    */
   display: inline-block;
   text-align: center;
-  line-height: var(--crewlet-avatar-size);
+  line-height: 0;
+  /* Its foot is its baseline (it clips), set 0.22em under the words' as
+     InlineRef sets its square, so a face alone in a sentence centres on the
+     capitals too. */
+  vertical-align: -0.22em;
+}
+
+/* A full-height strut its initials or glyph are middle-aligned with, which
+   puts their middle on the box's centre rather than on the sentence's x-height. */
+.crewlet-avatar--text.crewlet-avatar--fallback::before {
+  content: '';
+  display: inline-block;
+  height: 100%;
+  vertical-align: middle;
 }
 
 /* An image face is a block at every other size. */
@@ -120,7 +133,7 @@
   display: inline-block;
 }
 
-/* A glyph face (a token's key) centred by the line too, never a flex box. */
+/* A glyph face (a token's key) centred on the strut too, never a flex box. */
 .crewlet-avatar--text .crewlet-avatar__icon {
   display: inline-block;
   vertical-align: middle;
@@ -139,7 +152,8 @@
    */
   --crewlet-avatar-initials-size: 0.5em;
   font-size: var(--crewlet-avatar-initials-size);
-  line-height: 1;
+  /* The font's own line, as the steps set it: Geist's caps centre on it. */
+  line-height: normal;
   vertical-align: middle;
 }
 
