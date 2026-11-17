@@ -34,6 +34,11 @@ export type PopoverAlign = 'start' | 'end';
 export type PopoverSide = 'top' | 'bottom';
 export type PopoverWidth = 'auto' | 'match';
 /**
+ * How tall the panel may grow. Either way it is never taller than its layer,
+ * and scrolls rather than run past the layer's edge.
+ */
+export type PopoverHeight = 'capped' | 'layer';
+/**
  * What the panel IS. `dialog` is the default because a panel holding a form, a
  * date grid or a filter editor is a dialog; `menu` and `listbox` are for a
  * panel whose children carry the matching item roles; `none` is for a panel
@@ -50,6 +55,12 @@ interface PopoverBaseProps {
   side?: PopoverSide | undefined;
   /** `match` sizes the panel to the anchor, which is what a Select wants. */
   width?: PopoverWidth | undefined;
+  /**
+   * `capped` (the default) holds a list or a short form to 360px or 60% of the
+   * window. `layer` lets a form grow to its layer's height, so its fields and
+   * actions show at once where there is room.
+   */
+  height?: PopoverHeight | undefined;
   /**
    * Moves the panel along the anchor's edge after it is aligned, in pixels; a
    * negative shift moves it toward the start. A function is asked on every
@@ -153,6 +164,7 @@ export function Popover({
   align = 'start',
   side = 'bottom',
   width = 'auto',
+  height = 'capped',
   alignOffset,
   sideOffset = LAYER_GAP,
   initialFocus,
@@ -236,6 +248,10 @@ export function Popover({
      * placement pass is synchronous by nature: it writes, reads back, commits.
      */
     box.style.width = width === 'match' ? `${rect.width}px` : '';
+    // THE ROOM ITS LAYER HAS, which the stylesheet holds the panel's height to,
+    // set before the panel is measured so it is placed at the height it gets.
+    const room = host.height - 2 * LAYER_GAP;
+    if (room > 0) box.style.setProperty('--crewlet-popover-room', `${room}px`);
     const own = box.getBoundingClientRect();
     const asked = shift.current;
     const offset = typeof asked === 'function' ? asked(box, at) : (asked ?? 0);
@@ -371,6 +387,7 @@ export function Popover({
         `crewlet-popover--${place?.side ?? (side === 'top' ? 'above' : 'below')}`,
         container !== null && container !== document.body ? 'crewlet-popover--in-host' : 'crewlet-popover--fixed',
         entrance === 'instant' && 'crewlet-popover--instant',
+        height === 'layer' && 'crewlet-popover--layer-height',
         className,
       )}
       style={{ ...style, zIndex: layer.zIndex }}

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Popover, Button, Inline } from '@crewlethq/ui';
+import { Popover, Button, Inline, LayerHost, Textarea } from '@crewlethq/ui';
 
 const meta: Meta<typeof Popover> = {
   title: 'UI/Popover',
@@ -71,6 +71,54 @@ export const AlignEnd: Story = {
           <Button size="small" variant="danger">Delete</Button>
         </Inline>
       </Popover>
+    </div>
+  ),
+};
+
+/**
+ * A form in a short layer (`height="layer"`): as tall as it needs where the
+ * layer has room, and never past the layer's edge. Opened from the foot of
+ * the box it opens above, and scrolls rather than be cut off.
+ */
+export const FormHeldToItsLayer: Story = {
+  render: () => (
+    <div
+      style={{
+        position: 'relative',
+        height: 320,
+        border: '1px dashed var(--color-border-default)',
+        overflow: 'hidden',
+      }}
+    >
+      <LayerHost>
+        <div style={{ position: 'absolute', left: 16, bottom: 16 }}>
+          <Popover
+            label="New comment"
+            height="layer"
+            trigger={(open, toggle) => (
+              <Button variant="outline" onClick={toggle}>
+                {open ? 'Close' : 'Comment'}
+              </Button>
+            )}
+          >
+            {(close) => (
+              <div style={{ display: 'grid', gap: 'var(--spacing-3)', padding: 'var(--spacing-4)' }}>
+                <p style={{ margin: 0 }}>A point on the page</p>
+                <div style={{ height: 120, borderRadius: 'var(--radius-sm)', background: 'var(--color-surface-inset)' }} />
+                <Textarea aria-label="Comment" rows={4} />
+                <Inline gap={2} justify="end">
+                  <Button size="small" variant="ghost" onClick={close}>
+                    Cancel
+                  </Button>
+                  <Button size="small" onClick={close}>
+                    Comment
+                  </Button>
+                </Inline>
+              </div>
+            )}
+          </Popover>
+        </div>
+      </LayerHost>
     </div>
   ),
 };
