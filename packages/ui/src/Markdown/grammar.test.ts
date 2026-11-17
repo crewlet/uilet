@@ -4,7 +4,14 @@
  * parts both depend on.
  */
 import { describe, expect, test } from 'vitest';
-import { markdownInline, parseMarkdown, parseMarkdownSpans, safeHref, type MarkdownBlock } from './grammar.js';
+import {
+  markdownCodeText,
+  markdownInline,
+  parseMarkdown,
+  parseMarkdownSpans,
+  safeHref,
+  type MarkdownBlock,
+} from './grammar.js';
 
 const inline = (text: string) => [...markdownInline(text)].map((m) => m.groups);
 
@@ -348,5 +355,12 @@ describe('reading a body', () => {
     const inner = (block: MarkdownBlock | undefined): MarkdownBlock | undefined =>
       block?.kind === 'list' ? inner(block.items[0]?.blocks[block.items[0].blocks.length - 1]) : block;
     expect(inner(list)).toEqual({ kind: 'paragraph', text: 'level 2\nindented 0\nlazy 0\nindented 1\nlazy 1' });
+  });
+});
+
+describe('a code span', () => {
+  test('reads a line ending inside it as a space', () => {
+    const [m] = [...markdownInline('`Tasks | About\n| History`')];
+    expect(markdownCodeText(m?.groups.code ?? '')).toBe('Tasks | About | History');
   });
 });

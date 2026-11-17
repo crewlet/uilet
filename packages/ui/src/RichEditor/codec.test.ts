@@ -236,3 +236,60 @@ describe('a list item holding blocks', () => {
     expect(signature(readMarkdown(writeBlock(list)).doc.firstChild!)).toBe(signature(list));
   });
 });
+
+describe('a code span wrapped across lines', () => {
+  // A line that started inside a code span was escaped as though it started
+  // in text, and an escape inside a span is a literal backslash.
+  const dashboardDesign = [
+    '- **A project opens on its work.** The Tasks lens is the list at the top of',
+    '  the page, as the approved Board draws a project: no header about the',
+    '  container above the work, and no row of lenses either: the lenses sit on the',
+    '  page bar beside the name they are lenses on (`Worklet › ENG Core · Tasks | About',
+    '  | History | Files`, `PageLenses`, the chips All projects\' lenses wear too),',
+    '  controlling the region below by id.',
+  ].join('\n');
+
+  test.each([
+    ['at the top level', 'see `Tasks | About\n| History | Files` here', 'see `Tasks | About | History | Files` here'],
+    ['inside an item', '- see `Tasks | About\n  | History | Files` here', '- see `Tasks | About | History | Files` here'],
+  ])('%s is written on one line, unescaped', (_where, text, want) => {
+    const written = canonicalMarkdown(text);
+    expect(written).toBe(want);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+  });
+
+  test("in dashboard-design.md's lens sentence, reads back as written", () => {
+    const written = canonicalMarkdown(dashboardDesign);
+    expect(written).not.toContain('\\|');
+    expect(written).toContain('`Worklet › ENG Core · Tasks | About | History | Files`');
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(dashboardDesign).doc));
+    expect(canonicalMarkdown(written)).toBe(written);
+  });
+
+  test('reads as one run of code, the line ending a space', () => {
+    const p = readMarkdown('see `Tasks | About\n| History` here').doc.firstChild!;
+    const code: string[] = [];
+    p.forEach((n) => {
+      if (n.marks.some((m) => m.type.name === 'code')) code.push(n.text ?? '');
+    });
+    expect(code).toEqual(['Tasks | About | History']);
+  });
+});
+
+describe('a pipe at the start of a line', () => {
+  const br = () => schema.node('hard_break', { style: 'backslash' });
+  const t = (text: string) => schema.text(text);
+
+  test('is left alone where no delimiter row follows', () => {
+    const p = schema.node('paragraph', null, [t('a'), br(), t('| b')]);
+    expect(writeBlock(p)).toBe('a\\\n| b');
+    expect(signature(readMarkdown(writeBlock(p)).doc.firstChild!)).toBe(signature(p));
+  });
+
+  test('is escaped where the next line would make it a table header', () => {
+    const p = schema.node('paragraph', null, [t('a'), br(), t('| b |'), br(), t('| --- |')]);
+    const back = readMarkdown(writeBlock(p)).doc;
+    expect(back.childCount).toBe(1);
+    expect(signature(back.firstChild!)).toBe(signature(p));
+  });
+});

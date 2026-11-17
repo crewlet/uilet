@@ -927,11 +927,19 @@ export function* markdownInline(text: string): Generator<MarkdownInlineMatch> {
 }
 
 /**
- * A code span's content as it reads: ONE leading and one trailing space go,
- * which is how CommonMark lets a span start with a backtick of its own.
+ * A code span's content as it reads.
+ *
+ * A LINE ENDING INSIDE IT IS A SPACE, as CommonMark reads it (6.1): a span
+ * wrapped across two lines of a paragraph is one run of code, and a reader
+ * that kept the line ending handed a writer a line that starts inside the
+ * span, where no escape can stop it reading as a block (an escape inside a
+ * span is a literal backslash).
+ *
+ * ONE leading and one trailing space go, which is how CommonMark lets a span
+ * start with a backtick of its own.
  */
 export function markdownCodeText(code: string): string {
-  return code.replace(/^ | $/g, '');
+  return code.replace(/\n/g, ' ').replace(/^ | $/g, '');
 }
 
 /**

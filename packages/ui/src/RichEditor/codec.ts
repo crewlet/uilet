@@ -539,6 +539,13 @@ function table(node: PMNode, s: Spelling): string {
  * Escape what the START of a line would read as a block: a heading, a quote,
  * a list marker, a rule or a fence. Inline escaping has already taken the
  * asterisks and backticks.
+ *
+ * NO LINE STARTS INSIDE A CODE SPAN, where an escape would be a literal
+ * backslash: a code span is written on one line ([codeSpan]), so every line
+ * this sees starts in text. A pipe at a line's start is left alone: it is a
+ * table's header only over a delimiter row, and a paragraph that would read
+ * so fails its read-back ([writeBlock]) and is written with every punctuation
+ * character escaped.
  */
 function lineStarts(text: string): string {
   return text
@@ -549,8 +556,7 @@ function lineStarts(text: string): string {
         .replace(/^>/, '\\>')
         .replace(/^([-+])(?=\s)/, '\\$1')
         .replace(/^(\d{1,9})([.)])(?=\s)/, '$1\\$2')
-        .replace(/^(-{3,}|_{3,})\s*$/, '\\$1')
-        .replace(/^\|/, '\\|'),
+        .replace(/^(-{3,}|_{3,})\s*$/, '\\$1'),
     )
     .join('\n');
 }
@@ -709,8 +715,13 @@ function content(node: PMNode, s: Spelling, cell: boolean, next: PMNode | undefi
   return inLink ? escaped.replace(/(^|[^\\])\]/g, '$1\\]') : escaped;
 }
 
-/** A code span whose fence no run of backticks inside it can close. */
-function codeSpan(text: string, cell: boolean): string {
+/**
+ * A code span whose fence no run of backticks inside it can close, on one
+ * line: a line ending inside a span reads as a space ([markdownCodeText]), so
+ * one is written as the space it is.
+ */
+function codeSpan(code: string, cell: boolean): string {
+  const text = code.replace(/\n/g, ' ');
   const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
   const fence = '`'.repeat(longest + 1);
   const pad = (side: string) => (side === ' ' || side === '`' ? ' ' : '');
@@ -786,7 +797,9 @@ export function signature(node: PMNode): string {
       .join('+');
     const link = linkOf(node);
     const tag = `${marks}${link ? `@${link.attrs.href as string}` : ''}`;
-    return [...(node.text ?? '')].map((c) => (c === ' ' ? ' ' : `${c}${tag ? `{${tag}}` : ''}`)).join('');
+    // A line ending in a code span is the space a reader sees there.
+    const text = node.marks.some((m) => m.type.name === 'code') ? (node.text ?? '').replace(/\n/g, ' ') : (node.text ?? '');
+    return [...text].map((c) => (c === ' ' ? ' ' : `${c}${tag ? `{${tag}}` : ''}`)).join('');
   }
   const attrs = visibleAttrs(node);
   let inner = '';
