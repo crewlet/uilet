@@ -8,7 +8,7 @@ import { page, userEvent } from 'vitest/browser';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import type { ReactNode } from 'react';
-import { Card, DataGrid, IconButton, SettingsTable } from '@crewlethq/ui';
+import { Card, DataGrid, IconButton, SettingForm, SettingsTable } from '@crewlethq/ui';
 
 let root: Root | null = null;
 let host: HTMLElement | null = null;
@@ -152,4 +152,17 @@ test('on a phone, keeps the controls on the name’s line and nothing overflows'
   const confirm = table.querySelector('.crewlet-settings-table__confirm')!;
   expect(box(confirm).right).toBeLessThanOrEqual(box(table).right);
   expect(table.scrollWidth).toBeLessThanOrEqual(table.clientWidth);
+});
+
+test("a setting's panel leaves no gap for an outcome not yet said", async () => {
+  await page.viewport(1440, 900);
+  const at = await mount(400, (
+    <SettingForm label="Time zone" htmlFor="tz" status={<div role="status" />} onSave={() => {}} onCancel={() => {}}>
+      <input id="tz" />
+    </SettingForm>
+  ));
+  const form = at.querySelector('.crewlet-setting-form')!;
+  const field = box(form.querySelector('.crewlet-form-field')!);
+  const actions = box(form.querySelector('.crewlet-setting-form__actions')!);
+  expect(actions.top - field.bottom).toBeCloseTo(Number.parseFloat(style(form).rowGap), 0);
 });

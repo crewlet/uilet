@@ -17,7 +17,9 @@
   overflow-wrap: anywhere;
 }
 
-.crewlet-setting-form__status:empty {
+/* No gap for an outcome not yet said: the slot holds the caller's own status element, empty while idle. */
+.crewlet-setting-form__status:empty,
+.crewlet-setting-form__status:not(:has(> :not(:empty))) {
   display: none;
 }
 
