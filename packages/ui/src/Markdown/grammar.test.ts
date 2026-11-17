@@ -364,3 +364,35 @@ describe('a code span', () => {
     expect(markdownCodeText(m?.groups.code ?? '')).toBe('Tasks | About | History');
   });
 });
+
+describe('a list under a line of text', () => {
+  // CommonMark 5.3: only a bullet item with text, or a numbered one from 1,
+  // interrupts a paragraph.
+  test.each([
+    ['a number other than 1', 'It took\n365) days in all'],
+    ['a number other than 1, with a dot', 'see\n2. below'],
+    ['an empty bullet', 'The total is\n-\nand more'],
+  ])('is the paragraph\'s next line when it starts with %s', (_case, source) => {
+    expect(parseMarkdown(source)).toEqual([{ kind: 'paragraph', text: source }]);
+  });
+
+  test.each([
+    ['a bullet with text', 'Steps\n- one'],
+    ['the number 1', 'Steps\n1. one'],
+  ])('starts a list when it begins with %s', (_case, source) => {
+    expect(parseMarkdown(source).map((b) => b.kind)).toEqual(['paragraph', 'list']);
+  });
+
+  test("holds inside an item's paragraph too", () => {
+    expect(parseMarkdown('- It took\n  365) days')[0]).toEqual(
+      expect.objectContaining({ items: [{ checked: null, blocks: [{ kind: 'paragraph', text: 'It took\n365) days' }] }] }),
+    );
+    expect(parseMarkdown('5. a\n   3. b')[0]).toEqual(
+      expect.objectContaining({ loose: false, items: [{ checked: null, blocks: [{ kind: 'paragraph', text: 'a\n3. b' }] }] }),
+    );
+  });
+
+  test('a lazy line that is a marker still ends the item', () => {
+    expect(parseMarkdown('- a\n2. b').map((b) => b.kind)).toEqual(['list', 'list']);
+  });
+});

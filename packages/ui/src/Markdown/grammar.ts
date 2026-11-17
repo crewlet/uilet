@@ -687,11 +687,14 @@ class BlockReader {
       return;
     }
 
-    // AN EMPTY ITEM DOES NOT INTERRUPT A PARAGRAPH, as in CommonMark: a "-"
-    // or a "1." under a line of text is that text's next line, so a sum
-    // wrapped before its last figure is not cut into a paragraph and a list.
+    // ONLY A LIST THAT COULD START A DOCUMENT INTERRUPTS A PARAGRAPH, as in
+    // CommonMark (5.3): an item with text, numbered from 1 if it is numbered.
+    // A "-" or a "1." under a line of text is that text's next line, so a sum
+    // wrapped before its last figure is not cut into a paragraph and a list,
+    // and neither is a sentence wrapped before "365) days".
     const head = itemStart(rest);
-    if (head && !(leaf?.kind === 'paragraph' && head.text === '')) {
+    const interrupts = head !== null && head.text !== '' && (!head.ordered || head.number === 1);
+    if (head && (leaf?.kind !== 'paragraph' || interrupts)) {
       this.closeLeaf(top);
       const list: ListFrame = {
         kind: 'list',
