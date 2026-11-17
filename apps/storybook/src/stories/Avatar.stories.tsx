@@ -8,6 +8,7 @@ import {
   Avatar,
   AvatarStack,
   Card,
+  InlineRef,
   NODE_HUES,
   type AvatarStackMember,
 } from '@crewlethq/ui';
@@ -210,6 +211,31 @@ export const Sizes: Story = {
           </div>
         );
       })}
+    </div>
+  ),
+};
+
+/**
+ * A FACE IN A SENTENCE (`size="text"`), a person's initials beside an agent's
+ * character at several type sizes: the same box, and the initials on its
+ * centre, as at every step.
+ */
+export const TextSizeInASentence: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 12 }}>
+      {[13, 14, 16, 20].map((fontSize) => (
+        <p key={fontSize} style={{ margin: 0, fontSize, lineHeight: 1.45 }}>
+          Asked{' '}
+          <InlineRef markShape="face" mark={<Avatar name="Miles Ingram" kind="human" size="text" decorative />}>
+            Miles Ingram
+          </InlineRef>{' '}
+          and{' '}
+          <InlineRef markShape="face" mark={<Avatar name="CTO" kind="agent" character="gemlet" hue="cyan" size="text" decorative />}>
+            CTO
+          </InlineRef>{' '}
+          and <Avatar name="Miles Ingram" kind="human" size="text" /> about the release.
+        </p>
+      ))}
     </div>
   ),
 };

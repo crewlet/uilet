@@ -140,7 +140,8 @@
   overflow: hidden;
 }
 
-.crewlet-inline-ref__mark--face > * {
+/* Two classes, over the face's own sentence placement (Avatar.css). */
+.crewlet-inline-ref .crewlet-inline-ref__mark--face > * {
   vertical-align: top;
 }
 
