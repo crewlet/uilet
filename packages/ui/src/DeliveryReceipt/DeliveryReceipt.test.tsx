@@ -1,145 +1,218 @@
 /**
- * Who a person's message reached and who answered, under its words, and the
- * same line in the future tense over a composer: one sentence that names
- * each seat once, which the eye, a screen reader and a copy all read alike,
- * quiet except for a message that reached no agent.
+ * Who a person's message reached and who answered, as a mark whose facts open
+ * in the kit tooltip: the mark says where it stands, the tip says who and
+ * when, and the trigger's name says all of it to a screen reader.
  */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
 import axe from "axe-core";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { CheckGlyph, CircleDashedGlyph, TriangleAlertGlyph } from "@crewlethq/icons/glyphs";
+import { tabTo } from "../../../../apps/ui-tests/src/keyboard.js";
 import { installSheets } from "../../../../apps/ui-tests/src/cascade.js";
-import { DeliveryReceipt } from "./index.js";
+import { DeliveryReceipt, type DeliveryReceiptRecipient } from "./index.js";
 
-afterEach(cleanup);
+beforeEach(() => {
+  vi.useFakeTimers();
+});
 
-/** What a screen reader reads: the text outside every aria-hidden subtree. */
-function spoken(el: Node): string {
-  if (el instanceof Element && el.getAttribute("aria-hidden") === "true")
-    return "";
-  if (el.nodeType === Node.TEXT_NODE) return el.textContent ?? "";
-  return Array.from(el.childNodes).map(spoken).join("");
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
+
+function trigger(): HTMLElement {
+  return document.querySelector<HTMLElement>(".crewlet-delivery-receipt__trigger")!;
 }
 
-const text = (el: Element) => spoken(el).replace(/\s+/g, " ").trim();
+/** Opens the tip as a pointer resting on the mark does, and returns its lines, a row's cells joined by " | ". */
+function openTip(): string[] {
+  fireEvent.pointerEnter(trigger());
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+  const tip = document.querySelector<HTMLElement>('[role="tooltip"]');
+  if (!tip) throw new Error("the tip did not open");
+  return [
+    ...tip.querySelectorAll(
+      ".crewlet-delivery-receipt__tip-head, .crewlet-delivery-receipt__tip-row, .crewlet-delivery-receipt__tip-note",
+    ),
+  ].map((part) =>
+    part.classList.contains("crewlet-delivery-receipt__tip-row")
+      ? [part.firstElementChild!.textContent, ...[...part.lastElementChild!.children].map((v) => v.textContent)].join(" | ")
+      : part.textContent!,
+  );
+}
 
-// ONE SENTENCE, EACH SEAT ONCE, IN EVERY STATE. It used to be two parts
-// with a dot between them, so a seat that answered was named twice and the
-// full stop only a screen reader was meant to hear came out of a copy as
-// ". ·". Mutation: put the answered part back after the reach.
-test.each([
+/** A glyph as the receipt's mark draws it, rendered on its own. */
+function drawn(glyph: ReactElement): string {
+  const { container, unmount } = render(glyph);
+  const html = container.innerHTML;
+  unmount();
+  return html;
+}
+
+// EACH STATE IS ITS OWN MARK AND ITS OWN SENTENCE, every seat named once, and
+// the sentence is the trigger's name. Mutation: draw the check while nobody
+// has answered, or name an answered seat again among those reached.
+test.each<{ state: string; recipients: DeliveryReceiptRecipient[]; said: string; mark: ReactElement }>([
   {
-    state: "reached, nobody has answered yet",
+    state: "waiting",
     recipients: [{ id: "sre", name: "Site Reliability Engineer" }],
     said: "Reached Site Reliability Engineer",
+    mark: <CircleDashedGlyph size="sm" />,
   },
   {
-    state: "reached, and it answered",
+    state: "answered",
     recipients: [{ id: "sre", name: "Site Reliability Engineer", answered: true }],
     said: "Reached Site Reliability Engineer, who answered",
+    mark: <CheckGlyph size="sm" />,
   },
   {
-    state: "reached two, and both answered",
+    state: "answered",
     recipients: [
       { id: "pm", name: "pm", answered: true },
       { id: "qa", name: "qa", answered: true },
     ],
     said: "Reached pm and qa, who both answered",
+    mark: <CheckGlyph size="sm" />,
   },
   {
-    state: "reached three, and all answered",
-    recipients: [
-      { id: "pm", name: "pm", answered: true },
-      { id: "qa", name: "qa", answered: true },
-      { id: "sre", name: "sre", answered: true },
-    ],
-    max: 3,
-    said: "Reached pm, qa and sre, who all answered",
-  },
-  {
-    state: "reached three, one answered",
+    state: "partly",
     recipients: [
       { id: "pm", name: "pm" },
       { id: "qa", name: "qa", answered: true },
       { id: "sre", name: "sre", reason: "every message" },
     ],
-    max: 3,
     said: "qa answered, waiting on pm; sre (every message)",
+    mark: <CheckGlyph size="sm" />,
   },
-  {
-    state: "reached two, nobody has answered yet",
-    recipients: [
-      { id: "pm", name: "pm" },
-      { id: "qa", name: "qa" },
-    ],
-    said: "Reached pm and qa",
-  },
-])("says it in one sentence when $state", ({ recipients, said, max }) => {
-  const { container } = render(<DeliveryReceipt recipients={recipients} max={max} />);
-  const line = container.querySelector(".crewlet-delivery-receipt")!;
-  expect(text(line)).toBe(said);
-  // What the eye reads is what a screen reader reads.
-  expect(line.textContent!.replace(/\s+/g, " ").trim()).toBe(said);
-  expect(line.querySelector(".crewlet-visually-hidden")).toBeNull();
-  for (const r of recipients) {
-    expect(said.split(r.name).length - 1).toBe(1);
-  }
+  { state: "none", recipients: [], said: "Reached no agent", mark: <TriangleAlertGlyph size="sm" /> },
+])("draws $state as its mark, named by its sentence: $said", ({ state, recipients, said, mark }) => {
+  const { container } = render(<DeliveryReceipt recipients={recipients} />);
+  const receipt = container.querySelector<HTMLElement>(".crewlet-delivery-receipt")!;
+  expect(receipt.dataset.state).toBe(state);
+  expect(screen.getByRole("button", { name: said })).toBe(trigger());
+  const shown = receipt.querySelector(".crewlet-delivery-receipt__mark")!;
+  expect(shown.getAttribute("aria-hidden")).toBe("true");
+  expect(shown.innerHTML).toBe(drawn(mark));
+  for (const r of recipients) expect(said.split(r.name).length - 1).toBe(1);
+  // No sentence on the page: the mark, and a count while some are still to answer.
+  expect(receipt.textContent).toBe(state === "partly" ? "1/3" : "");
 });
 
-test("marks an answer with a check, hidden from a screen reader", () => {
-  const { container, rerender } = render(
-    <DeliveryReceipt recipients={[{ id: "pm", name: "pm" }]} />,
+test("the tip says where it stands, who answered and when, and who it is still waiting on", () => {
+  render(
+    <DeliveryReceipt
+      sentAt="10:42"
+      recipients={[
+        { id: "pm", name: "pm" },
+        { id: "qa", name: "qa", answered: true, answeredAt: "10:44" },
+        { id: "sre", name: "sre", reason: "every message" },
+      ]}
+    />,
   );
-  const line = container.querySelector(".crewlet-delivery-receipt")!;
-  expect(line.querySelector(".crewlet-delivery-receipt__mark")).toBeNull();
-  expect(line.classList.contains("crewlet-delivery-receipt--answered")).toBe(false);
-  rerender(<DeliveryReceipt recipients={[{ id: "pm", name: "pm", answered: true }]} />);
-  expect(line.classList.contains("crewlet-delivery-receipt--answered")).toBe(true);
-  expect(
-    line.querySelector(".crewlet-delivery-receipt__mark")!.getAttribute("aria-hidden"),
-  ).toBe("true");
+  expect(openTip()).toEqual([
+    "1 of 3 answered",
+    "Answered | qa, 10:44",
+    "Waiting on | pm; sre (every message)",
+    "Sent | 10:42",
+  ]);
+  // The tip is for the eye; the name already says it, times included.
+  const panel = document.querySelector('[role="tooltip"]')!;
+  expect(panel.getAttribute("aria-hidden")).toBe("true");
+  expect(trigger().getAttribute("aria-describedby") ?? "").not.toContain(panel.id);
+  expect(trigger().getAttribute("aria-label")).toBe(
+    "qa answered, waiting on pm; sre (every message). Answered qa, 10:44. Sent 10:42",
+  );
 });
 
-test("groups the seats by reason, in the order the routing reached them", () => {
+test("a receipt nobody has answered yet lists whom it reached", () => {
+  render(<DeliveryReceipt sentAt="10:42" recipients={[{ id: "pm", name: "pm" }, { id: "qa", name: "qa" }]} />);
+  expect(openTip()).toEqual(["No answer yet", "Reached | pm and qa", "Sent | 10:42"]);
+});
+
+test("a receipt everybody answered lists each answer on its own line", () => {
   render(
     <DeliveryReceipt
       recipients={[
-        { id: "pm", name: "pm" },
-        { id: "qa", name: "qa", reason: "every message" },
-        { id: "sre", name: "sre", reason: "every message" },
+        { id: "pm", name: "pm", answered: true, answeredAt: "10:43" },
+        { id: "qa", name: "qa", answered: true, answeredAt: "10:44" },
       ]}
-      max={3}
     />,
   );
-  expect(screen.getByText("Reached pm; qa and sre (every message)")).toBeTruthy();
+  expect(openTip()).toEqual(["All 2 answered", "Answered | pm, 10:43 | qa, 10:44"]);
 });
 
-test("warns, with a mark and words, when a message reached no agent", () => {
-  const { container } = render(
-    <DeliveryReceipt recipients={[]} hint="This room has no agent members." />,
+test("keyboard focus opens the tip at once, and a press pins it for touch", () => {
+  render(<DeliveryReceipt recipients={[{ id: "pm", name: "pm" }]} />);
+  tabTo(trigger());
+  expect(document.querySelector('[role="tooltip"]')).not.toBeNull();
+  fireEvent.blur(trigger());
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+  expect(document.querySelector('[role="tooltip"]')).toBeNull();
+  fireEvent.pointerDown(trigger());
+  expect(document.querySelector('[role="tooltip"]')).not.toBeNull();
+});
+
+const FOLLOWERS = [
+  "Senior Web and Mobile App Engineer",
+  "Senior Backend Engineer",
+  "Senior Product Designer",
+  "Quality Lead",
+  "Release Manager",
+  "Support Lead",
+  "Site Reliability Engineer",
+].map((name, i) => ({ id: `seat-${i}`, name, reason: "every message" }));
+
+test("the tip counts the names past the cap, and the name keeps every one", () => {
+  render(<DeliveryReceipt recipients={FOLLOWERS} max={3} />);
+  expect(openTip()[1]).toBe(
+    "Reached | Senior Web and Mobile App Engineer, Senior Backend Engineer, Senior Product Designer and 4 more (every message)",
   );
-  const line = container.querySelector(".crewlet-delivery-receipt")!;
-  expect(line.classList.contains("crewlet-delivery-receipt--none")).toBe(true);
-  expect(text(line)).toBe("Reached no agent. This room has no agent members.");
-  expect(
-    line
-      .querySelector(".crewlet-delivery-receipt__mark")!
-      .getAttribute("aria-hidden"),
-  ).toBe("true");
+  for (const seat of FOLLOWERS) expect(trigger().getAttribute("aria-label")).toContain(seat.name);
 });
 
-test("speaks in the future over a composer, and announces itself when asked", () => {
-  const { rerender } = render(
+test("a single name past the cap is shown rather than counted", () => {
+  render(<DeliveryReceipt recipients={FOLLOWERS.slice(0, 4)} max={3} />);
+  expect(openTip()[1]).not.toContain("more");
+});
+
+// Quiet, with one raised tone. Mutation: drop the --none rule.
+test("warns in the warning ink, with what to do, when a message reached no agent", () => {
+  const uninstall = installSheets("ChatMessage/ChatScale.css", "DeliveryReceipt/DeliveryReceipt.css");
+  try {
+    const { container, rerender } = render(<DeliveryReceipt recipients={[{ id: "pm", name: "pm" }]} />);
+    const quiet = getComputedStyle(container.querySelector(".crewlet-delivery-receipt__mark")!).color;
+    rerender(<DeliveryReceipt recipients={[]} hint="This room has no agent members." />);
+    expect(getComputedStyle(container.querySelector(".crewlet-delivery-receipt__mark")!).color).not.toBe(quiet);
+    expect(trigger().getAttribute("aria-label")).toBe("Reached no agent. This room has no agent members.");
+    expect(openTip()).toEqual(["Reached no agent", "This room has no agent members."]);
+  } finally {
+    uninstall();
+  }
+});
+
+test("over a composer it speaks in the future, announces itself, and draws the faces it is given", () => {
+  const { rerender, container } = render(
     <DeliveryReceipt
       tense="draft"
       announce
+      faces={<span className="faces">PM</span>}
       recipients={[{ id: "pm", name: "pm", answered: true }]}
     />,
   );
-  const line = screen.getByRole("status");
   // A draft has nobody who answered it yet, whatever a caller passed.
-  expect(text(line)).toBe("Will reach pm");
-  rerender(<DeliveryReceipt tense="draft" announce recipients={[]} />);
-  expect(text(screen.getByRole("status"))).toBe("Will reach no agent");
+  expect(screen.getByRole("status").textContent).toBe("Will reach pm");
+  expect(trigger().getAttribute("aria-label")).toBe("Will reach pm");
+  expect(container.querySelector(".crewlet-delivery-receipt__faces .faces")).not.toBeNull();
+  expect(container.querySelector(".crewlet-delivery-receipt__mark")).toBeNull();
+  expect(openTip()).toEqual(["Will reach pm"]);
+  rerender(<DeliveryReceipt tense="draft" announce recipients={[]} hint="Mention an agent to ask it." />);
+  expect(screen.getByRole("status").textContent).toBe("Will reach no agent. Mention an agent to ask it.");
+  expect(container.querySelector(".crewlet-delivery-receipt__faces")).toBeNull();
 });
 
 test("is no live region in a transcript", () => {
@@ -147,13 +220,10 @@ test("is no live region in a transcript", () => {
   expect(screen.queryByRole("status")).toBeNull();
 });
 
-test("says when a cap left seats out, as a sentence of its own", () => {
-  const { container } = render(
-    <DeliveryReceipt truncated recipients={[{ id: "qa", name: "qa" }]} />,
-  );
-  expect(text(container.querySelector(".crewlet-delivery-receipt")!)).toBe(
-    "Reached qa. Some seats were not reached",
-  );
+test("says when a cap left seats out", () => {
+  render(<DeliveryReceipt truncated recipients={[{ id: "qa", name: "qa" }]} />);
+  expect(trigger().getAttribute("aria-label")).toBe("Reached qa. Some seats were not reached");
+  expect(openTip()).toContain("Some seats were not reached");
 });
 
 test("takes its words from the caller", () => {
@@ -164,123 +234,13 @@ test("takes its words from the caller", () => {
         { id: "qa", name: "qa" },
       ]}
       labels={{
-        partlyAnswered: (answered, waiting) => (
-          <>
-            {answered} hat geantwortet, {waiting} noch nicht
-          </>
-        ),
+        partlyAnswered: (answered, waiting) => `${answered} hat geantwortet, ${waiting} noch nicht`,
+        partlyTitle: (answered, total) => `${answered} von ${total}`,
       }}
     />,
   );
-  expect(screen.getByText("pm hat geantwortet, qa noch nicht")).toBeTruthy();
-});
-
-// Quiet: the tertiary ink at the meta step, one raised tone for no agent.
-// Mutation: drop the --none rule and the mark keeps the tertiary ink.
-test("sits in the tertiary ink, and marks no agent in the warning ink", () => {
-  const uninstall = installSheets(
-    "ChatMessage/ChatScale.css",
-    "DeliveryReceipt/DeliveryReceipt.css",
-  );
-  try {
-    const { container, rerender } = render(
-      <DeliveryReceipt recipients={[{ id: "pm", name: "pm" }]} />,
-    );
-    const line = container.querySelector<HTMLElement>(
-      ".crewlet-delivery-receipt",
-    )!;
-    const quiet = getComputedStyle(line).color;
-    rerender(<DeliveryReceipt recipients={[]} />);
-    const mark = container.querySelector<HTMLElement>(
-      ".crewlet-delivery-receipt__mark",
-    )!;
-    expect(getComputedStyle(mark).color).not.toBe(quiet);
-    expect(getComputedStyle(line).color).not.toBe(quiet);
-  } finally {
-    uninstall();
-  }
-});
-
-test("carries no axe violation", async () => {
-  const { container } = render(
-    <main>
-      <DeliveryReceipt
-        recipients={[{ id: "pm", name: "pm", answered: true }]}
-      />
-      <DeliveryReceipt
-        tense="draft"
-        announce
-        recipients={[]}
-        hint="Mention an agent to ask it."
-      />
-    </main>,
-  );
-  const result = await axe.run(container, {
-    runOnly: {
-      type: "tag",
-      values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"],
-    },
-    rules: { "color-contrast": { enabled: false } },
-    resultTypes: ["violations"],
-  });
-  expect(result.violations).toEqual([]);
-});
-
-const FOLLOWERS = [
-  "Senior Web and Mobile App Engineer",
-  "Senior Backend Engineer",
-  "Senior Product Designer",
-  "Quality Lead",
-  "Release Manager",
-  "Support Lead",
-].map((name, i) => ({
-  id: `seat-${i}`,
-  name,
-  reason: "every message",
-  answered: i < 3,
-}));
-
-test("prints one name of each list and counts the rest in buttons that show them all", () => {
-  const { container } = render(<DeliveryReceipt recipients={FOLLOWERS} />);
-  const line = container.querySelector(".crewlet-delivery-receipt")!;
-  expect(text(line)).toBe(
-    "Senior Web and Mobile App Engineer and 2 more answered, " +
-      "waiting on Quality Lead (every message) and 2 more",
-  );
-  const [first, second] = screen.getAllByRole("button");
-  expect(first!.textContent).toBe("and 2 more");
-  expect(second!.textContent).toBe("and 2 more");
-  expect(first!.getAttribute("aria-expanded")).toBe("false");
-
-  fireEvent.click(first!);
-  // Every name, each once, and one way back at the end.
-  const fewer = screen.getByRole("button", { name: "Show fewer" });
-  expect(fewer.getAttribute("aria-expanded")).toBe("true");
-  expect(screen.getAllByRole("button")).toHaveLength(1);
-  expect(text(line)).toBe(
-    "Senior Web and Mobile App Engineer, Senior Backend Engineer and Senior Product Designer answered, " +
-      "waiting on Quality Lead, Release Manager and Support Lead (every message) Show fewer",
-  );
-
-  fireEvent.click(fewer);
-  expect(screen.getAllByRole("button")).toHaveLength(2);
-});
-
-test("prints a single name past the cap rather than counting it", () => {
-  render(<DeliveryReceipt recipients={FOLLOWERS.slice(0, 2)} />);
-  expect(screen.queryByRole("button")).toBeNull();
-  expect(
-    screen.getByText(
-      "Reached Senior Web and Mobile App Engineer and Senior Backend Engineer (every message), who both answered",
-    ),
-  ).toBeTruthy();
-});
-
-test("draws no button when every name fits under the cap", () => {
-  render(<DeliveryReceipt recipients={FOLLOWERS.slice(0, 1)} />);
-  expect(screen.queryByRole("button")).toBeNull();
-  render(<DeliveryReceipt recipients={FOLLOWERS} max={Infinity} />);
-  expect(screen.queryByRole("button")).toBeNull();
+  expect(screen.getByRole("button", { name: "pm hat geantwortet, qa noch nicht" })).toBeTruthy();
+  expect(openTip()[0]).toBe("1 von 2");
 });
 
 test("refuses a cap that is not a whole number of at least 1", () => {
@@ -288,8 +248,23 @@ test("refuses a cap that is not a whole number of at least 1", () => {
   expect(() => render(<DeliveryReceipt recipients={FOLLOWERS} max={1.5} />)).toThrow(RangeError);
 });
 
-test("a capped receipt carries no axe violation", async () => {
-  const { container } = render(<DeliveryReceipt recipients={FOLLOWERS} />);
-  const results = await axe.run(container);
-  expect(results.violations).toEqual([]);
+test("carries no axe violation, open or shut", async () => {
+  vi.useRealTimers();
+  const { container } = render(
+    <main>
+      <DeliveryReceipt recipients={[{ id: "pm", name: "pm", answered: true }]} sentAt="10:42" />
+      <DeliveryReceipt tense="draft" announce recipients={[]} hint="Mention an agent to ask it." />
+      <DeliveryReceipt recipients={FOLLOWERS} />
+    </main>,
+  );
+  const run = () =>
+    axe.run(document.body, {
+      runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] },
+      rules: { "color-contrast": { enabled: false } },
+      resultTypes: ["violations"],
+    });
+  expect((await run()).violations).toEqual([]);
+  tabTo(container.querySelector<HTMLElement>(".crewlet-delivery-receipt__trigger")!);
+  expect(document.querySelector('[role="tooltip"]')).not.toBeNull();
+  expect((await run()).violations).toEqual([]);
 });
