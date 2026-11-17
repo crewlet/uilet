@@ -555,3 +555,25 @@ describe('a tab', () => {
     );
   });
 });
+
+describe('a line that opens an HTML block', () => {
+  test('ends the paragraph above it, and is a paragraph of its own', () => {
+    expect(parseMarkdown('a\n<!-- note -->')).toEqual([
+      { kind: 'paragraph', text: 'a' },
+      { kind: 'paragraph', text: '<!-- note -->' },
+    ]);
+    expect(parseMarkdown('a\n<div class="x">').map((b) => b.kind)).toEqual(['paragraph', 'paragraph']);
+  });
+
+  test('is not a lazy line of an item, or a row of a table', () => {
+    expect(parseMarkdown('- a\n<!-- contract:end -->')).toEqual([
+      expect.objectContaining({ kind: 'list', items: [{ checked: null, blocks: [{ kind: 'paragraph', text: 'a' }] }] }),
+      { kind: 'paragraph', text: '<!-- contract:end -->' },
+    ]);
+    expect(parseMarkdown('| a |\n| --- |\n<!-- x -->').map((b) => b.kind)).toEqual(['table', 'paragraph']);
+  });
+
+  test('an inline tag, which opens no block, continues the paragraph', () => {
+    expect(parseMarkdown('a\n<span>b</span>')).toEqual([{ kind: 'paragraph', text: 'a\n<span>b</span>' }]);
+  });
+});

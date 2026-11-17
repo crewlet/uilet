@@ -25,7 +25,8 @@
  * and never the text of a paragraph (see [BlockReader]).
  *
  * WHAT IT DELIBERATELY DOES NOT: raw HTML (read as its own text, never
- * parsed), reference links, footnotes, bare autolink literals, setext
+ * parsed, though a line that would open an HTML block ends the paragraph
+ * above it, as it does to CommonMark; see [htmlBlockStart]), reference links, footnotes, bare autolink literals, setext
  * headings and indented code. Each is a shape these documents do not use, and
  * every one of them is a place a parser grows a branch nobody exercises.
  */
@@ -413,8 +414,38 @@ function startsBlock(line: string, next: () => string): boolean {
     markdownHeadingOf(line) !== null ||
     QUOTE.test(line) ||
     itemStart(line) !== null ||
+    htmlBlockStart(line) ||
     (line.includes('|') && TABLE_RULE.test(next()))
   );
+}
+
+/**
+ * The lines that open an HTML block of CommonMark's kinds 1 to 6 (4.6),
+ * indented three spaces at most: a script, pre, style or textarea element; a
+ * comment; a processing instruction; a declaration; CDATA; and a block-level
+ * tag. The patterns are the reference parser's.
+ */
+const HTML_BLOCK_STARTS: readonly RegExp[] = [
+  /^<(?:script|pre|textarea|style)(?:\s|>|$)/i,
+  /^<!--/,
+  /^<[?]/,
+  /^<![A-Za-z]/,
+  /^<!\[CDATA\[/,
+  /^<[/]?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[123456]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|search|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\s|[/]?[>]|$)/i,
+];
+
+/**
+ * Whether `line` opens an HTML block of a kind that interrupts a paragraph.
+ *
+ * THIS GRAMMAR HAS NO HTML BLOCK: the line is read as text, as all raw HTML
+ * is. But CommonMark ends the paragraph above it there, and a lazy line or a
+ * table row ends there too, so a `<!-- marker -->` under a list item is a
+ * paragraph of its own rather than the item's last words, as every other
+ * reader draws it.
+ */
+function htmlBlockStart(line: string): boolean {
+  const html = /^ {0,3}(<.*)$/.exec(line)?.[1];
+  return html !== undefined && HTML_BLOCK_STARTS.some((start) => start.test(html));
 }
 
 /** Whether `line` starts a block that ends a table's rows: everything [startsBlock] names but another table. */
@@ -424,7 +455,8 @@ function endsTable(line: string): boolean {
     RULE.test(line) ||
     markdownHeadingOf(line) !== null ||
     QUOTE.test(line) ||
-    itemStart(line) !== null
+    itemStart(line) !== null ||
+    htmlBlockStart(line)
   );
 }
 
@@ -826,7 +858,7 @@ class BlockReader {
       return;
     }
 
-    if (leaf?.kind === 'paragraph') {
+    if (leaf?.kind === 'paragraph' && !htmlBlockStart(lead)) {
       leaf.lines.push(rest);
       leaf.end = i + 1;
       return;
