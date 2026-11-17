@@ -1,78 +1,29 @@
 /*
- * SettingsTable: a read-only table of settings, one row each, on one grid.
+ * SettingsTable: DataGrid's head, rows, cells, hairlines and hover (its
+ * classes), on tracks of its own. Only what is a setting's lives here.
  *
- * THE TRACKS ARE FRACTIONS OF THE TABLE, so every table of one width shares
- * them: a page that stacks a table per group puts each column on one line
- * down the page with nothing to coordinate. `--crewlet-settings-table-columns`
- * is inherited, so a page that wants other proportions sets it once.
- *
- * Each row is its own grid on those tracks rather than a subgrid of the
- * table's, because the tracks are fractions: one row's long label can never
- * move another row's value, which is what a content-sized track would do.
+ * THE TRACKS ARE FRACTIONS OF THE TABLE and the controls' track a fixed width,
+ * so tables of one width stacked down a page share every column line. Each
+ * row is its own grid on them, so one long label never moves another row.
  */
 
 .crewlet-settings-table {
+  /* Two small controls at the row's end: a reset, then the pencil. */
+  --crewlet-settings-table-actions: calc(var(--size-control-sm) * 2 + var(--spacing-1));
+
   container: crewlet-settings-table / inline-size;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  font-size: var(--font-size-compact);
-  /* The flush-panel recipe, standing on its own: the card's surface, its
-     hairline and its corner. Inside a card it gives them up (below). */
-  background: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
 }
 
-/*
- * A TABLE THAT IS A CARD'S CONTENT IS THAT CARD'S TABLE. It draws no edge or
- * corner of its own inside one, so a card never holds a box inside a box; its
- * rows' hairlines run to the card's edges under the card's own head rule.
- */
-.crewlet-card > .crewlet-settings-table,
-.crewlet-card__body > .crewlet-settings-table {
-  background: transparent;
-  border: 0;
-  border-radius: var(--radius-none);
+.crewlet-settings-table > .crewlet-data-grid__head,
+.crewlet-settings-table .crewlet-settings-table__row {
+  grid-template-columns:
+    var(--crewlet-settings-table-columns, minmax(0, 5fr) minmax(0, 3fr) minmax(0, 2fr))
+    calc(var(--crewlet-settings-table-actions) + var(--spacing-3) + var(--crewlet-data-grid-edge));
 }
 
-.crewlet-settings-table__row {
-  display: grid;
-  grid-template-columns: var(
-    --crewlet-settings-table-columns,
-    minmax(0, 5fr) minmax(0, 3fr) minmax(0, 2fr)
-  );
-  column-gap: var(--spacing-6);
-  /* ONE BASELINE PER ROW: the name, the value and the source sit on the
-     first line's baseline, whatever the name's key adds under it. */
-  align-items: baseline;
-  min-height: var(--size-row-md);
-  padding: var(--spacing-3) var(--spacing-4);
-}
-
-.crewlet-settings-table__body > .crewlet-settings-table__row + .crewlet-settings-table__row {
-  border-top: 1px solid var(--color-border-default);
-}
-
-/*
- * The column names, in the micro-label register a table's header takes
- * across the system, on the panel's own ground. Hidden by default (see the
- * component): still the table's column headers for assistive technology.
- */
-.crewlet-settings-table__head .crewlet-settings-table__row {
-  min-height: 0;
-  padding-block: var(--spacing-2);
-  border-bottom: 1px solid var(--color-border-default);
-}
-
-.crewlet-settings-table__name {
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--font-letter-spacing-wide);
-  text-transform: uppercase;
-  color: var(--color-text-tertiary);
-  white-space: nowrap;
+/* A setting's row is read, not opened: no pointer that promises a page. */
+.crewlet-settings-table .crewlet-settings-table__row {
+  cursor: auto;
 }
 
 .crewlet-settings-table__head--hidden {
@@ -88,26 +39,16 @@
 }
 
 .crewlet-settings-table__setting {
-  display: flex;
-  /* The name first and on top, so the cell's baseline is the name's first
-     line, the one the row's value and source sit on. */
-  align-items: flex-start;
   gap: var(--spacing-1);
-  min-width: 0;
 }
 
 .crewlet-settings-table__label {
+  min-width: 0;
   color: var(--color-text-primary);
   line-height: var(--font-line-height-snug);
 }
 
-/*
- * THE KEY IS FOR THE READER WHO WILL GO AND CHANGE IT, so it is a control
- * after the name rather than a line under it: one quiet square that copies
- * the key and shows it on hover and focus. Its box is the name's first line,
- * so the square centres on that line, and the control's height never sets the
- * row's: a row with a key is as tall as one without.
- */
+/* The key's copy control, after the name; its box never sets the row's height. */
 .crewlet-settings-table__key {
   display: inline-flex;
   align-items: center;
@@ -116,7 +57,7 @@
   color: var(--color-text-tertiary);
 }
 
-/* Where a pointer can hover, the key shows with its row, its focus or a copy's outcome, and keeps its place unseen otherwise. */
+/* Where a pointer can hover, the key shows with its row, its focus or a copy's outcome. */
 @media (hover: hover) {
   .crewlet-settings-table__key {
     opacity: 0;
@@ -136,7 +77,7 @@
 
 /* Tabular figures, so a column of numbers reads down its digits. */
 .crewlet-settings-table__value {
-  min-width: 0;
+  flex-wrap: wrap;
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
@@ -144,10 +85,6 @@
 }
 
 .crewlet-settings-table__source {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--spacing-2);
-  min-width: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
@@ -157,26 +94,76 @@
   color: var(--color-text-secondary);
 }
 
-.crewlet-settings-table__source--changed .crewlet-status-dot {
-  align-self: center;
+/* The controls at the row's end: the pencil last, on one line down the page. */
+.crewlet-settings-table__actions {
+  justify-content: flex-end;
+  gap: var(--spacing-1);
+}
+
+/* THE RESET'S QUESTION takes the source's and the controls' tracks while it is asked. */
+.crewlet-settings-table__confirm {
+  grid-column: 3 / -1;
+  justify-content: flex-end;
+  gap: var(--spacing-1);
+  padding-inline-end: var(--crewlet-data-grid-edge);
+}
+
+.crewlet-settings-table__question {
+  margin-inline-end: var(--spacing-1);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
 }
 
 /*
- * NARROW: the name takes the row's first line, and the value and its source
- * share the second. Three columns at this width leave a name column a word
- * wide, which wraps every name into a stack of single words.
+ * NARROW: the name and its controls take the first line, the value and its
+ * source the second. Three columns here wrap every name a word to a line.
  */
 @container crewlet-settings-table (width < 32rem) {
-  .crewlet-settings-table__row {
+  .crewlet-settings-table > .crewlet-data-grid__head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .crewlet-settings-table .crewlet-settings-table__row {
     grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--spacing-3);
     row-gap: var(--spacing-1);
+    padding: var(--spacing-2) var(--crewlet-data-grid-edge);
+  }
+
+  .crewlet-settings-table__row > .crewlet-data-grid__cell {
+    padding: 0;
   }
 
   .crewlet-settings-table__setting {
-    grid-column: 1 / -1;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .crewlet-settings-table__actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .crewlet-settings-table__value {
+    grid-column: 1;
+    grid-row: 2;
   }
 
   .crewlet-settings-table__source {
-    justify-self: end;
+    grid-column: 2;
+    grid-row: 2;
+    justify-content: flex-end;
+  }
+
+  .crewlet-settings-table__confirm {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    padding: 0;
   }
 }

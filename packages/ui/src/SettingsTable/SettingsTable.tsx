@@ -1,134 +1,259 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type FocusEvent, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
+import { RotateCcwGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
+import { Button } from '../Button/index.js';
 import { StatusDot } from '../StatusDot/index.js';
 import { IconButton } from '../IconButton/index.js';
+import { GridHeadCell } from '../DataGrid/parts.js';
 import { CopyStatus, copyGlyph } from '../Copyable/CopyButton.js';
 import { useClipboard } from '../utils/useClipboard.js';
+import { returnFocus } from '../utils/focusModality.js';
 
-/** The words the three columns are named by, for assistive technology and the optional header row. */
+/** The words the four columns are named by, for assistive technology and the header row. */
 export interface SettingsTableColumns {
   setting?: string | undefined;
   value?: string | undefined;
   source?: string | undefined;
+  /** The row-end column of controls, which draws no word and is still read. */
+  actions?: string | undefined;
 }
 
 export interface SettingsTableProps extends HTMLAttributes<HTMLDivElement> {
   /**
-   * Draws the column names as a header row. Off by default: a page that
-   * stacks one table per group (a card each) would repeat the same three
-   * words over every card. The names are always exposed to assistive
-   * technology, drawn or not.
+   * Draws the column heads, as every DataGrid does. On by default; off, the
+   * names are still the table's column headers for assistive technology.
    */
   header?: boolean | undefined;
-  /** The column names. Defaults to Setting, Value and Source. */
+  /** The column names. Defaults to Setting, Value, Source and Actions. */
   columns?: SettingsTableColumns | undefined;
   children?: ReactNode;
 }
 
-const COLUMNS: Required<SettingsTableColumns> = { setting: 'Setting', value: 'Value', source: 'Source' };
+const COLUMNS: Required<SettingsTableColumns> = {
+  setting: 'Setting',
+  value: 'Value',
+  source: 'Source',
+  actions: 'Actions',
+};
+
+const noSort = () => undefined;
 
 /**
- * A read-only table of settings: what each is called, the value in force and
- * where that value comes from.
+ * A table of settings: what each is called, the value in force, where that
+ * value comes from, and the controls that change it at the row's end.
+ *
+ * DATAGRID'S ANATOMY, NOT A SECOND LOOK. The head, the rows, the cells, the
+ * hairlines, the row height and the hover are DataGrid's own classes, so a
+ * card of settings and a card of records read as one kind of table.
  *
  * ONE COLUMN GRID FOR EVERY TABLE ON A PAGE. The tracks are fractions of the
- * table's own width (`--crewlet-settings-table-columns`), never the width of
- * the longest label, so a page that stacks a table per group in cards of one
- * width puts every value and every source on one vertical line down the page.
- * A term column sized to its own longest term started the values at a
- * different place in every card, and a fixed one left them floating a third
- * of the way across a wide card with the rest of the row empty.
+ * table's width (`--crewlet-settings-table-columns`) and the controls' track
+ * is a fixed width, so cards of one width stacked down a page put every value,
+ * every source and every pencil on one vertical line.
  *
- * THE SOURCE IS QUIET UNLESS IT IS NEWS. A value that is the default says so
- * in the tertiary ink, as a word rather than a tag: a tag on every row is
- * noise that teaches a reader to skip the column. A value that differs from
- * its default (`changed`) carries a mark before its source, which is the one
- * row in the table a reader scanning it came to find.
- *
- * A TABLE, BECAUSE IT IS ONE. Every row carries the same three fields, so it
- * is announced as a table with its column names, and each setting's name is
- * the row's header. The roles are written out rather than taken from table
- * elements because the row folds into two lines on a narrow table, and a
- * table element that changes its display loses its semantics in some
- * browsers.
+ * A TABLE, BECAUSE IT IS ONE: announced with its column names, each row
+ * headed by its setting's name.
  */
-export function SettingsTable({ header = false, columns, className, children, ...rest }: SettingsTableProps) {
+export function SettingsTable({ header = true, columns, className, children, ...rest }: SettingsTableProps) {
   const names = { ...COLUMNS, ...columns };
   return (
-    <div {...rest} role="table" className={cx('crewlet-settings-table', className)}>
+    <div {...rest} role="table" className={cx('crewlet-data-grid', 'crewlet-settings-table', className)}>
       <div
-        role="rowgroup"
-        className={cx('crewlet-settings-table__head', !header && 'crewlet-settings-table__head--hidden')}
+        role="row"
+        className={cx(
+          'crewlet-data-grid__head',
+          'crewlet-settings-table__head',
+          !header && 'crewlet-settings-table__head--hidden',
+        )}
       >
-        <div role="row" className="crewlet-settings-table__row">
-          <span role="columnheader" className="crewlet-settings-table__name">
-            {names.setting}
-          </span>
-          <span role="columnheader" className="crewlet-settings-table__name">
-            {names.value}
-          </span>
-          <span role="columnheader" className="crewlet-settings-table__name">
-            {names.source}
-          </span>
-        </div>
+        <GridHeadCell column={{ key: 'setting', header: names.setting }} sort={null} sortable={false} onSort={noSort} />
+        <GridHeadCell column={{ key: 'value', header: names.value }} sort={null} sortable={false} onSort={noSort} />
+        <GridHeadCell column={{ key: 'source', header: names.source }} sort={null} sortable={false} onSort={noSort} />
+        <GridHeadCell
+          column={{ key: 'actions', header: '', action: true, label: names.actions }}
+          sort={null}
+          sortable={false}
+          onSort={noSort}
+        />
       </div>
-      <div role="rowgroup" className="crewlet-settings-table__body">
+      <div role="rowgroup" className="crewlet-data-grid__body crewlet-settings-table__body">
         {children}
       </div>
     </div>
   );
 }
 
+/** Every string a row draws itself. */
+export interface SettingsTableRowLabels {
+  /** The reset control's name. */
+  reset: string;
+  /** The question the reset asks first, with the default where the row names one. */
+  confirm: (defaultLabel: ReactNode) => ReactNode;
+  /** The confirmation's button. */
+  confirmReset: string;
+  cancel: string;
+}
+
+export const SETTINGS_TABLE_ROW_LABELS: SettingsTableRowLabels = {
+  reset: 'Reset to default',
+  confirm: (defaultLabel) => (defaultLabel === undefined || defaultLabel === null ? 'Reset to the default?' : <>Reset to {defaultLabel}?</>),
+  confirmReset: 'Reset',
+  cancel: 'Cancel',
+};
+
 export interface SettingsTableRowProps extends HTMLAttributes<HTMLDivElement> {
   /** What the setting is called, in a reader's words. */
   label: ReactNode;
   /**
    * The setting's address in the document it is written in
-   * (`turn_engine.max_iterations`), for the reader who will go and change it
-   * there. It is not drawn as words: a copy control after the name shows it
-   * on hover and focus and puts it on the clipboard. Where a pointer can
-   * hover, the control itself shows only with its row.
+   * (`turn_engine.max_iterations`). Not drawn as words: a copy control after
+   * the name shows it on hover and focus and puts it on the clipboard.
    */
   settingKey?: string | undefined;
   /** The value in force, in its own unit. Drawn in tabular figures. */
   children?: ReactNode;
-  /** Where the value comes from: "Default", "Set in the company document". */
+  /** Where the value comes from: "Default", "Changed from 10". */
   source?: ReactNode;
   /** The value differs from its default: the source carries a mark. */
   changed?: boolean | undefined;
+  /** The controls at the row's end: the pencil that opens the setting's editor. */
+  actions?: ReactNode;
+  /**
+   * Puts the setting back to its default. Offered as a control before the
+   * actions while `changed`, and called only once a short inline question
+   * ("Reset to 10?") is answered.
+   */
+  onReset?: (() => void) | undefined;
+  /** The default, in the value column's words, for that question. */
+  defaultLabel?: ReactNode;
+  labels?: Partial<SettingsTableRowLabels> | undefined;
 }
 
-/** One setting: its name (and key), its value and its source. */
+/** One setting: its name (and key), its value, its source and its controls. */
 export function SettingsTableRow({
   label,
   settingKey,
   source,
   changed = false,
+  actions,
+  onReset,
+  defaultLabel,
+  labels: overrides,
   className,
   children,
   ...rest
 }: SettingsTableRowProps) {
+  const labels = { ...SETTINGS_TABLE_ROW_LABELS, ...overrides };
+  const offered = changed && onReset !== undefined;
+  const [asking, setAsking] = useState(false);
+  const confirming = asking && offered;
+  const resetButton = useRef<HTMLButtonElement>(null);
+  const confirmButton = useRef<HTMLButtonElement>(null);
+  const actionsCell = useRef<HTMLDivElement>(null);
+  // Where focus goes once the question closes, or once the reset control it was on goes.
+  const settleFocus = useRef(false);
+  const resetHeldFocus = useRef(false);
+
+  useLayoutEffect(() => {
+    if (confirming) {
+      confirmButton.current?.focus();
+      return;
+    }
+    if (!settleFocus.current && !(resetHeldFocus.current && !offered)) return;
+    settleFocus.current = false;
+    resetHeldFocus.current = false;
+    returnFocus(resetButton.current ?? actionsCell.current?.querySelector<HTMLElement>('button') ?? null);
+  }, [confirming, offered]);
+
+  const close = (reset: boolean) => {
+    settleFocus.current = true;
+    setAsking(false);
+    if (reset) onReset?.();
+  };
+
+  // THE QUESTION GOES with Escape, or as focus leaves it.
+  const keys = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    close(false);
+  };
+  const leave = (event: FocusEvent<HTMLDivElement>) => {
+    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+    setAsking(false);
+  };
+
   return (
     <div
       {...rest}
       role="row"
       data-changed={changed ? '' : undefined}
-      className={cx('crewlet-settings-table__row', className)}
+      data-confirming={confirming ? '' : undefined}
+      className={cx('crewlet-data-grid__row', 'crewlet-settings-table__row', className)}
     >
-      <span role="rowheader" className="crewlet-settings-table__setting">
+      <div role="rowheader" className="crewlet-data-grid__cell crewlet-settings-table__setting">
         <span className="crewlet-settings-table__label">{label}</span>
         {settingKey === undefined ? null : <SettingKey settingKey={settingKey} />}
-      </span>
-      <span role="cell" className="crewlet-settings-table__value">
+      </div>
+      <div role="cell" className="crewlet-data-grid__cell crewlet-settings-table__value">
         {children}
-      </span>
-      <span
-        role="cell"
-        className={cx('crewlet-settings-table__source', changed && 'crewlet-settings-table__source--changed')}
-      >
-        {changed ? <StatusDot tone="brand" /> : null}
-        {source}
-      </span>
+      </div>
+      {confirming ? (
+        // The question's own keys and focus: Escape answers no, and leaving it puts it away.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+        <div
+          role="cell"
+          className="crewlet-data-grid__cell crewlet-settings-table__confirm"
+          onKeyDown={keys}
+          onBlur={leave}
+        >
+          <span className="crewlet-settings-table__question">{labels.confirm(defaultLabel)}</span>
+          <Button type="button" size="small" variant="ghost" onClick={() => close(false)}>
+            {labels.cancel}
+          </Button>
+          <Button ref={confirmButton} type="button" size="small" variant="secondary" onClick={() => close(true)}>
+            {labels.confirmReset}
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div
+            role="cell"
+            className={cx(
+              'crewlet-data-grid__cell',
+              'crewlet-settings-table__source',
+              changed && 'crewlet-settings-table__source--changed',
+            )}
+          >
+            {changed ? <StatusDot tone="brand" /> : null}
+            {source}
+          </div>
+          <div
+            ref={actionsCell}
+            role="cell"
+            className="crewlet-data-grid__cell crewlet-data-grid__cell--action crewlet-settings-table__actions"
+          >
+            {offered ? (
+              <IconButton
+                ref={resetButton}
+                size="sm"
+                variant="ghost"
+                icon={<RotateCcwGlyph />}
+                label={labels.reset}
+                tooltip
+                onFocus={() => {
+                  resetHeldFocus.current = true;
+                }}
+                onBlur={() => {
+                  resetHeldFocus.current = false;
+                }}
+                onClick={() => setAsking(true)}
+              />
+            ) : null}
+            {actions}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -136,18 +261,8 @@ export function SettingsTableRow({
 SettingsTable.Row = SettingsTableRow;
 
 /**
- * A setting's key, behind the control that copies it.
- *
- * THE NAME IS THE READER'S, THE KEY IS THE DOCUMENT'S. Drawn as a monospace
- * line under every name, the key made a settings page read as its
- * configuration file: `turn_engine.max_iterations` under "Review rounds per
- * turn" on every row, for the one reader in many who will edit the document
- * by hand. That reader still has it, one press away and on the clipboard;
- * everybody else reads the setting by its name.
- *
- * THE TOOLTIP SHOWS THE KEY and the control's name says it, so the key is
- * reached by pointer, keyboard and screen reader alike, and the copy says
- * whether it landed, as every copy control in the kit does.
+ * A setting's key, behind the control that copies it: the tooltip shows the
+ * key, the control's name says it, and the copy says whether it landed.
  */
 function SettingKey({ settingKey }: { settingKey: string }) {
   const { state, attempt, copy } = useClipboard({ failedResetMs: null });
