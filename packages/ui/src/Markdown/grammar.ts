@@ -366,6 +366,17 @@ function startsBlock(line: string, next: () => string): boolean {
   );
 }
 
+/** Whether `line` starts a block that ends a table's rows: everything [startsBlock] names but another table. */
+function endsTable(line: string): boolean {
+  return (
+    markdownFenceOf(line) !== null ||
+    RULE.test(line) ||
+    markdownHeadingOf(line) !== null ||
+    QUOTE.test(line) ||
+    itemStart(line) !== null
+  );
+}
+
 /** The block still being read at the tip of the open containers: the only one that takes a line. */
 type Leaf =
   | { kind: 'paragraph'; lines: string[]; start: number; end: number }
@@ -448,8 +459,8 @@ type Open = QuoteFrame | ItemFrame | ListFrame;
  * container that took it: to its open fence or table, or as the start of a
  * block, or as the next line of its paragraph. A container the line does not
  * reach is closed, unless the line is a LAZY line: one that continues the
- * paragraph left open at the innermost tip, through items only (a quote takes
- * no lazy line in this grammar), and starts no block of its own.
+ * paragraph left open at the innermost tip, through items and quotes alike
+ * (CommonMark 5.1 and 5.2), and starts no block of its own.
  *
  * WHY ONE PASS. A list item's blocks can only be read as blocks, so whether a
  * lazy line continues a paragraph depends on what the item holds so far. An
@@ -532,7 +543,10 @@ class BlockReader {
           leaf.end = i + 1;
           return;
         }
-        if (rest.includes('|') && !blank(rest)) {
+        // A ROW IS ANY LINE UNTIL A BLANK ONE OR ANOTHER BLOCK, as GitHub
+        // reads a table: a line with no pipe is a row of one cell, not a
+        // paragraph after the table.
+        if (!blank(rest) && !endsTable(rest)) {
           leaf.rows.push(splitRow(rest));
           leaf.end = i + 1;
           return;
@@ -583,12 +597,13 @@ class BlockReader {
 
   /**
    * Take `rest` as a lazy line, if it is one: the innermost tip is an open
-   * paragraph, only list items stand between it and the containers the line
-   * matched, and the line, its own indent gone, starts no block. It is added
-   * whole and unindented, as the paragraph text it was taken for.
+   * paragraph and the line, its own indent gone, starts no block. It is added
+   * whole and unindented, as the paragraph text it was taken for, and every
+   * container it did not reach stays open, a quote as much as an item: a
+   * quote's paragraph wrapped without its `>` is still the quote's, as every
+   * CommonMark reader draws it.
    */
   private lazy(depth: number, rest: string, i: number): boolean {
-    for (let d = depth; d < this.stack.length; d++) if (this.stack[d]!.kind === 'quote') return false;
     const top = this.stack[this.stack.length - 1] ?? this.root;
     if (top.kind === 'list' || top.leaf?.kind !== 'paragraph') return false;
     const text = rest.trimStart();
@@ -698,15 +713,6 @@ class BlockReader {
       return;
     }
 
-    // A TABLE IS A HEADER PLUS ITS RULE, checked together: a line of pipes
-    // with no delimiter under it is a paragraph that happens to contain
-    // pipes, which is what a shell command or a file path looks like.
-    if (rest.includes('|') && i + 1 < this.lines.length && TABLE_RULE.test(this.peel(i + 1, this.stack.length) ?? '')) {
-      this.closeLeaf(top);
-      top.leaf = { kind: 'table', head: splitRow(rest), align: [], rows: [], ruled: false, start: i, end: i + 1 };
-      return;
-    }
-
     // ONLY A LIST THAT COULD START A DOCUMENT INTERRUPTS A PARAGRAPH, as in
     // CommonMark (5.3): an item with text, numbered from 1 if it is numbered.
     // A "-" or a "1." under a line of text is that text's next line, so a sum
@@ -728,6 +734,17 @@ class BlockReader {
       };
       this.stack.push(list);
       this.openItem(list, head, i);
+      return;
+    }
+
+    // A TABLE IS A HEADER PLUS ITS RULE, checked together, and after a list
+    // item, which a table can sit inside (`- | a |` over `  | - |`), as GFM
+    // reads it: a line of pipes
+    // with no delimiter under it is a paragraph that happens to contain
+    // pipes, which is what a shell command or a file path looks like.
+    if (rest.includes('|') && i + 1 < this.lines.length && TABLE_RULE.test(this.peel(i + 1, this.stack.length) ?? '')) {
+      this.closeLeaf(top);
+      top.leaf = { kind: 'table', head: splitRow(rest), align: [], rows: [], ruled: false, start: i, end: i + 1 };
       return;
     }
 

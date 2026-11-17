@@ -235,7 +235,10 @@ describe('a list item holding blocks', () => {
       schema.node('list_item', null, [p('c')]),
     ]);
     expect(writeBlock(list)).toBe('- a\n\n  b\n\n- c');
-    expect(signature(readMarkdown(writeBlock(list)).doc.firstChild!)).toBe(signature(list));
+    // It reads back loose, which is what was written: the same list, loose.
+    expect(signature(readMarkdown(writeBlock(list)).doc.firstChild!)).toBe(
+      signature(list.type.create({ ...list.attrs, loose: true }, list.content)),
+    );
   });
 
   test('writes a code block in an item at the item indent, wherever it stands', () => {
@@ -331,5 +334,33 @@ describe('backticks in text', () => {
     ]);
     // The span's own text, space for space: the signature collapses spaces.
     expect(readMarkdown(writeBlock(node)).doc.firstChild!.textContent).toBe(`x${text}y`);
+  });
+});
+
+describe('looseness', () => {
+  test('is part of what a list says', () => {
+    const tight = readMarkdown('- a\n- b').doc.firstChild!;
+    const loose = readMarkdown('- a\n\n- b').doc.firstChild!;
+    expect(signature(tight)).not.toBe(signature(loose));
+  });
+
+  // Each tight reading has a tight spelling, which the canonical form keeps.
+  test.each([
+    ['a rule under a paragraph', '- p\n  ---\n- q', '- p\n  ***\n- q'],
+    ['a table under a paragraph', '- p\n  | a |\n  | --- |\n- q', '- p\n  | a |\n  | --- |\n- q'],
+    ['a fence under a table', '- | a |\n  | --- |\n  ```\n  x\n  ```\n- q', '- | a |\n  | --- |\n  ```\n  x\n  ```\n- q'],
+  ])('a tight list with %s stays tight', (_case, text, want) => {
+    const written = canonicalMarkdown(text);
+    expect(written).toBe(want);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+  });
+
+  test.each([
+    ['a quote, then a line with no marker', '- > q\n  p\n- r'],
+    ['a table, then a line with no pipe', '- | a |\n  | --- |\n  p\n- r'],
+  ])('%s is one block, so the list stays tight', (_case, text) => {
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(readMarkdown(text).doc.firstChild!.attrs.loose).toBe(false);
   });
 });

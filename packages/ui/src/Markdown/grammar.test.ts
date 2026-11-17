@@ -434,3 +434,30 @@ describe('a backtick string', () => {
     expect(markdownCodeText('  ')).toBe('  ');
   });
 });
+
+describe('a lazy line', () => {
+  test('continues a quote\'s paragraph, as CommonMark reads it', () => {
+    expect(parseMarkdown('> a\nb')).toEqual([{ kind: 'quote', blocks: [{ kind: 'paragraph', text: 'a\nb' }] }]);
+    expect(parseMarkdown('> a\n\nb').map((b) => b.kind)).toEqual(['quote', 'paragraph']);
+    expect(parseMarkdown('> a\n# h').map((b) => b.kind)).toEqual(['quote', 'heading']);
+  });
+});
+
+describe('a list item whose first line is a table header', () => {
+  test('holds the table, as GFM reads it, rather than being a table itself', () => {
+    expect(parseMarkdown('- | a |\n  | --- |\n  | b |')).toEqual([
+      expect.objectContaining({
+        kind: 'list',
+        items: [{ checked: null, blocks: [{ kind: 'table', head: ['a'], align: ['left'], rows: [['b']] }] }],
+      }),
+    ]);
+  });
+});
+
+describe('a table row', () => {
+  test('is any line until a blank one or another block, as GitHub reads a table', () => {
+    expect(parseMarkdown('| a |\n| --- |\nb')).toEqual([{ kind: 'table', head: ['a'], align: ['left'], rows: [['b']] }]);
+    expect(parseMarkdown('| a |\n| --- |\n> q').map((b) => b.kind)).toEqual(['table', 'quote']);
+    expect(parseMarkdown('| a |\n| --- |\n\nb').map((b) => b.kind)).toEqual(['table', 'paragraph']);
+  });
+});

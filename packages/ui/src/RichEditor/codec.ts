@@ -342,7 +342,10 @@ const SPELLINGS: readonly Spelling[] = [
  */
 export function writeBlock(node: PMNode): string {
   if (node.type.name === 'paragraph' && node.childCount === 0) return '';
-  const want = signature(node);
+  // What the reader must see is the block AS WRITTEN: a list written loose
+  // because two of an item's blocks need a blank line reads back loose, which
+  // is what was meant, and is still checked.
+  const want = signature(asWritten(node));
   let text = '';
   for (const spelling of SPELLINGS) {
     text = block(node, spelling);
@@ -430,19 +433,7 @@ function codeBlock(node: PMNode): string {
  */
 function list(node: PMNode, s: Spelling): string {
   const ordered = node.type.name === 'ordered_list';
-  const items: PMNode[][] = [];
-  node.forEach((item) => {
-    // An empty paragraph writes nothing, as it does at the top level; kept,
-    // it would stand as a blank line that ends the item or splits it.
-    const children: PMNode[] = [];
-    item.forEach((child) => {
-      if (child.type.name !== 'paragraph' || child.childCount > 0) children.push(child);
-    });
-    items.push(children.length > 0 ? children : [schema.node('paragraph')]);
-  });
-  const loose =
-    (node.attrs.loose as boolean) ||
-    items.some((children) => children.some((child, j) => j > 0 && needsBlank(children[j - 1]!, child)));
+  const { items, loose } = layout(node);
   const written: string[] = [];
   node.forEach((item, _offset, i) => {
     const marker = ordered
@@ -455,7 +446,9 @@ function list(node: PMNode, s: Spelling): string {
     let prev: PMNode | null = null;
     for (const child of items[i]!) {
       if (prev) parts.push(sameKindLists(prev, child) ? '\n\n\n' : loose ? '\n\n' : '\n');
-      parts.push(block(child, s));
+      // A RULE RIGHT UNDER A PARAGRAPH is written `***`: `---` there is a
+      // setext heading's underline to CommonMark.
+      parts.push(!loose && prev?.type.name === 'paragraph' && child.type.name === 'horizontal_rule' ? '***' : block(child, s));
       prev = child;
     }
     const lines = parts.join('').split('\n');
@@ -471,34 +464,69 @@ function list(node: PMNode, s: Spelling): string {
 }
 
 /**
+ * The items of a list as written, and whether it is written loose: as it was
+ * read, or loose because two blocks of one item need a blank line between
+ * them, which is what makes a list loose to every reader.
+ */
+function layout(node: PMNode): { items: PMNode[][]; loose: boolean } {
+  const items: PMNode[][] = [];
+  node.forEach((item) => {
+    // An empty paragraph writes nothing, as it does at the top level; kept,
+    // it would stand as a blank line that ends the item or splits it.
+    const children: PMNode[] = [];
+    item.forEach((child) => {
+      if (child.type.name !== 'paragraph' || child.childCount > 0) children.push(child);
+    });
+    items.push(children.length > 0 ? children : [schema.node('paragraph')]);
+  });
+  const loose =
+    (node.attrs.loose as boolean) ||
+    items.some((children) => children.some((child, j) => j > 0 && needsBlank(children[j - 1]!, child)));
+  return { items, loose };
+}
+
+/** `node` as the writer writes it: every list at the looseness it is written with, an item's empty paragraphs gone. */
+function asWritten(node: PMNode): PMNode {
+  if (node.isLeaf || node.isTextblock) return node;
+  if (isList(node)) {
+    const { items, loose } = layout(node);
+    const children: PMNode[] = [];
+    node.forEach((item, _o, i) => children.push(item.copy(Fragment.from(items[i]!.map(asWritten)))));
+    return node.type.create({ ...node.attrs, loose }, children);
+  }
+  const children: PMNode[] = [];
+  node.forEach((child) => children.push(asWritten(child)));
+  return node.copy(Fragment.from(children));
+}
+
+/**
  * Whether two blocks of one item need a blank line between them to read back
- * as those two blocks, to this grammar and to CommonMark alike.
+ * as those two blocks: EXACTLY where the grammar would read them otherwise,
+ * so every tight list the grammar reads has a tight spelling, and where
+ * CommonMark would too.
  *
  * - A paragraph after anything that ends in text (a paragraph, a quote, a
- *   list) would continue it, so it needs one; so does anything after a table,
- *   whose rows run on while a line holds a pipe.
- * - A table, or a rule after a paragraph (which CommonMark reads as a setext
- *   underline), is kept apart from text by one.
+ *   list) would continue it, and after a table it would be a row.
+ * - A table after a table would be its rows.
  * - Two quotes, or two lists of one kind, would be one.
  * - A list that cannot interrupt a paragraph (an empty first item, or a
- *   number other than 1) needs one after text.
- * - A fence and a heading interrupt anything, so nothing needs one before
- *   them, and nothing needs one after a fence, a heading or a rule.
+ *   number other than 1) would continue the text above it.
+ * - Everything else starts a block of its own under any block: a fence, a
+ *   heading, a quote, a table under text (as GitHub reads one), and a rule,
+ *   which under a paragraph is spelled `***` ([list]).
  */
 function needsBlank(prev: PMNode, next: PMNode): boolean {
   const p = prev.type.name;
   const n = next.type.name;
-  if (p === 'table') return true;
   if (p === 'code_block' || p === 'heading' || p === 'horizontal_rule') return false;
   if (sameKindLists(prev, next)) return true;
   const quoted = (name: string) => name === 'blockquote' || name === 'callout';
   if (quoted(p) && quoted(n)) return true;
   switch (n) {
     case 'paragraph':
-    case 'table':
       return true;
-    case 'horizontal_rule':
-      return p === 'paragraph';
+    case 'table':
+      return p === 'table';
     case 'bullet_list':
     case 'ordered_list': {
       // An item of empty paragraphs is written as its bare marker.
@@ -828,8 +856,11 @@ function visibleAttrs(node: PMNode): string {
       return ` ${node.attrs.lang as string}`;
     case 'callout':
       return ` ${node.attrs.tone as string}`;
+    // LOOSENESS IS SEEN: a loose list's items stand apart from each other.
+    case 'bullet_list':
+      return ` ${String(node.attrs.loose)}`;
     case 'ordered_list':
-      return ` ${node.attrs.start as number}`;
+      return ` ${node.attrs.start as number} ${String(node.attrs.loose)}`;
     case 'list_item':
       return ` ${String(node.attrs.checked)}`;
     case 'table_header':
