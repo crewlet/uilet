@@ -1,0 +1,30 @@
+/* SettingForm: one setting's panel, sized for a popover a phone can hold. */
+
+.crewlet-setting-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  width: min(22rem, calc(100vw - 2 * var(--spacing-4)));
+  max-width: 100%;
+  padding: var(--spacing-3);
+}
+
+.crewlet-setting-form__subject {
+  margin: 0;
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* No gap for an outcome not yet said: the slot holds the caller's own status element, empty while idle. */
+.crewlet-setting-form__status:empty,
+.crewlet-setting-form__status:not(:has(> :not(:empty))) {
+  display: none;
+}
+
+.crewlet-setting-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+}

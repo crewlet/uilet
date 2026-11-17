@@ -1,0 +1,30 @@
+/* NumberField: a field between its two steppers, then its preset chips. */
+
+.crewlet-number-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-number-field__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-number-field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Figures line up under each other as they are stepped. */
+.crewlet-number-field__input input {
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-number-field__unit {
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
