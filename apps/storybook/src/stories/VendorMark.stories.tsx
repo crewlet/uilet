@@ -10,10 +10,10 @@ import { themeScope } from '../themeScope';
  * Both themes side by side, because most of these are a fixed hue that has to
  * hold on either ground, Mattermost's, Scaleway's and Sentry's take the text
  * colour on the dark ground, as each vendor publishes them for one, and
- * GitHub's, Notion's, OpenCode's, Expo's and DigitalOcean's are the current
- * text colour and invert with the theme. SSH's key is Crewlet's own drawing,
+ * GitHub's, Notion's, OpenCode's, Expo's, DigitalOcean's and OpenAI's are the
+ * current text colour and invert with the theme. SSH's key is Crewlet's own drawing,
  * in the brand mark's violet on every theme.
- * Marks that follow the document's theme (Grok, Hermes, Qwen) are in the pinned stories below.
+ * Marks that follow the document's theme (Grok, Hermes, Kimi, Qwen) are in the pinned stories below.
  * The muted state is the answer to "available, not connected", and it drains
  * the mark's own colour rather than inventing a second palette for somebody
  * else's brand.
@@ -132,14 +132,17 @@ export const OneWeight: StoryObj = {
   ),
 };
 
-/** The coding harnesses a model runs that have a mark, each beside the harness's own name. */
+/** The coding harnesses a model runs, each beside the harness's own name. */
 const HARNESSES = [
   ['claude', 'Claude Code'],
+  ['openai', 'Codex'],
   ['cursor', 'Cursor'],
   ['gemini-cli', 'Gemini CLI'],
   ['copilot', 'GitHub Copilot'],
   ['grok', 'Grok'],
   ['hermes', 'Hermes Agent'],
+  ['kimi', 'Kimi Code'],
+  ['meta', 'Muse Code'],
   ['opencode', 'OpenCode'],
   ['pi', 'Pi'],
   ['qwen', 'Qwen Code'],
@@ -181,7 +184,7 @@ const everyMark = () => (
 /** EVERY MARK ON A LIGHT DOCUMENT, at 24px. */
 export const EveryMarkLight: StoryObj = { render: everyMark, globals: { theme: 'light' } };
 
-/** The same marks on a dark document: Grok and Hermes draw their dark files, and Qwen reverses. */
+/** The same marks on a dark document: Grok, Hermes and Kimi draw their dark files, and Qwen reverses. */
 export const EveryMarkDark: StoryObj = { render: everyMark, globals: { theme: 'dark' } };
 
 /**

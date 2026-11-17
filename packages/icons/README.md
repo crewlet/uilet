@@ -73,34 +73,37 @@ import { VendorMark } from '@crewlethq/icons';
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `vendor` | `Vendor`: `'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'copilot' \| 'crewlet' \| 'cursor' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'gemini-cli' \| 'github' \| 'gitlab' \| 'google-cloud' \| 'grok' \| 'hermes' \| 'linear' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'opencode' \| 'pi' \| 'postgresql' \| 'qwen' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
+| `vendor` | `Vendor`: `'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'copilot' \| 'crewlet' \| 'cursor' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'gemini-cli' \| 'github' \| 'gitlab' \| 'google-cloud' \| 'grok' \| 'hermes' \| 'kimi' \| 'linear' \| 'mattermost' \| 'meta' \| 'microsoft-teams' \| 'notion' \| 'openai' \| 'opencode' \| 'pi' \| 'postgresql' \| 'qwen' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `muted` | boolean | `false` | Drains the colour, for an application that is available but not connected. |
 
 **This is the one place the design system draws somebody else's colours.** Colour here carries state and never identity, and a third-party application's mark is the deliberate exception: identity is exactly what a mark is for, and a recoloured Slack mark is not Slack's. No hue in `svg/vendor/` is a token, nothing reads state from a mark, and a mark appears only beside the name of the application it belongs to.
 
-GitHub's (and so Copilot's), Notion's, OpenCode's, Expo's, DigitalOcean's and Cursor's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
+GitHub's (and so Copilot's), Notion's, OpenCode's, Expo's, DigitalOcean's, Cursor's and OpenAI's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
 
 Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's violet one are each drawn for a light ground, and each vendor publishes the same drawing in white or in the text colour for a dark one, which is what the dark themes draw: on the dark ground Mattermost's blue falls under 3:1, Qwen's under 2.5:1, and Scaleway's purple and Sentry's violet under 2:1, and each mark all but disappears.
 
-**Grok and Hermes publish a second drawing for a dark ground** (`svg/vendor/dark/`). The mark mounts both, and `VendorMark.css` shows the one for the document's theme.
+**Grok, Hermes and Kimi publish a second drawing for a dark ground** (`svg/vendor/dark/`). The mark mounts both, and `VendorMark.css` shows the one for the document's theme.
 
-**`claude`, `cursor`, `gemini-cli`, `copilot`, `grok`, `hermes`, `opencode`, `pi` and `qwen` name the coding harness a model runs.** Each is its owner's trademark, from the owner's own file (the new ones read on 2026-11-16):
+**`claude`, `openai` (Codex), `cursor`, `gemini-cli`, `copilot`, `grok`, `hermes`, `kimi` (Kimi Code), `meta` (Muse Code), `opencode`, `pi` and `qwen` name the coding harness a model runs.** Each is its owner's trademark, from the owner's own file (read on 2026-11-16, and on 2026-11-17 for `openai`, `meta` and `kimi`):
 
 | Vendor | Source | Terms or licence | As drawn |
 | ------ | ------ | ---------------- | -------- |
 | `claude` | anthropic.com/press-kit, Claude Spark (Clay) | Press kit | Unchanged |
+| `openai` | github.com/openai/openai-agents-python, `docs/assets/logo.svg` (the blossom) | MIT | No-op clips removed, framed to its drawing, text colour |
 | `cursor` | cursor.com/brand, `Cube/SVG/CUBE_2D_*.svg` | Brand assets | Text colour (Cursor's pair is #26251e and #edecec) |
 | `gemini-cli` | geminicli.com/brand-kit, `gemini-cli-icon_full-color.svg` | Never alter the assets | No-op full-frame clip removed |
 | `copilot` | brand.github.com/brand-identity/copilot | Copilot's own logo retired in 2025; lockups use the Invertocat | The `github` drawing |
 | `grok` | x.ai/legal/brand-guidelines, `Grok_Logomark_Dark.svg` and `_Light.svg` | Use only exactly as provided | Both files unchanged |
 | `hermes` | github.com/NousResearch/hermes-agent, `assets/icon-master.svg` and `-dark.svg` | MIT | Nested viewport folded into the paths |
+| `kimi` | kimi.com/en/resources/kimi-brand, `Logomark/SVG/Logomark_Light.svg` and `_Dark.svg` | Kimi logo usage terms; never recoloured | Both files unchanged |
+| `meta` | meta.com/brand/resources/meta/company-brand, the page's own icon (`static.xx.fbcdn.net/rsrc.php/yf/r/-7pQO6hUGK_.svg`) | Meta brand guidelines | Framed to its drawing |
 | `opencode` | opencode.ai/brand | Brand page | No-op clip and mask removed, text colour |
 | `pi` | pi.dev/press-kit, `logo.svg` | MIT | Framed to its drawing |
 | `qwen` | github.com/QwenLM/qwen-code, `packages/desktop/bootstrap/qwen-code-logo.svg` | Apache-2.0 | Blue moved to the root |
 
-**Codex, Muse Code and Kimi Code draw no mark:** no Codex or Muse Code file is published for this use, OpenAI and Meta approve each use of their logos, and Kimi's terms allow non-commercial use only.
+**Codex's, Muse Code's and Kimi Code's marks were supplied for this use** as small raster files. Each is drawn from its owner's own vector of the same mark, so it is sharp at any size; Kimi's is the logomark without the app icon's grain.
 
 **`expo` is Expo's mark**, from Expo's own logo pack (github.com/expo/logos, `svg/logo-type-a.svg`, the download that expo.dev/brand links), its path unchanged and its black taken from the text, as Expo's own site and documentation draw it.
 

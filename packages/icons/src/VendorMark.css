@@ -43,7 +43,7 @@
 }
 
 /*
- * Grok's and Hermes's dark drawings, on the same three cases. A class hides the
+ * Grok's, Hermes's and Kimi's dark drawings, on the same three cases. A class hides the
  * dark one, since a reset's `svg { display: block }` beats its display="none".
  */
 .crewlet-vendor-mark .crewlet-vendor-mark__dark {
