@@ -93,6 +93,40 @@ export function placePopup(
   return { left, top, side };
 }
 
+/** Where a surface placed beside its anchor landed, and on which side. */
+export interface BesidePlacement {
+  left: number;
+  top: number;
+  side: 'right' | 'left' | 'below' | 'above';
+}
+
+/**
+ * Where a surface of `size` goes BESIDE `anchor`, inside `bounds`: on the
+ * preferred side, on the other where only that one has room for its width, and
+ * level with the anchor's top (or its foot, `end`), slid inside vertically. A
+ * tall surface beside a pin in the middle of a frame stays off the pin, where
+ * below or above it would have had to cover it. Where neither side has room it
+ * goes below or above, as [placePopup] puts it.
+ */
+export function placeBeside(
+  anchor: PlacementRect,
+  size: PlacementSize,
+  bounds: PlacementRect,
+  gap: number = LAYER_GAP,
+  prefer: 'right' | 'left' = 'right',
+  align: 'start' | 'end' = 'start',
+): BesidePlacement {
+  const right = anchor.x + anchor.width + gap;
+  const left = anchor.x - gap - size.width;
+  const fitsRight = bounds.x + bounds.width - right >= size.width;
+  const fitsLeft = left >= bounds.x;
+  if (!fitsRight && !fitsLeft) return placePopup(anchor, size, bounds, gap);
+  const side = prefer === 'right' ? (fitsRight ? 'right' : 'left') : fitsLeft ? 'left' : 'right';
+  const wanted = align === 'end' ? anchor.y + anchor.height - size.height : anchor.y;
+  const maxY = bounds.y + bounds.height - size.height;
+  return { left: side === 'right' ? right : left, top: Math.max(bounds.y, Math.min(wanted, maxY)), side };
+}
+
 /** The rectangle of the window itself, for a surface with no layer host. */
 export function viewportBounds(): PlacementRect {
   return { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };

@@ -122,3 +122,42 @@ export const FormHeldToItsLayer: Story = {
     </div>
   ),
 };
+
+/**
+ * Beside its anchor (`side="right"`), level with it: a tall panel opened from
+ * the middle of a frame stands off what it was opened from instead of
+ * covering it, and flips left near the right edge.
+ */
+export const BesideItsAnchor: Story = {
+  render: () => (
+    <div
+      style={{
+        position: 'relative',
+        height: 420,
+        border: '1px dashed var(--color-border-default)',
+        overflow: 'hidden',
+      }}
+    >
+      <LayerHost>
+        <div style={{ position: 'absolute', left: 120, top: 180 }}>
+          <Popover
+            label="New comment"
+            side="right"
+            height="layer"
+            trigger={(open, toggle) => (
+              <Button variant="outline" onClick={toggle}>
+                {open ? 'Close' : 'Comment'}
+              </Button>
+            )}
+          >
+            <div style={{ display: 'grid', gap: 'var(--spacing-3)', padding: 'var(--spacing-4)' }}>
+              <p style={{ margin: 0 }}>A point on the page</p>
+              <div style={{ height: 160, borderRadius: 'var(--radius-sm)', background: 'var(--color-surface-inset)' }} />
+              <Textarea aria-label="Comment" rows={4} />
+            </div>
+          </Popover>
+        </div>
+      </LayerHost>
+    </div>
+  ),
+};

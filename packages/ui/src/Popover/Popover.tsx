@@ -18,10 +18,12 @@ import {
   LAYER_REPOSITION_EVENT,
   focusables,
   anchorGone,
+  placeBeside,
   placePopup,
   useLayerContainer,
   usePopupLayer,
   viewportBounds,
+  type BesidePlacement,
   type DismissReason,
   type PlacementRect,
   type PopupEntrance,
@@ -31,7 +33,12 @@ import { returnFocus } from '../utils/focusModality.js';
 import { useComposedRef } from '../utils/composedRef.js';
 
 export type PopoverAlign = 'start' | 'end';
-export type PopoverSide = 'top' | 'bottom';
+/**
+ * `top` and `bottom` put the panel above or below its anchor; `right` and
+ * `left` beside it, level with it, for a tall panel that should not cover
+ * what it was opened from.
+ */
+export type PopoverSide = 'top' | 'bottom' | 'right' | 'left';
 export type PopoverWidth = 'auto' | 'match';
 /**
  * How tall the panel may grow. Either way it is never taller than its layer,
@@ -158,6 +165,14 @@ export type PopoverReason = DismissReason | 'trigger' | 'content' | 'anchor-gone
  *   on them at the document, and so does a chord with Control, Command or Alt,
  *   which is an application shortcut rather than a key of the panel's.
  */
+/** The side a panel is drawn on before it is first placed. */
+const SIDE_CLASS: Record<PopoverSide, BesidePlacement['side']> = {
+  top: 'above',
+  bottom: 'below',
+  right: 'right',
+  left: 'left',
+};
+
 export function Popover({
   trigger,
   children,
@@ -185,7 +200,7 @@ export function Popover({
   const [place, setPlace] = useState<{
     left: number;
     top: number;
-    side: 'above' | 'below';
+    side: BesidePlacement['side'];
     width: number | undefined;
   } | null>(null);
   const container = useLayerContainer();
@@ -278,13 +293,18 @@ export function Popover({
     }
     // What the style asks for; `own.width` above is what the cascade allowed.
     const matched = width === 'match' ? rect.width : undefined;
-    const spot = placePopup(
-      local,
-      { width: own.width, height: own.height },
-      bounds,
-      sideOffset,
-      side === 'top' ? 'above' : 'below',
-    );
+    const panelSize = { width: own.width, height: own.height };
+    const spot =
+      side === 'right' || side === 'left'
+        ? placeBeside(
+            { x: rect.left - (inHost ? host.x : 0), y: local.y + offset, width: rect.width, height: rect.height },
+            panelSize,
+            bounds,
+            sideOffset,
+            side,
+            align,
+          )
+        : placePopup(local, panelSize, bounds, sideOffset, side === 'top' ? 'above' : 'below');
     setPlace((was) =>
       was && was.left === spot.left && was.top === spot.top && was.side === spot.side && was.width === matched
         ? was
@@ -384,7 +404,7 @@ export function Popover({
       id={panelId}
       className={cx(
         'crewlet-popover',
-        `crewlet-popover--${place?.side ?? (side === 'top' ? 'above' : 'below')}`,
+        `crewlet-popover--${place?.side ?? SIDE_CLASS[side]}`,
         container !== null && container !== document.body ? 'crewlet-popover--in-host' : 'crewlet-popover--fixed',
         entrance === 'instant' && 'crewlet-popover--instant',
         height === 'layer' && 'crewlet-popover--layer-height',

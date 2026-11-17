@@ -47,6 +47,14 @@
   transform-origin: bottom left;
 }
 
+.crewlet-popover--right {
+  transform-origin: top left;
+}
+
+.crewlet-popover--left {
+  transform-origin: top right;
+}
+
 /* A panel that takes focus shows it on the panel, not only on what is inside,
    and shows it ONCE: over the panel's own boundary rather than 2px off it,
    which is two edges with a gap between them (the rule every field keeps, see
