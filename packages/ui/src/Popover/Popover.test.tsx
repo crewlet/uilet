@@ -236,6 +236,25 @@ test('keys inside the panel do not reach what it was opened from', () => {
   expect(keys).toEqual(['Tab']);
 });
 
+test('the room its layer has is handed to the stylesheet before it is measured, and a form may take all of it', () => {
+  for (const height of ['capped', 'layer'] as const) {
+    const { container } = render(
+      <LayerHost>
+        <Chip height={height} />
+      </LayerHost>,
+    );
+    const host = container.querySelector<HTMLElement>('.crewlet-layer-host')!;
+    host.getBoundingClientRect = () => rect(0, 0, 600, 300);
+    screen.getByRole('button', { name: 'Owner' }).getBoundingClientRect = () => rect(20, 250, 80, 24);
+    fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+    const panel = screen.getByRole('dialog', { name: 'Owner' });
+    // The host's height, less the gap the panel keeps from each edge.
+    expect(panel.style.getPropertyValue('--crewlet-popover-room')).toBe('292px');
+    expect(panel.classList.contains('crewlet-popover--layer-height')).toBe(height === 'layer');
+    cleanup();
+  }
+});
+
 test('inside a layer host it is drawn there, placed from the anchor, and closes when the anchor is panned away', () => {
   const { container } = render(
     <LayerHost>

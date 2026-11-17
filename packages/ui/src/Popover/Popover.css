@@ -22,7 +22,9 @@
      tooltip that happens to hold controls. */
   min-width: 260px;
   max-width: 380px;
-  max-height: min(360px, 60vh);
+  /* Never taller than the room its layer has (set as it is placed): it
+     scrolls rather than run past the layer's edge, where nothing could reach it. */
+  max-height: min(360px, 60vh, var(--crewlet-popover-room, 100vh));
   overflow-y: auto;
   overscroll-behavior: contain;
   animation: crewlet-popover-in var(--motion-duration-base) var(--motion-easing-emphasized);
@@ -30,6 +32,11 @@
 
 .crewlet-popover--in-host {
   position: absolute;
+}
+
+/* A form that shows its fields and actions at once where its layer has room. */
+.crewlet-popover--layer-height {
+  max-height: var(--crewlet-popover-room, 100vh);
 }
 
 .crewlet-popover--below {
