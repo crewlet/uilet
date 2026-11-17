@@ -144,3 +144,152 @@ describe('the spans of a body', () => {
     ]);
   });
 });
+
+describe('a list item', () => {
+  /** The blocks of the only item of the only list `source` reads as. */
+  const itemBlocks = (source: string, item = 0) => {
+    const [list] = parseMarkdown(source);
+    if (list?.kind !== 'list') throw new Error(`not a list: ${JSON.stringify(list)}`);
+    return list.items[item]?.blocks;
+  };
+
+  test('reads a fence at its content indent as a code block, holding a YAML list as text', () => {
+    // crewlet/crewlet#1207: the fence read as a paragraph of three backticks,
+    // and its `- name:` line, written back, became an item of its own.
+    const source = [
+      '1. Add this:',
+      '',
+      '   ```yaml',
+      '   mcp_servers:',
+      '     - name: x',
+      '   ```',
+      '',
+      '   It is pinned ([see](#x)).',
+    ].join('\n');
+    expect(parseMarkdown(source)).toEqual([
+      {
+        kind: 'list',
+        ordered: true,
+        start: 1,
+        marker: '.',
+        loose: true,
+        items: [
+          {
+            checked: null,
+            blocks: [
+              { kind: 'paragraph', text: 'Add this:' },
+              { kind: 'code', lang: 'yaml', text: 'mcp_servers:\n  - name: x', fence: '```' },
+              { kind: 'paragraph', text: 'It is pinned ([see](#x)).' },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  test('reads a tilde fence, and one that opens on the marker line', () => {
+    expect(itemBlocks('- run\n\n  ~~~sh\n  echo "- not an item"\n  ~~~')).toEqual([
+      { kind: 'paragraph', text: 'run' },
+      { kind: 'code', lang: 'sh', text: 'echo "- not an item"', fence: '~~~' },
+    ]);
+    expect(itemBlocks('1. ```go\n   x := 1\n   ```\n2. b')).toEqual([
+      { kind: 'code', lang: 'go', text: 'x := 1', fence: '```' },
+    ]);
+  });
+
+  test('keeps blank lines inside a fence, which do not end the item', () => {
+    expect(itemBlocks('- a\n\n  ```\n  one\n\n\n  two\n  ```\n- b')).toEqual([
+      { kind: 'paragraph', text: 'a' },
+      { kind: 'code', lang: '', text: 'one\n\n\ntwo', fence: '```' },
+    ]);
+  });
+
+  test('closes a fence on a line indented differently from its opening', () => {
+    expect(itemBlocks('- a\n\n  ```\n  x\n     ```\n\n  after')).toEqual([
+      { kind: 'paragraph', text: 'a' },
+      { kind: 'code', lang: '', text: 'x', fence: '```' },
+      { kind: 'paragraph', text: 'after' },
+    ]);
+    // Opened a space in, its lines lose that space too.
+    expect(itemBlocks('- a\n\n   ```\n   x\n    y\n  ```')).toEqual([
+      { kind: 'paragraph', text: 'a' },
+      { kind: 'code', lang: '', text: 'x\n y', fence: '```' },
+    ]);
+  });
+
+  test('measures a multi-digit marker: the content of `10. ` starts at column four', () => {
+    const source = '9. nine\n10. ten\n\n    ```\n    x\n    ```\n11. eleven';
+    expect(itemBlocks(source, 1)).toEqual([
+      { kind: 'paragraph', text: 'ten' },
+      { kind: 'code', lang: '', text: 'x', fence: '```' },
+    ]);
+    expect(parseMarkdown(source)[0]).toEqual(expect.objectContaining({ start: 9, loose: true }));
+  });
+
+  test('reads a nested list, a quote, a table and a heading among its blocks', () => {
+    expect(
+      itemBlocks(
+        ['- intro', '', '  > quoted', '  > on', '', '  | a | b |', '  |---|---|', '  | 1 | 2 |', '', '  ## Part', '', '  - inner', '  - more'].join(
+          '\n',
+        ),
+      ),
+    ).toEqual([
+      { kind: 'paragraph', text: 'intro' },
+      { kind: 'quote', blocks: [{ kind: 'paragraph', text: 'quoted\non' }] },
+      { kind: 'table', head: ['a', 'b'], align: ['left', 'left'], rows: [['1', '2']] },
+      { kind: 'heading', level: 2, text: 'Part' },
+      {
+        kind: 'list',
+        ordered: false,
+        start: 1,
+        marker: '-',
+        loose: false,
+        items: [
+          { checked: null, blocks: [{ kind: 'paragraph', text: 'inner' }] },
+          { checked: null, blocks: [{ kind: 'paragraph', text: 'more' }] },
+        ],
+      },
+    ]);
+  });
+
+  test('continues a paragraph on a lazy line, and ends at a line that starts a block', () => {
+    expect(itemBlocks('- a\nb')).toEqual([{ kind: 'paragraph', text: 'a\nb' }]);
+    // Lazy into a nested item's paragraph too.
+    expect(itemBlocks('- a\n  - b\nc')).toEqual([
+      { kind: 'paragraph', text: 'a' },
+      expect.objectContaining({ items: [{ checked: null, blocks: [{ kind: 'paragraph', text: 'b\nc' }] }] }),
+    ]);
+    // A fence, a heading or a quote is not lazy: the list ends there.
+    expect(parseMarkdown('- a\n```\nx\n```').map((b) => b.kind)).toEqual(['list', 'code']);
+    expect(parseMarkdown('- a\n# H').map((b) => b.kind)).toEqual(['list', 'heading']);
+    // Nor is any line after a fence, which is not a paragraph.
+    expect(parseMarkdown('- ```\n  x\n  ```\ny').map((b) => b.kind)).toEqual(['list', 'paragraph']);
+  });
+
+  test('is loose when a blank line stands between two of its blocks, and not for one inside a block', () => {
+    expect(parseMarkdown('- a\n  ```\n  x\n  ```\n- b')[0]).toEqual(expect.objectContaining({ loose: false }));
+    expect(parseMarkdown('- a\n\n  b\n- c')[0]).toEqual(expect.objectContaining({ loose: true }));
+    expect(parseMarkdown('- a\n  ```\n  x\n\n  y\n  ```\n- b')[0]).toEqual(expect.objectContaining({ loose: false }));
+    // A blank line between a nested list's items makes that list loose, not its parent.
+    const [outer] = parseMarkdown('- a\n  - b\n\n  - c\n- d');
+    expect(outer).toEqual(expect.objectContaining({ loose: false }));
+    expect(outer?.kind === 'list' && outer.items[0]?.blocks[1]).toEqual(expect.objectContaining({ loose: true }));
+  });
+
+  test('takes only lines indented to its content, as CommonMark does', () => {
+    // Two spaces under a three-wide marker is not the item's: after a blank
+    // line it is a paragraph of its own, and a marker there is a sibling.
+    expect(parseMarkdown('1. a\n\n  b').map((b) => b.kind)).toEqual(['list', 'paragraph']);
+    expect(parseMarkdown('- a\n - b')[0]).toEqual(expect.objectContaining({ items: [expect.anything(), expect.anything()] }));
+    expect(parseMarkdown('1. a\n  - b').map((b) => b.kind)).toEqual(['list', 'list']);
+  });
+
+  test('may start with one blank line, not two', () => {
+    expect(itemBlocks('-\n  foo')).toEqual([{ kind: 'paragraph', text: 'foo' }]);
+    expect(parseMarkdown('-\n\n  foo')).toEqual([
+      expect.objectContaining({ kind: 'list', items: [{ checked: null, blocks: [] }] }),
+      // A paragraph keeps its lines as written; reading inline collapses the indent.
+      { kind: 'paragraph', text: '  foo' },
+    ]);
+  });
+});

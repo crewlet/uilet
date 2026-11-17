@@ -19,6 +19,11 @@
  * (`> [!NOTE]`, GitHub's alert syntax), tables, thematic breaks and hard line
  * breaks.
  *
+ * A LIST ITEM IS A CONTAINER, as in CommonMark: its lines, with the item's
+ * content indent taken off, are read as blocks by this same grammar, so a
+ * fence, a table, a quote, a heading or a list inside an item is that block
+ * and never the text of a paragraph (see [parseList]).
+ *
  * WHAT IT DELIBERATELY DOES NOT: raw HTML (read as its own text, never
  * parsed), reference links, footnotes, bare autolink literals, setext
  * headings and indented code. Each is a shape these documents do not use, and
@@ -133,8 +138,12 @@ export function safeHref(raw: string): string | null {
 
 // --- lines -----------------------------------------------------------------
 
-const HEADING = /^(#{1,6})\s+(.*)$/;
-const FENCE = /^(```|~~~)\s*([A-Za-z0-9_+-]*)\s*$/;
+// A HEADING AND A FENCE MAY BE INDENTED UP TO THREE SPACES, as in CommonMark:
+// four would be indented code, which this grammar does not read. A list
+// item's later blocks sit at its content indent, and one written a space or
+// two further in is still the block it spells.
+const HEADING = /^ {0,3}(#{1,6})\s+(.*)$/;
+const FENCE = /^( {0,3})(```|~~~)\s*([A-Za-z0-9_+-]*)\s*$/;
 const RULE = /^(?:\s*(?:-{3,}|\*{3,}|_{3,})\s*)$/;
 // A MARKER ALONE ON ITS LINE IS AN EMPTY ITEM, as CommonMark reads it: "1."
 // and "-" with nothing after them, or with only the space an editor strips.
@@ -163,10 +172,14 @@ function bareMarker(line: string): boolean {
  * A LONGER RUN OF THE SAME CHARACTER STILL CLOSES, which is CommonMark's rule
  * and free here: [FENCE] only ever opens on three, so a four-backtick line is
  * not an opening this grammar can have made.
+ *
+ * A CLOSE MAY BE INDENTED UP TO THREE SPACES, whatever the opening's indent,
+ * as CommonMark has it: a fence in a list item whose closing line sits a
+ * space further in than its opening still ends there.
  */
 const FENCE_CLOSE: Record<MarkdownFence, RegExp> = {
-  '```': /^`{3,}[ \t]*$/,
-  '~~~': /^~{3,}[ \t]*$/,
+  '```': /^ {0,3}`{3,}[ \t]*$/,
+  '~~~': /^ {0,3}~{3,}[ \t]*$/,
 };
 
 /** Whether `line` closes a fence opened with `marker`. */
@@ -174,10 +187,14 @@ export function markdownClosesFence(line: string, marker: MarkdownFence): boolea
   return FENCE_CLOSE[marker].test(line);
 }
 
-/** The fence `line` opens, with its info string, or null when it opens none. */
-export function markdownFenceOf(line: string): { marker: MarkdownFence; lang: string } | null {
+/**
+ * The fence `line` opens, with its info string and the spaces it is indented
+ * by, or null when it opens none. Each line of the block loses up to that
+ * many spaces of its own, which is how CommonMark reads an indented fence.
+ */
+export function markdownFenceOf(line: string): { marker: MarkdownFence; lang: string; indent: number } | null {
   const m = FENCE.exec(line);
-  return m ? { marker: (m[1] ?? '```') as MarkdownFence, lang: m[2] ?? '' } : null;
+  return m ? { marker: (m[2] ?? '```') as MarkdownFence, lang: m[3] ?? '', indent: (m[1] ?? '').length } : null;
 }
 
 /** The ATX heading `line` is, or null. Closing hashes are decoration, not content. */
@@ -241,7 +258,7 @@ function blocksOf(lines: string[]): MarkdownSpan[] {
       const body: string[] = [];
       i++;
       while (i < lines.length && !markdownClosesFence(lines[i] ?? '', fence.marker)) {
-        body.push(lines[i] ?? '');
+        body.push(dedent(lines[i] ?? '', fence.indent));
         i++;
       }
       // A fence that is never closed still renders what it opened: the
@@ -372,90 +389,242 @@ function splitRow(line: string): string[] {
   return cells;
 }
 
+/** Whether a line holds nothing but whitespace. */
+function blank(line: string | undefined): boolean {
+  return (line ?? '').trim() === '';
+}
+
+/** The column after `ws` when it starts at column `from`: a tab stops at the next multiple of four. */
+function columnAfter(ws: string, from: number): number {
+  let col = from;
+  for (const c of ws) col = c === '\t' ? col + 4 - (col % 4) : col + 1;
+  return col;
+}
+
+/** How many columns of whitespace `line` starts with. */
+function indentOf(line: string): number {
+  return columnAfter(/^\s*/.exec(line)?.[0] ?? '', 0);
+}
+
 /**
- * Parse one list and everything nested under it.
- *
- * NESTING IS BY INDENT, measured against the FIRST item's marker rather than
- * against a fixed two spaces, which is what makes a four-space-indented
- * document render as the nesting its author meant.
+ * `line` with `columns` columns of its leading whitespace taken off, and no
+ * more. A tab that straddles the cut leaves the spaces it stood for past it,
+ * so a tab-indented line inside a list item keeps its own indent.
  */
-function parseList(lines: string[], start: number): [MarkdownBlock, number] {
-  const head = lines[start] ?? '';
-  const firstBullet = BULLET.exec(head);
-  const firstOrdered = ORDERED.exec(head);
-  const baseIndent = ((firstBullet ?? firstOrdered)?.[1] ?? '').length;
-  const ordered = firstOrdered !== null && firstBullet === null;
-  const startNumber = ordered ? Number(firstOrdered?.[2] ?? 1) : 1;
-  const marker = ordered ? (firstOrdered?.[3] ?? '.') : (firstBullet?.[2] ?? '-');
+function dedent(line: string, columns: number): string {
+  let col = 0;
+  let i = 0;
+  while (i < line.length && col < columns) {
+    const c = line[i] ?? '';
+    if (c === '\t') {
+      const next = col + 4 - (col % 4);
+      if (next > columns) return ' '.repeat(next - columns) + line.slice(i + 1);
+      col = next;
+    } else if (/\s/.test(c)) {
+      col++;
+    } else {
+      break;
+    }
+    i++;
+  }
+  return line.slice(i);
+}
 
-  const items: MarkdownListItem[] = [];
-  let i = start;
-  let own: string[] = [];
+/** A list item's first line: its marker, and the column its content starts at. */
+interface ItemStart {
+  ordered: boolean;
+  /** The bullet character (`-`, `*`, `+`) or the ordered delimiter (`.`, `)`). */
+  marker: string;
+  number: number;
+  /**
+   * The column every later line of the item is indented to: the marker's
+   * width and the spaces after it, so `1. ` is three and `10. ` four.
+   */
+  content: number;
+  /** The first line's own content, after the marker and its spaces. */
+  text: string;
+}
+
+/** One alternation for both kinds of marker, matching what [BULLET] and [ORDERED] match. */
+const ITEM = /^(\s*)(?:([-*+])|(\d{1,9})([.)]))(?:(\s+)(.*))?$/;
+
+/**
+ * The item `line` starts, or null.
+ *
+ * THE CONTENT INDENT IS CommonMark's: the marker's width plus the one to four
+ * spaces after it. Five or more is one space and then text indented further,
+ * because a writer who put five spaces after a `-` did not mean every later
+ * line to need seven. A marker alone on its line takes one space.
+ */
+function itemStart(line: string): ItemStart | null {
+  const m = ITEM.exec(line);
+  if (!m) return null;
+  const ordered = m[3] !== undefined;
+  const marker = ordered ? (m[4] ?? '.') : (m[2] ?? '-');
+  const after = columnAfter(m[1] ?? '', 0) + (ordered ? (m[3] ?? '').length + 1 : 1);
+  const text = m[6] ?? '';
+  if (text === '') return { ordered, marker, number: Number(m[3] ?? 1), content: after + 1, text: '' };
+  const spaces = columnAfter(m[5] ?? ' ', after) - after;
+  return spaces <= 4
+    ? { ordered, marker, number: Number(m[3] ?? 1), content: after + spaces, text }
+    : { ordered, marker, number: Number(m[3] ?? 1), content: after + 1, text: ' '.repeat(spaces - 1) + text };
+}
+
+/**
+ * Whether `line`, taken as it stands, starts a block rather than continuing
+ * the paragraph above it: what a LAZY line may not do. `next` is the line
+ * after it, which decides whether a line of pipes is a table's header.
+ */
+function startsBlock(line: string, next: string | undefined): boolean {
+  return (
+    blank(line) ||
+    markdownFenceOf(line) !== null ||
+    RULE.test(line) ||
+    markdownHeadingOf(line) !== null ||
+    QUOTE.test(line) ||
+    itemStart(line) !== null ||
+    (line.includes('|') && TABLE_RULE.test(next ?? ''))
+  );
+}
+
+/**
+ * Whether the blocks read from `lines` end in a paragraph still open at their
+ * last line, directly or in the last item of a list: the paragraph a lazy line
+ * would continue. A quote closes at its last `>` line in this grammar, and a
+ * fence, a table or a heading never takes a lazy line.
+ */
+function endsInParagraph(lines: string[]): boolean {
+  if (lines.length === 0 || blank(lines[lines.length - 1])) return false;
+  const spans = blocksOf(lines);
+  const last = spans[spans.length - 1];
+  return last !== undefined && last.end === lines.length && openParagraph(last.block);
+}
+
+function openParagraph(block: MarkdownBlock): boolean {
+  if (block.kind === 'paragraph') return true;
+  if (block.kind !== 'list') return false;
+  const blocks = block.items[block.items.length - 1]?.blocks ?? [];
+  const last = blocks[blocks.length - 1];
+  return last !== undefined && openParagraph(last);
+}
+
+/**
+ * Read one item from its marker line at `start`: its blocks, whether a blank
+ * line stands between two of them, and the line it ends before.
+ *
+ * AN ITEM'S LINES ARE READ AS BLOCKS, as CommonMark reads them. A line
+ * indented at least as far as the item's content belongs to it, with that
+ * indent taken off, and the lines are then parsed by [blocksOf] like a
+ * document of their own: a fence, a table, a quote, a heading or a nested
+ * list inside an item is that block. Reading them as the text of a paragraph
+ * turned a fence into three backticks inline, and an editor writing that back
+ * read a YAML `- name:` line inside it as a list item that swallowed the text
+ * after it.
+ *
+ * A BLANK LINE belongs to the item when the next line that is not blank does,
+ * which is what keeps a blank line inside a fence, or between two of the
+ * item's paragraphs, from ending it. An item may start with at most one blank
+ * line: a bare marker with a blank line under it is an empty item.
+ *
+ * A LAZY LINE, less indented than the item's content, still continues a
+ * paragraph left open at the item's end, unless it starts a block of its own.
+ * It is taken whole, its own indent gone, so the item's parse reads it as the
+ * paragraph text it was taken for and never as a block its indent hid.
+ */
+function parseItem(lines: string[], start: number, head: ItemStart): [MarkdownListItem, boolean, number] {
   let checked: boolean | null = null;
-  let open = false;
-  let loose = false;
-
-  const close = () => {
-    if (!open) return;
-    items.push({ checked, blocks: parseMarkdown(own.join('\n')) });
-    own = [];
-    checked = null;
-    open = false;
-  };
-
+  const task = TASK.exec(head.text);
+  const own: string[] = [];
+  if (task) {
+    checked = (task[1] ?? ' ').toLowerCase() === 'x';
+    own.push(task[2] ?? '');
+  } else {
+    own.push(head.text);
+  }
+  const bare = blank(own[0]);
+  let i = start + 1;
+  // Whether `own` ends in an open paragraph; null when a line has been added
+  // since it was last worked out. Lazy lines keep it open, so a run of them
+  // reads the item once rather than once a line.
+  let lazy: boolean | null = null;
   while (i < lines.length) {
     const line = lines[i] ?? '';
-    const bullet = BULLET.exec(line);
-    const numbered = ORDERED.exec(line);
-    const found = bullet ?? numbered;
-    const indent = (found?.[1] ?? '').length;
-
-    if (found && indent === baseIndent) {
-      // A marker of the OTHER kind at this level ends the list: a bulleted
-      // list and a numbered one are two lists, not one with mixed markers.
-      if (ordered !== (numbered !== null && bullet === null)) break;
-      close();
-      open = true;
-      const body = (bullet ? bullet[3] : numbered?.[4]) ?? '';
-      const task = TASK.exec(body);
-      if (task) {
-        checked = (task[1] ?? ' ').toLowerCase() === 'x';
-        own.push(task[2] ?? '');
-      } else {
-        own.push(body);
-      }
+    if (blank(line)) {
+      if (bare && own.length === 1) break;
+      let k = i;
+      while (k < lines.length && blank(lines[k])) k++;
+      if (k >= lines.length || indentOf(lines[k] ?? '') < head.content) break;
+      for (; i < k; i++) own.push(dedent(lines[i] ?? '', head.content));
+      lazy = null;
+      continue;
+    }
+    if (indentOf(line) >= head.content) {
+      own.push(dedent(line, head.content));
+      lazy = null;
       i++;
       continue;
     }
-    if (found && indent > baseIndent) {
-      // Nested: the whole indented run goes to this item's own parse, with
-      // the base indent removed so the inner list measures from zero.
-      own.push(line.slice(baseIndent));
-      i++;
-      continue;
-    }
-    if (line.trim() === '') {
-      // A blank line inside a list ends it only if nothing continues it.
-      const following = lines[i + 1] ?? '';
-      const continues = BULLET.test(following) || ORDERED.test(following) || /^\s{2,}\S/.test(following);
-      if (!continues) break;
-      // A blank line before a sibling marker makes the list loose; one before
-      // an item's own indented content is part of that item.
-      const sibling = BULLET.exec(following) ?? ORDERED.exec(following);
-      if (sibling && (sibling[1] ?? '').length === baseIndent) loose = true;
-      own.push('');
-      i++;
-      continue;
-    }
-    if (found === null && /^\s{2,}\S/.test(line) && open) {
-      own.push(line.slice(baseIndent));
-      i++;
-      continue;
-    }
-    break;
+    const text = line.trimStart();
+    if (startsBlock(text, lines[i + 1])) break;
+    if (lazy === null) lazy = endsInParagraph(own);
+    if (!lazy) break;
+    own.push(text);
+    i++;
   }
-  close();
-  return [{ kind: 'list', ordered, start: startNumber, marker, loose, items }, i];
+  const spans = blocksOf(own);
+  // CommonMark's second rule of a loose list: an item holding two blocks with
+  // a blank line between them. A blank line inside one of them (a fence's, a
+  // nested list's) is that block's own and does not count.
+  const spaced = spans.some((span, j) => j > 0 && span.start > (spans[j - 1]?.end ?? 0));
+  return [{ checked, blocks: spans.map((span) => span.block) }, spaced, i];
+}
+
+/**
+ * Parse one list: its items, each read as blocks by [parseItem].
+ *
+ * AN ITEM ENDS WHERE A LINE IS NOT ITS OWN, and the list goes on while the
+ * next line starts an item of the same kind, at any indent short of the
+ * previous item's content: CommonMark's siblings. A marker indented to the
+ * content is inside the item, which is nesting; one short of it is not, so
+ * `1. a` over `  - b` is two lists, as every CommonMark reader draws it.
+ *
+ * TWO BLANK LINES END A LIST, where one before a sibling makes it loose. It
+ * is the one way to write two lists of one kind next to each other, and the
+ * editor writes exactly that.
+ */
+function parseList(lines: string[], start: number): [MarkdownBlock, number] {
+  const first = itemStart(lines[start] ?? '');
+  const ordered = first?.ordered ?? false;
+  const items: MarkdownListItem[] = [];
+  let loose = false;
+  let i = start;
+  while (i < lines.length) {
+    const head = itemStart(lines[i] ?? '');
+    // A marker of the OTHER kind ends the list: a bulleted list and a
+    // numbered one are two lists, not one with mixed markers.
+    if (head === null || head.ordered !== ordered) break;
+    const [item, spaced, next] = parseItem(lines, i, head);
+    items.push(item);
+    if (spaced) loose = true;
+    i = next;
+    if (blank(lines[i]) && i + 1 < lines.length && !blank(lines[i + 1])) {
+      const sibling = itemStart(lines[i + 1] ?? '');
+      if (sibling === null || sibling.ordered !== ordered) break;
+      loose = true;
+      i++;
+    }
+  }
+  return [
+    {
+      kind: 'list',
+      ordered,
+      start: ordered ? (first?.number ?? 1) : 1,
+      marker: first?.marker ?? (ordered ? '.' : '-'),
+      loose,
+      items,
+    },
+    i,
+  ];
 }
 
 // --- inline ----------------------------------------------------------------
