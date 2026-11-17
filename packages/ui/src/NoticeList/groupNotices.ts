@@ -17,7 +17,7 @@ export interface NoticeEntry {
 }
 
 export interface GroupNoticesOptions {
-  /** Several subjects named together when none carries items: "9 agents". */
+  /** Several subjects named together: "9 agents", as the subject or, when they carry items, the summary. */
   count: (subjects: readonly string[]) => ReactNode;
 }
 
@@ -59,7 +59,7 @@ export function groupNotices(entries: readonly NoticeEntry[], { count }: GroupNo
     const lines: NoticeLine[] = [...subjects.entries()].map(([subject, items]) =>
       subject === '' ? { items } : { subject, items },
     );
-    return withLines(base, lines);
+    return withLines({ ...base, summary: count(named) }, lines);
   });
   return notices
     .map((notice, index) => ({ notice, index }))

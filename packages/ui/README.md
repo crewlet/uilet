@@ -208,6 +208,14 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.151.0
+
+### A standing advisory rests as one line
+
+**`Callout` takes `collapsible`**: its `title` becomes the button that shows and hides the message, with "Review" or "Hide" after it (`showLabel`, `hideLabel`) and a turning chevron, so the callout rests as one line until the reader asks for the rest. Closed by default (`defaultOpen`, or `open` and `onOpenChange` to control it). `storageKey` keeps the reader's choice in `localStorage` under the caller's key, and storage that cannot be read leaves it working for the screen. A callout with no title draws its message as before.
+
+**`NoticeList` takes `compact`**: one line per notice on the disclosure anatomy, its title, a quiet summary of what it applies to and its one action beside it. The specifics and the detail open under one notice at a time. The summary is the notice's new `summary`, else its subject, else its one line's subject or first item ("sonnet and 2 more"); `groupNotices` sets it to the subjects' count where several subjects carry items. A notice with nothing to open is words, its chevron's slot kept. Titles wrap rather than cut, the action moves under its title in a list narrower than 28rem, and the list folds after 5 rather than 3.
+
 ## Changes in 0.148.0
 
 ### An artifact named as a work item is, and one idea for placing a comment

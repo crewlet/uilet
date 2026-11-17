@@ -11,9 +11,9 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { Button } from '../Button/index.js';
 import { Callout } from './index.js';
@@ -258,5 +258,90 @@ describe('Callout', () => {
       resultTypes: ['violations'],
     });
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
+});
+
+describe('Callout collapsible', () => {
+  afterEach(() => localStorage.clear());
+
+  const folded = (props: Partial<Parameters<typeof Callout>[0]> = {}) => (
+    <Callout variant="warning" collapsible title="3 configuration warnings" action={<Button size="small">Save anyway</Button>} {...props}>
+      <p>Schedules run often.</p>
+    </Callout>
+  );
+
+  test('rests as one line: the title is a closed toggle, and the message waits behind it', () => {
+    render(folded());
+    const toggle = screen.getByRole('button', { name: '3 configuration warnings Review' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    const body = document.getElementById(toggle.getAttribute('aria-controls')!)!;
+    expect(body.hidden).toBe(true);
+    expect(screen.getByRole('button', { name: 'Save anyway' })).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.textContent).toBe('3 configuration warnings Hide');
+    expect(body.hidden).toBe(false);
+  });
+
+  test('keeps the reader’s choice under its storage key, over the default', () => {
+    const { unmount } = render(folded({ storageKey: 'test.notices' }));
+    fireEvent.click(screen.getByRole('button', { name: /3 configuration warnings/ }));
+    expect(localStorage.getItem('test.notices')).toBe('open');
+    unmount();
+    render(folded({ storageKey: 'test.notices' }));
+    expect(screen.getByRole('button', { name: /3 configuration warnings/ }).getAttribute('aria-expanded')).toBe('true');
+    cleanup();
+    localStorage.setItem('test.notices', 'closed');
+    render(folded({ storageKey: 'test.notices', defaultOpen: true }));
+    expect(screen.getByRole('button', { name: /3 configuration warnings/ }).getAttribute('aria-expanded')).toBe('false');
+  });
+
+  test('still opens where storage throws', () => {
+    const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    render(folded({ storageKey: 'test.notices' }));
+    const toggle = screen.getByRole('button', { name: /3 configuration warnings/ });
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    get.mockRestore();
+    set.mockRestore();
+  });
+
+  test('follows a controlled open state and reports each press', () => {
+    const seen: boolean[] = [];
+    const { rerender } = render(folded({ open: false, onOpenChange: (o) => seen.push(o) }));
+    const toggle = screen.getByRole('button', { name: /3 configuration warnings/ });
+    fireEvent.click(toggle);
+    expect(seen).toEqual([true]);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    rerender(folded({ open: true }));
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  test('draws its message as usual when it has no title to fold under', () => {
+    render(
+      <Callout collapsible variant="warning">
+        Schedules run often.
+      </Callout>,
+    );
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.getByText('Schedules run often.')).toBeTruthy();
+  });
+
+  test('carries no axe violation, closed or open', async () => {
+    const { container } = render(<main>{folded({ appearance: 'quiet' })}</main>);
+    const run = () =>
+      axe.run(container, {
+        runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+        rules: { 'color-contrast': { enabled: false } },
+        resultTypes: ['violations'],
+      });
+    expect((await run()).violations.map((v) => v.id)).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: /3 configuration warnings/ }));
+    expect((await run()).violations.map((v) => v.id)).toEqual([]);
   });
 });

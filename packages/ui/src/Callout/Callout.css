@@ -125,6 +125,66 @@
   color: inherit;
 }
 
+/*
+ * COLLAPSIBLE: the title is the button that opens the message. A row-sm
+ * target that keeps the line's own height, so the closed callout is one line.
+ */
+.crewlet-callout__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  max-width: 100%;
+  min-height: var(--size-row-sm);
+  margin-block: calc((1lh - var(--size-row-sm)) / 2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.crewlet-callout__toggle-words {
+  flex: none;
+  text-underline-offset: 2px;
+}
+
+.crewlet-callout__toggle:hover .crewlet-callout__toggle-words {
+  text-decoration: underline;
+}
+
+.crewlet-callout__toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* One glyph, turned, as every disclosure in the package does. */
+.crewlet-callout__chevron {
+  flex: none;
+  transform: rotate(-90deg);
+  transition: transform var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-callout__toggle[aria-expanded='true'] .crewlet-callout__chevron {
+  transform: rotate(0deg);
+}
+
+.crewlet-callout__body {
+  margin-top: var(--spacing-1);
+}
+
+.crewlet-callout__body[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-callout__chevron {
+    transition: none;
+  }
+}
+
 /* ── tones ─────────────────────────────────────────────────────────────── */
 
 .crewlet-callout--info {

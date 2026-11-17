@@ -111,3 +111,55 @@ export const Dismissible: Story = {
     </Callout>
   ),
 };
+
+const quiet = (label: string) => (
+  <a className="t-link" href="#/settings">
+    {label}
+  </a>
+);
+
+const COMPACT = groupNotices(
+  ENTRIES.map((entry) => ({ ...entry, action: quiet(entry.kind === 'schedule.frequent' ? 'Open Schedules' : entry.kind === 'grant.health_unheld' ? 'Open Structure' : 'Open Models') })),
+  { count: (s) => `${s.length} agents` },
+);
+
+/**
+ * The standing advisory a page carries: one quiet line that says how many and
+ * offers a review, remembered open or closed per surface by `storageKey`.
+ */
+export const CompactCollapsed: Story = {
+  render: () => (
+    <Callout variant="warning" appearance="quiet" collapsible title={`${COMPACT.length} configuration warnings`} storageKey="storybook.notices.compact">
+      <NoticeList compact label="Warnings" notices={COMPACT} />
+    </Callout>
+  ),
+};
+
+/** Opened: one line per warning, its title, what it applies to and its one action; the rest opens under one row at a time. */
+export const CompactOpen: Story = {
+  render: () => (
+    <Callout variant="warning" appearance="quiet" collapsible defaultOpen title={`${COMPACT.length} configuration warnings`}>
+      <NoticeList compact label="Warnings" notices={COMPACT} />
+    </Callout>
+  ),
+};
+
+/** Many warnings fold after five rows; a phone's width wraps long names and puts each action under its title. */
+export const CompactManyNarrow: Story = {
+  render: () => {
+    const many = Array.from({ length: 9 }, (_, i) => ({
+      key: `n${i}`,
+      title: i === 0 ? 'Schedules run 12 or more times a day' : `Warning number ${i + 1}`,
+      summary: i === 0 ? 'Site Reliability Engineer for the Platform Infrastructure Group' : undefined,
+      detail: 'Each run starts a turn whether or not anything changed.',
+      action: quiet('Open Schedules'),
+    }));
+    return (
+      <div style={{ width: 340 }}>
+        <Callout variant="warning" appearance="quiet" collapsible defaultOpen title={`${many.length} configuration warnings`}>
+          <NoticeList compact notices={many} />
+        </Callout>
+      </div>
+    );
+  },
+};
