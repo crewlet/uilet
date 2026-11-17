@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { LAYER_GAP, LAYER_REPOSITION_EVENT, anchorGone, outsideBounds, placePopup } from './place.js';
+import { LAYER_GAP, LAYER_REPOSITION_EVENT, anchorGone, outsideBounds, placeBeside, placePopup } from './place.js';
 
 const bounds = { x: 0, y: 0, width: 800, height: 600 };
 const size = { width: 200, height: 160 };
@@ -61,6 +61,33 @@ describe('placePopup', () => {
     expect(placePopup(roomy, size, bounds, 4, 'above')).toEqual({ left: 100, top: 136, side: 'above' });
     const atTheTop = { x: 100, y: 20, width: 32, height: 24 };
     expect(placePopup(atTheTop, size, bounds, 4, 'above')).toEqual({ left: 100, top: 48, side: 'below' });
+  });
+});
+
+describe('placeBeside', () => {
+  const tall = { width: 200, height: 400 };
+  const pin = { x: 300, y: 280, width: 32, height: 32 };
+
+  test('to the right of the anchor, level with its top, off the anchor where below or above would cover it', () => {
+    expect(placeBeside(pin, tall, bounds, 4)).toEqual({ left: 336, top: 200, side: 'right' });
+    expect(placePopup(pin, tall, bounds, 4).top).toBeLessThan(pin.y + pin.height);
+  });
+
+  test('on the left where only the left has room for its width, and the other way round', () => {
+    expect(placeBeside({ ...pin, x: 700 }, tall, bounds, 4)).toMatchObject({ left: 496, side: 'left' });
+    expect(placeBeside({ ...pin, x: 100 }, tall, bounds, 4, 'left')).toMatchObject({ left: 136, side: 'right' });
+  });
+
+  test('level with the anchor, or its foot, slid inside the bounds vertically', () => {
+    expect(placeBeside({ ...pin, y: 40 }, tall, bounds, 4).top).toBe(40);
+    expect(placeBeside({ ...pin, y: 40 }, tall, bounds, 4, 'right', 'end').top).toBe(0);
+    expect(placeBeside({ ...pin, y: 560 }, tall, bounds, 4).top).toBe(200);
+  });
+
+  test('below or above, as placePopup puts it, where neither side has room for its width', () => {
+    const narrow = { x: 0, y: 0, width: 360, height: 600 };
+    const at = { x: 160, y: 40, width: 32, height: 32 };
+    expect(placeBeside(at, tall, narrow, 4)).toEqual(placePopup(at, tall, narrow, 4));
   });
 });
 

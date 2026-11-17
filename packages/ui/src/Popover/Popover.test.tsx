@@ -255,6 +255,33 @@ test('the room its layer has is handed to the stylesheet before it is measured, 
   }
 });
 
+test('beside its anchor, on the right, flipped left where only the left has room', () => {
+  for (const [x, left, edge] of [
+    [300, '336px', 'right'],
+    [700, '396px', 'left'],
+  ] as const) {
+    const { container } = render(
+      <LayerHost>
+        <Chip side="right" />
+      </LayerHost>,
+    );
+    const host = container.querySelector<HTMLElement>('.crewlet-layer-host')!;
+    host.getBoundingClientRect = () => rect(0, 0, 800, 600);
+    const trigger = screen.getByRole('button', { name: 'Owner' });
+    trigger.getBoundingClientRect = () => rect(x, 280, 32, 32);
+    fireEvent.click(trigger);
+    const panel = screen.getByRole('dialog', { name: 'Owner' });
+    panel.getBoundingClientRect = () => rect(0, 0, 300, 400);
+    act(() => {
+      host.dispatchEvent(new CustomEvent(LAYER_REPOSITION_EVENT));
+    });
+    expect(panel.style.left, `${x}`).toBe(left);
+    expect(panel.style.top, `${x}`).toBe('196px');
+    expect(panel.classList.contains(`crewlet-popover--${edge}`), `${x}`).toBe(true);
+    cleanup();
+  }
+});
+
 test('inside a layer host it is drawn there, placed from the anchor, and closes when the anchor is panned away', () => {
   const { container } = render(
     <LayerHost>
