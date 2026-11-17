@@ -207,6 +207,9 @@ export function setList(kind: ListKind): Command {
 /** Enter in a list item: a new item, a task when this one is a task. */
 export const splitItem: Command = (state, dispatch) => {
   const { $from } = state.selection;
+  // In a code block inside an item, Enter is the code's next line: the
+  // keymap's newlineInCode, not a new item that cuts the block in two.
+  if ($from.parent.type.spec.code) return false;
   if ($from.depth < 2 || $from.node(-1).type !== N.list_item) return false;
   const checked = $from.node(-1).attrs.checked;
   return splitListItem(N.list_item!, checked === null ? undefined : { checked: false })(state, dispatch);
