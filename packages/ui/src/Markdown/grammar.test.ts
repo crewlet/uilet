@@ -461,3 +461,24 @@ describe('a table row', () => {
     expect(parseMarkdown('| a |\n| --- |\n\nb').map((b) => b.kind)).toEqual(['table', 'paragraph']);
   });
 });
+
+describe('a list and the next', () => {
+  test('a change of bullet or delimiter starts a new list, as CommonMark reads it', () => {
+    expect(parseMarkdown('- a\n* b').map((b) => b.kind)).toEqual(['list', 'list']);
+    expect(parseMarkdown('1. a\n1) b').map((b) => b.kind)).toEqual(['list', 'list']);
+    expect(parseMarkdown('- a\n\n\n\n* b').map((b) => b.kind)).toEqual(['list', 'list']);
+  });
+
+  test('any number of blank lines before the next item keep one list, loose', () => {
+    expect(parseMarkdown('- a\n\n\n- b')).toEqual([
+      expect.objectContaining({
+        kind: 'list',
+        loose: true,
+        items: [
+          { checked: null, blocks: [{ kind: 'paragraph', text: 'a' }] },
+          { checked: null, blocks: [{ kind: 'paragraph', text: 'b' }] },
+        ],
+      }),
+    ]);
+  });
+});

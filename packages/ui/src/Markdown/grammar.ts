@@ -511,10 +511,14 @@ class BlockReader {
     if (depth === this.stack.length) {
       const top = this.stack[depth - 1] ?? this.root;
       if (top.kind === 'list') {
-        // The line after a blank one that ended an item: the next item, as
-        // the look ahead that kept the list open found it.
+        // A line after the blank ones that ended an item: more blank lines,
+        // then the next item, as the look ahead that kept the list open found.
+        if (blank(rest)) {
+          this.extend(i);
+          return;
+        }
         const head = itemStart(rest);
-        if (head && head.ordered === top.ordered) {
+        if (head && sameList(head, top)) {
           this.extend(i);
           this.openItem(top, head, i);
           return;
@@ -563,12 +567,11 @@ class BlockReader {
     if (first.kind === 'item') {
       const list = this.stack[depth - 1] as ListFrame;
       if (blank(rest)) {
-        // ONE BLANK LINE BEFORE THE NEXT ITEM keeps the list, loose; two end
-        // it, which is the one way to write two lists of one kind in a row.
-        const next = i + 1 < this.lines.length ? this.peel(i + 1, depth) : null;
-        const sibling = next === null || blank(next) ? null : itemStart(next);
+        // BLANK LINES BEFORE THE NEXT ITEM keep the list, loose, however many
+        // there are, as CommonMark reads them; anything else after them ends it.
+        const sibling = this.nextItem(i, depth, list);
         this.closeFrom(depth);
-        if (sibling && sibling.ordered === list.ordered) {
+        if (sibling) {
           list.loose = true;
           this.extend(i);
           return;
@@ -579,10 +582,10 @@ class BlockReader {
         return;
       }
       // A MARKER SHORT OF THE ITEM'S CONTENT is the next item of its list,
-      // or, of the other kind, the end of the list.
+      // or, with another bullet or delimiter, the end of the list.
       const head = itemStart(rest);
       this.closeFrom(depth);
-      if (head && head.ordered === list.ordered) {
+      if (head && sameList(head, list)) {
         this.extend(i);
         this.openItem(list, head, i);
         return;
@@ -612,6 +615,21 @@ class BlockReader {
     top.leaf.end = i + 1;
     this.extend(i);
     return true;
+  }
+
+  /**
+   * Whether the first line that is not blank after the blank line `i`, read
+   * through the containers outside the list, is the list's next item.
+   */
+  private nextItem(i: number, depth: number, list: ListFrame): boolean {
+    for (let k = i + 1; k < this.lines.length; k++) {
+      const next = this.peel(k, depth);
+      if (next === null) return false;
+      if (blank(next)) continue;
+      const head = itemStart(next);
+      return head !== null && sameList(head, list);
+    }
+    return false;
   }
 
   /**
@@ -845,6 +863,16 @@ class BlockReader {
       }
     }
   }
+}
+
+/**
+ * Whether `head` is the next item of `list`: of its kind and with its bullet
+ * or delimiter. A `*` after `-`, or a `)` after `.`, starts a new list, as
+ * CommonMark reads it (5.3), which is how two lists of one kind sit next to
+ * each other.
+ */
+function sameList(head: ItemStart, list: ListFrame): boolean {
+  return head.ordered === list.ordered && head.marker === list.marker;
 }
 
 function codeOf(leaf: Extract<Leaf, { kind: 'code' }>): MarkdownBlock {

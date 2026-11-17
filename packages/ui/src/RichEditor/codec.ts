@@ -250,21 +250,27 @@ export function writeMarkdown(doc: PMNode, source?: MarkdownSource): string {
   let out = '';
   let emitted = false;
   let prev: SourceBlock | null = null;
-  let prevNode: PMNode | null = null;
+  let last: Written | null = null;
   for (let i = 0; i < doc.childCount; i++) {
     const node = doc.child(i);
-    const known = source ? recall(node, source, used) : null;
-    const text = known ? known.text : writeBlock(node);
+    let known = source ? recall(node, source, used) : null;
+    const marker = markerAfter(last, node);
+    // A list read with the marker of the list now before it would join it
+    // written as it was read: it is written afresh, with the other marker.
+    if (known && isList(node) && marker !== node.attrs.marker) {
+      used.delete(known.index);
+      known = null;
+    }
+    const text = known ? known.text : writeBlock(node, marker);
     if (!known && text === '') continue;
     if (!emitted) {
       out = (known && known.index === 0 && source ? source.lead : '') + text;
     } else {
-      const adjacent = known && prev && known.index === prev.index + 1;
-      out += (adjacent ? known.sep : separator(prevNode, node)) + text;
+      out += (known && prev && known.index === prev.index + 1 ? known.sep : '\n\n') + text;
     }
     emitted = true;
     prev = known;
-    prevNode = node;
+    last = { node, marker };
   }
   if (source) {
     const lastBlock = source.blocks[source.blocks.length - 1];
@@ -302,22 +308,32 @@ function recall(node: PMNode, source: MarkdownSource, used: Set<number>): Source
   return null;
 }
 
+/** A block as it was written: a list with the marker it was written with. */
+interface Written {
+  node: PMNode;
+  marker: string;
+}
+
+/** The other bullet or delimiter, for a list written next to one of its own. */
+const OTHER_MARKER: Record<string, string> = { '-': '*', '*': '-', '+': '-', '.': ')', ')': '.' };
+
 /**
- * What separates two blocks the editor wrote. Two lists of the same kind
- * need TWO blank lines: one would read as a single loose list, because the
- * grammar carries a list across one blank line to the next item.
+ * The marker a block is written with after `last`: a list's own, unless the
+ * list before it is of its kind and was written with that marker, when the
+ * two would read as one list; it then takes the other bullet or delimiter,
+ * which starts a new list to every CommonMark reader. Blank lines cannot keep
+ * two lists apart, since CommonMark carries a list across any number of them.
  */
-function separator(prev: PMNode | null, next: PMNode): string {
-  return prev && sameKindLists(prev, next) ? '\n\n\n' : '\n\n';
+function markerAfter(last: Written | null, node: PMNode): string {
+  const own = (node.attrs.marker as string | undefined) ?? '';
+  if (!isList(node) || !last || last.node.type !== node.type || last.marker !== own) return own;
+  return OTHER_MARKER[own] ?? own;
 }
 
 function isList(node: PMNode): boolean {
   return node.type.name === 'bullet_list' || node.type.name === 'ordered_list';
 }
 
-function bothBullet(a: PMNode, b: PMNode): boolean {
-  return a.type.name === 'bullet_list' && b.type.name === 'bullet_list';
-}
 
 /** How a block is spelled: the markers it was read with, or plainer ones. */
 interface Spelling {
@@ -340,7 +356,7 @@ const SPELLINGS: readonly Spelling[] = [
  * One block in the canonical spelling, checked: the first spelling that reads
  * back as what the writer sees, or the plainest when none does.
  */
-export function writeBlock(node: PMNode): string {
+export function writeBlock(node: PMNode, marker?: string): string {
   if (node.type.name === 'paragraph' && node.childCount === 0) return '';
   // What the reader must see is the block AS WRITTEN: a list written loose
   // because two of an item's blocks need a blank line reads back loose, which
@@ -348,14 +364,14 @@ export function writeBlock(node: PMNode): string {
   const want = signature(asWritten(node));
   let text = '';
   for (const spelling of SPELLINGS) {
-    text = block(node, spelling);
+    text = block(node, spelling, marker);
     const back = readMarkdown(text).doc;
     if (back.childCount === 1 && signature(back.firstChild!) === want) return text;
   }
   return text;
 }
 
-function block(node: PMNode, s: Spelling): string {
+function block(node: PMNode, s: Spelling, marker?: string): string {
   switch (node.type.name) {
     case 'paragraph':
       // Space at either end of a block renders as nothing, and two at its end
@@ -377,7 +393,7 @@ function block(node: PMNode, s: Spelling): string {
       return RULE;
     case 'bullet_list':
     case 'ordered_list':
-      return list(node, s);
+      return list(node, s, marker ?? (node.attrs.marker as string));
     case 'table':
       return table(node, s);
     default:
@@ -387,12 +403,12 @@ function block(node: PMNode, s: Spelling): string {
 
 function blocks(parent: PMNode, s: Spelling): string {
   const parts: string[] = [];
-  let prev: PMNode | null = null;
+  let last: Written | null = null;
   parent.forEach((child) => {
-    const text = block(child, s);
-    if (parts.length > 0) parts.push(separator(prev, child));
-    parts.push(text);
-    prev = child;
+    const marker = markerAfter(last, child);
+    if (parts.length > 0) parts.push('\n\n');
+    parts.push(block(child, s, marker));
+    last = { node: child, marker };
   });
   return parts.join('');
 }
@@ -431,25 +447,29 @@ function codeBlock(node: PMNode): string {
  * an item is what makes a list loose to every CommonMark reader, this
  * grammar included, and a list written half one way would read the other.
  */
-function list(node: PMNode, s: Spelling): string {
+function list(node: PMNode, s: Spelling, listMarker: string): string {
   const ordered = node.type.name === 'ordered_list';
   const { items, loose } = layout(node);
   const written: string[] = [];
   node.forEach((item, _offset, i) => {
-    const marker = ordered
-      ? `${(node.attrs.start as number) + i}${node.attrs.marker as string} `
-      : `${node.attrs.marker as string} `;
+    const marker = ordered ? `${(node.attrs.start as number) + i}${listMarker} ` : `${listMarker} `;
     const checked = item.attrs.checked as boolean | null;
     const box = checked === null ? '' : checked ? '[x] ' : '[ ] ';
     const indent = ' '.repeat(marker.length);
     const parts: string[] = [];
-    let prev: PMNode | null = null;
+    let last: Written | null = null;
     for (const child of items[i]!) {
-      if (prev) parts.push(sameKindLists(prev, child) ? '\n\n\n' : loose ? '\n\n' : '\n');
+      const prev: PMNode | null = last ? (last as Written).node : null;
+      const childMarker = markerAfter(last, child);
+      if (prev) parts.push(loose ? '\n\n' : '\n');
       // A RULE RIGHT UNDER A PARAGRAPH is written `***`: `---` there is a
       // setext heading's underline to CommonMark.
-      parts.push(!loose && prev?.type.name === 'paragraph' && child.type.name === 'horizontal_rule' ? '***' : block(child, s));
-      prev = child;
+      parts.push(
+        !loose && prev?.type.name === 'paragraph' && child.type.name === 'horizontal_rule'
+          ? '***'
+          : block(child, s, childMarker),
+      );
+      last = { node: child, marker: childMarker };
     }
     const lines = parts.join('').split('\n');
     written.push(
@@ -508,7 +528,8 @@ function asWritten(node: PMNode): PMNode {
  * - A paragraph after anything that ends in text (a paragraph, a quote, a
  *   list) would continue it, and after a table it would be a row.
  * - A table after a table would be its rows.
- * - Two quotes, or two lists of one kind, would be one.
+ * - Two quotes would be one. Two lists of one kind are kept apart by their
+ *   markers ([markerAfter]), not by a blank line.
  * - A list that cannot interrupt a paragraph (an empty first item, or a
  *   number other than 1) would continue the text above it.
  * - Everything else starts a block of its own under any block: a fence, a
@@ -519,7 +540,6 @@ function needsBlank(prev: PMNode, next: PMNode): boolean {
   const p = prev.type.name;
   const n = next.type.name;
   if (p === 'code_block' || p === 'heading' || p === 'horizontal_rule') return false;
-  if (sameKindLists(prev, next)) return true;
   const quoted = (name: string) => name === 'blockquote' || name === 'callout';
   if (quoted(p) && quoted(n)) return true;
   switch (n) {
@@ -542,10 +562,6 @@ function needsBlank(prev: PMNode, next: PMNode): boolean {
   }
 }
 
-/** Two lists the grammar would read as one, written next to each other. */
-function sameKindLists(prev: PMNode, next: PMNode): boolean {
-  return isList(prev) && isList(next) && (prev.type === next.type || bothBullet(prev, next));
-}
 
 function table(node: PMNode, s: Spelling): string {
   const rows: string[][] = [];

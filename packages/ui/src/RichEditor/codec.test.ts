@@ -7,7 +7,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
-import type { Node as PMNode } from 'prosemirror-model';
+import { Fragment, type Node as PMNode } from 'prosemirror-model';
 import { parseMarkdown } from '../Markdown/index.js';
 import { readMarkdown, signature, writeBlock, writeMarkdown } from './codec.js';
 import { canonicalMarkdown } from './roundtrip.js';
@@ -362,5 +362,38 @@ describe('looseness', () => {
     const written = canonicalMarkdown(text);
     expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
     expect(readMarkdown(text).doc.firstChild!.attrs.loose).toBe(false);
+  });
+});
+
+describe('two lists of one kind next to each other', () => {
+  const item = (text: string) => schema.node('list_item', null, schema.node('paragraph', null, schema.text(text)));
+  const bullets = (text: string) => schema.node('bullet_list', { marker: '-', loose: false }, [item(text)]);
+  const numbers = (text: string) => schema.node('ordered_list', { start: 1, marker: '.', loose: false }, [item(text)]);
+
+  test.each([
+    ['three bullet lists', [bullets('a'), bullets('b'), bullets('c')], '- a\n\n* b\n\n- c'],
+    ['two numbered lists', [numbers('a'), numbers('b')], '1. a\n\n1) b'],
+  ])('%s alternate their markers, and read back as that many lists', (_case, lists, want) => {
+    const doc = schema.node('doc', null, lists);
+    const written = writeMarkdown(doc);
+    expect(written).toBe(want);
+    expect(readMarkdown(written).doc.childCount).toBe(lists.length);
+  });
+
+  test('inside an item, stay tight and two lists', () => {
+    const list = schema.node('bullet_list', { marker: '-', loose: false }, [
+      schema.node('list_item', null, [schema.node('paragraph', null, schema.text('x')), bullets('a'), bullets('b')]),
+    ]);
+    expect(writeBlock(list)).toBe('- x\n  - a\n  * b');
+    expect(signature(readMarkdown(writeBlock(list)).doc.firstChild!)).toBe(signature(list));
+  });
+
+  test('read from a body and brought together by an edit, the second is written afresh', () => {
+    const text = '- a\n\nbetween\n\n- b\n';
+    const { doc, source } = readMarkdown(text);
+    const without = doc.copy(Fragment.from([doc.child(0), doc.child(2)]));
+    const written = writeMarkdown(without, source);
+    expect(written).toBe('- a\n\n* b\n');
+    expect(readMarkdown(written).doc.childCount).toBe(2);
   });
 });
