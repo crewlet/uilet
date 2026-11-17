@@ -744,7 +744,7 @@ describe('a tooltip on the trigger', () => {
     fireEvent.pointerEnter(trigger);
     settle();
     expect(tip()?.textContent).toBe('More actions');
-    expect(tip()?.querySelector('[aria-hidden="true"]')?.textContent).toBe('More actions');
+    expect(tip()?.getAttribute('aria-hidden')).toBe('true');
   });
 
   test('keyboard focus shows it, and it steps aside while the menu is open', () => {

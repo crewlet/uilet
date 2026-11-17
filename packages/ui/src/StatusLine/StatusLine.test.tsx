@@ -59,7 +59,7 @@ test('the state in full is in the tooltip on the word, and read with the line', 
   const tip = document.querySelector('[role="tooltip"]')!;
   expect(tip.textContent).toBe('Asks to call deploy on production');
   // Shown, not read twice: the line already says it.
-  expect(tip.querySelector('[aria-hidden="true"]')).not.toBeNull();
+  expect(tip.getAttribute('aria-hidden')).toBe('true');
 });
 
 test('a clipped line keeps one line and cuts its notes first', () => {

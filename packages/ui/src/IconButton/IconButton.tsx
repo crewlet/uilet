@@ -150,7 +150,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   );
   return (
     <>
-      {tip === undefined ? button : <Tooltip content={<span aria-hidden="true">{tip}</span>} pressOpens={disabledReason !== undefined}>{button}</Tooltip>}
+      {tip === undefined ? button : <Tooltip content={tip} describes={false} pressOpens={disabledReason !== undefined}>{button}</Tooltip>}
       {inert ? <VisuallyHidden id={reasonId}>{disabledReason}</VisuallyHidden> : null}
     </>
   );
