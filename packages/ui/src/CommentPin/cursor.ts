@@ -15,16 +15,14 @@ export const COMMENT_PIN_CURSOR_COLOURS: CommentPinCursorColours = {
   edge: themes.light.color.brand.accent,
 };
 
-/** The cursor's side, in CSS px: the small control step a pin is drawn at. */
+/** The cursor's side, in CSS px. */
 export const COMMENT_PIN_CURSOR_SIZE = 24;
 
 const attribute = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /**
- * The CSS `cursor` value that draws the draft comment pin, its hotspot on the
- * pin's tip so a click pins exactly where the tip is. Mirrored for a
- * right-to-left page, whose pins stand up and to the left. Falls back to a
- * crosshair where a custom cursor is not drawn.
+ * The CSS `cursor` that draws the draft pin, its hotspot on the pin's tip so a
+ * click pins where the tip is; mirrored right to left, with a crosshair fallback.
  */
 export function commentPinCursor(
   colours: Partial<CommentPinCursorColours> = {},
