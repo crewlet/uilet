@@ -1,24 +1,10 @@
 /**
- * What changed between two versions of a document, by line.
- *
- * OVER LINES, by the classic longest-common-subsequence table. The shape is
- * the one a prose document wants: a paragraph somebody rewrote is a line
- * replaced, not thirty character edits scattered through it. Word-level
- * refinement inside a changed line is deliberately absent: it makes a small
- * edit prettier and a large one unreadable, and documents are rewritten in
- * paragraphs.
- *
- * THE TABLE RATHER THAN MYERS, and [MAX_DIFF_LINES] is what pays for that
- * choice. The table is quadratic on every input, but it is a dozen lines
- * anybody can check by reading; the cap keeps the quadratic term small, and a
- * document past it is reported as a whole replacement rather than freezing the
- * tab.
- *
- * FRAMEWORK FREE. Nothing here imports React, so a host can compute a diff in
- * a worker or a test and hand the sections to [DiffView].
+ * The shapes a line diff is drawn from, and what a host does with them: count
+ * a diff, collapse a whole one to its changes, or cut a preview. Two texts are
+ * compared by [compareLines] (`lineDiff.ts`). Framework free.
  */
 
-/** One line of the result. `same` lines carry both numbers. */
+/** One line of a diff. `same` lines carry both numbers. */
 export interface DiffLine {
   kind: 'same' | 'add' | 'remove';
   text: string;
@@ -26,6 +12,8 @@ export interface DiffLine {
   before: number | null;
   /** 1-based line number in the NEW document, or null on a removal. */
   after: number | null;
+  /** Where a setting is (a configuration path, a file): a keyed diff draws it in place of the numbers. */
+  path?: string | undefined;
 }
 
 /** What a diff amounts to, for a one-line summary above it. */
@@ -43,53 +31,20 @@ export interface DiffStat {
  */
 export interface DiffSection {
   /** The lines of this section, in order. */
-  lines: DiffLine[];
+  lines: readonly DiffLine[];
   /** How many unchanged lines were dropped BEFORE this section. */
   skipped: number;
 }
 
 /**
- * The size past which the table is not worth building.
- *
- * SIZED FROM THE TABLE'S MEMORY, because that is the quantity that binds and
- * it is paid on every input: `(N+1)` rows of `(M+1)` `Uint32` entries, every
- * cell filled. At two thousand lines that is about 16 MB and 60 ms, which a
- * tab holds without noticing; at ten thousand it is hundreds of megabytes and
- * seconds on the main thread. Raising it means replacing the table with Myers
- * or Hirschberg first.
- */
-export const MAX_DIFF_LINES = 2_000;
-
-/**
- * Split a document into the lines a diff compares.
- *
- * A trailing newline is not a line. Every file that ends properly has one, so
- * counting it would report an added last line on every document that gained
- * one. Both line endings read as one.
+ * Split a text into the lines a diff compares: every line ending ends one, and
+ * a final newline ends the last line rather than starting another.
  */
 export function splitLines(text: string): string[] {
-  const normalised = (text ?? '').replace(/\r\n?/g, '\n');
-  if (normalised === '') return [];
-  return normalised.replace(/\n$/, '').split('\n');
-}
-
-/**
- * The line diff of two documents: every line of the result in order, context
- * included, because a document diff is read as a document rather than as a
- * patch.
- */
-export function diffLines(before: string, after: string): DiffLine[] {
-  const a = splitLines(before);
-  const b = splitLines(after);
-  if (a.length > MAX_DIFF_LINES || b.length > MAX_DIFF_LINES) {
-    // TOO BIG TO COMPARE HONESTLY, so reported as a whole replacement, which
-    // is true; the alternative is a tab that stops responding.
-    return [
-      ...a.map((text, i) => ({ kind: 'remove' as const, text, before: i + 1, after: null })),
-      ...b.map((text, i) => ({ kind: 'add' as const, text, before: null, after: i + 1 })),
-    ];
-  }
-  return walk(a, b, common(a, b));
+  if (!text) return [];
+  const out = text.split(/\r\n|\n|\r/);
+  if (out[out.length - 1] === '') out.pop();
+  return out;
 }
 
 /**
@@ -171,57 +126,4 @@ export function firstChangedLines(
     if (kept.length > 0) out.push({ lines: kept, skipped: section.skipped });
   }
   return { sections: out, more };
-}
-
-/** The length of the longest common subsequence from each pair of positions, as the classic table. */
-function common(a: readonly string[], b: readonly string[]): Uint32Array[] {
-  const table: Uint32Array[] = [];
-  for (let i = 0; i <= a.length; i++) table.push(new Uint32Array(b.length + 1));
-  for (let i = a.length - 1; i >= 0; i--) {
-    const row = table[i]!;
-    const next = table[i + 1]!;
-    for (let j = b.length - 1; j >= 0; j--) {
-      row[j] = a[i] === b[j] ? next[j + 1]! + 1 : Math.max(next[j]!, row[j + 1]!);
-    }
-  }
-  return table;
-}
-
-/**
- * Walk the table into a result.
- *
- * A REMOVAL BEFORE AN ADDITION at every equal branch, so a replaced line reads
- * as the old one struck out above the new one rather than as an insertion
- * followed by an unrelated deletion.
- */
-function walk(a: readonly string[], b: readonly string[], table: readonly Uint32Array[]): DiffLine[] {
-  const out: DiffLine[] = [];
-  let i = 0;
-  let j = 0;
-  while (i < a.length && j < b.length) {
-    if (a[i] === b[j]) {
-      out.push({ kind: 'same', text: a[i]!, before: i + 1, after: j + 1 });
-      i++;
-      j++;
-      continue;
-    }
-    const down = table[i + 1]![j]!;
-    const right = table[i]![j + 1]!;
-    if (down >= right) {
-      out.push({ kind: 'remove', text: a[i]!, before: i + 1, after: null });
-      i++;
-    } else {
-      out.push({ kind: 'add', text: b[j]!, before: null, after: j + 1 });
-      j++;
-    }
-  }
-  while (i < a.length) {
-    out.push({ kind: 'remove', text: a[i]!, before: i + 1, after: null });
-    i++;
-  }
-  while (j < b.length) {
-    out.push({ kind: 'add', text: b[j]!, before: null, after: j + 1 });
-    j++;
-  }
-  return out;
 }

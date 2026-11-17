@@ -19,7 +19,8 @@ test('the changes lens draws the line diff of two texts with its summary', () =>
   expect(screen.getByRole('heading', { name: 'Version 3 and Version 5' })).toBeTruthy();
   expect(screen.getByRole('group', { name: 'Changes from Version 3 to Version 5' })).toBeTruthy();
   expect(screen.getByText('1 line added, 1 removed')).toBeTruthy();
-  expect(screen.getByText('First paragraph, revised.')).toBeTruthy();
+  // The edited line reads whole, its changed run underlined inside it.
+  expect(document.querySelector('.crewlet-diff-view__line--add')?.textContent).toContain('First paragraph, revised.');
 });
 
 test('two identical texts are said in words, not drawn as unmarked lines', () => {
@@ -72,7 +73,7 @@ test('the switch changes lens, and is absent when only one lens can be drawn', (
   rerender(<VersionCompare fromLabel="rev 1" toLabel="rev 2" lens="versions" onLensChange={onLensChange} before={before} after={after} />);
   // Nothing to draw side by side: the switch is gone and the changes are shown.
   expect(screen.queryByRole('radiogroup')).toBeNull();
-  expect(screen.getByText('First paragraph, revised.')).toBeTruthy();
+  expect(document.querySelector('.crewlet-diff-view__line--add')?.textContent).toContain('First paragraph, revised.');
 });
 
 test('carries no violation on either lens', async () => {

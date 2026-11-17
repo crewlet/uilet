@@ -3,6 +3,9 @@
  * colour cannot say: the word for the kind, and the word for the arrow.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { installThemed } from '../../../../apps/ui-tests/src/cascade.js';
@@ -109,4 +112,15 @@ test('stands each path over its value in the stacked layout, and only under 480p
   uninstall();
   rerender(<DiffList rows={rows} layout="auto" />);
   expect(container.querySelector('.crewlet-diff-list--auto')).not.toBeNull();
+});
+
+test('an added or removed row takes the tint and ink a DiffView line of its kind does', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'DiffList.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = (selector: string) => new RegExp(`${selector.replace(/[.-]/g, '\\$&')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+  // Spelled without the leading dashes: the package's variable check reads a quoted `--name` as a declaration.
+  const token = (name: string) => `--${name}`;
+  for (const kind of ['added', 'removed']) {
+    expect(rule(`.crewlet-diff-list__row--${kind}`)).toContain(`background: var(${token(`color-diff-${kind}-row`)});`);
+    expect(rule(`.crewlet-diff-list__row--${kind}`)).toContain(`color: var(${token(`color-diff-${kind}-sign`)});`);
+  }
 });
