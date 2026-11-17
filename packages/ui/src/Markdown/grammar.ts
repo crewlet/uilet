@@ -841,7 +841,10 @@ function codeOf(leaf: Extract<Leaf, { kind: 'code' }>): MarkdownBlock {
  *
  * ORDER MATTERS. An escape comes first, so `\*` is an asterisk and `` \` ``
  * opens no code span. A backtick span is opaque, so `**not bold**` inside one
- * stays literal. Images precede links because their syntax is a link with a
+ * stays literal. A BACKTICK STRING IS A MAXIMAL RUN, as CommonMark has it
+ * (6.1): a span opens on a whole run and closes on a run of exactly its
+ * length, so ```` ``` ```` alone is three literal backticks rather than an
+ * empty span and a stray one, and a run that finds no closer is text. Images precede links because their syntax is a link with a
  * `!` in front of it.
  *
  * A LABEL MAY CARRY ESCAPED BRACKETS (`[a \] b](url)`), which is how a link
@@ -893,7 +896,7 @@ const ASCII_PUNCTUATION = String.raw`[!-\/:-@\[-\x60{-~]`;
 
 const INLINE_SOURCE = [
   String.raw`\\(?<esc>${ASCII_PUNCTUATION})`,
-  String.raw`(?<tick>\x60+)(?<code>[\s\S]*?)\k<tick>`,
+  String.raw`(?<!(?<!\\)\x60)(?<tick>\x60+)(?!\x60)(?<code>[\s\S]*?)(?<!\x60)\k<tick>(?!\x60)`,
   String.raw`!\[` + label('alt') + String.raw`\]\(` + destination('src', 'srcTitle'),
   String.raw`\[` + linkLabel('label') + String.raw`\]\(` + destination('href', 'hrefTitle'),
   String.raw`<(?<auto>(?:https?:|mailto:)[^>\s]+)>`,
@@ -950,19 +953,22 @@ export function* markdownInline(text: string): Generator<MarkdownInlineMatch> {
 }
 
 /**
- * A code span's content as it reads.
+ * A code span's content as it reads, by CommonMark's rules (6.1).
  *
- * A LINE ENDING INSIDE IT IS A SPACE, as CommonMark reads it (6.1): a span
- * wrapped across two lines of a paragraph is one run of code, and a reader
- * that kept the line ending handed a writer a line that starts inside the
- * span, where no escape can stop it reading as a block (an escape inside a
- * span is a literal backslash).
+ * A LINE ENDING INSIDE IT IS A SPACE: a span wrapped across two lines of a
+ * paragraph is one run of code, and a reader that kept the line ending handed
+ * a writer a line that starts inside the span, where no escape can stop it
+ * reading as a block (an escape inside a span is a literal backslash).
  *
- * ONE leading and one trailing space go, which is how CommonMark lets a span
- * start with a backtick of its own.
+ * ONE SPACE GOES FROM EACH END when both ends have one and the content is not
+ * all spaces, which is how a span starts or ends with a backtick of its own
+ * (`` `` `a` `` `` holds `` `a` ``). A space at one end only is content.
  */
 export function markdownCodeText(code: string): string {
-  return code.replace(/\n/g, ' ').replace(/^ | $/g, '');
+  const text = code.replace(/\n/g, ' ');
+  return text.length >= 2 && text.startsWith(' ') && text.endsWith(' ') && text.trim() !== ''
+    ? text.slice(1, -1)
+    : text;
 }
 
 /**

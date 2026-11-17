@@ -724,9 +724,14 @@ function codeSpan(code: string, cell: boolean): string {
   const text = code.replace(/\n/g, ' ');
   const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
   const fence = '`'.repeat(longest + 1);
-  const pad = (side: string) => (side === ' ' || side === '`' ? ' ' : '');
+  // A SPACE AT BOTH ENDS OR NEITHER: the reader takes one from each end only
+  // when both have one ([markdownCodeText]), so a span whose text starts or
+  // ends with a backtick or a space is padded on both sides, and one that is
+  // all spaces, which the reader keeps whole, on neither.
+  const edge = (c: string) => c === ' ' || c === '`';
+  const pad = text.trim() !== '' && (edge(text[0] ?? '') || edge(text[text.length - 1] ?? '')) ? ' ' : '';
   const body = cell ? text.replace(/\|/g, '\\|') : text;
-  return `${fence}${pad(body[0] ?? '')}${body}${pad(body[body.length - 1] ?? '')}${fence}`;
+  return `${fence}${pad}${body}${pad}${fence}`;
 }
 
 const ASCII_PUNCTUATION = /[!-/:-@[-`{-~]/;

@@ -304,3 +304,32 @@ describe('a pipe at the start of a line', () => {
     expect(signature(back.firstChild!)).toBe(signature(p));
   });
 });
+
+describe('backticks in text', () => {
+  test.each([
+    ['three alone, after a word on a lazy line', '- a\nb ```'],
+    ['three alone, indented past a fence', 'a\n    ```'],
+  ])('%s stay text, and round-trip', (_case, text) => {
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(canonicalMarkdown(written)).toBe(written);
+    let code = false;
+    readMarkdown(text).doc.descendants((n) => {
+      if (n.marks.some((m) => m.type.name === 'code')) code = true;
+    });
+    expect(code).toBe(false);
+    expect(readMarkdown(written).doc.textContent).toContain('```');
+  });
+
+  test.each([['`a'], ['a`'], [' a'], ['a '], ['  '], [' `a` ']])('a code span holding %j reads back as written', (text) => {
+    // Between two words, so the editor's own collapsing of a space at a
+    // paragraph's edge or beside another space does not touch the span.
+    const node = schema.node('paragraph', null, [
+      schema.text('x'),
+      schema.text(text, [schema.marks.code!.create()]),
+      schema.text('y'),
+    ]);
+    // The span's own text, space for space: the signature collapses spaces.
+    expect(readMarkdown(writeBlock(node)).doc.firstChild!.textContent).toBe(`x${text}y`);
+  });
+});

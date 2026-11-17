@@ -410,3 +410,27 @@ describe('a fence', () => {
     expect(parseMarkdown('```\na\n   ```\nafter').map((b) => b.kind)).toEqual(['code', 'paragraph']);
   });
 });
+
+describe('a backtick string', () => {
+  const codes = (text: string) => [...markdownInline(text)].map((m) => m.groups.code).filter((c) => c !== undefined);
+
+  test('is a whole run: three alone are literal, not an empty span and one more', () => {
+    expect(codes('```')).toEqual([]);
+    expect(codes('a ``` b')).toEqual([]);
+  });
+
+  test('closes only on a run of exactly its length', () => {
+    expect(codes('`` a ``` b ``')).toEqual([' a ``` b ']);
+    expect(codes('`a``b`')).toEqual(['a``b']);
+  });
+
+  test('may follow an escaped backtick', () => {
+    expect(codes('\\``a`')).toEqual(['a']);
+  });
+
+  test("loses a space from each end only when both have one", () => {
+    expect(markdownCodeText(' `a` ')).toBe('`a`');
+    expect(markdownCodeText(' a')).toBe(' a');
+    expect(markdownCodeText('  ')).toBe('  ');
+  });
+});
