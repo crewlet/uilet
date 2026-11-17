@@ -4,7 +4,7 @@
  * parts both depend on.
  */
 import { describe, expect, test } from 'vitest';
-import { markdownInline, parseMarkdown, parseMarkdownSpans, safeHref } from './grammar.js';
+import { markdownInline, parseMarkdown, parseMarkdownSpans, safeHref, type MarkdownBlock } from './grammar.js';
 
 const inline = (text: string) => [...markdownInline(text)].map((m) => m.groups);
 
@@ -291,5 +291,62 @@ describe('a list item', () => {
       // A paragraph keeps its lines as written; reading inline collapses the indent.
       { kind: 'paragraph', text: '  foo' },
     ]);
+  });
+});
+
+describe('reading a body', () => {
+  /**
+   * The work parsing `source` takes, COUNTED rather than timed: every
+   * regular-expression evaluation and every trim the grammar makes, the two
+   * ways it reads a line. A replaced `exec` is called by `test`, `match`,
+   * `replace` and `split` too.
+   */
+  const work = (source: string): number => {
+    const exec = RegExp.prototype.exec;
+    const trim = String.prototype.trim;
+    let calls = 0;
+    RegExp.prototype.exec = function (this: RegExp, text: string) {
+      calls++;
+      return exec.call(this, text);
+    };
+    String.prototype.trim = function (this: string) {
+      calls++;
+      return trim.call(this);
+    };
+    try {
+      parseMarkdown(source);
+    } finally {
+      RegExp.prototype.exec = exec;
+      String.prototype.trim = trim;
+    }
+    return calls;
+  };
+
+  /** Items nested `depth` deep, then `pairs` of a line indented to the innermost item and a lazy line. */
+  const nestedLazy = (depth: number, pairs: number) => {
+    const lines: string[] = [];
+    for (let d = 0; d < depth; d++) lines.push(`${'  '.repeat(d)}- level ${d}`);
+    for (let i = 0; i < pairs; i++) lines.push(`${'  '.repeat(depth)}indented ${i}`, `lazy ${i}`);
+    return lines.join('\n') + '\n';
+  };
+
+  // Twice the lines must take about twice the work. A parse that re-read an
+  // item's lines for each lazy line took four times the work at depth one and
+  // sixteen at depth three, and seconds for a few kilobytes.
+  test.each([1, 2, 3, 4])('grows linearly with lazy lines in items %i deep', (depth) => {
+    const ratio = work(nestedLazy(depth, 60)) / work(nestedLazy(depth, 30));
+    expect(ratio).toBeLessThan(2.2);
+  });
+
+  test('grows linearly with a run of blank lines inside an item', () => {
+    const run = (blanks: number) => `- a\n\n  \`\`\`\n${'\n'.repeat(blanks)}  x\n  \`\`\`\n`;
+    expect(work(run(2000)) / work(run(1000))).toBeLessThan(2.2);
+  });
+
+  test('reads lazy lines in nested items as the innermost paragraph', () => {
+    const [list] = parseMarkdown(nestedLazy(3, 2));
+    const inner = (block: MarkdownBlock | undefined): MarkdownBlock | undefined =>
+      block?.kind === 'list' ? inner(block.items[0]?.blocks[block.items[0].blocks.length - 1]) : block;
+    expect(inner(list)).toEqual({ kind: 'paragraph', text: 'level 2\nindented 0\nlazy 0\nindented 1\nlazy 1' });
   });
 });
