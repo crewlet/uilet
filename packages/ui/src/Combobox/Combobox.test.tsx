@@ -100,6 +100,30 @@ test('commitOn click waits for the click and still keeps the field focused', () 
   expect(held()).toBe('JIRA_HOST');
 });
 
+// A FACE BEFORE THE NAME, for a list of people: drawn on the row, said by the label alone.
+test('an option draws its leading face before the label, hidden from its name', () => {
+  render(
+    <Combobox
+      label="Assignee"
+      aria-label="Assignee"
+      value=""
+      onValueChange={() => {}}
+      open
+      onOpenChange={() => {}}
+      options={[
+        { value: 'ada', label: 'Ada', leading: <span data-testid="face">A</span> },
+        { value: 'bo', label: 'Bo' },
+      ]}
+    />,
+  );
+  const [ada, bo] = screen.getAllByRole('option');
+  const leading = ada!.querySelector('.crewlet-combobox__leading')!;
+  expect(leading.getAttribute('aria-hidden')).toBe('true');
+  expect(leading.nextElementSibling?.classList.contains('crewlet-combobox__label')).toBe(true);
+  expect(screen.getByRole('option', { name: 'Ada' })).toBe(ada);
+  expect(bo!.querySelector('.crewlet-combobox__leading')).toBeNull();
+});
+
 test('Escape closes the list and leaves the dialog around it open', () => {
   const closed = vi.fn();
   render(

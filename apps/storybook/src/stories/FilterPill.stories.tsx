@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, FilterPill, Popover } from '@crewlethq/ui';
+import { Avatar, Button, FilterPill, Popover } from '@crewlethq/ui';
 import { ChevronDownGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof FilterPill> = {
@@ -91,5 +91,27 @@ export const WordsOpenAnEditor: Story = {
         </Popover>
       )}
     />
+  ),
+};
+
+/** A value that is somebody wears their face before their name: an agent its character, a person initials. */
+export const WithFaces: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-2)' }}>
+      <FilterPill
+        field="Assignee"
+        operator="is"
+        value="QA Engineer"
+        valueLeading={<Avatar name="QA Engineer" kind="agent" character="gemlet" hue="green" size="text" decorative />}
+        onRemove={() => {}}
+      />
+      <FilterPill
+        field="Assignee"
+        operator="is"
+        value="Ada Okonkwo"
+        valueLeading={<Avatar name="Ada Okonkwo" kind="human" size="text" decorative />}
+        onRemove={() => {}}
+      />
+    </div>
   ),
 };
