@@ -31,7 +31,6 @@
 
 import { Fragment, type Mark, type Node as PMNode } from 'prosemirror-model';
 import {
-  markdownClosesFence,
   markdownCodeText,
   markdownInline,
   parseMarkdownSpans,
@@ -403,17 +402,18 @@ function quoted(text: string): string {
 }
 
 /**
- * A fenced block, fenced with the marker none of its own lines would close:
- * the grammar's own test of a closing line, so the writer and the reader
- * cannot disagree about where the block ends.
+ * A fenced block, in the character it was read with, on a run LONGER than any
+ * run of that character in its text: CommonMark closes a fence only on a run
+ * at least as long as the opening (4.5), so no line of the text can close it,
+ * whatever the text holds. Choosing between ``` and ~~~ instead left no
+ * fence for a block that held a line of each.
  */
 function codeBlock(node: PMNode): string {
   const text = node.textContent;
   const lang = node.attrs.lang as string;
-  const closes = (fence: MarkdownFence) => text.split('\n').some((line) => markdownClosesFence(line, fence));
-  const wanted = node.attrs.fence as MarkdownFence;
-  const other: MarkdownFence = wanted === '```' ? '~~~' : '```';
-  const fence = closes(wanted) && !closes(other) ? other : wanted;
+  const char = (node.attrs.fence as MarkdownFence)[0] ?? '`';
+  const longest = Math.max(0, ...(text.match(char === '`' ? /`+/g : /~+/g) ?? []).map((run) => run.length));
+  const fence = char.repeat(Math.max(3, longest + 1));
   return `${fence}${lang}\n${text}${text ? '\n' : ''}${fence}`;
 }
 

@@ -96,9 +96,20 @@ describe('the canonical spelling', () => {
     expect(signature(readMarkdown(writeBlock(node)).doc.firstChild!)).toBe(signature(node));
   });
 
-  test('fences code with the marker its own lines cannot close', () => {
-    const node = schema.node('code_block', { lang: 'md', fence: '```' }, schema.text('```\ninside\n```'));
-    expect(writeBlock(node)).toBe('~~~md\n```\ninside\n```\n~~~');
+  test('fences code with a run longer than any its own lines hold', () => {
+    const node = schema.node('code_block', { lang: 'md', fence: '```' }, schema.text('```\ninside\n````'));
+    expect(writeBlock(node)).toBe('`````md\n```\ninside\n````\n`````');
+    expect(signature(readMarkdown(writeBlock(node)).doc.firstChild!)).toBe(signature(node));
+  });
+
+  test('fences code that holds an indented backtick line and a tilde line', () => {
+    // Read: an opening on three, a line of three indented four (content), a
+    // tilde line (content), and the end of the body.
+    const text = '   ```\n    ```\n~~~';
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(readMarkdown(written).doc.childCount).toBe(1);
+    expect(canonicalMarkdown(written)).toBe(written);
   });
 
   test('escapes a pipe inside a table cell', () => {

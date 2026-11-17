@@ -143,7 +143,7 @@ export function safeHref(raw: string): string | null {
 // item's later blocks sit at its content indent, and one written a space or
 // two further in is still the block it spells.
 const HEADING = /^ {0,3}(#{1,6})\s+(.*)$/;
-const FENCE = /^( {0,3})(```|~~~)\s*([A-Za-z0-9_+-]*)\s*$/;
+const FENCE = /^( {0,3})(`{3,}|~{3,})\s*([A-Za-z0-9_+-]*)\s*$/;
 const RULE = /^(?:\s*(?:-{3,}|\*{3,}|_{3,})\s*)$/;
 const QUOTE = /^\s{0,3}>\s?(.*)$/;
 const TABLE_RULE = /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/;
@@ -151,39 +151,48 @@ const CALLOUT = /^\[!(note|tip|important|warning|caution)\]\s*$/i;
 const TASK = /^\[([ xX])\](?:\s+(.*))?$/;
 
 /**
- * What CLOSES a fence opened with each marker.
+ * Whether `line` closes a fence opened with `length` of `marker`'s character
+ * (three when not given), by CommonMark's rule (4.5): a run of the SAME
+ * character AT LEAST AS LONG as the opening's, indented up to three spaces,
+ * and nothing after it but whitespace.
  *
  * NOT `line.startsWith(marker)`. A closing fence carries NO INFO STRING, so a
  * literal ```` ```ts ```` line inside a ```` ```sh ```` sample is content, and
  * reading it as a close ended the block on its first line. A page teaching
- * somebody how to write a fenced block is exactly that input.
+ * somebody how to write a fenced block is exactly that input, and one that
+ * shows a fence of three inside a block opened on four is the other half.
  *
- * A LONGER RUN OF THE SAME CHARACTER STILL CLOSES, which is CommonMark's rule
- * and free here: [FENCE] only ever opens on three, so a four-backtick line is
- * not an opening this grammar can have made.
- *
- * A CLOSE MAY BE INDENTED UP TO THREE SPACES, whatever the opening's indent,
- * as CommonMark has it: a fence in a list item whose closing line sits a
- * space further in than its opening still ends there.
+ * A CLOSE MAY BE INDENTED UP TO THREE SPACES, whatever the opening's indent:
+ * a fence in a list item whose closing line sits a space further in than its
+ * opening still ends there.
  */
-const FENCE_CLOSE: Record<MarkdownFence, RegExp> = {
-  '```': /^ {0,3}`{3,}[ \t]*$/,
-  '~~~': /^ {0,3}~{3,}[ \t]*$/,
-};
-
-/** Whether `line` closes a fence opened with `marker`. */
-export function markdownClosesFence(line: string, marker: MarkdownFence): boolean {
-  return FENCE_CLOSE[marker].test(line);
+export function markdownClosesFence(line: string, marker: MarkdownFence, length = 3): boolean {
+  const char = marker[0] ?? '`';
+  const indent = /^ {0,3}/.exec(line)?.[0].length ?? 0;
+  let end = indent;
+  while (line[end] === char) end++;
+  return end - indent >= length && line.slice(end).trim() === '';
 }
 
 /**
- * The fence `line` opens, with its info string and the spaces it is indented
- * by, or null when it opens none. Each line of the block loses up to that
- * many spaces of its own, which is how CommonMark reads an indented fence.
+ * The fence `line` opens: its character (as `marker`), its `length` (three or
+ * more), its info string and the spaces it is indented by, or null when it
+ * opens none. Each line of the block loses up to that many spaces of its own,
+ * which is how CommonMark reads an indented fence, and only a run of the same
+ * character at least `length` long closes it ([markdownClosesFence]).
  */
-export function markdownFenceOf(line: string): { marker: MarkdownFence; lang: string; indent: number } | null {
+export function markdownFenceOf(
+  line: string,
+): { marker: MarkdownFence; length: number; lang: string; indent: number } | null {
   const m = FENCE.exec(line);
-  return m ? { marker: (m[2] ?? '```') as MarkdownFence, lang: m[3] ?? '', indent: (m[1] ?? '').length } : null;
+  if (!m) return null;
+  const run = m[2] ?? '```';
+  return {
+    marker: (run.startsWith('~') ? '~~~' : '```') as MarkdownFence,
+    length: run.length,
+    lang: m[3] ?? '',
+    indent: (m[1] ?? '').length,
+  };
 }
 
 /** The ATX heading `line` is, or null. Closing hashes are decoration, not content. */
@@ -363,6 +372,8 @@ type Leaf =
   | {
       kind: 'code';
       marker: MarkdownFence;
+      /** How long its opening run is: a close is at least as long. */
+      length: number;
       lang: string;
       indent: number;
       lines: string[];
@@ -506,7 +517,7 @@ class BlockReader {
       const leaf = top.leaf;
       if (leaf?.kind === 'code') {
         leaf.end = i + 1;
-        if (markdownClosesFence(rest, leaf.marker)) {
+        if (markdownClosesFence(rest, leaf.marker, leaf.length)) {
           top.children.push({ block: codeOf(leaf), start: leaf.start, end: leaf.end });
           top.leaf = null;
         } else {
@@ -642,7 +653,16 @@ class BlockReader {
     const fence = markdownFenceOf(rest);
     if (fence) {
       this.closeLeaf(top);
-      top.leaf = { kind: 'code', marker: fence.marker, lang: fence.lang, indent: fence.indent, lines: [], start: i, end: i + 1 };
+      top.leaf = {
+        kind: 'code',
+        marker: fence.marker,
+        length: fence.length,
+        lang: fence.lang,
+        indent: fence.indent,
+        lines: [],
+        start: i,
+        end: i + 1,
+      };
       return;
     }
 

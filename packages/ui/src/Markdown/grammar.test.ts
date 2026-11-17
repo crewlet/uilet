@@ -396,3 +396,17 @@ describe('a list under a line of text', () => {
     expect(parseMarkdown('- a\n2. b').map((b) => b.kind)).toEqual(['list', 'list']);
   });
 });
+
+describe('a fence', () => {
+  test('opens on three or more, and closes on a run of its character at least as long', () => {
+    expect(parseMarkdown('````md\n```\ninside\n```\n````')).toEqual([
+      { kind: 'code', lang: 'md', text: '```\ninside\n```', fence: '```' },
+    ]);
+    expect(parseMarkdown('~~~~\na\n~~~\n~~~~~')).toEqual([{ kind: 'code', lang: '', text: 'a\n~~~', fence: '~~~' }]);
+  });
+
+  test('closes on a line indented up to three spaces, and no further', () => {
+    expect(parseMarkdown('   ```\n    ```\n~~~')).toEqual([{ kind: 'code', lang: '', text: ' ```\n~~~', fence: '```' }]);
+    expect(parseMarkdown('```\na\n   ```\nafter').map((b) => b.kind)).toEqual(['code', 'paragraph']);
+  });
+});
