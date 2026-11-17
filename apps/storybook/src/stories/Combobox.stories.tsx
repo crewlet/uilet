@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, Combobox, FormField, Modal, type ComboboxOption } from '@crewlethq/ui';
+import { Avatar, Button, Combobox, FormField, Modal, type ComboboxOption } from '@crewlethq/ui';
 import { FolderGlyph, FolderInputGlyph, FolderPlusGlyph, SearchGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Combobox> = {
@@ -85,6 +85,53 @@ export const WithHints: Story = {
               { value: 'Software Engineer', hint: 'software-engineer' },
               { value: 'Site Reliability', hint: 'site-reliability' },
               { value: 'Designer', hint: 'designer' },
+            ]}
+            open={open}
+            onOpenChange={setOpen}
+          />
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/** A row can lead with a face: an agent as its character, a person as initials. */
+export const WithFaces: Story = {
+  render: () => {
+    function Demo() {
+      const [value, setValue] = useState('');
+      const [open, setOpen] = useState(true);
+      return (
+        <div style={{ width: 420 }}>
+          <Combobox
+            label="Seats"
+            aria-label="Assignee"
+            placeholder="Search seats"
+            value={value}
+            onValueChange={(next) => {
+              setValue(next);
+              setOpen(true);
+            }}
+            options={[
+              {
+                value: 'qa-engineer',
+                label: 'QA Engineer',
+                hint: 'agent',
+                leading: <Avatar name="QA Engineer" kind="agent" character="gemlet" hue="green" size="xs" decorative />,
+              },
+              {
+                value: 'site-reliability',
+                label: 'Site Reliability Engineer',
+                hint: 'agent',
+                leading: <Avatar name="Site Reliability Engineer" kind="agent" character="shieldlet" hue="blue" size="xs" decorative />,
+              },
+              {
+                value: 'ada',
+                label: 'Ada Okonkwo',
+                hint: 'person',
+                leading: <Avatar name="Ada Okonkwo" kind="human" size="xs" decorative />,
+              },
             ]}
             open={open}
             onOpenChange={setOpen}

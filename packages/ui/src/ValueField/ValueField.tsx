@@ -32,6 +32,8 @@ export interface ValueFieldChoice {
   label: string;
   /** A sentence saying what picking this one does: drawn under the option, and on the help line once chosen. */
   hint?: string | undefined;
+  /** A face or a glyph before the label, the Select option's `leading`: a seat's face in a picker of seats. */
+  leading?: ReactNode;
 }
 
 /** The words a value field draws itself. */
@@ -348,7 +350,12 @@ export function ValueField({
  */
 function choiceOptions(choices: readonly ValueFieldChoice[] | undefined, value: string) {
   const all = choices ?? [];
-  const rows = all.map((choice) => ({ value: choice.value, label: choice.label, description: choice.hint }));
+  const rows = all.map((choice) => ({
+    value: choice.value,
+    label: choice.label,
+    description: choice.hint,
+    ...(choice.leading === undefined ? {} : { leading: choice.leading }),
+  }));
   if (value !== '' && !all.some((choice) => choice.value === value)) {
     return [{ value, label: value }, ...rows];
   }

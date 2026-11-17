@@ -43,6 +43,23 @@ test("autoFocus focuses the field's control, a choice included", () => {
   }
 });
 
+// A CHOICE OF SEATS WEARS THEIR FACES: a choice's `leading` reaches the Select it draws.
+test("a choice's leading face is drawn on the chosen value", () => {
+  const { container } = render(
+    <ValueField
+      label="Reports to"
+      kind="choice"
+      value="qa"
+      onChange={() => {}}
+      choices={[
+        { value: 'qa', label: 'QA Engineer', leading: <span data-testid="face">Q</span> },
+        { value: 'sre', label: 'Site Reliability Engineer' },
+      ]}
+    />,
+  );
+  expect(container.querySelector('.crewlet-select__leading [data-testid="face"]')).not.toBeNull();
+});
+
 test('a url field supplies the scheme the config requires', () => {
   const onChange = vi.fn();
   render(<ValueField label="Jira site" kind="url" value="" onChange={onChange} />);

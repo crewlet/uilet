@@ -83,6 +83,13 @@ button.crewlet-filter-pill__words {
   color: var(--color-text-secondary);
 }
 
+/* A face before the value (`valueLeading`), never shrunk by a long value. */
+.crewlet-filter-pill__value-leading {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
 .crewlet-filter-pill__value {
   min-width: 0;
   overflow: hidden;

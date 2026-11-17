@@ -157,6 +157,13 @@
   color: var(--color-text-primary);
 }
 
+/* An option's face or glyph (`leading`), on the label's line and never shrunk. */
+.crewlet-combobox__leading {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
 .crewlet-combobox__check {
   display: inline-flex;
   flex: none;

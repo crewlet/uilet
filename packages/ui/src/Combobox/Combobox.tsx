@@ -22,6 +22,8 @@ export interface ComboboxOption {
   label?: ReactNode;
   /** A short second line of identity: a handle, a path, a kind. */
   hint?: ReactNode;
+  /** A face or a glyph before the label, as a Select option's `leading`. Decorative: the label names the option. */
+  leading?: ReactNode;
   disabled?: boolean;
 }
 
@@ -310,6 +312,11 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
       )}
       {...(option.disabled ? {} : handlers(index))}
     >
+      {option.leading !== undefined ? (
+        <span className="crewlet-combobox__leading" aria-hidden="true">
+          {option.leading}
+        </span>
+      ) : null}
       <span className="crewlet-combobox__label">{option.label ?? option.value}</span>
       {option.hint ? <span className="crewlet-listbox__hint">{option.hint}</span> : null}
       {inline && picked ? (

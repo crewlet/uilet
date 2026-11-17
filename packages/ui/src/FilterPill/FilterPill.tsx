@@ -32,6 +32,11 @@ export interface FilterPillProps {
    * switch with no value ("Blocked"), which the field alone names.
    */
   value?: ReactNode;
+  /**
+   * A face or a glyph before the value, for a value that is somebody: "Assignee
+   * is [face] Ada". Decorative, so the pill still reads as its sentence.
+   */
+  valueLeading?: ReactNode;
   /** Takes the filter off. Left out, the pill has no remove control. */
   onRemove?: (() => void) | undefined;
   /**
@@ -81,6 +86,7 @@ export function FilterPill({
   field,
   operator,
   value,
+  valueLeading,
   onRemove,
   removeLabel,
   renderWords,
@@ -105,6 +111,11 @@ export function FilterPill({
       {hasValue ? (
         <>
           {' '}
+          {valueLeading !== undefined && valueLeading !== null ? (
+            <span className="crewlet-filter-pill__value-leading" aria-hidden="true">
+              {valueLeading}
+            </span>
+          ) : null}
           <span className="crewlet-filter-pill__value">{value}</span>
         </>
       ) : null}
