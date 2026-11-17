@@ -208,6 +208,21 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.151.1
+
+### A list item holds blocks
+
+**The Markdown grammar reads a list item's lines as blocks**, as CommonMark does: each line indented to the item's content (the marker's width and the spaces after it, so three for `1. ` and four for `10. `) is the item's, with that indent taken off, and the item's lines are read like a document of their own. A fenced block (backticks or tildes), a table, a quote, a heading or a nested list inside an item is that block. The grammar read every later line of an item as paragraph text, so a fence in a numbered step drew as three backticks inline in every renderer, and `RichEditor`, saving it, turned an indented `- name:` line inside the fence into a list item that took the next paragraph's first word and a link's bracket with it.
+
+- A blank line belongs to the item when the next line that is not blank does, so blank lines inside a fence or between two of an item's paragraphs keep it open; two blank lines before a sibling still end the list.
+- A line less indented than the item's content continues a paragraph left open at its end (CommonMark's lazy line) and ends the item otherwise. So `1. a` over `  - b`, or a paragraph indented two spaces under a three-wide marker after a blank line, now reads as GitHub draws it: outside the item.
+- A list is loose when a blank line separates two of its items or two blocks of one item, CommonMark's two rules.
+- A fence and a heading may be indented up to three spaces, and a fence closes on a line indented up to three, whatever its opening's indent (`markdownFenceOf` also answers that `indent`).
+
+`RichEditor`'s list item holds any block, a code block and a heading after its first block included, and its writer puts every block back at the item's content indent: a tight list stays tight where the next block starts a block of its own, and is written loose where two blocks need a blank line between them. The editor's corpus holds the shapes (`list-item-blocks.md`).
+
+What to change: nothing. A body whose list items are indented less than their marker's width reads as CommonMark reads it, which may move such a line out of its item.
+
 ## Changes in 0.151.0
 
 ### A standing advisory rests as one line

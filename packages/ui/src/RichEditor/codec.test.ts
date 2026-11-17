@@ -8,7 +8,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import type { Node as PMNode } from 'prosemirror-model';
+import { parseMarkdown } from '../Markdown/index.js';
 import { readMarkdown, signature, writeBlock, writeMarkdown } from './codec.js';
+import { canonicalMarkdown } from './roundtrip.js';
 import { schema } from './schema.js';
 
 // By arithmetic on this file's path: Vite rewrites `new URL(…, import.meta.url)`.
@@ -161,5 +163,76 @@ describe('a table cell', () => {
     const doc = readMarkdown(text).doc;
     expect(doc.firstChild!.child(1).child(0).textContent).toBe('-mode group|instance');
     expect(writeMarkdown(doc)).toBe('| Flag | What |\n| --- | --- |\n| `-mode group\\|instance` | a \\| b |');
+  });
+});
+
+describe('a list item holding blocks', () => {
+  // Each is written as the canonical spelling writes it, so the round trip
+  // must give back these bytes exactly, as well as the same blocks.
+  const exact: [string, string][] = [
+    [
+      'a fence holding a YAML list, then a paragraph with a link (crewlet/crewlet#1207)',
+      '1. Add this:\n\n   ```yaml\n   mcp_servers:\n     - name: x\n   ```\n\n   It is pinned ([see](#x)).',
+    ],
+    ['a tilde fence holding a list marker', '- run\n\n  ~~~sh\n  echo "- not an item"\n  ~~~'],
+    ['a fence on the marker line, in a tight list', '1. ```go\n   x := 1\n   ```\n2. b'],
+    ['a blank line inside a fence', '- a\n\n  ```\n  one\n\n  two\n  ```\n\n- b'],
+    ['a nested list', '1. one\n   - a\n   - b\n2. two'],
+    ['a quote', '- intro\n\n  > quoted\n\n- next'],
+    ['a table', '- intro\n\n  | a | b |\n  | --- | --- |\n  | 1 | 2 |'],
+    ['a heading', '- intro\n\n  ## Part'],
+    ['a multi-digit marker', '9. nine\n\n10. ten\n\n    ```\n    x\n    ```\n\n11. eleven'],
+  ];
+
+  test.each(exact)('%s round-trips byte for byte and block for block', (_name, text) => {
+    const written = canonicalMarkdown(text);
+    expect(written).toBe(text);
+    expect(parseMarkdown(written)).toEqual(parseMarkdown(text));
+    expect(canonicalMarkdown(written)).toBe(written);
+  });
+
+  // Spelled otherwise than the editor spells them: rewritten once, and then a
+  // fixed point that reads as the same document.
+  const respelled: [string, string][] = [
+    ['a fence closing at another indent', '- a\n\n  ```\n  x\n     ```\n\n  after'],
+    ['a lazy line', '- a\nb'],
+    ['a lazy line under a nested item', '- a\n  - b\nc'],
+    ['a tight paragraph and fence', '- a\n  ```\n  x\n  ```\n- b'],
+    ['two lists of one kind in an item', '- a\n\n  - b\n\n\n  - c'],
+    ['a tab-indented fence', '-\tdo\n\n\t```\n\tx\n\t```'],
+  ];
+
+  test.each(respelled)('%s is written once and then stays', (_name, text) => {
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(canonicalMarkdown(written)).toBe(written);
+  });
+
+  test('reads a fence in an item as a code block, never a paragraph of backticks', () => {
+    const item = readMarkdown('1. Add this:\n\n   ```yaml\n   a: 1\n   ```').doc.firstChild!.firstChild!;
+    expect(item.type.name).toBe('list_item');
+    const kinds: string[] = [];
+    item.forEach((child) => kinds.push(child.type.name));
+    expect(kinds).toEqual(['paragraph', 'code_block']);
+    expect(item.child(1).textContent).toBe('a: 1');
+  });
+
+  test('writes a list loose when one of its items needs a blank line between two blocks', () => {
+    const p = (text: string) => schema.node('paragraph', null, schema.text(text));
+    const list = schema.node('bullet_list', { marker: '-', loose: false }, [
+      schema.node('list_item', null, [p('a'), p('b')]),
+      schema.node('list_item', null, [p('c')]),
+    ]);
+    expect(writeBlock(list)).toBe('- a\n\n  b\n\n- c');
+    expect(signature(readMarkdown(writeBlock(list)).doc.firstChild!)).toBe(signature(list));
+  });
+
+  test('writes a code block in an item at the item indent, wherever it stands', () => {
+    const code = schema.node('code_block', { lang: 'sh', fence: '```' }, schema.text('echo\n\n  - x'));
+    const list = schema.node('ordered_list', { start: 10, marker: '.', loose: false }, [
+      schema.node('list_item', null, [schema.node('paragraph', null, schema.text('run')), code]),
+    ]);
+    expect(writeBlock(list)).toBe('10. run\n    ```sh\n    echo\n\n      - x\n    ```');
+    expect(signature(readMarkdown(writeBlock(list)).doc.firstChild!)).toBe(signature(list));
   });
 });

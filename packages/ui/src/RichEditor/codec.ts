@@ -31,11 +31,13 @@
 
 import { Fragment, type Mark, type Node as PMNode } from 'prosemirror-model';
 import {
+  markdownClosesFence,
   markdownCodeText,
   markdownInline,
   parseMarkdownSpans,
   type MarkdownAlign,
   type MarkdownBlock,
+  type MarkdownFence,
 } from '../Markdown/index.js';
 import { schema } from './schema.js';
 
@@ -117,7 +119,7 @@ function blockNode(block: MarkdownBlock): PMNode {
         block.ordered
           ? { start: block.start, marker: block.marker, loose: block.loose }
           : { marker: block.marker, loose: block.loose },
-        block.items.map((item) => schema.node('list_item', { checked: item.checked }, itemNodes(item.blocks))),
+        block.items.map((item) => schema.node('list_item', { checked: item.checked }, blockNodes(item.blocks))),
       );
     case 'table':
       return schema.node('table', null, [
@@ -130,28 +132,6 @@ function blockNode(block: MarkdownBlock): PMNode {
 function blockNodes(blocks: MarkdownBlock[]): PMNode[] {
   const nodes = blocks.map(blockNode);
   return nodes.length > 0 ? nodes : [schema.node('paragraph')];
-}
-
-/**
- * A list item's blocks, fitted to what an item can hold.
- *
- * The grammar reads a fenced block or a heading inside an item only where its
- * marker line is (`- # Title`), and a code block nowhere, because an indented
- * fence is not a fence. An item therefore holds what can be written back into
- * it; anything else the grammar produced is kept as the paragraph it reads as.
- */
-function itemNodes(blocks: MarkdownBlock[]): PMNode[] {
-  const nodes = blockNodes(blocks);
-  const item = schema.nodes.list_item!;
-  const fitted: PMNode[] = [];
-  for (const node of nodes) {
-    if (item.contentMatch.matchFragment(Fragment.from([...fitted, node]))) {
-      fitted.push(node);
-    } else {
-      fitted.push(schema.node('paragraph', null, node.textContent ? schema.text(node.textContent) : undefined));
-    }
-  }
-  return fitted;
 }
 
 function row(type: 'table_header' | 'table_cell', cells: string[], align: MarkdownAlign[]): PMNode {
@@ -329,8 +309,7 @@ function recall(node: PMNode, source: MarkdownSource, used: Set<number>): Source
  * grammar carries a list across one blank line to the next item.
  */
 function separator(prev: PMNode | null, next: PMNode): string {
-  if (prev && isList(prev) && isList(next) && (prev.type === next.type || bothBullet(prev, next))) return '\n\n\n';
-  return '\n\n';
+  return prev && sameKindLists(prev, next) ? '\n\n\n' : '\n\n';
 }
 
 function isList(node: PMNode): boolean {
@@ -423,22 +402,48 @@ function quoted(text: string): string {
     .join('\n');
 }
 
+/**
+ * A fenced block, fenced with the marker none of its own lines would close:
+ * the grammar's own test of a closing line, so the writer and the reader
+ * cannot disagree about where the block ends.
+ */
 function codeBlock(node: PMNode): string {
   const text = node.textContent;
   const lang = node.attrs.lang as string;
-  const closes = (fence: string) => text.split('\n').some((line) => CLOSER[fence]!.test(line));
-  const wanted = node.attrs.fence as string;
-  const other = wanted === '```' ? '~~~' : '```';
+  const closes = (fence: MarkdownFence) => text.split('\n').some((line) => markdownClosesFence(line, fence));
+  const wanted = node.attrs.fence as MarkdownFence;
+  const other: MarkdownFence = wanted === '```' ? '~~~' : '```';
   const fence = closes(wanted) && !closes(other) ? other : wanted;
   return `${fence}${lang}\n${text}${text ? '\n' : ''}${fence}`;
 }
 
-const CLOSER: Record<string, RegExp> = { '```': /^`{3,}[ \t]*$/, '~~~': /^~{3,}[ \t]*$/ };
-
+/**
+ * A list, every block of every item written at the item's content indent: the
+ * marker's width, which is where the grammar takes an item's later lines from.
+ *
+ * TIGHT WHERE IT CAN BE. A tight list writes an item's blocks with no blank
+ * line between them, which reads back as the same blocks only where the next
+ * one starts a block of its own ([needsBlank]). Where one pair needs a blank
+ * line, the list is written loose, because a blank line between two blocks of
+ * an item is what makes a list loose to every CommonMark reader, this
+ * grammar included, and a list written half one way would read the other.
+ */
 function list(node: PMNode, s: Spelling): string {
   const ordered = node.type.name === 'ordered_list';
-  const loose = node.attrs.loose as boolean;
-  const items: string[] = [];
+  const items: PMNode[][] = [];
+  node.forEach((item) => {
+    // An empty paragraph writes nothing, as it does at the top level; kept,
+    // it would stand as a blank line that ends the item or splits it.
+    const children: PMNode[] = [];
+    item.forEach((child) => {
+      if (child.type.name !== 'paragraph' || child.childCount > 0) children.push(child);
+    });
+    items.push(children.length > 0 ? children : [schema.node('paragraph')]);
+  });
+  const loose =
+    (node.attrs.loose as boolean) ||
+    items.some((children) => children.some((child, j) => j > 0 && needsBlank(children[j - 1]!, child)));
+  const written: string[] = [];
   node.forEach((item, _offset, i) => {
     const marker = ordered
       ? `${(node.attrs.start as number) + i}${node.attrs.marker as string} `
@@ -447,15 +452,14 @@ function list(node: PMNode, s: Spelling): string {
     const box = checked === null ? '' : checked ? '[x] ' : '[ ] ';
     const indent = ' '.repeat(marker.length);
     const parts: string[] = [];
-    item.forEach((child) => {
-      // A list under a line is written tight against it; anything else after
-      // the first block needs its blank line, or it runs into the line above.
-      if (parts.length > 0) parts.push(isList(child) ? '\n' : '\n\n');
+    let prev: PMNode | null = null;
+    for (const child of items[i]!) {
+      if (prev) parts.push(sameKindLists(prev, child) ? '\n\n\n' : loose ? '\n\n' : '\n');
       parts.push(block(child, s));
-    });
-    const body = parts.join('');
-    const lines = body.split('\n');
-    items.push(
+      prev = child;
+    }
+    const lines = parts.join('').split('\n');
+    written.push(
       marker +
         box +
         lines
@@ -463,7 +467,56 @@ function list(node: PMNode, s: Spelling): string {
           .join('\n'),
     );
   });
-  return items.join(loose ? '\n\n' : '\n');
+  return written.join(loose ? '\n\n' : '\n');
+}
+
+/**
+ * Whether two blocks of one item need a blank line between them to read back
+ * as those two blocks, to this grammar and to CommonMark alike.
+ *
+ * - A paragraph after anything that ends in text (a paragraph, a quote, a
+ *   list) would continue it, so it needs one; so does anything after a table,
+ *   whose rows run on while a line holds a pipe.
+ * - A table, or a rule after a paragraph (which CommonMark reads as a setext
+ *   underline), is kept apart from text by one.
+ * - Two quotes, or two lists of one kind, would be one.
+ * - A list that cannot interrupt a paragraph (an empty first item, or a
+ *   number other than 1) needs one after text.
+ * - A fence and a heading interrupt anything, so nothing needs one before
+ *   them, and nothing needs one after a fence, a heading or a rule.
+ */
+function needsBlank(prev: PMNode, next: PMNode): boolean {
+  const p = prev.type.name;
+  const n = next.type.name;
+  if (p === 'table') return true;
+  if (p === 'code_block' || p === 'heading' || p === 'horizontal_rule') return false;
+  if (sameKindLists(prev, next)) return true;
+  const quoted = (name: string) => name === 'blockquote' || name === 'callout';
+  if (quoted(p) && quoted(n)) return true;
+  switch (n) {
+    case 'paragraph':
+    case 'table':
+      return true;
+    case 'horizontal_rule':
+      return p === 'paragraph';
+    case 'bullet_list':
+    case 'ordered_list': {
+      // An item of empty paragraphs is written as its bare marker.
+      const first = next.firstChild;
+      let empty = first !== null && first.attrs.checked === null;
+      first?.forEach((child) => {
+        if (child.type.name !== 'paragraph' || child.childCount > 0) empty = false;
+      });
+      return empty || (n === 'ordered_list' && (next.attrs.start as number) !== 1);
+    }
+    default:
+      return false;
+  }
+}
+
+/** Two lists the grammar would read as one, written next to each other. */
+function sameKindLists(prev: PMNode, next: PMNode): boolean {
+  return isList(prev) && isList(next) && (prev.type === next.type || bothBullet(prev, next));
 }
 
 function table(node: PMNode, s: Spelling): string {

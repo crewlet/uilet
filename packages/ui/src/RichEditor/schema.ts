@@ -48,7 +48,7 @@ export const schema = new Schema({
     doc: { content: 'block+' },
     paragraph: {
       content: 'inline*',
-      group: 'block item_first item_rest',
+      group: 'block',
       parseDOM: [{ tag: 'p' }],
       toDOM: () => ['p', 0],
     },
@@ -56,7 +56,7 @@ export const schema = new Schema({
       attrs: { level: { default: 1 } },
       // A heading is one line of Markdown, so it holds no line break.
       content: '(text | image)*',
-      group: 'block item_first',
+      group: 'block',
       defining: true,
       // THE ELEMENT IS ONE LEVEL DOWN from the Markdown (a `#` is an `h2`), so
       // the level it was written at travels in `data-level`, and a heading
@@ -95,7 +95,7 @@ export const schema = new Schema({
     },
     blockquote: {
       content: 'block+',
-      group: 'block item_first item_rest',
+      group: 'block',
       defining: true,
       parseDOM: [{ tag: 'blockquote' }],
       toDOM: () => ['blockquote', 0],
@@ -103,7 +103,7 @@ export const schema = new Schema({
     callout: {
       attrs: { tone: { default: 'note' } },
       content: 'block+',
-      group: 'block item_first item_rest',
+      group: 'block',
       defining: true,
       parseDOM: [
         {
@@ -119,21 +119,21 @@ export const schema = new Schema({
       ],
     },
     horizontal_rule: {
-      group: 'block item_first item_rest',
+      group: 'block',
       parseDOM: [{ tag: 'hr' }],
       toDOM: () => ['hr'],
     },
     bullet_list: {
       attrs: { marker: { default: '-' }, loose: { default: false } },
       content: 'list_item+',
-      group: 'block item_first item_rest',
+      group: 'block',
       parseDOM: [{ tag: 'ul' }],
       toDOM: () => ['ul', 0],
     },
     ordered_list: {
       attrs: { start: { default: 1 }, marker: { default: '.' }, loose: { default: false } },
       content: 'list_item+',
-      group: 'block item_first item_rest',
+      group: 'block',
       parseDOM: [
         {
           tag: 'ol',
@@ -145,11 +145,10 @@ export const schema = new Schema({
     list_item: {
       // null is a plain item; true and false are a task item, ticked or not.
       attrs: { checked: { default: null } },
-      // WHAT AN ITEM CAN HOLD AND STILL BE WRITTEN BACK: the grammar reads an
-      // item's later blocks from indented lines, and an indented fence or
-      // heading is a paragraph to it. A heading is kept on the marker line;
-      // a code block is never inside an item.
-      content: 'item_first item_rest*',
+      // AN ITEM HOLDS BLOCKS, any of them, as a CommonMark item does: the
+      // grammar reads an item's lines as blocks at its content indent, and
+      // the writer writes every block back there.
+      content: 'block+',
       defining: true,
       parseDOM: [
         {
@@ -173,7 +172,7 @@ export const schema = new Schema({
       // A column's alignment is on each of its cells, which is where the
       // reader's renderer draws it; the header row's is what is written.
       content: 'table_row+',
-      group: 'block item_first item_rest',
+      group: 'block',
       isolating: true,
       parseDOM: [{ tag: 'table' }],
       toDOM: () => ['div', { class: 'md-table' }, ['table', ['tbody', 0]]],
