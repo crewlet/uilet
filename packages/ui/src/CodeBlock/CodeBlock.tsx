@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -13,6 +14,7 @@ import { copyGlyph, CopyStatus } from '../Copyable/CopyButton.js';
 import { IconButton } from '../IconButton/index.js';
 import { cx } from '../utils/cx.js';
 import { useClipboard } from '../utils/useClipboard.js';
+import { tokenizeCode, tokenLines, type CodeToken } from './syntax.js';
 
 /**
  * Where a block's copy control stands: `header`, in the header strip beside
@@ -24,8 +26,18 @@ export type CodeBlockCopyPlacement = 'header' | 'corner';
 interface CodeBlockLook extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   /** The code to display and copy. A trailing newline is trimmed. */
   code: string;
-  /** Shown in the header when there is no filename, and set as a data attribute. */
+  /**
+   * Shown in the header when there is no filename, and set as a data
+   * attribute. `json` and `yaml` (or `yml`) are also coloured by kind; see
+   * `highlight`.
+   */
   language?: string | undefined;
+  /**
+   * Colour a `json` or `yaml` block by kind, each token in the kit's syntax
+   * ink: keys, strings, numbers, booleans, null, punctuation and comments. On
+   * by default; any other language, and a block past 256 KiB, stays plain.
+   */
+  highlight?: boolean | undefined;
   /** Shown on the left of the header. */
   filename?: string | undefined;
   showLineNumbers?: boolean | undefined;
@@ -151,6 +163,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   {
     code,
     language,
+    highlight = true,
     filename,
     showLineNumbers = false,
     copyable = true,
@@ -253,12 +266,15 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
     selection.addRange(range);
   };
 
-  let content: ReactNode = body;
+  // Runs of text, never markup: a token is a text node in a span of its kind.
+  const tokens = useMemo(() => (highlight ? tokenizeCode(body, language) : null), [highlight, body, language]);
+  let content: ReactNode = tokens ? drawTokens(tokens) : body;
   // How many figures the last line number has, so the numbers' track is as
   // wide as the longest of them (see CodeBlock.css).
   let digits: number | undefined;
   if (perLine) {
     const lines = body.split('\n');
+    const coloured = tokens ? tokenLines(tokens) : null;
     if (showLineNumbers) digits = String(lines.length).length;
     content = lines.map((line, index) => (
       <span className="crewlet-codeblock__line" key={`${index}-${line}`}>
@@ -272,7 +288,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
             {prompt}
           </span>
         )}
-        <span className="crewlet-codeblock__linecontent">{line}</span>
+        <span className="crewlet-codeblock__linecontent">{coloured ? drawTokens(coloured[index] ?? []) : line}</span>
         {/* A REAL newline, so textContent and a Range keep the structure. */}
         {index < lines.length - 1 ? '\n' : null}
       </span>
@@ -343,6 +359,19 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
     </div>
   );
 });
+
+/** Each run as a text node, inside a span of its kind where it has one. */
+function drawTokens(tokens: readonly CodeToken[]): ReactNode[] {
+  return tokens.map((token, index) =>
+    token.kind === null ? (
+      token.text
+    ) : (
+      <span key={index} className={`crewlet-codeblock__tok crewlet-codeblock__tok--${token.kind}`}>
+        {token.text}
+      </span>
+    ),
+  );
+}
 
 /**
  * The copy control in a block's corner: an icon button named by `label`, with

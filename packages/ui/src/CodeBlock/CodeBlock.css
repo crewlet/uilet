@@ -200,6 +200,40 @@
 }
 
 /*
+ * CODE COLOURED BY KIND (a `json` or `yaml` block): each token in the kit's
+ * syntax ink for its kind, which the palette measures on the block's grounds.
+ * A hue here is a kind, never a state.
+ */
+.crewlet-codeblock__tok--key {
+  color: var(--color-syntax-function);
+}
+
+.crewlet-codeblock__tok--string {
+  color: var(--color-syntax-string);
+}
+
+.crewlet-codeblock__tok--number {
+  color: var(--color-syntax-number);
+}
+
+.crewlet-codeblock__tok--boolean {
+  color: var(--color-syntax-keyword);
+}
+
+.crewlet-codeblock__tok--null {
+  color: var(--color-syntax-type);
+}
+
+.crewlet-codeblock__tok--punctuation {
+  color: var(--color-syntax-punctuation);
+}
+
+.crewlet-codeblock__tok--comment {
+  color: var(--color-syntax-comment);
+  font-style: italic;
+}
+
+/*
  * The copy control sits in the header in the sans face, not the block's. It
  * is a small ghost at the header's end, and it stands as far from that end as
  * the header's block padding holds it from the top and the bottom, so its
