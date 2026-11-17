@@ -652,9 +652,9 @@ The first six are aliases of the six node hues, so every theme repaints them wit
 
 ### Code read in a code host
 
-The diff and syntax tokens colour code where an application shows it, and the change, ref and file tokens mark a code host's change, branch or file wherever one is listed. Inside them a hue is a kind, never a state or an action: green is an added line, an open change or a string, never done, and the accent is a keyword, a merged change, a branch or the hunk row, never what to act on. Each is drawn beside its sign, word, letter or glyph, never alone.
+The diff tokens colour every line diff, of code or of any text, and the syntax tokens colour code where an application shows it; the change, ref and file tokens mark a code host's change, branch or file wherever one is listed. Inside them a hue is a kind, never a state or an action: green is an added line, an open change or a string, never done, and the accent is a keyword, a merged change, a branch or the hunk row, never what to act on. Each is drawn beside its sign, word, letter or glyph, never alone.
 
-Code views read them, and so do the kit's `DiffView` and `DiffSummary`. Each is an alias declared once in `css`, not in the typed export, so a theme repaints the family without declaring it.
+Code views read them, and so do the kit's `DiffView`, `DiffSummary` and `DiffList`. Each is an alias declared once in `css`, not in the typed export, so a theme repaints the family without declaring it.
 
 | Tokens | Alias of | Drawn as |
 | --- | --- | --- |

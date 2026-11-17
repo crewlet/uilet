@@ -1,71 +1,205 @@
-/* DiffView: a line diff, monospace and line-numbered on both sides.
-
-   A changed line is marked three ways, a tint, a drawn mark and a word read
-   in its place, because colour alone is not a signal and a printed or
-   forced-colours render loses the tint entirely. The tint and the mark are
-   the diff family's row and sign, which the palette suite measures together. */
+/* DiffView: a line diff in the diff family's colours, on every surface. A
+   changed line is said three ways, each enough alone: its tint, its glyph with
+   the word read in its place, and the underline on the run an edit changed. */
 .crewlet-diff-view {
+  container: crewlet-diff-view / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/* The diff's own ground: the card rung, which the palette measures its tints over. */
+.crewlet-diff-view__body {
   overflow: hidden;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-xs);
-  line-height: var(--font-line-height-normal);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-body);
 }
 
-.crewlet-diff-view__section + .crewlet-diff-view__section,
-.crewlet-diff-view__skip + .crewlet-diff-view__line {
-  border-top: 1px solid var(--color-border-default);
-}
-
-/* A GAP SAYS WHAT IT STANDS FOR. Silently closed, a document edited at both
-   ends looks like one rewritten in the middle. */
-.crewlet-diff-view__skip {
-  padding: var(--spacing-1) var(--spacing-3);
-  background: var(--color-surface-elevated);
-  color: var(--color-text-tertiary);
-  font-family: var(--font-family-sans);
-  font-size: var(--font-size-xs);
-}
-
+/* A line's tracks: numbers (or a path), the mark, the text. Widths come from
+   the counts the component publishes, so every window block lands on them. */
 .crewlet-diff-view__line {
   display: grid;
-  grid-template-columns: 3.5ch 3.5ch 2ch minmax(0, 1fr);
-  gap: var(--spacing-2);
+  grid-template-columns: 2ch minmax(0, 1fr);
+  column-gap: var(--spacing-2);
   padding: calc(var(--spacing-1) / 4) var(--spacing-3) calc(var(--spacing-1) / 4) var(--spacing-2);
+}
+
+.crewlet-diff-view--numbered .crewlet-diff-view__line {
+  --crewlet-diff-gutter: calc(var(--spacing-2) * 2.5 + var(--crewlet-diff-digits) * 2ch);
+
+  grid-template-columns: calc(var(--crewlet-diff-digits) * 1ch) calc(var(--crewlet-diff-digits) * 1ch) 2ch minmax(0, 1fr);
+}
+
+.crewlet-diff-view--numbered.crewlet-diff-view--split .crewlet-diff-view__line {
+  --crewlet-diff-gutter: calc(var(--spacing-2) * 1.5 + var(--crewlet-diff-digits) * 1ch);
+
+  grid-template-columns: calc(var(--crewlet-diff-digits) * 1ch) 2ch minmax(0, 1fr);
+}
+
+/* A path takes up to 40% of the line; the value keeps its own track, so a
+   line that continues the setting above (and draws no path) lines up under it. */
+.crewlet-diff-view--keyed .crewlet-diff-view__line {
+  grid-template-columns: 2ch min(calc(var(--crewlet-diff-path) * 1ch), 40%) minmax(0, 1fr);
+}
+
+.crewlet-diff-view--keyed .crewlet-diff-view__text {
+  grid-column: 3;
+}
+
+/* The tints, with the numbers on a band in the sign's ink. The band is an
+   inset shadow, so forced colours drop it with the tint and keep the glyph. */
+.crewlet-diff-view__line--add {
+  background: var(--color-diff-added-row);
+  box-shadow: inset var(--crewlet-diff-gutter, 0) 0 0 var(--color-diff-added-gutter);
+}
+
+.crewlet-diff-view__line--remove {
+  background: var(--color-diff-removed-row);
+  box-shadow: inset var(--crewlet-diff-gutter, 0) 0 0 var(--color-diff-removed-gutter);
 }
 
 .crewlet-diff-view__number {
   color: var(--color-text-tertiary);
   text-align: right;
-  user-select: none;
   font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.crewlet-diff-view__line--add .crewlet-diff-view__mark,
+.crewlet-diff-view__line--add .crewlet-diff-view__number {
+  color: var(--color-diff-added-sign);
+}
+
+.crewlet-diff-view__line--remove .crewlet-diff-view__mark,
+.crewlet-diff-view__line--remove .crewlet-diff-view__number {
+  color: var(--color-diff-removed-sign);
+}
+
+/* A number that picks its line: the number, pressable, its underline answering the pointer. */
+.crewlet-diff-view__pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.crewlet-diff-view__pick:hover {
+  text-decoration-line: underline;
+}
+
+/* A picked line: the selected tint in place of its tints and band, an accent
+   bar at its start; its glyph and its run's underline stay. */
+.crewlet-diff-view__line--picked {
+  background: var(--color-surface-selected);
+  box-shadow: inset 2px 0 0 var(--color-brand-accent);
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+.crewlet-diff-view__line--picked .crewlet-diff-view__number {
+  color: var(--color-text-tertiary);
 }
 
 .crewlet-diff-view__mark {
+  color: var(--color-text-secondary);
   text-align: center;
   user-select: none;
 }
 
+.crewlet-diff-view__path {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Nothing is cut: a line wraps and keeps its own spacing. */
 .crewlet-diff-view__text {
+  min-width: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.crewlet-diff-view__line--add {
-  background: var(--color-diff-added-row);
+/* Where an edited line changed: its word tint under the line's own ink, underlined. */
+.crewlet-diff-view__run {
+  text-decoration-line: underline;
+  text-decoration-thickness: from-font;
+  text-underline-position: under;
 }
 
-.crewlet-diff-view__line--add .crewlet-diff-view__mark {
-  color: var(--color-diff-added-sign);
+.crewlet-diff-view__line--add .crewlet-diff-view__run {
+  background: var(--color-diff-added-word);
+  color: var(--color-text-primary);
 }
 
-.crewlet-diff-view__line--remove {
-  background: var(--color-diff-removed-row);
+.crewlet-diff-view__line--remove .crewlet-diff-view__run {
+  background: var(--color-diff-removed-word);
+  color: var(--color-text-primary);
 }
 
-.crewlet-diff-view__line--remove .crewlet-diff-view__mark {
-  color: var(--color-diff-removed-sign);
+.crewlet-diff-view__line--picked .crewlet-diff-view__run {
+  background: none;
+}
+
+/* What a host draws under a line, on the diff's ground in the body's face. */
+.crewlet-diff-view__notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-block: 1px solid var(--color-border-default);
+  font-family: var(--font-family-sans);
+}
+
+/* A gap says what it stands for, on the hunk row. */
+.crewlet-diff-view__skip {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-block: 1px solid var(--color-border-default);
+  background: var(--color-diff-hunk-row);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-diff-view__block:first-child > .crewlet-diff-view__skip:first-child {
+  border-block-start: none;
+}
+
+/* Split: the older text on the left, the newer on the right. */
+.crewlet-diff-view__pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.crewlet-diff-view__pair > :last-child {
+  border-inline-start: 1px solid var(--color-border-default);
+}
+
+/* A comparison not made is said in place of every row; "Nothing changed" is quieter. */
+.crewlet-diff-view__said {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-diff-view__said--quiet {
+  color: var(--color-text-tertiary);
+}
+
+/* On a narrow diff a setting's value takes the row under its path. */
+@container crewlet-diff-view (width < 640px) {
+  .crewlet-diff-view--keyed .crewlet-diff-view__line {
+    grid-template-columns: 2ch minmax(0, 1fr);
+  }
+
+  .crewlet-diff-view--keyed .crewlet-diff-view__text {
+    grid-column: 2;
+  }
 }
 
 /* DiffSummary: the size of the change, in the same inks as its lines. */

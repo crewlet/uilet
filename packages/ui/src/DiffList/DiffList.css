@@ -1,8 +1,7 @@
 /* DiffList: one path per row, with its mark, its word and its tint.
 
-   The tint is the soft step of the state the row is in and the text is the
-   matching ink step, which is the pairing the palette suite measures: a fill
-   is never text and an ink step is never a background. */
+   An added or removed row takes the diff family's row and sign, as a line of
+   DiffView does; a changed one the warning soft step and its ink. */
 /*
  * HALF A STEP, between the rows and inside them. A diff row is a LINE OF A
  * DOCUMENT rather than an item in a list: at the full 4px step a fifty-line
@@ -35,13 +34,13 @@
    this replaces read add, remove and replace, which no answer has ever
    carried, so every diff row rendered untinted. */
 .crewlet-diff-list__row--added {
-  background: var(--color-feedback-success-soft);
-  color: var(--color-feedback-success-ink);
+  background: var(--color-diff-added-row);
+  color: var(--color-diff-added-sign);
 }
 
 .crewlet-diff-list__row--removed {
-  background: var(--color-feedback-danger-soft);
-  color: var(--color-feedback-danger-ink);
+  background: var(--color-diff-removed-row);
+  color: var(--color-diff-removed-sign);
 }
 
 .crewlet-diff-list__row--changed {

@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { DiffView, collapseDiff, diffLines } from '@crewlethq/ui';
+import { DiffView } from '@crewlethq/ui';
 import { DEFAULT_THEME_ID, themeRegistry } from '@crewlethq/tokens';
 import { paletteStates } from '@crewlethq/tokens/test/palette';
 import tokensCss from '@crewlethq/tokens/css?raw';
@@ -99,8 +99,6 @@ function Diff() {
   );
 }
 
-const sections = collapseDiff(diffLines('limit: 10\nretries: 2\n', 'limit: 20\nretries: 2\n'), 1);
-
 function Pill({ state, label }: { state: 'open' | 'merged' | 'closed' | 'draft'; label: string }) {
   const edge = state === 'draft' ? 'var(--color-change-draft-edge)' : 'transparent';
   return (
@@ -157,7 +155,7 @@ function Panel({ id, name, mode }: { id: string; name: string; mode: Mode }) {
         {name}, {mode}
       </h2>
       <Diff />
-      <DiffView sections={sections} aria-label={`${name} ${mode}: a two-line change`} />
+      <DiffView before={'limit: 10\nretries: 2\n'} after={'limit: 20\nretries: 2\n'} context={1} aria-label={`${name} ${mode}: a two-line change`} />
       <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
         <span style={{ ...mono, marginRight: 6 }}>+3 -1</span>
         {square('var(--color-diff-added-mark)')}
