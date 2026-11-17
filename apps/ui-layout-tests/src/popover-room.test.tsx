@@ -10,7 +10,7 @@
 import { afterEach, expect, test } from 'vitest';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
-import { Button, LayerHost, Popover, type PopoverHeight } from '@crewlethq/ui';
+import { Button, LayerHost, Popover, type PopoverHeight, type PopoverSide } from '@crewlethq/ui';
 
 let root: Root | null = null;
 let host: HTMLElement | null = null;
@@ -28,6 +28,8 @@ async function open(
   from: number,
   height: PopoverHeight,
   content: number,
+  side: PopoverSide = 'bottom',
+  across = 40,
 ) {
   host = document.createElement('div');
   host.style.cssText = `position: fixed; left: 40px; top: 40px; width: 600px; height: ${tall}px; overflow: hidden;`;
@@ -36,10 +38,11 @@ async function open(
   flushSync(() =>
     root!.render(
       <LayerHost>
-        <div style={{ position: 'absolute', left: 40, top: from }}>
+        <div style={{ position: 'absolute', left: across, top: from }}>
           <Popover
             label='New comment'
             height={height}
+            side={side}
             defaultOpen
             trigger={(_, toggle) => <Button onClick={toggle}>Comment</Button>}
           >
@@ -93,4 +96,11 @@ test('a form shows whole where its layer has room, past the cap a list keeps', a
   const form = await open(800, 40, 'layer', 500);
   expectInside(form.panel, form.layer);
   expect(form.panel.scrollHeight).toBeLessThanOrEqual(form.panel.clientHeight);
+});
+
+test('a tall form beside an anchor in the middle of its layer stands off the anchor, inside', async () => {
+  const { panel, layer } = await open(700, 330, 'layer', 420, 'right', 200);
+  expectInside(panel, layer);
+  const trigger = document.querySelector('button')!.getBoundingClientRect();
+  expect(panel.getBoundingClientRect().left).toBeGreaterThanOrEqual(trigger.right);
 });
