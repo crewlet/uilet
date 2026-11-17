@@ -57,6 +57,12 @@
   text-decoration: underline;
 }
 
+/* A wrapping link's head is an inline block, which takes no decoration from its
+   anchor: it takes the anchor's own, so a sentence's underlined link is underlined whole. */
+.crewlet-inline-ref--wrap.crewlet-inline-ref--link > .crewlet-inline-ref__head {
+  text-decoration: inherit;
+}
+
 .crewlet-inline-ref--link:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
