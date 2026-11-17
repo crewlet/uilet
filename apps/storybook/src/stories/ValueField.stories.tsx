@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { ValueField, type ValueFieldKind } from '@crewlethq/ui';
+import { Avatar, ValueField, type ValueFieldKind } from '@crewlethq/ui';
 
 const meta: Meta<typeof ValueField> = {
   title: 'UI/ValueField',
@@ -71,6 +71,29 @@ export const Choice: Story = {
       choices={[
         { value: 'cloud', label: 'Cloud', hint: 'Crewlet reads your sites and creates each agent’s account.' },
         { value: 'dc', label: 'Data Center', hint: 'Self-hosted. Give each product’s address and its own token.' },
+      ]}
+    />
+  ),
+};
+
+/** A choice of seats leads each option, and the chosen value, with the seat's face. */
+export const ChoiceOfSeats: Story = {
+  render: () => (
+    <Controlled
+      label="Reports to"
+      kind="choice"
+      initial="qa"
+      choices={[
+        {
+          value: 'qa',
+          label: 'QA Engineer',
+          leading: <Avatar name="QA Engineer" kind="agent" character="gemlet" hue="green" size="xs" decorative />,
+        },
+        {
+          value: 'ada',
+          label: 'Ada Okonkwo',
+          leading: <Avatar name="Ada Okonkwo" kind="human" size="xs" decorative />,
+        },
       ]}
     />
   ),
