@@ -101,8 +101,8 @@
  * a stroke in the current text colour on either theme.
  *
  * The coding harnesses' marks are their owners' own files, sourced in README.md;
- * Copilot draws GitHub's, as GitHub's brand toolkit does. Codex, Muse Code and
- * Kimi Code have none: no file is published, or the terms do not allow one.
+ * Copilot draws GitHub's, as GitHub's brand toolkit does. Codex draws OpenAI's
+ * blossom, Muse Code Meta's mark and Kimi Code Kimi's tile.
  */
 
 import type { ComponentType, SVGProps } from 'react';
@@ -136,10 +136,13 @@ export const VENDORS = [
   'google-cloud',
   'grok',
   'hermes',
+  'kimi',
   'linear',
   'mattermost',
+  'meta',
   'microsoft-teams',
   'notion',
+  'openai',
   'opencode',
   'pi',
   'postgresql',
@@ -187,10 +190,13 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   'google-cloud': marks.GoogleCloud,
   grok: marks.Grok,
   hermes: marks.Hermes,
+  kimi: marks.Kimi,
   linear: marks.Linear,
   mattermost: marks.Mattermost,
+  meta: marks.Meta,
   'microsoft-teams': marks.MicrosoftTeams,
   notion: marks.Notion,
+  openai: marks.Openai,
   opencode: marks.Opencode,
   pi: marks.Pi,
   postgresql: marks.Postgresql,
@@ -225,6 +231,7 @@ const FRAMES: Partial<Record<Vendor, string>> = {
 const DARK: Partial<Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>>> = {
   grok: darkMarks.Grok,
   hermes: darkMarks.Hermes,
+  kimi: darkMarks.Kimi,
 };
 
 export function VendorMark({ vendor, size, title, muted = false, className, ...rest }: VendorMarkProps) {

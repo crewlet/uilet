@@ -158,14 +158,14 @@ describe('a vendor mark', () => {
 
   it('draws the monochrome marks in the current text colour and nobody else in it', () => {
     /*
-     * GitHub, Notion, OpenCode, Expo, DigitalOcean and Cursor each publish one mark,
+     * GitHub, Notion, OpenCode, Expo, DigitalOcean, Cursor and OpenAI each publish one mark,
      * dark on a light ground and light on a dark one, so the current text
      * colour is the vendor's own instruction and a fixed hex would be wrong in
      * one theme whichever was picked. Every other mark is the vendor's own colours, which is the one
      * sanctioned exception to colour carrying state rather than identity, and
      * a mark quietly joining this list is a mark that has lost them.
      */
-    const monochrome = ['copilot', 'cursor', 'digitalocean', 'expo', 'github', 'notion', 'opencode'];
+    const monochrome = ['copilot', 'cursor', 'digitalocean', 'expo', 'github', 'notion', 'openai', 'opencode'];
     // Monochrome is the current text colour AND no colour of the mark's own
     // beneath it: Crewlet's drawing is rooted in currentColor, as every
     // illustration is, and paints its brand violet on the group inside. SSH's
@@ -243,7 +243,7 @@ describe('a vendor mark', () => {
 });
 
 describe('a vendor mark with a drawing of its own for a dark ground', () => {
-  const twoDrawings = ['grok', 'hermes'];
+  const twoDrawings = ['grok', 'hermes', 'kimi'];
 
   it('is a vendor that publishes one, and every dark drawing has its light one', async () => {
     const dark = (await readdir(resolve(PACKAGE, 'svg/vendor/dark'))).filter((name) => name.endsWith('.svg')).map((name) => name.slice(0, -4));
@@ -290,6 +290,15 @@ describe('a vendor mark with a drawing of its own for a dark ground', () => {
     assert.deepEqual(markPaths(light), markPaths(dark));
     assert.deepEqual([...new Set([...light.matchAll(/<path\b[^>]*\sfill="([^"]+)"/g)].map(([, fill]) => fill))], ['#0A0A0A']);
     assert.deepEqual([...new Set([...dark.matchAll(/<path\b[^>]*\sfill="([^"]+)"/g)].map(([, fill]) => fill))], ['white']);
+  });
+
+  it("draws Kimi's two files as Kimi publishes them: one drawing, its tile and K swapped", async () => {
+    const read = (file) => readFile(resolve(PACKAGE, 'svg/vendor', file), 'utf8');
+    const [light, dark] = [await read('kimi.svg'), await read('dark/kimi.svg')];
+    assert.deepEqual(markPaths(light), markPaths(dark));
+    const fills = (source) => [...source.matchAll(/<(?:rect|path)\b[^>]*\sfill="([^"]+)"/g)].map(([, fill]) => fill);
+    assert.deepEqual(fills(light), ['black', '#1783FF', 'white']);
+    assert.deepEqual(fills(dark), ['white', '#1783FF', 'black']);
   });
 
   it('keeps the ids of each drawing to itself, so the light one never paints with the dark one', () => {
@@ -394,6 +403,11 @@ describe('a vendor mark in its square', () => {
       const points = markPaths(source).flatMap((d) =>
         clipped.has(d) ? anchors(d).map(([px, py]) => [clamp(px, x, width), clamp(py, y, height)]) : anchors(d),
       );
+      // A tile drawn as a rect is part of the drawing (Kimi's); a clip's rect is not.
+      for (const [tag] of source.replace(/<clipPath\b[\s\S]*?<\/clipPath>/g, '').matchAll(/<rect\b[^>]*>/g)) {
+        const [rx, ry, rw, rh] = ['x', 'y', 'width', 'height'].map((name) => Number(attribute(tag, name) ?? 0));
+        points.push([rx, ry], [rx + rw, ry + rh]);
+      }
       const xs = points.map(([px]) => px);
       const ys = points.map(([, py]) => py);
       const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
