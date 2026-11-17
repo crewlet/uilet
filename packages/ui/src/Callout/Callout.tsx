@@ -1,5 +1,12 @@
-import type { HTMLAttributes, ReactNode } from 'react';
-import { CircleAlertGlyph, CircleCheckGlyph, InfoGlyph, TriangleAlertGlyph, XGlyph } from '@crewlethq/icons/glyphs';
+import { useId, useState, type HTMLAttributes, type ReactNode } from 'react';
+import {
+  ChevronDownGlyph,
+  CircleAlertGlyph,
+  CircleCheckGlyph,
+  InfoGlyph,
+  TriangleAlertGlyph,
+  XGlyph,
+} from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { cx } from '../utils/cx.js';
 import type { Tone } from '../utils/tone.js';
@@ -63,6 +70,20 @@ export interface CalloutProps extends Omit<HTMLAttributes<HTMLDivElement>, 'titl
    * that must interrupt.
    */
   live?: 'polite' | 'assertive' | undefined;
+  /**
+   * The title becomes the button that shows and hides the message, so the
+   * callout rests as one line. Closed by default; needs a `title`.
+   */
+  collapsible?: boolean | undefined;
+  /** A collapsible callout's open state, controlled. */
+  open?: boolean | undefined;
+  defaultOpen?: boolean | undefined;
+  onOpenChange?: ((open: boolean) => void) | undefined;
+  /** Keeps the reader's open or closed choice in `localStorage` under this key, from the application's registry. */
+  storageKey?: string | undefined;
+  /** The words after a collapsible title, closed and open. */
+  showLabel?: string | undefined;
+  hideLabel?: string | undefined;
 }
 
 /**
@@ -91,7 +112,7 @@ const GLYPHS: Record<CalloutVariant, ReactNode> = {
  * anything that is the OUTCOME of a press they just made should not be a
  * callout they have to go looking for.
  */
-export const Callout = ({
+export function Callout({
   variant = 'info',
   title,
   icon,
@@ -101,41 +122,103 @@ export const Callout = ({
   onDismiss,
   dismissLabel = 'Dismiss',
   live,
+  collapsible = false,
+  open: controlledOpen,
+  defaultOpen = false,
+  onOpenChange,
+  storageKey,
+  showLabel = 'Review',
+  hideLabel = 'Hide',
   className,
   children,
   ...rest
-}: CalloutProps) => (
-  <div
-    {...rest}
-    aria-live={live}
-    className={cx(
-      'crewlet-callout',
-      `crewlet-callout--${variant}`,
-      `crewlet-callout--${layout}`,
-      appearance === 'quiet' && 'crewlet-callout--quiet',
-      className,
-    )}
-  >
-    <span className="crewlet-callout__icon" aria-hidden>
-      {icon ?? GLYPHS[variant]}
-    </span>
-    <div className="crewlet-callout__content">
-      {title ? <span className="crewlet-callout__title">{title}</span> : null}
-      {children}
-    </div>
-    {action || onDismiss ? (
-      <div className="crewlet-callout__action">
-        {action}
-        {onDismiss ? (
-          <IconButton
-            className="crewlet-callout__dismiss"
-            label={dismissLabel}
-            icon={<XGlyph size="sm" />}
-            size="sm"
-            onClick={onDismiss}
-          />
-        ) : null}
+}: CalloutProps) {
+  const id = useId();
+  const [stored, setStored] = useState(() => readStoredOpen(storageKey) ?? defaultOpen);
+  const folds = collapsible && title != null && title !== false && title !== '';
+  const open = !folds || (controlledOpen ?? stored);
+  const toggle = () => {
+    const next = !open;
+    if (controlledOpen === undefined) setStored(next);
+    writeStoredOpen(storageKey, next);
+    onOpenChange?.(next);
+  };
+  return (
+    <div
+      {...rest}
+      aria-live={live}
+      className={cx(
+        'crewlet-callout',
+        `crewlet-callout--${variant}`,
+        `crewlet-callout--${layout}`,
+        appearance === 'quiet' && 'crewlet-callout--quiet',
+        folds && 'crewlet-callout--collapsible',
+        className,
+      )}
+      data-state={folds ? (open ? 'open' : 'closed') : undefined}
+    >
+      <span className="crewlet-callout__icon" aria-hidden>
+        {icon ?? GLYPHS[variant]}
+      </span>
+      <div className="crewlet-callout__content">
+        {folds ? (
+          <>
+            <button
+              type="button"
+              className="crewlet-callout__toggle"
+              aria-expanded={open}
+              aria-controls={`${id}-body`}
+              onClick={toggle}
+            >
+              <span className="crewlet-callout__title">{title}</span>{' '}
+              <span className="crewlet-callout__toggle-words">{open ? hideLabel : showLabel}</span>
+              <ChevronDownGlyph className="crewlet-callout__chevron" size="sm" />
+            </button>
+            <div id={`${id}-body`} className="crewlet-callout__body" hidden={!open}>
+              {children}
+            </div>
+          </>
+        ) : (
+          <>
+            {title ? <span className="crewlet-callout__title">{title}</span> : null}
+            {children}
+          </>
+        )}
       </div>
-    ) : null}
-  </div>
-);
+      {action || onDismiss ? (
+        <div className="crewlet-callout__action">
+          {action}
+          {onDismiss ? (
+            <IconButton
+              className="crewlet-callout__dismiss"
+              label={dismissLabel}
+              icon={<XGlyph size="sm" />}
+              size="sm"
+              onClick={onDismiss}
+            />
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** The stored choice, or undefined where none is stored or storage cannot be read. */
+function readStoredOpen(key: string | undefined): boolean | undefined {
+  if (!key) return undefined;
+  try {
+    const value = globalThis.localStorage?.getItem(key);
+    return value === 'open' ? true : value === 'closed' ? false : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeStoredOpen(key: string | undefined, open: boolean): void {
+  if (!key) return;
+  try {
+    globalThis.localStorage?.setItem(key, open ? 'open' : 'closed');
+  } catch {
+    // The choice still holds for this screen.
+  }
+}

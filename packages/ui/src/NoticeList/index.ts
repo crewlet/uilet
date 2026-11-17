@@ -1,3 +1,4 @@
+import '../Disclosure/Disclosure.css';
 import './NoticeList.css';
 
 export { NoticeList, NOTICE_LIST_LABELS } from './NoticeList.js';

@@ -147,6 +147,8 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'InboxList/InboxList.css | .crewlet-inbox-list__toggle:focus-visible',
       // The words that open a notice's folded specifics: text with no box.
       'NoticeList/NoticeList.css | .crewlet-notice-list__and-more:focus-visible',
+      // A collapsible callout's title, the words that open its message: text with no box.
+      'Callout/Callout.css | .crewlet-callout__toggle:focus-visible',
       // A reference in a sentence that is a link: a mark and words, no box.
       'InlineRef/InlineRef.css | .crewlet-inline-ref--link:focus-visible',
       // A callout's tone in the rich editor, drawn as the callout's own label:

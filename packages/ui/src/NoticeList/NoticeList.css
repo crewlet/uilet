@@ -145,3 +145,96 @@
 .crewlet-notice-list__more {
   color: inherit;
 }
+
+/*
+ * COMPACT: one row per notice on the disclosure anatomy, in the list's own ink
+ * and size. The title wraps rather than cuts, so nothing is clipped.
+ */
+.crewlet-notice-list--compact {
+  --crewlet-notice-list-mark: calc(14px + var(--spacing-1));
+}
+
+.crewlet-notice-list--compact .crewlet-notice-list__items {
+  gap: 0;
+}
+
+.crewlet-notice-list--compact .crewlet-notice-list__item {
+  display: block;
+}
+
+.crewlet-notice-list--compact .crewlet-disclosure__bar {
+  align-items: flex-start;
+}
+
+.crewlet-notice-list .crewlet-notice-list__toggle {
+  align-items: flex-start;
+  margin-inline-start: calc(-1 * var(--spacing-1));
+  padding: calc((var(--size-row-sm) - 1lh) / 2) var(--spacing-1);
+  color: inherit;
+  font-size: inherit;
+}
+
+.crewlet-notice-list .crewlet-notice-list__toggle:hover {
+  color: inherit;
+}
+
+.crewlet-notice-list__toggle .crewlet-disclosure__title {
+  overflow: visible;
+  white-space: normal;
+}
+
+/* The chevron and a tone glyph centre on the first line of a wrapped title. */
+.crewlet-notice-list__toggle .crewlet-disclosure__chevron {
+  margin-block: calc((1lh - 14px) / 2);
+  color: inherit;
+}
+
+.crewlet-notice-list__toggle .crewlet-disclosure__icon {
+  height: 1lh;
+}
+
+.crewlet-notice-list--compact .crewlet-notice-list__summary {
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-notice-list--compact .crewlet-notice-list__summary::before {
+  content: '·' / '';
+  margin-inline-end: var(--spacing-1);
+}
+
+.crewlet-notice-list--compact .crewlet-disclosure__actions {
+  min-height: var(--size-row-sm);
+}
+
+/* Under the title's first word, past the chevron (and the glyph in a mixed list). */
+.crewlet-notice-list__panel {
+  display: grid;
+  gap: 2px;
+  padding: 0 0 var(--spacing-1) var(--crewlet-notice-list-mark);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-notice-list--mixed .crewlet-notice-list__panel {
+  padding-inline-start: calc(2 * var(--crewlet-notice-list-mark));
+}
+
+.crewlet-notice-list__panel[hidden] {
+  display: none;
+}
+
+/* A narrow list puts each action under its title. */
+@container crewlet-notice-list (width < 28rem) {
+  .crewlet-notice-list--compact .crewlet-disclosure__bar {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+
+  .crewlet-notice-list--compact .crewlet-disclosure__bar > .crewlet-notice-list__toggle {
+    flex-basis: 100%;
+  }
+
+  .crewlet-notice-list--compact .crewlet-disclosure__actions {
+    min-height: 0;
+    margin-inline-start: var(--crewlet-notice-list-mark);
+  }
+}
