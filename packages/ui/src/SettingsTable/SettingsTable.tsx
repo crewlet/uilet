@@ -126,6 +126,8 @@ export interface SettingsTableRowProps extends HTMLAttributes<HTMLDivElement> {
   onReset?: (() => void) | undefined;
   /** The default, in the value column's words, for that question. */
   defaultLabel?: ReactNode;
+  /** Why this reader may not reset it: the control is drawn held with the reason, never hidden. */
+  resetHeld?: string | undefined;
   labels?: Partial<SettingsTableRowLabels> | undefined;
 }
 
@@ -138,6 +140,7 @@ export function SettingsTableRow({
   actions,
   onReset,
   defaultLabel,
+  resetHeld,
   labels: overrides,
   className,
   children,
@@ -241,13 +244,16 @@ export function SettingsTableRow({
                 icon={<RotateCcwGlyph />}
                 label={labels.reset}
                 tooltip
+                disabledReason={resetHeld}
                 onFocus={() => {
                   resetHeldFocus.current = true;
                 }}
                 onBlur={() => {
                   resetHeldFocus.current = false;
                 }}
-                onClick={() => setAsking(true)}
+                onClick={() => {
+                  if (resetHeld === undefined) setAsking(true);
+                }}
               />
             ) : null}
             {actions}

@@ -220,3 +220,19 @@ test('hands the focus to the next control once the reset it was on goes', () => 
   );
   expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Change' }));
 });
+
+test('draws the reset held with its reason for a reader who may not change it', () => {
+  const onReset = vi.fn();
+  render(
+    <SettingsTable aria-label="Sessions">
+      <SettingsTable.Row label="Signed out when unused for" changed onReset={onReset} resetHeld="Only an admin changes this.">
+        2 hours
+      </SettingsTable.Row>
+    </SettingsTable>,
+  );
+  const reset = screen.getByRole('button', { name: 'Reset to default' });
+  expect(reset.getAttribute('aria-disabled')).toBe('true');
+  fireEvent.click(reset);
+  expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
+  expect(onReset).not.toHaveBeenCalled();
+});
