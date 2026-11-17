@@ -504,3 +504,54 @@ describe('a line indented four or more', () => {
     expect(parseMarkdown('a\n    ---')).toEqual([{ kind: 'paragraph', text: 'a\n    ---' }]);
   });
 });
+
+describe('a tab', () => {
+  test('before a fence closer is the columns it fills, from where the line starts', () => {
+    // In a "- " item the tab starts at column two and fills two columns: the
+    // close is indented two, which closes.
+    expect(parseMarkdown('- a\n\n  ```\n  x\n  \t```\n\n  after')).toEqual([
+      expect.objectContaining({
+        items: [
+          {
+            checked: null,
+            blocks: [
+              { kind: 'paragraph', text: 'a' },
+              { kind: 'code', lang: '', text: 'x', fence: '```' },
+              { kind: 'paragraph', text: 'after' },
+            ],
+          },
+        ],
+      }),
+    ]);
+  });
+
+  test("after a quote's marker gives one column to the marker and keeps the rest", () => {
+    // ">" then a space then a tab at column two, two columns wide: the close
+    // is indented two, which closes.
+    expect(parseMarkdown('> ```\n> x\n> \t```\n\nafter')).toEqual([
+      { kind: 'quote', blocks: [{ kind: 'code', lang: '', text: 'x', fence: '```' }] },
+      { kind: 'paragraph', text: 'after' },
+    ]);
+    // ">" then a tab: one column of the tab is the marker's space, and the two
+    // left over indent the fence by two, which its lines lose.
+    expect(parseMarkdown('>\t```\n>\t  y\n>\t```')).toEqual([
+      { kind: 'quote', blocks: [{ kind: 'code', lang: '', text: '  y', fence: '```' }] },
+    ]);
+  });
+
+  test('in a code line of an item stays a tab', () => {
+    expect(parseMarkdown('- a\n\n  ```go\n  \treturn\n  ```')[0]).toEqual(
+      expect.objectContaining({
+        items: [
+          {
+            checked: null,
+            blocks: [
+              { kind: 'paragraph', text: 'a' },
+              { kind: 'code', lang: 'go', text: '\treturn', fence: '```' },
+            ],
+          },
+        ],
+      }),
+    );
+  });
+});

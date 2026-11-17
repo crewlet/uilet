@@ -274,33 +274,74 @@ function columnAfter(ws: string, from: number): number {
   return col;
 }
 
-/** How many columns of whitespace `line` starts with. */
-function indentOf(line: string): number {
-  return columnAfter(/^\s*/.exec(line)?.[0] ?? '', 0);
+/*
+ * COLUMNS ARE THE LINE'S OWN. A tab stops at the next multiple of four
+ * counted from the start of the source line, so a piece of a line left after
+ * a quote's marker or an item's indent is read with the column it starts at
+ * (`col`): a tab two columns into a `- ` item is two columns wide, not four.
+ */
+
+/** How many columns of whitespace `line`, starting at column `col`, starts with. */
+function indentOf(line: string, col = 0): number {
+  return columnAfter(/^\s*/.exec(line)?.[0] ?? '', col) - col;
 }
 
 /**
- * `line` with `columns` columns of its leading whitespace taken off, and no
- * more. A tab that straddles the cut leaves the spaces it stood for past it,
- * so a tab-indented line inside a list item keeps its own indent.
+ * `line`, starting at column `col`, with `columns` columns of its leading
+ * whitespace taken off, and no more. A tab that straddles the cut leaves the
+ * spaces it stood for past it, so a tab-indented line inside a list item keeps
+ * its own indent; a tab the cut does not reach stays a tab.
  */
-function dedent(line: string, columns: number): string {
-  let col = 0;
+function dedent(line: string, columns: number, col = 0): string {
+  let at = 0;
   let i = 0;
-  while (i < line.length && col < columns) {
+  while (i < line.length && at < columns) {
     const c = line[i] ?? '';
     if (c === '\t') {
-      const next = col + 4 - (col % 4);
+      const next = at + 4 - ((col + at) % 4);
       if (next > columns) return ' '.repeat(next - columns) + line.slice(i + 1);
-      col = next;
+      at = next;
     } else if (/\s/.test(c)) {
-      col++;
+      at++;
     } else {
       break;
     }
     i++;
   }
   return line.slice(i);
+}
+
+/**
+ * `line`, starting at column `col`, with its leading tabs as the spaces they
+ * stand for there: what the line readers that count an indent in spaces (a
+ * fence, a heading, a rule, a quote) are handed, so a tab is indentation to
+ * them too.
+ */
+function expand(line: string, col: number): string {
+  const lead = /^\s*/.exec(line)?.[0] ?? '';
+  return lead.includes('\t') ? ' '.repeat(columnAfter(lead, col) - col) + line.slice(lead.length) : line;
+}
+
+/**
+ * What a quote's marker leaves of `line`, starting at column `col`, and the
+ * column that starts at, or null when the line is no quote line: `>` indented
+ * three columns at most, and the one space after it that is the marker's.
+ * THAT SPACE MAY BE ONE COLUMN OF A TAB (CommonMark 5.1), and the rest of the
+ * tab is then the quoted line's own indentation.
+ */
+function unquote(line: string, col: number): { rest: string; col: number } | null {
+  const m = /^[ \t]*>/.exec(line);
+  if (!m) return null;
+  const at = columnAfter(m[0].slice(0, -1), col);
+  if (at - col > 3) return null;
+  const after = at + 1;
+  const i = m[0].length;
+  if (line[i] === ' ') return { rest: line.slice(i + 1), col: after + 1 };
+  if (line[i] === '\t') {
+    const stop = after + 4 - (after % 4);
+    return { rest: ' '.repeat(stop - after - 1) + line.slice(i + 1), col: after + 1 };
+  }
+  return { rest: line.slice(i), col: after };
 }
 
 /** A list item's first line: its marker, and the column its content starts at. */
@@ -316,6 +357,8 @@ interface ItemStart {
   content: number;
   /** The first line's own content, after the marker and its spaces. */
   text: string;
+  /** The column `text` starts at, from where the line starts. */
+  textCol: number;
 }
 
 /**
@@ -336,22 +379,24 @@ const ITEM = /^(\s*)(?:([-*+])|(\d{1,9})([.)]))(?:(\s+)(.*))?$/;
  * because a writer who put five spaces after a `-` did not mean every later
  * line to need seven. A marker alone on its line takes one space.
  */
-function itemStart(line: string): ItemStart | null {
+function itemStart(line: string, col = 0): ItemStart | null {
   const m = ITEM.exec(line);
   if (!m) return null;
   // A MARKER INDENTED FOUR OR MORE starts no item (CommonMark 5.2): under an
   // item it is the item's text or a lazy line of it, as spec examples 312 and
   // 313 read, never a sibling.
-  if (columnAfter(m[1] ?? '', 0) > 3) return null;
+  const indent = columnAfter(m[1] ?? '', col) - col;
+  if (indent > 3) return null;
   const ordered = m[3] !== undefined;
   const marker = ordered ? (m[4] ?? '.') : (m[2] ?? '-');
-  const after = columnAfter(m[1] ?? '', 0) + (ordered ? (m[3] ?? '').length + 1 : 1);
+  const number = Number(m[3] ?? 1);
+  const after = indent + (ordered ? (m[3] ?? '').length + 1 : 1);
   const text = m[6] ?? '';
-  if (text === '') return { ordered, marker, number: Number(m[3] ?? 1), content: after + 1, text: '' };
-  const spaces = columnAfter(m[5] ?? ' ', after) - after;
+  if (text === '') return { ordered, marker, number, content: after + 1, text: '', textCol: after + 1 };
+  const spaces = columnAfter(m[5] ?? ' ', col + after) - (col + after);
   return spaces <= 4
-    ? { ordered, marker, number: Number(m[3] ?? 1), content: after + spaces, text }
-    : { ordered, marker, number: Number(m[3] ?? 1), content: after + 1, text: ' '.repeat(spaces - 1) + text };
+    ? { ordered, marker, number, content: after + spaces, text, textCol: after + spaces }
+    : { ordered, marker, number, content: after + 1, text: ' '.repeat(spaces - 1) + text, textCol: after + 1 };
 }
 
 /**
@@ -499,19 +544,21 @@ class BlockReader {
   private line(i: number): void {
     // MATCH: how many open containers take the line, and what is left of it.
     let rest = this.lines[i] ?? '';
+    let col = 0;
     let depth = 0;
     for (; depth < this.stack.length; depth++) {
       const frame = this.stack[depth]!;
       if (frame.kind === 'list') continue;
       if (frame.kind === 'quote') {
-        const quoted = QUOTE.exec(rest);
-        if (!quoted) break;
-        rest = quoted[1] ?? '';
+        const inner = unquote(rest, col);
+        if (!inner) break;
+        ({ rest, col } = inner);
         continue;
       }
-      if (blank(rest) ? !this.blankBelongs(frame, depth, i) : indentOf(rest) < frame.content) break;
+      if (blank(rest) ? !this.blankBelongs(frame, depth, i) : indentOf(rest, col) < frame.content) break;
       if (!blank(rest)) frame.bare = false;
-      rest = dedent(rest, frame.content);
+      rest = dedent(rest, frame.content, col);
+      col += frame.content;
     }
 
     if (depth === this.stack.length) {
@@ -523,26 +570,26 @@ class BlockReader {
           this.extend(i);
           return;
         }
-        const head = itemStart(rest);
+        const head = itemStart(rest, col);
         if (head && sameList(head, top)) {
           this.extend(i);
-          this.openItem(top, head, i);
+          this.openItem(top, head, i, col);
           return;
         }
         this.closeFrom(depth - 1);
         this.extend(i);
-        this.start(rest, i);
+        this.start(rest, i, col);
         return;
       }
       this.extend(i);
       const leaf = top.leaf;
       if (leaf?.kind === 'code') {
         leaf.end = i + 1;
-        if (markdownClosesFence(rest, leaf.marker, leaf.length)) {
+        if (markdownClosesFence(expand(rest, col), leaf.marker, leaf.length)) {
           top.children.push({ block: codeOf(leaf), start: leaf.start, end: leaf.end });
           top.leaf = null;
         } else {
-          leaf.lines.push(dedent(rest, leaf.indent));
+          leaf.lines.push(dedent(rest, leaf.indent, col));
         }
         return;
       }
@@ -556,18 +603,18 @@ class BlockReader {
         // A ROW IS ANY LINE UNTIL A BLANK ONE OR ANOTHER BLOCK, as GitHub
         // reads a table: a line with no pipe is a row of one cell, not a
         // paragraph after the table.
-        if (!blank(rest) && !endsTable(rest)) {
+        if (!blank(rest) && !endsTable(expand(rest, col))) {
           leaf.rows.push(splitRow(rest));
           leaf.end = i + 1;
           return;
         }
       }
-      this.start(rest, i);
+      this.start(rest, i, col);
       return;
     }
 
     // A LAZY LINE continues the paragraph at the tip, every container kept.
-    if (!blank(rest) && this.lazy(depth, rest, i)) return;
+    if (!blank(rest) && this.lazy(depth, rest, i, col)) return;
 
     const first = this.stack[depth]!;
     if (first.kind === 'item') {
@@ -584,16 +631,16 @@ class BlockReader {
         }
         this.closeFrom(depth - 1);
         this.extend(i);
-        this.start(rest, i);
+        this.start(rest, i, col);
         return;
       }
       // A MARKER SHORT OF THE ITEM'S CONTENT is the next item of its list,
       // or, with another bullet or delimiter, the end of the list.
-      const head = itemStart(rest);
+      const head = itemStart(rest, col);
       this.closeFrom(depth);
       if (head && sameList(head, list)) {
         this.extend(i);
-        this.openItem(list, head, i);
+        this.openItem(list, head, i, col);
         return;
       }
       this.closeFrom(depth - 1);
@@ -601,7 +648,7 @@ class BlockReader {
       this.closeFrom(depth);
     }
     this.extend(i);
-    this.start(rest, i);
+    this.start(rest, i, col);
   }
 
   /**
@@ -612,10 +659,12 @@ class BlockReader {
    * quote's paragraph wrapped without its `>` is still the quote's, as every
    * CommonMark reader draws it.
    */
-  private lazy(depth: number, rest: string, i: number): boolean {
+  private lazy(depth: number, rest: string, i: number, col: number): boolean {
     const top = this.stack[this.stack.length - 1] ?? this.root;
     if (top.kind === 'list' || top.leaf?.kind !== 'paragraph') return false;
-    if (startsBlock(rest, () => (i + 1 < this.lines.length ? (this.peel(i + 1, depth) ?? '') : ''))) return false;
+    if (startsBlock(expand(rest, col), () => (i + 1 < this.lines.length ? (this.peel(i + 1, depth)?.rest ?? '') : ''))) {
+      return false;
+    }
     top.leaf.lines.push(rest.trimStart());
     top.leaf.end = i + 1;
     this.extend(i);
@@ -630,8 +679,8 @@ class BlockReader {
     for (let k = i + 1; k < this.lines.length; k++) {
       const next = this.peel(k, depth);
       if (next === null) return false;
-      if (blank(next)) continue;
-      const head = itemStart(next);
+      if (blank(next.rest)) continue;
+      const head = itemStart(next.rest, next.col);
       return head !== null && sameList(head, list);
     }
     return false;
@@ -649,8 +698,8 @@ class BlockReader {
     for (let k = i + 1; k < this.lines.length; k++) {
       const next = this.peel(k, depth);
       if (next === null) return false;
-      if (blank(next)) continue;
-      if (indentOf(next) < item.content) return false;
+      if (blank(next.rest)) continue;
+      if (indentOf(next.rest, next.col) < item.content) return false;
       item.blankUntil = k;
       return true;
     }
@@ -662,33 +711,39 @@ class BlockReader {
    * when one of them would not take it. A blank line passes an item, whose own
    * question about it is [blankBelongs].
    */
-  private peel(k: number, depth: number): string | null {
+  private peel(k: number, depth: number): { rest: string; col: number } | null {
     let rest = this.lines[k] ?? '';
+    let col = 0;
     for (let d = 0; d < depth; d++) {
       const frame = this.stack[d]!;
       if (frame.kind === 'list') continue;
       if (frame.kind === 'quote') {
-        const quoted = QUOTE.exec(rest);
-        if (!quoted) return null;
-        rest = quoted[1] ?? '';
+        const inner = unquote(rest, col);
+        if (!inner) return null;
+        ({ rest, col } = inner);
         continue;
       }
-      if (!blank(rest) && indentOf(rest) < frame.content) return null;
-      rest = dedent(rest, frame.content);
+      if (!blank(rest) && indentOf(rest, col) < frame.content) return null;
+      rest = dedent(rest, frame.content, col);
+      col += frame.content;
     }
-    return rest;
+    return { rest, col };
   }
 
-  /** Read `rest` of line `i` as the start of a block, or the next line of a paragraph, in the innermost container. */
-  private start(rest: string, i: number): void {
+  /**
+   * Read `rest` of line `i`, starting at column `col`, as the start of a
+   * block, or the next line of a paragraph, in the innermost container.
+   */
+  private start(rest: string, i: number, col: number): void {
     const top = (this.stack[this.stack.length - 1] ?? this.root) as RootFrame | QuoteFrame | ItemFrame;
     const leaf = top.leaf;
     if (blank(rest)) {
       this.closeLeaf(top);
       return;
     }
+    const lead = expand(rest, col);
 
-    const fence = markdownFenceOf(rest);
+    const fence = markdownFenceOf(lead);
     if (fence) {
       this.closeLeaf(top);
       top.leaf = {
@@ -704,25 +759,25 @@ class BlockReader {
       return;
     }
 
-    if (RULE.test(rest)) {
+    if (RULE.test(lead)) {
       this.closeLeaf(top);
       top.children.push({ block: { kind: 'rule' }, start: i, end: i + 1 });
       return;
     }
 
-    const heading = markdownHeadingOf(rest);
+    const heading = markdownHeadingOf(lead);
     if (heading) {
       this.closeLeaf(top);
       top.children.push({ block: { kind: 'heading', level: heading.level, text: heading.title }, start: i, end: i + 1 });
       return;
     }
 
-    const quoted = QUOTE.exec(rest);
+    const quoted = unquote(rest, col);
     if (quoted) {
       this.closeLeaf(top);
       // A QUOTE WHOSE FIRST LINE NAMES A TONE IS A CALLOUT, and only that
       // line: `[!NOTE]` anywhere else is the text somebody wrote.
-      const inner = quoted[1] ?? '';
+      const inner = quoted.rest;
       const tone = CALLOUT.exec(inner);
       this.stack.push({
         kind: 'quote',
@@ -732,7 +787,7 @@ class BlockReader {
         start: i,
         end: i + 1,
       });
-      if (!tone) this.start(inner, i);
+      if (!tone) this.start(inner, i, quoted.col);
       return;
     }
 
@@ -741,7 +796,7 @@ class BlockReader {
     // A "-" or a "1." under a line of text is that text's next line, so a sum
     // wrapped before its last figure is not cut into a paragraph and a list,
     // and neither is a sentence wrapped before "365) days".
-    const head = itemStart(rest);
+    const head = itemStart(rest, col);
     const interrupts = head !== null && head.text !== '' && (!head.ordered || head.number === 1);
     if (head && (leaf?.kind !== 'paragraph' || interrupts)) {
       this.closeLeaf(top);
@@ -756,7 +811,7 @@ class BlockReader {
         end: i + 1,
       };
       this.stack.push(list);
-      this.openItem(list, head, i);
+      this.openItem(list, head, i, col);
       return;
     }
 
@@ -765,7 +820,7 @@ class BlockReader {
     // reads it: a line of pipes
     // with no delimiter under it is a paragraph that happens to contain
     // pipes, which is what a shell command or a file path looks like.
-    if (rest.includes('|') && i + 1 < this.lines.length && TABLE_RULE.test(this.peel(i + 1, this.stack.length) ?? '')) {
+    if (rest.includes('|') && i + 1 < this.lines.length && TABLE_RULE.test(this.peel(i + 1, this.stack.length)?.rest ?? '')) {
       this.closeLeaf(top);
       top.leaf = { kind: 'table', head: splitRow(rest), align: [], rows: [], ruled: false, start: i, end: i + 1 };
       return;
@@ -780,14 +835,20 @@ class BlockReader {
     top.leaf = { kind: 'paragraph', lines: [rest], start: i, end: i + 1 };
   }
 
-  /** Open the item `head` starts on line `i`, and read its first line's content as the item's own first line. */
-  private openItem(list: ListFrame, head: ItemStart, i: number): void {
+  /**
+   * Open the item `head` starts on line `i` (whose piece starts at column
+   * `col`), and read its first line's content as the item's own first line.
+   */
+  private openItem(list: ListFrame, head: ItemStart, i: number, col: number): void {
     let text = head.text;
+    let textCol = col + head.textCol;
     let checked: boolean | null = null;
     const task = TASK.exec(text);
     if (task) {
       checked = (task[1] ?? ' ').toLowerCase() === 'x';
-      text = task[2] ?? '';
+      const after = task[2] ?? '';
+      textCol = columnAfter(text.slice(0, text.length - after.length), textCol);
+      text = after;
     }
     list.end = i + 1;
     this.stack.push({
@@ -801,7 +862,7 @@ class BlockReader {
       start: i,
       end: i + 1,
     });
-    if (!blank(text)) this.start(text, i);
+    if (!blank(text)) this.start(text, i, textCol);
   }
 
   /** Every open container has read up to line `i`. */
