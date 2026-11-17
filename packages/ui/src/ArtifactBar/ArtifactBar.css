@@ -444,9 +444,60 @@
   color: var(--color-brand-accent-ink);
 }
 
+/* SHOW LATEST stands beside an older version's chip, at its height and
+   corner, in the accent's ink with no ground until the pointer is on it. */
+.crewlet-version-chip-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.crewlet-version-chip__latest {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: var(--size-target-min);
+  padding: 0 var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-brand-accent-ink);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-version-chip__latest:hover {
+  background: var(--color-brand-accent-soft);
+}
+
+.crewlet-version-chip__latest:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-version-chip__latest-short {
+  display: none;
+}
+
+/* A phone's bar keeps the title's room: the button takes its short word. */
+@container crewlet-artifact-bar (width < 640px) {
+  .crewlet-version-chip__latest-full {
+    display: none;
+  }
+
+  .crewlet-version-chip__latest-short {
+    display: inline;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .crewlet-artifact-bar__rename,
-  .crewlet-version-chip {
+  .crewlet-version-chip,
+  .crewlet-version-chip__latest {
     transition: none;
   }
 }

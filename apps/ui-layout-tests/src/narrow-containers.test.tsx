@@ -12,6 +12,7 @@ import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import type { ReactNode } from 'react';
 import {
+  ArtifactRef,
   ChangeList,
   ChatThread,
   CodeBlock,
@@ -88,6 +89,9 @@ function Hostile() {
           {REFERENCE}
         </InlineRef>
         .
+      </p>
+      <p>
+        Written up in <ArtifactRef kind="doc" title={`Incident review: ${WHOLE}-${WHOLE}-${WHOLE}`} href="#/artifacts/a1" />.
       </p>
       <p>
         Asked <MentionChip>{`${WHOLE}-on-call-${WHOLE}`}</MentionChip> to look.

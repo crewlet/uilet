@@ -608,13 +608,18 @@ export interface ArtifactVersionChipProps {
   label?: string | undefined;
   /** The chip's words: `v3`, or `v2 of 3` for an older one. */
   format?: ((version: number, latest: number) => string) | undefined;
+  /** Shows the newest version. Given, an older version has a Show latest button beside the chip. */
+  onShowLatest?: (() => void) | undefined;
+  /** The Show latest button's words: in full, and on a phone's bar. */
+  showLatestLabel?: string | undefined;
+  showLatestShortLabel?: string | undefined;
 }
 
 /**
  * The version on show, as a quiet chip beside the title that opens the
  * versions. An older version than the newest says so in the chip itself and
  * takes the accent, so a reader looking at history cannot mistake it for
- * what everyone else sees.
+ * what everyone else sees, and the way back to the newest is one press beside it.
  */
 export function ArtifactVersionChip({
   version,
@@ -622,9 +627,12 @@ export function ArtifactVersionChip({
   items,
   label = 'Versions',
   format = (v, l) => (v === l ? `v${v}` : `v${v} of ${l}`),
+  onShowLatest,
+  showLatestLabel = 'Show latest',
+  showLatestShortLabel = 'Latest',
 }: ArtifactVersionChipProps) {
   const older = version !== latest;
-  return (
+  const chip = (
     <Menu
       label={label}
       items={items}
@@ -641,5 +649,15 @@ export function ArtifactVersionChip({
         </button>
       )}
     />
+  );
+  if (!older || onShowLatest === undefined) return chip;
+  return (
+    <span className="crewlet-version-chip-group">
+      {chip}
+      <button type="button" className="crewlet-version-chip__latest" aria-label={showLatestLabel} onClick={onShowLatest}>
+        <span className="crewlet-version-chip__latest-full">{showLatestLabel}</span>
+        <span className="crewlet-version-chip__latest-short">{showLatestShortLabel}</span>
+      </button>
+    </span>
   );
 }
