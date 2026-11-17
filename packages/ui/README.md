@@ -215,6 +215,7 @@ places:
 - **`ArtifactRef`** draws an artifact in a sentence or a row as `InlineRef` draws a work item's key: its kind's glyph, then its title, at the same size, in the same ink and with the same hover. A title wraps with the line. While the kind is still being read it draws any artifact's glyph.
 - **`ArtifactVersionChip` takes `onShowLatest`**: an older version has a small Show latest button beside the chip, at its height, which takes its short word ("Latest") on a phone's bar. The newest version draws none.
 - **`CommentPinGlyph`** is the draft comment pin as a glyph, for the control that starts placing one. **`commentPinCursor`** is the CSS `cursor` that draws the draft pin while placing, its hotspot on the pin's tip and mirrored right to left, falling back to a crosshair; `commentPinCursorAt(element)` draws it in the theme's and the brand's colours at that element.
+- **A wrapping `InlineRef` link is underlined whole** where its sentence underlines links at rest: its first word, held with the mark in an inline block, took no underline from its anchor.
 
 ## Changes in 0.144.0
 
