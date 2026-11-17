@@ -144,7 +144,9 @@ export function safeHref(raw: string): string | null {
 // two further in is still the block it spells.
 const HEADING = /^ {0,3}(#{1,6})\s+(.*)$/;
 const FENCE = /^( {0,3})(`{3,}|~{3,})\s*([A-Za-z0-9_+-]*)\s*$/;
-const RULE = /^(?:\s*(?:-{3,}|\*{3,}|_{3,})\s*)$/;
+// A RULE, like every block start, is indented three spaces at most: four would
+// be indented code to CommonMark, and is text here.
+const RULE = /^ {0,3}(?:-{3,}|\*{3,}|_{3,})[ \t]*$/;
 const QUOTE = /^\s{0,3}>\s?(.*)$/;
 const TABLE_RULE = /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/;
 const CALLOUT = /^\[!(note|tip|important|warning|caution)\]\s*$/i;
@@ -337,6 +339,10 @@ const ITEM = /^(\s*)(?:([-*+])|(\d{1,9})([.)]))(?:(\s+)(.*))?$/;
 function itemStart(line: string): ItemStart | null {
   const m = ITEM.exec(line);
   if (!m) return null;
+  // A MARKER INDENTED FOUR OR MORE starts no item (CommonMark 5.2): under an
+  // item it is the item's text or a lazy line of it, as spec examples 312 and
+  // 313 read, never a sibling.
+  if (columnAfter(m[1] ?? '', 0) > 3) return null;
   const ordered = m[3] !== undefined;
   const marker = ordered ? (m[4] ?? '.') : (m[2] ?? '-');
   const after = columnAfter(m[1] ?? '', 0) + (ordered ? (m[3] ?? '').length + 1 : 1);
@@ -600,8 +606,8 @@ class BlockReader {
 
   /**
    * Take `rest` as a lazy line, if it is one: the innermost tip is an open
-   * paragraph and the line, its own indent gone, starts no block. It is added
-   * whole and unindented, as the paragraph text it was taken for, and every
+   * paragraph and the line, judged at the indent it has, starts no block. It
+   * is added unindented, as the paragraph text it was taken for, and every
    * container it did not reach stays open, a quote as much as an item: a
    * quote's paragraph wrapped without its `>` is still the quote's, as every
    * CommonMark reader draws it.
@@ -609,9 +615,8 @@ class BlockReader {
   private lazy(depth: number, rest: string, i: number): boolean {
     const top = this.stack[this.stack.length - 1] ?? this.root;
     if (top.kind === 'list' || top.leaf?.kind !== 'paragraph') return false;
-    const text = rest.trimStart();
-    if (startsBlock(text, () => (i + 1 < this.lines.length ? (this.peel(i + 1, depth) ?? '') : ''))) return false;
-    top.leaf.lines.push(text);
+    if (startsBlock(rest, () => (i + 1 < this.lines.length ? (this.peel(i + 1, depth) ?? '') : ''))) return false;
+    top.leaf.lines.push(rest.trimStart());
     top.leaf.end = i + 1;
     this.extend(i);
     return true;

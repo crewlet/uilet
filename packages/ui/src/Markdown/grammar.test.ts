@@ -482,3 +482,25 @@ describe('a list and the next', () => {
     ]);
   });
 });
+
+describe('a line indented four or more', () => {
+  test('is not a sibling item, but the text of the item before it (spec example 312)', () => {
+    const [list] = parseMarkdown('- a\n - b\n  - c\n   - d\n    - e');
+    expect(list).toEqual(
+      expect.objectContaining({
+        items: ['a', 'b', 'c', 'd\n- e'].map((text) => ({ checked: null, blocks: [{ kind: 'paragraph', text }] })),
+      }),
+    );
+  });
+
+  test('after a blank line, ends the list rather than starting an item (spec example 313)', () => {
+    const blocks = parseMarkdown('1. a\n\n  2. b\n\n    3. c');
+    expect(blocks.map((b) => b.kind)).toEqual(['list', 'paragraph']);
+    expect(blocks[0]).toEqual(expect.objectContaining({ items: [expect.anything(), expect.anything()] }));
+  });
+
+  test('starts no list or rule of its own', () => {
+    expect(parseMarkdown('    - x')).toEqual([{ kind: 'paragraph', text: '    - x' }]);
+    expect(parseMarkdown('a\n    ---')).toEqual([{ kind: 'paragraph', text: 'a\n    ---' }]);
+  });
+});
