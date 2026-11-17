@@ -345,6 +345,52 @@ test('the version chip says an older version and opens the versions', () => {
   expect(pick).toHaveBeenCalledTimes(1);
 });
 
+test('an older version has Show latest beside its chip, and the newest has none', () => {
+  const latest = vi.fn();
+  const items = [{ key: 'v3', label: 'Version 3', checked: false, onSelect: vi.fn() }];
+  const { rerender } = render(
+    <LayerHost>
+      <ArtifactVersionChip version={2} latest={3} items={items} onShowLatest={latest} />
+    </LayerHost>,
+  );
+  const show = screen.getByRole('button', { name: 'Show latest' });
+  expect(show.previousElementSibling?.contains(screen.getByRole('button', { name: 'Versions: v2 of 3' }))).toBe(true);
+  fireEvent.click(show);
+  expect(latest).toHaveBeenCalledOnce();
+  rerender(
+    <LayerHost>
+      <ArtifactVersionChip version={3} latest={3} items={items} onShowLatest={latest} />
+    </LayerHost>,
+  );
+  expect(screen.queryByRole('button', { name: 'Show latest' })).toBeNull();
+  rerender(
+    <LayerHost>
+      <ArtifactVersionChip version={2} latest={3} items={items} />
+    </LayerHost>,
+  );
+  expect(screen.queryByRole('button', { name: 'Show latest' })).toBeNull();
+});
+
+test('Show latest keeps its full words as its name on a phone bar, where it draws the short word', () => {
+  render(
+    <LayerHost>
+      <ArtifactVersionChip
+        version={1}
+        latest={4}
+        items={[]}
+        onShowLatest={vi.fn()}
+        showLatestLabel="Show the newest"
+        showLatestShortLabel="Newest"
+      />
+    </LayerHost>,
+  );
+  const show = screen.getByRole('button', { name: 'Show the newest' });
+  expect(show.querySelector('.crewlet-version-chip__latest-short')?.textContent).toBe('Newest');
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ArtifactBar.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const phone = /@container crewlet-artifact-bar \(width < 640px\)\s*\{\s*\.crewlet-version-chip__latest-full\s*\{\s*display:\s*none;\s*\}\s*\.crewlet-version-chip__latest-short\s*\{\s*display:\s*inline;/;
+  expect(css).toMatch(phone);
+});
+
 test('carries no axe violation, read only and renamable', async () => {
   const { container } = render(
     <LayerHost>

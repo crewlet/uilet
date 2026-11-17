@@ -104,7 +104,9 @@ export const OverADeck: Story = {
           kindLabel="Slides"
           back={{ href: '#', label: 'Back to artifacts' }}
           onRename={(next) => setTitle(next)}
-          version={<ArtifactVersionChip version={showing} latest={4} items={versions(showing, 4, setShowing)} />}
+          version={
+            <ArtifactVersionChip version={showing} latest={4} items={versions(showing, 4, setShowing)} onShowLatest={() => setShowing(4)} />
+          }
           modes={{
             label: 'View',
             value: mode,
@@ -323,14 +325,14 @@ export const WithAHostControlOnAPhone: Story = {
   ],
 };
 
-/** An older version on show: the chip takes the accent and says which of how many. */
+/** An older version on show: the chip takes the accent, says which of how many, and Show latest stands beside it. */
 export const OlderVersion: Story = {
   args: {
     title: 'Architecture notes',
     kind: 'doc',
     kindLabel: 'Doc',
     back: { href: '#', label: 'Back to artifacts' },
-    version: <ArtifactVersionChip version={2} latest={5} items={versions(2, 5, () => {})} />,
+    version: <ArtifactVersionChip version={2} latest={5} items={versions(2, 5, () => {})} onShowLatest={() => {}} />,
     tools: [{ key: 'history', label: 'Versions and history', icon: <RotateCcwClockGlyph size="sm" />, keys: ['h'], pressed: true, onSelect: () => {} }],
   },
 };

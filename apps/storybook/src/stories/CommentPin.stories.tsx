@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { CommentPin } from '@crewlethq/ui';
+import { Button, CommentPin, CommentPinGlyph, commentPinCursorAt } from '@crewlethq/ui';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 const meta: Meta<typeof CommentPin> = {
   title: 'UI/CommentPin',
@@ -35,3 +36,52 @@ export const OverContent: Story = {
     </div>
   ),
 };
+
+/** The pin as a glyph, for the control that starts placing one. */
+export const Glyph: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'var(--color-text-secondary)' }}>
+      <CommentPinGlyph size="sm" />
+      <CommentPinGlyph size="md" />
+      <CommentPinGlyph size="xl" />
+      <Button size="small" variant="secondary" leadingIcon={<CommentPinGlyph size="sm" />}>
+        Comment
+      </Button>
+    </div>
+  ),
+};
+
+function Placing() {
+  const area = useRef<HTMLDivElement>(null);
+  const [cursor, setCursor] = useState<string>();
+  const [pins, setPins] = useState<{ x: number; y: number }[]>([]);
+  useLayoutEffect(() => {
+    if (area.current) setCursor(commentPinCursorAt(area.current));
+  }, []);
+  return (
+    <div
+      ref={area}
+      role="presentation"
+      onClick={(event) => {
+        const box = event.currentTarget.getBoundingClientRect();
+        setPins((was) => [...was, { x: event.clientX - box.left, y: event.clientY - box.top }]);
+      }}
+      style={{
+        position: 'relative',
+        width: 360,
+        height: 200,
+        border: '1px solid var(--color-border-default)',
+        borderRadius: 12,
+        background: 'var(--color-surface-background)',
+        cursor,
+      }}
+    >
+      {pins.map((p, i) => (
+        <CommentPin key={i} mark="+" state="draft" label={`Draft ${i + 1}`} style={{ left: p.x, top: p.y }} />
+      ))}
+    </div>
+  );
+}
+
+/** Placing a comment: the pointer is the draft pin, and a click puts one where its tip was. */
+export const PlacingCursor: Story = { render: () => <Placing /> };
