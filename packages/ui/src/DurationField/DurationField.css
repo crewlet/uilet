@@ -1,0 +1,23 @@
+/* DurationField: the amount with its steppers, the unit beside it, then its preset chips. */
+
+.crewlet-duration-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-duration-field__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-duration-field__amount {
+  flex: 1 1 auto;
+}
+
+.crewlet-duration-field__unit {
+  flex: none;
+}
