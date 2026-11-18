@@ -280,6 +280,16 @@ describe('a code span wrapped across lines', () => {
     expect(canonicalMarkdown(written)).toBe(written);
   });
 
+  test('in a paragraph nobody edited, keeps its bytes on a save, line ending and all', () => {
+    const text = 'Before.\n\nsee `Tasks | About\n| History | Files` here\nand more.\n\nAfter.\n';
+    const { doc, source } = readMarkdown(text);
+    expect(writeMarkdown(doc, source)).toBe(text);
+    // An undone edit hands back equal nodes rather than the same objects.
+    expect(writeMarkdown(schema.nodeFromJSON(doc.toJSON()), source)).toBe(text);
+    // An edit to the paragraph before it moves only that paragraph's line.
+    expect(writeMarkdown(editParagraph(doc, 0, 'Changed.'), source)).toBe(text.replace('Before.', 'Changed.'));
+  });
+
   test('reads as one run of code, the line ending a space', () => {
     const p = readMarkdown('see `Tasks | About\n| History` here').doc.firstChild!;
     const code: string[] = [];
