@@ -540,7 +540,8 @@ function asWritten(node: PMNode): PMNode {
  * - Two quotes would be one. Two lists of one kind are kept apart by their
  *   markers ([markerAfter]), not by a blank line.
  * - A list that cannot interrupt a paragraph (an empty first item, or a
- *   number other than 1) would continue the text above it.
+ *   number other than 1) would continue a paragraph above it; under any
+ *   other block it starts as it is.
  * - Everything else starts a block of its own under any block: a fence, a
  *   heading, a quote, a table under text (as GitHub reads one), and a rule,
  *   which under a paragraph is spelled `***` ([list]).
@@ -564,7 +565,9 @@ function needsBlank(prev: PMNode, next: PMNode): boolean {
       first?.forEach((child) => {
         if (child.type.name !== 'paragraph' || child.childCount > 0) empty = false;
       });
-      return empty || (n === 'ordered_list' && (next.attrs.start as number) !== 1);
+      // Only a PARAGRAPH stops such a list starting (CommonMark 5.3): under a
+      // quote, a table or a list the line starts it, as every reader has it.
+      return p === 'paragraph' && (empty || (n === 'ordered_list' && (next.attrs.start as number) !== 1));
     }
     default:
       return false;

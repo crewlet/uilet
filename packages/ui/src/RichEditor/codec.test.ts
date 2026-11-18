@@ -435,3 +435,23 @@ describe('a code span with a space at an end', () => {
     expect(signature(readMarkdown('a ` b` c').doc)).not.toBe(signature(readMarkdown('a `b` c').doc));
   });
 });
+
+describe('a list that cannot interrupt a paragraph, under another block', () => {
+  test.each([
+    ['under a quote', '- a\n  > q\n  3. b'],
+    ['under a table', '- | a |\n  | --- |\n  3. b'],
+    ['under a list', '- a\n  - x\n  3. b'],
+  ])('starts tight %s, and is written tight', (_case, text) => {
+    expect(readMarkdown(text).doc.firstChild!.attrs.loose).toBe(false);
+    const written = canonicalMarkdown(text);
+    expect(written).toBe(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+  });
+
+  test('an empty item under a quote is written tight', () => {
+    const text = '- a\n  > q\n  -';
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(readMarkdown(written).doc.firstChild!.attrs.loose).toBe(false);
+  });
+});
