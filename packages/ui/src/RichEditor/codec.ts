@@ -216,6 +216,15 @@ function collapse(nodes: PMNode[]): PMNode[] {
       lastSpace = false;
       continue;
     }
+    // A CODE SPAN'S TEXT IS ITS OWN, space for space: a space inside it is
+    // code, not whitespace a neighbour's space collapses into, so it neither
+    // loses a space to the text before it nor takes one from the text after.
+    if (isCode(node)) {
+      out.push(node);
+      lineStart = false;
+      lastSpace = false;
+      continue;
+    }
     let text = node.text ?? '';
     if (lineStart || lastSpace) text = text.replace(/^ /, '');
     if (!text) continue;
@@ -229,7 +238,7 @@ function collapse(nodes: PMNode[]): PMNode[] {
 
 function trimEnd(out: PMNode[]): void {
   const last = out[out.length - 1];
-  if (!last?.isText) return;
+  if (!last?.isText || isCode(last)) return;
   const text = (last.text ?? '').replace(/ $/, '');
   if (text) out[out.length - 1] = schema.text(text, last.marks);
   else out.pop();
@@ -607,6 +616,10 @@ function lineStarts(text: string): string {
 
 // --- inline writing ---------------------------------------------------------
 
+function isCode(node: PMNode): boolean {
+  return node.marks.some((m) => m.type.name === 'code');
+}
+
 /** One textblock's content as inline Markdown. */
 function inlineText(parent: PMNode, s: Spelling, cell: boolean): string {
   const children: PMNode[] = [];
@@ -768,12 +781,14 @@ function codeSpan(code: string, cell: boolean): string {
   const text = code.replace(/\n/g, ' ');
   const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
   const fence = '`'.repeat(longest + 1);
-  // A SPACE AT BOTH ENDS OR NEITHER: the reader takes one from each end only
-  // when both have one ([markdownCodeText]), so a span whose text starts or
-  // ends with a backtick or a space is padded on both sides, and one that is
-  // all spaces, which the reader keeps whole, on neither.
-  const edge = (c: string) => c === ' ' || c === '`';
-  const pad = text.trim() !== '' && (edge(text[0] ?? '') || edge(text[text.length - 1] ?? '')) ? ' ' : '';
+  // THE TEXT EXACTLY, padded only where CommonMark needs it: a backtick at an
+  // end would join the fence, and a space at BOTH ends, the text not all
+  // spaces, is one the reader takes off each end ([markdownCodeText]). A
+  // space at one end is content and is written as it is.
+  const first = text[0] ?? '';
+  const last = text[text.length - 1] ?? '';
+  const pad =
+    first === '`' || last === '`' || (first === ' ' && last === ' ' && text.trim() !== '') ? ' ' : '';
   const body = cell ? text.replace(/\|/g, '\\|') : text;
   return `${fence}${pad}${body}${pad}${fence}`;
 }
@@ -846,9 +861,12 @@ export function signature(node: PMNode): string {
       .join('+');
     const link = linkOf(node);
     const tag = `${marks}${link ? `@${link.attrs.href as string}` : ''}`;
-    // A line ending in a code span is the space a reader sees there.
-    const text = node.marks.some((m) => m.type.name === 'code') ? (node.text ?? '').replace(/\n/g, ' ') : (node.text ?? '');
-    return [...text].map((c) => (c === ' ' ? ' ' : `${c}${tag ? `{${tag}}` : ''}`)).join('');
+    // A line ending in a code span is the space a reader sees there. A SPACE
+    // IN A CODE SPAN CARRIES ITS MARK, so it is never merged with a space
+    // beside the span, and a space moved into or out of one is seen.
+    const code = isCode(node);
+    const text = code ? (node.text ?? '').replace(/\n/g, ' ') : (node.text ?? '');
+    return [...text].map((c) => (c === ' ' && !code ? ' ' : `${c}${tag ? `{${tag}}` : ''}`)).join('');
   }
   const attrs = visibleAttrs(node);
   let inner = '';

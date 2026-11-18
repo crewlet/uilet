@@ -407,3 +407,31 @@ describe('two lists of one kind next to each other', () => {
     expect(readMarkdown(written).doc.childCount).toBe(2);
   });
 });
+
+describe('a code span with a space at an end', () => {
+  // The span's text is written exactly: a space at one end is content, and
+  // the spaces beside the span stay outside it.
+  test.each([
+    ['a space at its end', 'a `b ` c'],
+    ['a space at its start', 'a ` b` c'],
+    ['two spaces at its end, last in the paragraph', 'a `b  `'],
+    ['nothing but spaces', 'a `  `'],
+    ['backticks inside and a space at its end', 'Errors with ``x `y` `` when it fails.'],
+    ['agent-learning.md: a title prefix', 'the `[Auto-draft] ` title prefix'],
+    ['code-sandbox.md: a gutter', "a wrapping's gutter `[Worker1A] ` before the END"],
+    ['knowledge-system.md: a prefix in a list', '- carries the `[Auto-draft] ` prefix (`knowledge.AutoDraftTitlePrefix`) as a backstop'],
+    ['llm-backends.md: a bullet and a space', 'prefixes every line with `• ` and re-wraps it'],
+    ['confluence.md: a prefix', 'still carries the `[Auto-draft] ` prefix: two tests'],
+    ['cli.md: a command in a span', 'Errors with ``this node knows no company; run `crewlet config import` `` when it knows none.'],
+  ])('%s is written as it was read', (_case, text) => {
+    const written = canonicalMarkdown(text);
+    expect(written).toBe(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(canonicalMarkdown(written)).toBe(written);
+  });
+
+  test("a space moved out of a span changes what the block says", () => {
+    expect(signature(readMarkdown('a `b ` c').doc)).not.toBe(signature(readMarkdown('a `b` c').doc));
+    expect(signature(readMarkdown('a ` b` c').doc)).not.toBe(signature(readMarkdown('a `b` c').doc));
+  });
+});
