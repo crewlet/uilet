@@ -306,8 +306,10 @@ describe('reading a body', () => {
   /**
    * The work parsing `source` takes, COUNTED rather than timed: every
    * regular-expression evaluation and every trim the grammar makes, the two
-   * ways it reads a line. A replaced `exec` is called by `test`, `match`,
-   * `replace` and `split` too.
+   * ways it reads a line, and every character a match consumed, which is
+   * what a pattern that runs on to the end of a line costs. A replaced
+   * `exec` is called by `test`, `match`, `replace` and `split` too, so their
+   * matches are counted with it.
    */
   const work = (source: string): number => {
     const exec = RegExp.prototype.exec;
@@ -315,7 +317,9 @@ describe('reading a body', () => {
     let calls = 0;
     RegExp.prototype.exec = function (this: RegExp, text: string) {
       calls++;
-      return exec.call(this, text);
+      const found = exec.call(this, text);
+      if (found) calls += found[0].length;
+      return found;
     };
     String.prototype.trim = function (this: string) {
       calls++;
@@ -344,6 +348,17 @@ describe('reading a body', () => {
   test.each([1, 2, 3, 4])('grows linearly with lazy lines in items %i deep', (depth) => {
     const ratio = work(nestedLazy(depth, 60)) / work(nestedLazy(depth, 30));
     expect(ratio).toBeLessThan(2.2);
+  });
+
+  // A chain of markers on one line is read one marker at a time; a marker
+  // pattern that ran on to the end of the line read the rest of it at every
+  // marker, which this count sees as the characters its matches consumed.
+  test.each([
+    ['list items', '- '],
+    ['quotes', '> '],
+  ])('grows linearly with a chain of %s on one line', (_case, opener) => {
+    const chain = (count: number) => opener.repeat(count) + 'x';
+    expect(work(chain(10000)) / work(chain(5000))).toBeLessThan(2.2);
   });
 
   test('grows linearly with a run of blank lines inside an item', () => {
