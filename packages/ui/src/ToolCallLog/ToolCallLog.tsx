@@ -113,7 +113,7 @@ export interface ToolCallLogProps {
   entries: readonly ToolCallLogEntry[];
   /** The log's title, and its name for a screen reader. */
   label: string;
-  /** The run is still going: the log is busy and keeps the end in view. */
+  /** The run is still going: the log is busy and follows the end; a finished log opens at its start. */
   live?: boolean | undefined;
   /** What the copy action copies; no copy action without it. */
   copyText?: string | undefined;
@@ -195,6 +195,7 @@ export function ToolCallLog({
         <ChatThread
           label={label}
           busy={live}
+          follow={live}
           flush
           labels={{ jumpToLatest: labels.jumpToLatest, newItems: labels.newItems }}
           className="crewlet-tool-call-log__thread"

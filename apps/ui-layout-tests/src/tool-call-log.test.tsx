@@ -115,3 +115,15 @@ test("a detail cut at its start keeps the path's file name in view, its ellipsis
   expect(charAt(0).right).toBeLessThanOrEqual(box.left);
   expect(detail.textContent).toBe(PATH);
 });
+
+test('a live log opens at its end and follows it; a finished one opens at its start', async () => {
+  await page.viewport(1280, 900);
+  const live = await mount(<ToolCallLog label="Live output" live entries={entries(60)} maxHeight={320} />, 720);
+  const liveLog = live.querySelector<HTMLElement>('[role="log"]')!;
+  expect(liveLog.scrollHeight - liveLog.scrollTop - liveLog.clientHeight).toBeLessThan(2);
+  flushSync(() => root?.unmount());
+  host?.remove();
+
+  const done = await mount(<ToolCallLog label="What it did" entries={entries(60)} maxHeight={320} />, 720);
+  expect(done.querySelector<HTMLElement>('[role="log"]')!.scrollTop).toBe(0);
+});
