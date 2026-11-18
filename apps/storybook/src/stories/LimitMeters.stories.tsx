@@ -65,6 +65,14 @@ export const StateOnly: Story = {
   },
 };
 
+/**
+ * Without notes, as in a table cell that says when each window resets on hover,
+ * no column is kept for them and the figures reach the stack's edge.
+ */
+export const NoNotes: Story = {
+  args: { windows: [FIVE_HOUR, WEEKLY, OPUS].map((w) => ({ ...w, note: undefined })) },
+};
+
 /** A reading that has not been refreshed for a while says how old it is. */
 export const Stale: Story = {
   args: { windows: [FIVE_HOUR, WEEKLY], caption: 'as of 2h ago' },

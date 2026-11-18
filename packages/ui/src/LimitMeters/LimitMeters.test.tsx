@@ -107,6 +107,18 @@ describe('LimitMeters', () => {
     expect(container.querySelector('.crewlet-limit-meters__note')).toBeNull();
   });
 
+  // Mutation: set the modifier whatever the notes, or never, and a case fails.
+  test('a stack where no window has a note keeps no note column, and one note keeps it for all', () => {
+    const grid = (windows: LimitWindow[]) => {
+      cleanup();
+      const { container } = render(<LimitMeters label="Limits" windows={windows} />);
+      return container.querySelector('.crewlet-limit-meters__grid')!.classList.contains('crewlet-limit-meters__grid--no-notes');
+    };
+    expect(grid([{ ...FIVE_HOUR, note: undefined }, { ...WEEKLY, note: '' }])).toBe(true);
+    expect(grid([{ ...FIVE_HOUR, note: undefined }, WEEKLY])).toBe(false);
+    expect(grid([FIVE_HOUR, WEEKLY])).toBe(false);
+  });
+
   test('tones follow each window state', () => {
     const { container } = render(<LimitMeters label="Limits" windows={[WEEKLY, FIVE_HOUR, OPUS_REACHED]} />);
     const tones = [...container.querySelectorAll<HTMLElement>('.crewlet-limit-meters__fill')].map((f) => f.dataset['tone']);
@@ -151,6 +163,12 @@ describe('LimitMeters.css', () => {
 
   test('a label is pinned to the first column, so a row without a note cannot pull the next label up', () => {
     expect(css).toMatch(/\.crewlet-limit-meters__label \{[^}]*grid-column: 1;/);
+  });
+
+  test('a stack with no note draws three tracks, label, bar and figure, and no empty fourth', () => {
+    expect(css).toMatch(
+      /\.crewlet-limit-meters__grid--no-notes \{\s*grid-template-columns: minmax\(0, max-content\) minmax\(2\.5rem, 1fr\) max-content;\s*\}/,
+    );
   });
 
   test('the stack keeps a floor, since inline-size containment gives it no width of its own', () => {

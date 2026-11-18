@@ -1,6 +1,7 @@
 /**
  * A limit stack keeps one line per window where there is room, moves the note
- * under its bar where there is not, and never overflows its cell.
+ * under its bar where there is not, never overflows its cell, and keeps no
+ * empty note column when no window has a note.
  */
 import { afterEach, expect, test } from 'vitest';
 import { flushSync } from 'react-dom';
@@ -63,4 +64,22 @@ test('a window without a note never pulls the next label onto its row', async ()
   const [first, second] = parts(at, 'label');
   expect(box(second!).top).toBeGreaterThan(box(first!).bottom - 1);
   expect(Math.round(box(second!).left)).toBe(Math.round(box(first!).left));
+});
+
+// Above the 16rem container query, where the note would be a fourth column.
+test('wide, a stack with no note puts every figure at its edge', async () => {
+  const bare = WINDOWS.map((w) => ({ ...w, note: undefined }));
+  const at = await mount(320, <LimitMeters label="Limits" windows={bare} />);
+  const stack = at.querySelector('.crewlet-limit-meters')!;
+  for (const figure of parts(at, 'figure')) expect(Math.abs(box(stack).right - box(figure).right)).toBeLessThan(0.5);
+});
+
+test('wide, the notes of the windows that have one line up in their own column', async () => {
+  const at = await mount(320, <LimitMeters label="Limits" windows={WINDOWS} />);
+  const notes = parts(at, 'note');
+  expect(notes).toHaveLength(2);
+  expect(Math.round(box(notes[1]!).left)).toBe(Math.round(box(notes[0]!).left));
+  const rights = parts(at, 'figure').map((f) => Math.round(box(f).right));
+  expect(new Set(rights).size).toBe(1);
+  expect(Math.round(box(notes[0]!).left)).toBeGreaterThan(rights[0]!);
 });
