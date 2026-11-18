@@ -27,6 +27,8 @@ export interface ToolCallLogCall {
   group?: string | undefined;
   /** The key argument's first line, shown on one line and cut to fit. */
   detail?: string | undefined;
+  /** Which end of a detail too long for its line is cut: `start` keeps a path's file name in view. */
+  detailCut?: 'end' | 'start' | undefined;
   /** The whole input, shown on demand when it says more than the detail. */
   input?: string | undefined;
   /** Lines of the input past what the log holds. */
@@ -247,6 +249,16 @@ function StatusMark({ status, labels }: { status: ToolCallStatus; labels: ToolCa
   );
 }
 
+/** A detail on one line. Cut at its start, it runs right to left so the overflow and its ellipsis fall on the
+ *  left, its words isolated so they still read left to right. */
+function Detail({ text, cut = 'end' }: { text: string; cut?: 'end' | 'start' | undefined }) {
+  return (
+    <span className={cx('crewlet-tool-call-log__detail', cut === 'start' && 'crewlet-tool-call-log__detail--start')} title={text}>
+      {cut === 'start' ? <bdi>{text}</bdi> : text}
+    </span>
+  );
+}
+
 /** Whether the input says more than the detail does. */
 function inputBeyondDetail(call: ToolCallLogCall): boolean {
   if (call.input === undefined) return false;
@@ -267,9 +279,7 @@ function CallRow({ call, labels }: { call: ToolCallLogCall; labels: ToolCallLogL
         <StatusMark status={call.status} labels={labels} />
         <span className="crewlet-tool-call-log__tool">{call.tool}</span>
         {call.detail ? (
-          <span className="crewlet-tool-call-log__detail" title={call.detail}>
-            {call.detail}
-          </span>
+          <Detail text={call.detail} cut={call.detailCut} />
         ) : (
           <span className="crewlet-tool-call-log__detail" />
         )}
@@ -337,9 +347,7 @@ function CallGroup({ tool, calls, labels }: { tool: string; calls: ToolCallLogCa
           </span>
         </button>
         {!open && last?.detail ? (
-          <span className="crewlet-tool-call-log__detail" title={last.detail}>
-            {last.detail}
-          </span>
+          <Detail text={last.detail} cut={last.detailCut} />
         ) : (
           <span className="crewlet-tool-call-log__detail" />
         )}

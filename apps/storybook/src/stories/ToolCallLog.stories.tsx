@@ -29,11 +29,11 @@ const HEREDOC = [
 const RUN: ToolCallLogEntry[] = [
   { kind: 'call', key: 'c1', tool: 'Crewlet · Get work item', detail: '{"item":"ENG-131"}', status: 'ok', durationMs: 310 },
   { kind: 'say', key: 's1', text: 'The item asks for a collection detail page. Reading the current page first.' },
-  { kind: 'call', key: 'c2', tool: 'Read', detail: 'frontend/src/pages/CollectionDetail.jsx', status: 'ok', durationMs: 22 },
+  { kind: 'call', key: 'c2', tool: 'Read', detail: '/home/user/workspace/frontend/src/pages/CollectionDetail.jsx', detailCut: 'start', status: 'ok', durationMs: 22 },
   { kind: 'call', key: 'c3', tool: 'Read', detail: 'frontend/src/pages/CollectionList.jsx', status: 'ok', durationMs: 18 },
   { kind: 'call', key: 'c4', tool: 'Read', detail: 'frontend/src/api/collections.js', status: 'ok', durationMs: 15 },
   { kind: 'call', key: 'c5', tool: 'Read', detail: 'frontend/src/pages/Missing.jsx', status: 'error', error: 'File does not exist.', durationMs: 9 },
-  { kind: 'call', key: 'c6', tool: 'Edit', detail: 'frontend/src/pages/CollectionDetail.jsx', status: 'ok', durationMs: 41 },
+  { kind: 'call', key: 'c6', tool: 'Edit', detail: '/home/user/workspace/frontend/src/pages/CollectionDetail.jsx', detailCut: 'start', status: 'ok', durationMs: 41 },
   { kind: 'call', key: 'c7', tool: 'Bash', detail: "python3 - <<'EOF'", input: HEREDOC, status: 'ok', durationMs: 1840 },
   {
     kind: 'call',

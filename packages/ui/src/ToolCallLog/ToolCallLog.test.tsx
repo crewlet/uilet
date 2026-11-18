@@ -195,3 +195,10 @@ test('has no axe violations, open and folded', async () => {
   const results = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });
+
+test("a detail cut at its start reads left to right and names itself whole", () => {
+  render(<ToolCallLog label="Log" entries={[call('c1', { detail: '/repo/src/a.tsx', detailCut: 'start' })]} />);
+  const detail = document.querySelector('.crewlet-tool-call-log__detail--start')!;
+  expect(detail.querySelector('bdi')!.textContent).toBe('/repo/src/a.tsx');
+  expect(detail.getAttribute('title')).toBe('/repo/src/a.tsx');
+});

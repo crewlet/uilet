@@ -138,6 +138,16 @@
   white-space: nowrap;
 }
 
+.crewlet-tool-call-log__detail--start {
+  direction: rtl;
+  text-align: left;
+}
+
+.crewlet-tool-call-log__detail--start > bdi {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 .crewlet-tool-call-log__duration {
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;

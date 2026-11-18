@@ -89,3 +89,29 @@ test("a focused toggle's ring stands inside the log's view, not clipped by it", 
   expect(box.left - ring).toBeGreaterThanOrEqual(view.left);
   expect(box.right + ring).toBeLessThanOrEqual(view.right);
 });
+
+test("a detail cut at its start keeps the path's file name in view, its ellipsis on the left", async () => {
+  await page.viewport(390, 844);
+  const log = await mount(
+    <ToolCallLog
+      label="Live output"
+      entries={[{ kind: 'call', key: 'p', tool: 'Read', detail: PATH, detailCut: 'start', status: 'ok', durationMs: 12 }]}
+    />,
+    358,
+  );
+  const detail = log.querySelector<HTMLElement>('.crewlet-tool-call-log__detail')!;
+  const text = detail.querySelector('bdi')!.firstChild!;
+  const charAt = (at: number) => {
+    const range = document.createRange();
+    range.setStart(text, at);
+    range.setEnd(text, at + 1);
+    return range.getBoundingClientRect();
+  };
+  const box = detail.getBoundingClientRect();
+  expect(detail.scrollWidth).toBeGreaterThan(detail.clientWidth);
+  const last = charAt(PATH.length - 1);
+  expect(last.right).toBeLessThanOrEqual(box.right + 1);
+  expect(last.left).toBeGreaterThanOrEqual(box.left);
+  expect(charAt(0).right).toBeLessThanOrEqual(box.left);
+  expect(detail.textContent).toBe(PATH);
+});
