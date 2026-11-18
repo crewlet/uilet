@@ -407,11 +407,14 @@ function itemStart(line: string, col = 0): ItemStart | null {
 
 /**
  * Whether `line`, taken as it stands, starts a block rather than continuing
- * the paragraph above it: what a LAZY line may not do. `next` gives the line
- * after it, which decides whether a line of pipes is a table's header, and is
- * read only for a line that holds a pipe.
+ * the paragraph above it: what a LAZY line may not do.
+ *
+ * NOT A TABLE: a table's header row is a paragraph's line until the row under
+ * it is read, and a lazy line is the paragraph's; `- a` over `| x | y |` over
+ * `|---|---|` is one item's text to commonmark.js and to micromark's GFM
+ * tables alike.
  */
-function startsBlock(line: string, next: () => string): boolean {
+function startsBlock(line: string): boolean {
   return (
     blank(line) ||
     markdownFenceOf(line) !== null ||
@@ -419,8 +422,7 @@ function startsBlock(line: string, next: () => string): boolean {
     markdownHeadingOf(line) !== null ||
     QUOTE.test(line) ||
     itemStart(line) !== null ||
-    htmlBlockStart(line) ||
-    (line.includes('|') && TABLE_RULE.test(next()))
+    htmlBlockStart(line)
   );
 }
 
@@ -651,7 +653,7 @@ class BlockReader {
     }
 
     // A LAZY LINE continues the paragraph at the tip, every container kept.
-    if (!blank(rest) && this.lazy(depth, rest, i, col)) return;
+    if (!blank(rest) && this.lazy(rest, i, col)) return;
 
     const first = this.stack[depth]!;
     if (first.kind === 'item') {
@@ -696,12 +698,10 @@ class BlockReader {
    * quote's paragraph wrapped without its `>` is still the quote's, as every
    * CommonMark reader draws it.
    */
-  private lazy(depth: number, rest: string, i: number, col: number): boolean {
+  private lazy(rest: string, i: number, col: number): boolean {
     const top = this.stack[this.stack.length - 1] ?? this.root;
     if (top.kind === 'list' || top.leaf?.kind !== 'paragraph') return false;
-    if (startsBlock(expand(rest, col), () => (i + 1 < this.lines.length ? (this.peel(i + 1, depth)?.rest ?? '') : ''))) {
-      return false;
-    }
+    if (startsBlock(expand(rest, col))) return false;
     top.leaf.lines.push(rest.trimStart());
     top.leaf.end = i + 1;
     this.extend(i);

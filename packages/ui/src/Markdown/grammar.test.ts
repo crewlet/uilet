@@ -620,3 +620,14 @@ describe('markdownClosesFence', () => {
     expect(markdownClosesFence.length).toBe(3);
   });
 });
+
+describe('a table header on a lazy line', () => {
+  test("is the item's text, as commonmark.js and micromark read it", () => {
+    expect(parseMarkdown('- a\n| x | y |\n|---|---|')).toEqual([
+      expect.objectContaining({
+        kind: 'list',
+        items: [{ checked: null, blocks: [{ kind: 'paragraph', text: 'a\n| x | y |\n|---|---|' }] }],
+      }),
+    ]);
+  });
+});
