@@ -208,7 +208,7 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.156.0
+## Changes in 0.157.0
 
 ### A list item holds blocks
 
