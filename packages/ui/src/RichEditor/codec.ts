@@ -36,7 +36,9 @@ import {
   parseMarkdownSpans,
   type MarkdownAlign,
   type MarkdownBlock,
+  type MarkdownFence,
 } from '../Markdown/index.js';
+import { htmlBlockStart } from '../Markdown/grammar.js';
 import { schema } from './schema.js';
 
 // --- reading ----------------------------------------------------------------
@@ -117,7 +119,7 @@ function blockNode(block: MarkdownBlock): PMNode {
         block.ordered
           ? { start: block.start, marker: block.marker, loose: block.loose }
           : { marker: block.marker, loose: block.loose },
-        block.items.map((item) => schema.node('list_item', { checked: item.checked }, itemNodes(item.blocks))),
+        block.items.map((item) => schema.node('list_item', { checked: item.checked }, blockNodes(item.blocks))),
       );
     case 'table':
       return schema.node('table', null, [
@@ -130,28 +132,6 @@ function blockNode(block: MarkdownBlock): PMNode {
 function blockNodes(blocks: MarkdownBlock[]): PMNode[] {
   const nodes = blocks.map(blockNode);
   return nodes.length > 0 ? nodes : [schema.node('paragraph')];
-}
-
-/**
- * A list item's blocks, fitted to what an item can hold.
- *
- * The grammar reads a fenced block or a heading inside an item only where its
- * marker line is (`- # Title`), and a code block nowhere, because an indented
- * fence is not a fence. An item therefore holds what can be written back into
- * it; anything else the grammar produced is kept as the paragraph it reads as.
- */
-function itemNodes(blocks: MarkdownBlock[]): PMNode[] {
-  const nodes = blockNodes(blocks);
-  const item = schema.nodes.list_item!;
-  const fitted: PMNode[] = [];
-  for (const node of nodes) {
-    if (item.contentMatch.matchFragment(Fragment.from([...fitted, node]))) {
-      fitted.push(node);
-    } else {
-      fitted.push(schema.node('paragraph', null, node.textContent ? schema.text(node.textContent) : undefined));
-    }
-  }
-  return fitted;
 }
 
 function row(type: 'table_header' | 'table_cell', cells: string[], align: MarkdownAlign[]): PMNode {
@@ -237,6 +217,15 @@ function collapse(nodes: PMNode[]): PMNode[] {
       lastSpace = false;
       continue;
     }
+    // A CODE SPAN'S TEXT IS ITS OWN, space for space: a space inside it is
+    // code, not whitespace a neighbour's space collapses into, so it neither
+    // loses a space to the text before it nor takes one from the text after.
+    if (isCode(node)) {
+      out.push(node);
+      lineStart = false;
+      lastSpace = false;
+      continue;
+    }
     let text = node.text ?? '';
     if (lineStart || lastSpace) text = text.replace(/^ /, '');
     if (!text) continue;
@@ -250,7 +239,7 @@ function collapse(nodes: PMNode[]): PMNode[] {
 
 function trimEnd(out: PMNode[]): void {
   const last = out[out.length - 1];
-  if (!last?.isText) return;
+  if (!last?.isText || isCode(last)) return;
   const text = (last.text ?? '').replace(/ $/, '');
   if (text) out[out.length - 1] = schema.text(text, last.marks);
   else out.pop();
@@ -271,21 +260,27 @@ export function writeMarkdown(doc: PMNode, source?: MarkdownSource): string {
   let out = '';
   let emitted = false;
   let prev: SourceBlock | null = null;
-  let prevNode: PMNode | null = null;
+  let last: Written | null = null;
   for (let i = 0; i < doc.childCount; i++) {
     const node = doc.child(i);
-    const known = source ? recall(node, source, used) : null;
-    const text = known ? known.text : writeBlock(node);
+    let known = source ? recall(node, source, used) : null;
+    const marker = markerAfter(last, node);
+    // A list read with the marker of the list now before it would join it
+    // written as it was read: it is written afresh, with the other marker.
+    if (known && isList(node) && marker !== node.attrs.marker) {
+      used.delete(known.index);
+      known = null;
+    }
+    const text = known ? known.text : writeBlock(node, marker);
     if (!known && text === '') continue;
     if (!emitted) {
       out = (known && known.index === 0 && source ? source.lead : '') + text;
     } else {
-      const adjacent = known && prev && known.index === prev.index + 1;
-      out += (adjacent ? known.sep : separator(prevNode, node)) + text;
+      out += (known && prev && known.index === prev.index + 1 ? known.sep : '\n\n') + text;
     }
     emitted = true;
     prev = known;
-    prevNode = node;
+    last = { node, marker };
   }
   if (source) {
     const lastBlock = source.blocks[source.blocks.length - 1];
@@ -323,23 +318,32 @@ function recall(node: PMNode, source: MarkdownSource, used: Set<number>): Source
   return null;
 }
 
+/** A block as it was written: a list with the marker it was written with. */
+interface Written {
+  node: PMNode;
+  marker: string;
+}
+
+/** The other bullet or delimiter, for a list written next to one of its own. */
+const OTHER_MARKER: Record<string, string> = { '-': '*', '*': '-', '+': '-', '.': ')', ')': '.' };
+
 /**
- * What separates two blocks the editor wrote. Two lists of the same kind
- * need TWO blank lines: one would read as a single loose list, because the
- * grammar carries a list across one blank line to the next item.
+ * The marker a block is written with after `last`: a list's own, unless the
+ * list before it is of its kind and was written with that marker, when the
+ * two would read as one list; it then takes the other bullet or delimiter,
+ * which starts a new list to every CommonMark reader. Blank lines cannot keep
+ * two lists apart, since CommonMark carries a list across any number of them.
  */
-function separator(prev: PMNode | null, next: PMNode): string {
-  if (prev && isList(prev) && isList(next) && (prev.type === next.type || bothBullet(prev, next))) return '\n\n\n';
-  return '\n\n';
+function markerAfter(last: Written | null, node: PMNode): string {
+  const own = (node.attrs.marker as string | undefined) ?? '';
+  if (!isList(node) || !last || last.node.type !== node.type || last.marker !== own) return own;
+  return OTHER_MARKER[own] ?? own;
 }
 
 function isList(node: PMNode): boolean {
   return node.type.name === 'bullet_list' || node.type.name === 'ordered_list';
 }
 
-function bothBullet(a: PMNode, b: PMNode): boolean {
-  return a.type.name === 'bullet_list' && b.type.name === 'bullet_list';
-}
 
 /** How a block is spelled: the markers it was read with, or plainer ones. */
 interface Spelling {
@@ -362,19 +366,22 @@ const SPELLINGS: readonly Spelling[] = [
  * One block in the canonical spelling, checked: the first spelling that reads
  * back as what the writer sees, or the plainest when none does.
  */
-export function writeBlock(node: PMNode): string {
+export function writeBlock(node: PMNode, marker?: string): string {
   if (node.type.name === 'paragraph' && node.childCount === 0) return '';
-  const want = signature(node);
+  // What the reader must see is the block AS WRITTEN: a list written loose
+  // because two of an item's blocks need a blank line reads back loose, which
+  // is what was meant, and is still checked.
+  const want = signature(asWritten(node));
   let text = '';
   for (const spelling of SPELLINGS) {
-    text = block(node, spelling);
+    text = block(node, spelling, marker);
     const back = readMarkdown(text).doc;
     if (back.childCount === 1 && signature(back.firstChild!) === want) return text;
   }
   return text;
 }
 
-function block(node: PMNode, s: Spelling): string {
+function block(node: PMNode, s: Spelling, marker?: string): string {
   switch (node.type.name) {
     case 'paragraph':
       // Space at either end of a block renders as nothing, and two at its end
@@ -396,7 +403,7 @@ function block(node: PMNode, s: Spelling): string {
       return RULE;
     case 'bullet_list':
     case 'ordered_list':
-      return list(node, s);
+      return list(node, s, marker ?? (node.attrs.marker as string));
     case 'table':
       return table(node, s);
     default:
@@ -406,12 +413,12 @@ function block(node: PMNode, s: Spelling): string {
 
 function blocks(parent: PMNode, s: Spelling): string {
   const parts: string[] = [];
-  let prev: PMNode | null = null;
+  let last: Written | null = null;
   parent.forEach((child) => {
-    const text = block(child, s);
-    if (parts.length > 0) parts.push(separator(prev, child));
-    parts.push(text);
-    prev = child;
+    const marker = markerAfter(last, child);
+    if (parts.length > 0) parts.push('\n\n');
+    parts.push(block(child, s, marker));
+    last = { node: child, marker };
   });
   return parts.join('');
 }
@@ -423,39 +430,59 @@ function quoted(text: string): string {
     .join('\n');
 }
 
+/**
+ * A fenced block, in the character it was read with, on a run LONGER than any
+ * run of that character in its text: CommonMark closes a fence only on a run
+ * at least as long as the opening (4.5), so no line of the text can close it,
+ * whatever the text holds. Choosing between ``` and ~~~ instead left no
+ * fence for a block that held a line of each.
+ */
 function codeBlock(node: PMNode): string {
   const text = node.textContent;
   const lang = node.attrs.lang as string;
-  const closes = (fence: string) => text.split('\n').some((line) => CLOSER[fence]!.test(line));
-  const wanted = node.attrs.fence as string;
-  const other = wanted === '```' ? '~~~' : '```';
-  const fence = closes(wanted) && !closes(other) ? other : wanted;
+  const char = (node.attrs.fence as MarkdownFence)[0] ?? '`';
+  const longest = Math.max(0, ...(text.match(char === '`' ? /`+/g : /~+/g) ?? []).map((run) => run.length));
+  const fence = char.repeat(Math.max(3, longest + 1));
   return `${fence}${lang}\n${text}${text ? '\n' : ''}${fence}`;
 }
 
-const CLOSER: Record<string, RegExp> = { '```': /^`{3,}[ \t]*$/, '~~~': /^~{3,}[ \t]*$/ };
-
-function list(node: PMNode, s: Spelling): string {
+/**
+ * A list, every block of every item written at the item's content indent: the
+ * marker's width, which is where the grammar takes an item's later lines from.
+ *
+ * TIGHT WHERE IT CAN BE. A tight list writes an item's blocks with no blank
+ * line between them, which reads back as the same blocks only where the next
+ * one starts a block of its own ([needsBlank]). Where one pair needs a blank
+ * line, the list is written loose, because a blank line between two blocks of
+ * an item is what makes a list loose to every CommonMark reader, this
+ * grammar included, and a list written half one way would read the other.
+ */
+function list(node: PMNode, s: Spelling, listMarker: string): string {
   const ordered = node.type.name === 'ordered_list';
-  const loose = node.attrs.loose as boolean;
-  const items: string[] = [];
+  const { items, loose } = layout(node);
+  const written: string[] = [];
   node.forEach((item, _offset, i) => {
-    const marker = ordered
-      ? `${(node.attrs.start as number) + i}${node.attrs.marker as string} `
-      : `${node.attrs.marker as string} `;
+    const marker = ordered ? `${(node.attrs.start as number) + i}${listMarker} ` : `${listMarker} `;
     const checked = item.attrs.checked as boolean | null;
     const box = checked === null ? '' : checked ? '[x] ' : '[ ] ';
     const indent = ' '.repeat(marker.length);
     const parts: string[] = [];
-    item.forEach((child) => {
-      // A list under a line is written tight against it; anything else after
-      // the first block needs its blank line, or it runs into the line above.
-      if (parts.length > 0) parts.push(isList(child) ? '\n' : '\n\n');
-      parts.push(block(child, s));
-    });
-    const body = parts.join('');
-    const lines = body.split('\n');
-    items.push(
+    let last: Written | null = null;
+    for (const child of items[i]!) {
+      const prev: PMNode | null = last ? (last as Written).node : null;
+      const childMarker = markerAfter(last, child);
+      if (prev) parts.push(loose ? '\n\n' : '\n');
+      // A RULE RIGHT UNDER A PARAGRAPH is written `***`: `---` there is a
+      // setext heading's underline to CommonMark.
+      parts.push(
+        !loose && prev?.type.name === 'paragraph' && child.type.name === 'horizontal_rule'
+          ? '***'
+          : block(child, s, childMarker),
+      );
+      last = { node: child, marker: childMarker };
+    }
+    const lines = parts.join('').split('\n');
+    written.push(
       marker +
         box +
         lines
@@ -463,8 +490,103 @@ function list(node: PMNode, s: Spelling): string {
           .join('\n'),
     );
   });
-  return items.join(loose ? '\n\n' : '\n');
+  return written.join(loose ? '\n\n' : '\n');
 }
+
+/**
+ * Whether a paragraph's first line, as written, opens an HTML block: its first
+ * node is plain text, which the writer leaves as it is, and that text does.
+ */
+function opensHtmlBlock(paragraph: PMNode): boolean {
+  const first = paragraph.firstChild;
+  if (!first?.isText || first.marks.length > 0) return false;
+  return htmlBlockStart(first.text ?? '');
+}
+
+/**
+ * The items of a list as written, and whether it is written loose: as it was
+ * read, or loose because two blocks of one item need a blank line between
+ * them, which is what makes a list loose to every reader.
+ */
+function layout(node: PMNode): { items: PMNode[][]; loose: boolean } {
+  const items: PMNode[][] = [];
+  node.forEach((item) => {
+    // An empty paragraph writes nothing, as it does at the top level; kept,
+    // it would stand as a blank line that ends the item or splits it.
+    const children: PMNode[] = [];
+    item.forEach((child) => {
+      if (child.type.name !== 'paragraph' || child.childCount > 0) children.push(child);
+    });
+    items.push(children.length > 0 ? children : [schema.node('paragraph')]);
+  });
+  const loose =
+    (node.attrs.loose as boolean) ||
+    items.some((children) => children.some((child, j) => j > 0 && needsBlank(children[j - 1]!, child)));
+  return { items, loose };
+}
+
+/** `node` as the writer writes it: every list at the looseness it is written with, an item's empty paragraphs gone. */
+function asWritten(node: PMNode): PMNode {
+  if (node.isLeaf || node.isTextblock) return node;
+  if (isList(node)) {
+    const { items, loose } = layout(node);
+    const children: PMNode[] = [];
+    node.forEach((item, _o, i) => children.push(item.copy(Fragment.from(items[i]!.map(asWritten)))));
+    return node.type.create({ ...node.attrs, loose }, children);
+  }
+  const children: PMNode[] = [];
+  node.forEach((child) => children.push(asWritten(child)));
+  return node.copy(Fragment.from(children));
+}
+
+/**
+ * Whether two blocks of one item need a blank line between them to read back
+ * as those two blocks: EXACTLY where the grammar would read them otherwise,
+ * so every tight list the grammar reads has a tight spelling, and where
+ * CommonMark would too.
+ *
+ * - A paragraph after anything that ends in text (a paragraph, a quote, a
+ *   list) would continue it, and after a table it would be a row.
+ * - A table after a table would be its rows.
+ * - Two quotes would be one. Two lists of one kind are kept apart by their
+ *   markers ([markerAfter]), not by a blank line.
+ * - A list that cannot interrupt a paragraph (an empty first item, or a
+ *   number other than 1) would continue a paragraph above it; under any
+ *   other block it starts as it is.
+ * - Everything else starts a block of its own under any block: a fence, a
+ *   heading, a quote, a table under text (as GitHub reads one), and a rule,
+ *   which under a paragraph is spelled `***` ([list]).
+ */
+function needsBlank(prev: PMNode, next: PMNode): boolean {
+  const p = prev.type.name;
+  const n = next.type.name;
+  if (p === 'code_block' || p === 'heading' || p === 'horizontal_rule') return false;
+  const quoted = (name: string) => name === 'blockquote' || name === 'callout';
+  if (quoted(p) && quoted(n)) return true;
+  switch (n) {
+    case 'paragraph':
+      // A paragraph whose first line opens an HTML block ends the text above
+      // it as any block does ([htmlBlockStart]).
+      return !opensHtmlBlock(next);
+    case 'table':
+      return p === 'table';
+    case 'bullet_list':
+    case 'ordered_list': {
+      // An item of empty paragraphs is written as its bare marker.
+      const first = next.firstChild;
+      let empty = first !== null && first.attrs.checked === null;
+      first?.forEach((child) => {
+        if (child.type.name !== 'paragraph' || child.childCount > 0) empty = false;
+      });
+      // Only a PARAGRAPH stops such a list starting (CommonMark 5.3): under a
+      // quote, a table or a list the line starts it, as every reader has it.
+      return p === 'paragraph' && (empty || (n === 'ordered_list' && (next.attrs.start as number) !== 1));
+    }
+    default:
+      return false;
+  }
+}
+
 
 function table(node: PMNode, s: Spelling): string {
   const rows: string[][] = [];
@@ -486,6 +608,13 @@ function table(node: PMNode, s: Spelling): string {
  * Escape what the START of a line would read as a block: a heading, a quote,
  * a list marker, a rule or a fence. Inline escaping has already taken the
  * asterisks and backticks.
+ *
+ * NO LINE STARTS INSIDE A CODE SPAN, where an escape would be a literal
+ * backslash: a code span is written on one line ([codeSpan]), so every line
+ * this sees starts in text. A pipe at a line's start is left alone: it is a
+ * table's header only over a delimiter row, and a paragraph that would read
+ * so fails its read-back ([writeBlock]) and is written with every punctuation
+ * character escaped.
  */
 function lineStarts(text: string): string {
   return text
@@ -496,13 +625,16 @@ function lineStarts(text: string): string {
         .replace(/^>/, '\\>')
         .replace(/^([-+])(?=\s)/, '\\$1')
         .replace(/^(\d{1,9})([.)])(?=\s)/, '$1\\$2')
-        .replace(/^(-{3,}|_{3,})\s*$/, '\\$1')
-        .replace(/^\|/, '\\|'),
+        .replace(/^(-{3,}|_{3,})\s*$/, '\\$1'),
     )
     .join('\n');
 }
 
 // --- inline writing ---------------------------------------------------------
+
+function isCode(node: PMNode): boolean {
+  return node.marks.some((m) => m.type.name === 'code');
+}
 
 /** One textblock's content as inline Markdown. */
 function inlineText(parent: PMNode, s: Spelling, cell: boolean): string {
@@ -656,13 +788,25 @@ function content(node: PMNode, s: Spelling, cell: boolean, next: PMNode | undefi
   return inLink ? escaped.replace(/(^|[^\\])\]/g, '$1\\]') : escaped;
 }
 
-/** A code span whose fence no run of backticks inside it can close. */
-function codeSpan(text: string, cell: boolean): string {
+/**
+ * A code span whose fence no run of backticks inside it can close, on one
+ * line: a line ending inside a span reads as a space ([markdownCodeText]), so
+ * one is written as the space it is.
+ */
+function codeSpan(code: string, cell: boolean): string {
+  const text = code.replace(/\n/g, ' ');
   const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
   const fence = '`'.repeat(longest + 1);
-  const pad = (side: string) => (side === ' ' || side === '`' ? ' ' : '');
+  // THE TEXT EXACTLY, padded only where CommonMark needs it: a backtick at an
+  // end would join the fence, and a space at BOTH ends, the text not all
+  // spaces, is one the reader takes off each end ([markdownCodeText]). A
+  // space at one end is content and is written as it is.
+  const first = text[0] ?? '';
+  const last = text[text.length - 1] ?? '';
+  const pad =
+    first === '`' || last === '`' || (first === ' ' && last === ' ' && text.trim() !== '') ? ' ' : '';
   const body = cell ? text.replace(/\|/g, '\\|') : text;
-  return `${fence}${pad(body[0] ?? '')}${body}${pad(body[body.length - 1] ?? '')}${fence}`;
+  return `${fence}${pad}${body}${pad}${fence}`;
 }
 
 const ASCII_PUNCTUATION = /[!-/:-@[-`{-~]/;
@@ -686,7 +830,9 @@ function escapeText(text: string, mode: 'light' | 'all', cell: boolean, next: PM
       const word = /[\p{L}\p{N}]/u;
       out += word.test(before) && word.test(after) ? '_' : '\\_';
     } else if (c === '~') {
-      out += after === '~' || before === '~' ? '\\~' : '~';
+      // One tilde is a strikethrough's run too (GFM), so a tilde is escaped
+      // unless whitespace, or the text's edge, stands on both sides of it.
+      out += /^\s?$/.test(before) && /^\s?$/.test(after) ? '~' : '\\~';
     } else if (c === '[') {
       // Only a bracket a destination follows could open a link or a picture.
       out += text.indexOf('](', i) >= 0 ? '\\[' : '[';
@@ -733,7 +879,12 @@ export function signature(node: PMNode): string {
       .join('+');
     const link = linkOf(node);
     const tag = `${marks}${link ? `@${link.attrs.href as string}` : ''}`;
-    return [...(node.text ?? '')].map((c) => (c === ' ' ? ' ' : `${c}${tag ? `{${tag}}` : ''}`)).join('');
+    // A line ending in a code span is the space a reader sees there. A SPACE
+    // IN A CODE SPAN CARRIES ITS MARK, so it is never merged with a space
+    // beside the span, and a space moved into or out of one is seen.
+    const code = isCode(node);
+    const text = code ? (node.text ?? '').replace(/\n/g, ' ') : (node.text ?? '');
+    return [...text].map((c) => (c === ' ' && !code ? ' ' : `${c}${tag ? `{${tag}}` : ''}`)).join('');
   }
   const attrs = visibleAttrs(node);
   let inner = '';
@@ -757,8 +908,11 @@ function visibleAttrs(node: PMNode): string {
       return ` ${node.attrs.lang as string}`;
     case 'callout':
       return ` ${node.attrs.tone as string}`;
+    // LOOSENESS IS SEEN: a loose list's items stand apart from each other.
+    case 'bullet_list':
+      return ` ${String(node.attrs.loose)}`;
     case 'ordered_list':
-      return ` ${node.attrs.start as number}`;
+      return ` ${node.attrs.start as number} ${String(node.attrs.loose)}`;
     case 'list_item':
       return ` ${String(node.attrs.checked)}`;
     case 'table_header':

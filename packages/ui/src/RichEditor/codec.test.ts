@@ -7,8 +7,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
-import type { Node as PMNode } from 'prosemirror-model';
+import { Fragment, type Node as PMNode } from 'prosemirror-model';
+import { parseMarkdown } from '../Markdown/index.js';
+import { MAX_NESTING } from '../Markdown/grammar.js';
 import { readMarkdown, signature, writeBlock, writeMarkdown } from './codec.js';
+import { canonicalMarkdown } from './roundtrip.js';
 import { schema } from './schema.js';
 
 // By arithmetic on this file's path: Vite rewrites `new URL(…, import.meta.url)`.
@@ -94,9 +97,20 @@ describe('the canonical spelling', () => {
     expect(signature(readMarkdown(writeBlock(node)).doc.firstChild!)).toBe(signature(node));
   });
 
-  test('fences code with the marker its own lines cannot close', () => {
-    const node = schema.node('code_block', { lang: 'md', fence: '```' }, schema.text('```\ninside\n```'));
-    expect(writeBlock(node)).toBe('~~~md\n```\ninside\n```\n~~~');
+  test('fences code with a run longer than any its own lines hold', () => {
+    const node = schema.node('code_block', { lang: 'md', fence: '```' }, schema.text('```\ninside\n````'));
+    expect(writeBlock(node)).toBe('`````md\n```\ninside\n````\n`````');
+    expect(signature(readMarkdown(writeBlock(node)).doc.firstChild!)).toBe(signature(node));
+  });
+
+  test('fences code that holds an indented backtick line and a tilde line', () => {
+    // Read: an opening on three, a line of three indented four (content), a
+    // tilde line (content), and the end of the body.
+    const text = '   ```\n    ```\n~~~';
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(readMarkdown(written).doc.childCount).toBe(1);
+    expect(canonicalMarkdown(written)).toBe(written);
   });
 
   test('escapes a pipe inside a table cell', () => {
@@ -161,5 +175,345 @@ describe('a table cell', () => {
     const doc = readMarkdown(text).doc;
     expect(doc.firstChild!.child(1).child(0).textContent).toBe('-mode group|instance');
     expect(writeMarkdown(doc)).toBe('| Flag | What |\n| --- | --- |\n| `-mode group\\|instance` | a \\| b |');
+  });
+});
+
+describe('a list item holding blocks', () => {
+  // Each is written as the canonical spelling writes it, so the round trip
+  // must give back these bytes exactly, as well as the same blocks.
+  const exact: [string, string][] = [
+    [
+      'a fence holding a YAML list, then a paragraph with a link (crewlet/crewlet#1207)',
+      '1. Add this:\n\n   ```yaml\n   mcp_servers:\n     - name: x\n   ```\n\n   It is pinned ([see](#x)).',
+    ],
+    ['a tilde fence holding a list marker', '- run\n\n  ~~~sh\n  echo "- not an item"\n  ~~~'],
+    ['a fence on the marker line, in a tight list', '1. ```go\n   x := 1\n   ```\n2. b'],
+    ['a blank line inside a fence', '- a\n\n  ```\n  one\n\n  two\n  ```\n\n- b'],
+    ['a nested list', '1. one\n   - a\n   - b\n2. two'],
+    ['a quote', '- intro\n\n  > quoted\n\n- next'],
+    ['a table', '- intro\n\n  | a | b |\n  | --- | --- |\n  | 1 | 2 |'],
+    ['a heading', '- intro\n\n  ## Part'],
+    ['a multi-digit marker', '9. nine\n\n10. ten\n\n    ```\n    x\n    ```\n\n11. eleven'],
+  ];
+
+  test.each(exact)('%s round-trips byte for byte and block for block', (_name, text) => {
+    const written = canonicalMarkdown(text);
+    expect(written).toBe(text);
+    expect(parseMarkdown(written)).toEqual(parseMarkdown(text));
+    expect(canonicalMarkdown(written)).toBe(written);
+  });
+
+  // Spelled otherwise than the editor spells them: rewritten once, and then a
+  // fixed point that reads as the same document.
+  const respelled: [string, string][] = [
+    ['a fence closing at another indent', '- a\n\n  ```\n  x\n     ```\n\n  after'],
+    ['a lazy line', '- a\nb'],
+    ['a lazy line under a nested item', '- a\n  - b\nc'],
+    ['a tight paragraph and fence', '- a\n  ```\n  x\n  ```\n- b'],
+    ['two lists of one kind in an item', '- a\n\n  - b\n\n\n  - c'],
+    ['a tab-indented fence', '-\tdo\n\n\t```\n\tx\n\t```'],
+  ];
+
+  test.each(respelled)('%s is written once and then stays', (_name, text) => {
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(canonicalMarkdown(written)).toBe(written);
+  });
+
+  test('reads a fence in an item as a code block, never a paragraph of backticks', () => {
+    const item = readMarkdown('1. Add this:\n\n   ```yaml\n   a: 1\n   ```').doc.firstChild!.firstChild!;
+    expect(item.type.name).toBe('list_item');
+    const kinds: string[] = [];
+    item.forEach((child) => kinds.push(child.type.name));
+    expect(kinds).toEqual(['paragraph', 'code_block']);
+    expect(item.child(1).textContent).toBe('a: 1');
+  });
+
+  test('writes a list loose when one of its items needs a blank line between two blocks', () => {
+    const p = (text: string) => schema.node('paragraph', null, schema.text(text));
+    const list = schema.node('bullet_list', { marker: '-', loose: false }, [
+      schema.node('list_item', null, [p('a'), p('b')]),
+      schema.node('list_item', null, [p('c')]),
+    ]);
+    expect(writeBlock(list)).toBe('- a\n\n  b\n\n- c');
+    // It reads back loose, which is what was written: the same list, loose.
+    expect(signature(readMarkdown(writeBlock(list)).doc.firstChild!)).toBe(
+      signature(list.type.create({ ...list.attrs, loose: true }, list.content)),
+    );
+  });
+
+  test('writes a code block in an item at the item indent, wherever it stands', () => {
+    const code = schema.node('code_block', { lang: 'sh', fence: '```' }, schema.text('echo\n\n  - x'));
+    const list = schema.node('ordered_list', { start: 10, marker: '.', loose: false }, [
+      schema.node('list_item', null, [schema.node('paragraph', null, schema.text('run')), code]),
+    ]);
+    expect(writeBlock(list)).toBe('10. run\n    ```sh\n    echo\n\n      - x\n    ```');
+    expect(signature(readMarkdown(writeBlock(list)).doc.firstChild!)).toBe(signature(list));
+  });
+});
+
+describe('a code span wrapped across lines', () => {
+  // A line that started inside a code span was escaped as though it started
+  // in text, and an escape inside a span is a literal backslash.
+  const dashboardDesign = [
+    '- **A project opens on its work.** The Tasks lens is the list at the top of',
+    '  the page, as the approved Board draws a project: no header about the',
+    '  container above the work, and no row of lenses either: the lenses sit on the',
+    '  page bar beside the name they are lenses on (`Worklet › ENG Core · Tasks | About',
+    '  | History | Files`, `PageLenses`, the chips All projects\' lenses wear too),',
+    '  controlling the region below by id.',
+  ].join('\n');
+
+  test.each([
+    ['at the top level', 'see `Tasks | About\n| History | Files` here', 'see `Tasks | About | History | Files` here'],
+    ['inside an item', '- see `Tasks | About\n  | History | Files` here', '- see `Tasks | About | History | Files` here'],
+  ])('%s is written on one line, unescaped', (_where, text, want) => {
+    const written = canonicalMarkdown(text);
+    expect(written).toBe(want);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+  });
+
+  test("in dashboard-design.md's lens sentence, reads back as written", () => {
+    const written = canonicalMarkdown(dashboardDesign);
+    expect(written).not.toContain('\\|');
+    expect(written).toContain('`Worklet › ENG Core · Tasks | About | History | Files`');
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(dashboardDesign).doc));
+    expect(canonicalMarkdown(written)).toBe(written);
+  });
+
+  test('in a paragraph nobody edited, keeps its bytes on a save, line ending and all', () => {
+    const text = 'Before.\n\nsee `Tasks | About\n| History | Files` here\nand more.\n\nAfter.\n';
+    const { doc, source } = readMarkdown(text);
+    expect(writeMarkdown(doc, source)).toBe(text);
+    // An undone edit hands back equal nodes rather than the same objects.
+    expect(writeMarkdown(schema.nodeFromJSON(doc.toJSON()), source)).toBe(text);
+    // An edit to the paragraph before it moves only that paragraph's line.
+    expect(writeMarkdown(editParagraph(doc, 0, 'Changed.'), source)).toBe(text.replace('Before.', 'Changed.'));
+  });
+
+  test('reads as one run of code, the line ending a space', () => {
+    const p = readMarkdown('see `Tasks | About\n| History` here').doc.firstChild!;
+    const code: string[] = [];
+    p.forEach((n) => {
+      if (n.marks.some((m) => m.type.name === 'code')) code.push(n.text ?? '');
+    });
+    expect(code).toEqual(['Tasks | About | History']);
+  });
+});
+
+describe('a pipe at the start of a line', () => {
+  const br = () => schema.node('hard_break', { style: 'backslash' });
+  const t = (text: string) => schema.text(text);
+
+  test('is left alone where no delimiter row follows', () => {
+    const p = schema.node('paragraph', null, [t('a'), br(), t('| b')]);
+    expect(writeBlock(p)).toBe('a\\\n| b');
+    expect(signature(readMarkdown(writeBlock(p)).doc.firstChild!)).toBe(signature(p));
+  });
+
+  test('is escaped where the next line would make it a table header', () => {
+    const p = schema.node('paragraph', null, [t('a'), br(), t('| b |'), br(), t('| --- |')]);
+    const back = readMarkdown(writeBlock(p)).doc;
+    expect(back.childCount).toBe(1);
+    expect(signature(back.firstChild!)).toBe(signature(p));
+  });
+});
+
+describe('backticks in text', () => {
+  test.each([
+    ['three alone, after a word on a lazy line', '- a\nb ```'],
+    ['three alone, indented past a fence', 'a\n    ```'],
+  ])('%s stay text, and round-trip', (_case, text) => {
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(canonicalMarkdown(written)).toBe(written);
+    let code = false;
+    readMarkdown(text).doc.descendants((n) => {
+      if (n.marks.some((m) => m.type.name === 'code')) code = true;
+    });
+    expect(code).toBe(false);
+    expect(readMarkdown(written).doc.textContent).toContain('```');
+  });
+
+  test.each([['`a'], ['a`'], [' a'], ['a '], ['  '], [' `a` ']])('a code span holding %j reads back as written', (text) => {
+    // Between two words, so the editor's own collapsing of a space at a
+    // paragraph's edge or beside another space does not touch the span.
+    const node = schema.node('paragraph', null, [
+      schema.text('x'),
+      schema.text(text, [schema.marks.code!.create()]),
+      schema.text('y'),
+    ]);
+    // The span's own text, space for space: the signature collapses spaces.
+    expect(readMarkdown(writeBlock(node)).doc.firstChild!.textContent).toBe(`x${text}y`);
+  });
+});
+
+describe('looseness', () => {
+  test('is part of what a list says', () => {
+    const tight = readMarkdown('- a\n- b').doc.firstChild!;
+    const loose = readMarkdown('- a\n\n- b').doc.firstChild!;
+    expect(signature(tight)).not.toBe(signature(loose));
+  });
+
+  // Each tight reading has a tight spelling, which the canonical form keeps.
+  test.each([
+    ['a rule under a paragraph', '- p\n  ---\n- q', '- p\n  ***\n- q'],
+    ['a table under a paragraph', '- p\n  | a |\n  | --- |\n- q', '- p\n  | a |\n  | --- |\n- q'],
+    ['a fence under a table', '- | a |\n  | --- |\n  ```\n  x\n  ```\n- q', '- | a |\n  | --- |\n  ```\n  x\n  ```\n- q'],
+  ])('a tight list with %s stays tight', (_case, text, want) => {
+    const written = canonicalMarkdown(text);
+    expect(written).toBe(want);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+  });
+
+  test.each([
+    ['a quote, then a line with no marker', '- > q\n  p\n- r'],
+    ['a table, then a line with no pipe', '- | a |\n  | --- |\n  p\n- r'],
+  ])('%s is one block, so the list stays tight', (_case, text) => {
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(readMarkdown(text).doc.firstChild!.attrs.loose).toBe(false);
+  });
+});
+
+describe('two lists of one kind next to each other', () => {
+  const item = (text: string) => schema.node('list_item', null, schema.node('paragraph', null, schema.text(text)));
+  const bullets = (text: string) => schema.node('bullet_list', { marker: '-', loose: false }, [item(text)]);
+  const numbers = (text: string) => schema.node('ordered_list', { start: 1, marker: '.', loose: false }, [item(text)]);
+
+  test.each([
+    ['three bullet lists', [bullets('a'), bullets('b'), bullets('c')], '- a\n\n* b\n\n- c'],
+    ['two numbered lists', [numbers('a'), numbers('b')], '1. a\n\n1) b'],
+  ])('%s alternate their markers, and read back as that many lists', (_case, lists, want) => {
+    const doc = schema.node('doc', null, lists);
+    const written = writeMarkdown(doc);
+    expect(written).toBe(want);
+    expect(readMarkdown(written).doc.childCount).toBe(lists.length);
+  });
+
+  test('inside an item, stay tight and two lists', () => {
+    const list = schema.node('bullet_list', { marker: '-', loose: false }, [
+      schema.node('list_item', null, [schema.node('paragraph', null, schema.text('x')), bullets('a'), bullets('b')]),
+    ]);
+    expect(writeBlock(list)).toBe('- x\n  - a\n  * b');
+    expect(signature(readMarkdown(writeBlock(list)).doc.firstChild!)).toBe(signature(list));
+  });
+
+  test('read from a body and brought together by an edit, the second is written afresh', () => {
+    const text = '- a\n\nbetween\n\n- b\n';
+    const { doc, source } = readMarkdown(text);
+    const without = doc.copy(Fragment.from([doc.child(0), doc.child(2)]));
+    const written = writeMarkdown(without, source);
+    expect(written).toBe('- a\n\n* b\n');
+    expect(readMarkdown(written).doc.childCount).toBe(2);
+  });
+});
+
+describe('a code span with a space at an end', () => {
+  // The span's text is written exactly: a space at one end is content, and
+  // the spaces beside the span stay outside it.
+  test.each([
+    ['a space at its end', 'a `b ` c'],
+    ['a space at its start', 'a ` b` c'],
+    ['two spaces at its end, last in the paragraph', 'a `b  `'],
+    ['nothing but spaces', 'a `  `'],
+    ['backticks inside and a space at its end', 'Errors with ``x `y` `` when it fails.'],
+    ['agent-learning.md: a title prefix', 'the `[Auto-draft] ` title prefix'],
+    ['code-sandbox.md: a gutter', "a wrapping's gutter `[Worker1A] ` before the END"],
+    ['knowledge-system.md: a prefix in a list', '- carries the `[Auto-draft] ` prefix (`knowledge.AutoDraftTitlePrefix`) as a backstop'],
+    ['llm-backends.md: a bullet and a space', 'prefixes every line with `• ` and re-wraps it'],
+    ['confluence.md: a prefix', 'still carries the `[Auto-draft] ` prefix: two tests'],
+    ['cli.md: a command in a span', 'Errors with ``this node knows no company; run `crewlet config import` `` when it knows none.'],
+  ])('%s is written as it was read', (_case, text) => {
+    const written = canonicalMarkdown(text);
+    expect(written).toBe(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(canonicalMarkdown(written)).toBe(written);
+  });
+
+  test("a space moved out of a span changes what the block says", () => {
+    expect(signature(readMarkdown('a `b ` c').doc)).not.toBe(signature(readMarkdown('a `b` c').doc));
+    expect(signature(readMarkdown('a ` b` c').doc)).not.toBe(signature(readMarkdown('a `b` c').doc));
+  });
+});
+
+describe('a list that cannot interrupt a paragraph, under another block', () => {
+  test.each([
+    ['under a quote', '- a\n  > q\n  3. b'],
+    ['under a table', '- | a |\n  | --- |\n  3. b'],
+    ['under a list', '- a\n  - x\n  3. b'],
+  ])('starts tight %s, and is written tight', (_case, text) => {
+    expect(readMarkdown(text).doc.firstChild!.attrs.loose).toBe(false);
+    const written = canonicalMarkdown(text);
+    expect(written).toBe(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+  });
+
+  test('an empty item under a quote is written tight', () => {
+    const text = '- a\n  > q\n  -';
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(readMarkdown(written).doc.firstChild!.attrs.loose).toBe(false);
+  });
+});
+
+describe('a paragraph that opens an HTML block, in an item', () => {
+  test('is a block of its own under the item\'s first paragraph, written tight', () => {
+    const text = '- a\n  <div>';
+    const item = readMarkdown(text).doc.firstChild!.firstChild!;
+    expect(item.childCount).toBe(2);
+    expect(readMarkdown(text).doc.firstChild!.attrs.loose).toBe(false);
+    expect(canonicalMarkdown(text)).toBe(text);
+  });
+});
+
+describe('a run of delimiters as text', () => {
+  test.each([['    ***'], ['a ~~~~~ b']])('%j saved twice keeps its bytes', (text) => {
+    const once = canonicalMarkdown(text);
+    expect(canonicalMarkdown(once)).toBe(once);
+    expect(readMarkdown(once).doc.textContent).toBe(readMarkdown(text).doc.textContent);
+    expect(readMarkdown(text).doc.textContent).toContain(text.trim());
+  });
+});
+
+describe('tildes that are no strikethrough', () => {
+  test.each([['~~ ~~'], ['a ~~ b ~~ c'], ['x\n    ~~~\n    ~~~'], ['about ~5 or ~10 minutes']])(
+    '%j saved twice keeps every character',
+    (text) => {
+      const want = readMarkdown(text).doc.textContent;
+      expect(want.replace(/ /g, '')).toBe(text.replace(/\s/g, ''));
+      const once = canonicalMarkdown(text);
+      expect(readMarkdown(once).doc.textContent).toBe(want);
+      expect(canonicalMarkdown(once)).toBe(once);
+    },
+  );
+
+  test('a strikethrough of one or two tildes is still one', () => {
+    for (const text of ['~~gone~~', '~gone~']) {
+      let struck = '';
+      readMarkdown(text).doc.descendants((n) => {
+        if (n.marks.some((m) => m.type.name === 'strike')) struck += n.text ?? '';
+      });
+      expect(struck).toBe('gone');
+    }
+  });
+});
+
+describe('a chain ten times the nesting cap', () => {
+  test.each([
+    ['list items', '- '],
+    ['quotes', '> '],
+  ])('of %s goes through the canonical spelling and a save', (_case, opener) => {
+    const text = opener.repeat(MAX_NESTING * 10) + 'x';
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(canonicalMarkdown(written)).toBe(written);
+    const { doc, source } = readMarkdown(text);
+    expect(writeMarkdown(doc, source)).toBe(text);
+    let deepest = 0;
+    readMarkdown(text).doc.descendants((node, _pos, parent) => {
+      if (node.isTextblock && parent) deepest = Math.max(deepest, node.textContent.length);
+    });
+    expect(deepest).toBe(opener.length * MAX_NESTING * 9 + 1);
   });
 });

@@ -297,6 +297,84 @@ describe('the keyboard', () => {
   });
 });
 
+describe('the keyboard in a code block inside a list item', () => {
+  /** Put the caret right after the first occurrence of `text` in a code block. */
+  function caretAfter(view: EditorView, text: string): void {
+    let at = -1;
+    view.state.doc.descendants((node, pos) => {
+      if (at < 0 && node.type.name === 'code_block') {
+        const i = node.textContent.indexOf(text);
+        if (i >= 0) at = pos + 1 + i + text.length;
+      }
+    });
+    expect(at).toBeGreaterThan(0);
+    act(() => view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, at))));
+  }
+
+  /** Every block, under the node it is in, with a code block's text. */
+  function shape(view: EditorView): string {
+    const out: string[] = [];
+    view.state.doc.descendants((node, _pos, parent) => {
+      if (node.isBlock) {
+        out.push(`${parent?.type.name}>${node.type.name}${node.type.name === 'code_block' ? JSON.stringify(node.textContent) : ''}`);
+      }
+    });
+    return out.join(' ');
+  }
+
+  const codes = (view: EditorView) => {
+    const out: string[] = [];
+    view.state.doc.descendants((node) => {
+      if (node.type.name === 'code_block') out.push(node.textContent);
+    });
+    return out;
+  };
+
+  const body = '1. Add this:\n\n   ```yaml\n   a: 1\n   b: 2\n   ```\n\n2. next';
+
+  test('Enter adds a line to the code, and does not split the item', () => {
+    const { view } = mount(body);
+    caretAfter(view, 'a: 1');
+    press(view, 'Enter');
+    expect(codes(view)).toEqual(['a: 1\n\nb: 2']);
+  });
+
+  test('Tab indents the code line, and does not nest the item', () => {
+    const { view } = mount(body);
+    caretAfter(view, 'a: 1');
+    const before = shape(view);
+    press(view, 'Tab');
+    expect(codes(view)).toEqual(['a: 1  \nb: 2']);
+    expect(shape(view)).toBe(before.replace('"a: 1\\nb: 2"', '"a: 1  \\nb: 2"'));
+  });
+
+  test('Tab in the second item indents the code line rather than sinking the item', () => {
+    const { view } = mount('1. first\n2. Add this:\n\n   ```yaml\n   a: 1\n   ```');
+    caretAfter(view, 'a: 1');
+    const before = shape(view);
+    press(view, 'Tab');
+    expect(shape(view)).toBe(before.replace('"a: 1"', '"a: 1  "'));
+  });
+
+  test('Shift-Tab outdents the code line rather than lifting the item', () => {
+    const { view } = mount('- a\n  - inner\n\n    ```\n      x\n    ```');
+    caretAfter(view, '  x');
+    const before = shape(view);
+    press(view, 'Tab', { shift: true });
+    expect(shape(view)).toBe(before.replace('"  x"', '"x"'));
+  });
+
+  test('in a plain item, Enter still starts another item', () => {
+    const { view, last } = mount('- one');
+    act(() => {
+      view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, view.state.doc.content.size - 3)));
+    });
+    press(view, 'Enter');
+    type(view, 'two');
+    expect(last()).toBe('- one\n- two');
+  });
+});
+
 describe('a paste', () => {
   function paste(view: EditorView, data: Record<string, string>) {
     const event = new Event('paste', { bubbles: true, cancelable: true }) as ClipboardEvent;

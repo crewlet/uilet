@@ -208,6 +208,39 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.157.0
+
+### A list item holds blocks
+
+**The Markdown grammar reads a list item's lines as blocks**, as CommonMark does: each line indented to the item's content (the marker's width and the spaces after it, so three for `1. ` and four for `10. `) is the item's, with that indent taken off, and the item's lines are read like a document of their own. A fenced block (backticks or tildes), a table, a quote, a heading or a nested list inside an item is that block. The grammar read every later line of an item as paragraph text, so a fence in a numbered step drew as three backticks inline in every renderer, and `RichEditor`, saving it, turned an indented `- name:` line inside the fence into a list item that took the next paragraph's first word and a link's bracket with it.
+
+The grammar reads a body in one pass over its lines, with the open quotes, lists and items on a stack, so the work is linear in the body however deeply its lists nest. Its block rules now follow CommonMark (and GitHub's tables) where a body could read two ways:
+
+- A blank line belongs to an item when the next line that is not blank does, so blank lines inside a fence or between two of an item's paragraphs keep it open. Blank lines before the next item keep the list, loose, however many there are.
+- A line less indented than an item's content continues a paragraph left open at the item's end (a lazy line) and otherwise ends the item, so `1. a` over `  - b`, or a paragraph indented two spaces under a three-wide marker after a blank line, reads outside the item, as GitHub draws it. A quote's paragraph takes lazy lines too: `> a` over `b` is one quote.
+- A heading, a fence, a quote, a rule, a list that could start a document, or a line that opens an HTML block (`<!--`, `<div>` and CommonMark's other block-level kinds) ends a paragraph, a lazy line and a table's rows. An HTML block's line is still read as text, as all raw HTML is.
+- Only a list that could start a document interrupts a paragraph: an item with text, numbered from 1 if numbered. A wrapped line that begins `365) ` or `2. ` is the paragraph's next line.
+- A change of bullet character or ordered delimiter starts a new list. A marker, a rule or any other block start indented four or more columns starts nothing: it is text.
+- A list is loose when a blank line separates two of its items or two blocks of one item.
+- A table opens only where its header and delimiter rows hold as many cells, and its rows run until a blank line or another block, so a line with no pipe under a table is a row of one cell. A table's header on a lazy line is the paragraph's text, as it is to GitHub.
+- A fence opens on three or more backticks or tildes and closes only on a run of the same character at least as long, indented up to three spaces. A tab is the columns it fills from the start of its line, after a quote's `>` and before a fence's close as everywhere else.
+- In a code span, a backtick string is a whole run, so three backticks alone are text; a line ending is a space; and one space comes off each end only when both ends have one.
+- A run of emphasis or strikethrough delimiters with nothing between them (`***`, `~~~~~`) is text.
+- Strikethrough is GitHub's: a run of one or two tildes opens when it is followed by text and closes when it follows text, so `~~ ~~` and `a ~~ b ~~ c` are text, and `~one~` is struck.
+- Quotes and list items nest 100 deep at most, and a marker past that is its line's text, as markdown-it reads it: a hundred is a twelfth of the depth at which the editor and the canonical spelling run out of stack, and fifty times the deepest nesting in Crewlet's own documentation.
+- A line that opens containers one inside another (`> - > - x`) opens them however many there are.
+
+**The line readers answer differently**, so an application that walks lines with them sees the same blocks the grammar does:
+
+- `markdownHeadingOf` reads a heading indented up to three spaces (it read only one at the line's start).
+- `markdownFenceOf` reads a fence indented up to three spaces and of three or more backticks or tildes, and answers its `indent` and `length` as well as its `marker` and `lang`.
+- **Breaking:** `markdownClosesFence` takes the opening's `length` as a required third argument, and only a run at least that long closes. It accepts a close indented up to three spaces.
+- `markdownCodeText` reads a line ending in a span as a space, and takes one space off each end only when both ends have one.
+
+`RichEditor`'s list item holds any block, a code block and a heading after its first block included, and its writer puts every block back at the item's content indent. A tight list stays tight where the next block starts a block of its own, and is written loose where two blocks need a blank line between them; a rule right under a paragraph is written `***`. Two lists of one kind next to each other are written with alternating bullets (`-` and `*`) or delimiters (`.` and `)`), not two blank lines. A code span is written on one line and its text exactly, padded only where CommonMark needs it, and a fence one longer than the longest run of its character in the code. In a code block inside an item, Enter, Tab and Shift-Tab act on the code, not the item. The editor's corpus holds the shapes (`list-item-blocks.md`).
+
+What to change: pass `markdownClosesFence` the opening fence's `length`, as `markdownFenceOf` answered it for the opening line; a call without it no longer type-checks. A body whose list items are indented less than their marker's width, or that relied on two blank lines or a change of bullet to keep one list, reads as CommonMark reads it.
+
 ## Changes in 0.153.0
 
 ### Every line diff is tinted, compared honestly and written on

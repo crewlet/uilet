@@ -178,8 +178,10 @@ export function buildKeymap(hooks: KeyHooks): Plugin[] {
     'Mod-Enter': () => hooks.submit(),
     'Shift-Enter': softBreak,
     Enter: chainCommands(moveCell('down'), fenceToCode, exitCodeOnBlankLines, splitItem),
-    Tab: chainCommands(moveCell('next'), sinkListItem(N.list_item!), indentCode),
-    'Shift-Tab': chainCommands(moveCell('previous'), liftListItem(N.list_item!), outdentCode),
+    // THE CODE BLOCK FIRST: a code block can sit inside a list item, and Tab
+    // there indents the code line rather than nesting the item it is in.
+    Tab: chainCommands(moveCell('next'), indentCode, sinkListItem(N.list_item!)),
+    'Shift-Tab': chainCommands(moveCell('previous'), outdentCode, liftListItem(N.list_item!)),
     'Alt-F10': () => hooks.toolbar(),
   };
   for (let level = 1; level <= 6; level++) {
