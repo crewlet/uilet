@@ -19,6 +19,11 @@
   row-gap: var(--spacing-1);
 }
 
+/* No window has a note: no empty note track and gap, so the figures reach the stack's edge. */
+.crewlet-limit-meters__grid--no-notes {
+  grid-template-columns: minmax(0, max-content) minmax(2.5rem, 1fr) max-content;
+}
+
 .crewlet-limit-meters__window {
   display: contents;
   --crewlet-limit-meters-tone: var(--color-text-tertiary);

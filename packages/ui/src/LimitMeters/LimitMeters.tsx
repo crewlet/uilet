@@ -17,7 +17,10 @@ export interface LimitWindow {
   used?: number | undefined;
   /** The trailing figure. Defaults to the rounded percentage of `used`. */
   figure?: string | undefined;
-  /** When the window turns over, in words: "resets 5am", "until Mon 9am". */
+  /**
+   * When the window turns over, in words: "resets 5am", "until Mon 9am". A
+   * stack where no window has one keeps no column for it.
+   */
   note?: string | undefined;
   /** The bar's accessible name: "5-hour limit, 83% used, resets 05:00 UTC". */
   name: string;
@@ -75,9 +78,14 @@ export function LimitMeters({ windows, label, empty = 'None reported', caption, 
       </div>
     );
   }
+  const noted = windows.some((w) => w.note);
   return (
     <div {...rest} className={cx('crewlet-limit-meters', className)}>
-      <div role="group" aria-label={label} className="crewlet-limit-meters__grid">
+      <div
+        role="group"
+        aria-label={label}
+        className={cx('crewlet-limit-meters__grid', !noted && 'crewlet-limit-meters__grid--no-notes')}
+      >
         {windows.map((w) => {
           const known = w.used !== undefined;
           const percent = known ? Math.min(100, Math.round((w.used as number) * 100)) : 0;
