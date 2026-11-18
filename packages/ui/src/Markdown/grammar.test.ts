@@ -577,3 +577,20 @@ describe('a line that opens an HTML block', () => {
     expect(parseMarkdown('a\n<span>b</span>')).toEqual([{ kind: 'paragraph', text: 'a\n<span>b</span>' }]);
   });
 });
+
+describe('a table header', () => {
+  // GFM 4.10: the header row and the delimiter row hold as many cells, or
+  // there is no table; micromark-extension-gfm-table reads these two as text.
+  test.each([
+    ['a heading-like line over a rule', 'Title | x\n---\nnext line', ['paragraph', 'rule', 'paragraph']],
+    ['three cells over two', 'a | b | c\n|---|---|\nnext', ['paragraph']],
+  ])('is no table over %s', (_case, source, kinds) => {
+    expect(parseMarkdown(source).map((b) => b.kind)).toEqual(kinds);
+  });
+
+  test('is a table over a delimiter row of as many cells', () => {
+    expect(parseMarkdown('a | b\n---|---\n1 | 2')).toEqual([
+      { kind: 'table', head: ['a', 'b'], align: ['left', 'left'], rows: [['1', '2']] },
+    ]);
+  });
+});

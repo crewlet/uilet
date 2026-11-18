@@ -849,10 +849,12 @@ class BlockReader {
 
     // A TABLE IS A HEADER PLUS ITS RULE, checked together, and after a list
     // item, which a table can sit inside (`- | a |` over `  | - |`), as GFM
-    // reads it: a line of pipes
-    // with no delimiter under it is a paragraph that happens to contain
-    // pipes, which is what a shell command or a file path looks like.
-    if (rest.includes('|') && i + 1 < this.lines.length && TABLE_RULE.test(this.peel(i + 1, this.stack.length)?.rest ?? '')) {
+    // reads it. A line of pipes with no delimiter under it is a paragraph
+    // that happens to contain pipes, which is what a shell command or a file
+    // path looks like; and THE TWO ROWS HOLD AS MANY CELLS (GFM 4.10), so
+    // `Title | x` over a `---` rule is no table.
+    const below = rest.includes('|') && i + 1 < this.lines.length ? this.peel(i + 1, this.stack.length)?.rest : undefined;
+    if (below !== undefined && TABLE_RULE.test(below) && splitRow(rest).length === splitRow(below).length) {
       this.closeLeaf(top);
       top.leaf = { kind: 'table', head: splitRow(rest), align: [], rows: [], ruled: false, start: i, end: i + 1 };
       return;
