@@ -373,9 +373,12 @@ interface ItemStart {
  *
  * A MARKER ALONE ON ITS LINE IS AN EMPTY ITEM, as CommonMark reads it: "1."
  * and "-" with nothing after them, or with only the space an editor strips.
- * Its text group is then undefined, which an item reads as nothing.
+ *
+ * ONLY THE MARKER AND ITS SPACES ARE MATCHED, and the text is what follows
+ * them: a pattern that ran on to the end of the line read the whole rest of
+ * a line of ten thousand markers once for each of them.
  */
-const ITEM = /^(\s*)(?:([-*+])|(\d{1,9})([.)]))(?:(\s+)(.*))?$/;
+const ITEM = /^(\s*)(?:([-*+])|(\d{1,9})([.)]))(\s+|$)/;
 
 /**
  * The item `line` starts, or null.
@@ -397,7 +400,7 @@ function itemStart(line: string, col = 0): ItemStart | null {
   const marker = ordered ? (m[4] ?? '.') : (m[2] ?? '-');
   const number = Number(m[3] ?? 1);
   const after = indent + (ordered ? (m[3] ?? '').length + 1 : 1);
-  const text = m[6] ?? '';
+  const text = line.slice(m[0].length);
   if (text === '') return { ordered, marker, number, content: after + 1, text: '', textCol: after + 1 };
   const spaces = columnAfter(m[5] ?? ' ', col + after) - (col + after);
   return spaces <= 4
@@ -612,7 +615,7 @@ class BlockReader {
         const head = itemStart(rest, col);
         if (head && sameList(head, top)) {
           this.extend(i);
-          this.openItem(top, head, i, col);
+          this.readOn(this.openItem(top, head, i, col), i);
           return;
         }
         this.closeFrom(depth - 1);
@@ -679,7 +682,7 @@ class BlockReader {
       this.closeFrom(depth);
       if (head && sameList(head, list)) {
         this.extend(i);
-        this.openItem(list, head, i, col);
+        this.readOn(this.openItem(list, head, i, col), i);
         return;
       }
       this.closeFrom(depth - 1);
@@ -770,13 +773,27 @@ class BlockReader {
   /**
    * Read `rest` of line `i`, starting at column `col`, as the start of a
    * block, or the next line of a paragraph, in the innermost container.
+   *
+   * A LINE CAN OPEN CONTAINERS ONE INSIDE ANOTHER (`> - > - x`): each opens,
+   * and what is left of the line is read inside it, IN A LOOP rather than by
+   * a call of its own, so a chain of any length opens without growing the
+   * call stack; ten thousand `- ` on one line overflowed it.
    */
   private start(rest: string, i: number, col: number): void {
+    for (let next = this.startOne(rest, i, col); next !== null; next = this.startOne(next.rest, i, next.col));
+  }
+
+  /**
+   * Read `rest` of line `i` as [start] does, one step: the rest of the line
+   * and its column when a container opened that the rest is read inside,
+   * else null.
+   */
+  private startOne(rest: string, i: number, col: number): { rest: string; col: number } | null {
     const top = (this.stack[this.stack.length - 1] ?? this.root) as RootFrame | QuoteFrame | ItemFrame;
     const leaf = top.leaf;
     if (blank(rest)) {
       this.closeLeaf(top);
-      return;
+      return null;
     }
     const lead = expand(rest, col);
 
@@ -793,20 +810,20 @@ class BlockReader {
         start: i,
         end: i + 1,
       };
-      return;
+      return null;
     }
 
     if (RULE.test(lead)) {
       this.closeLeaf(top);
       top.children.push({ block: { kind: 'rule' }, start: i, end: i + 1 });
-      return;
+      return null;
     }
 
     const heading = markdownHeadingOf(lead);
     if (heading) {
       this.closeLeaf(top);
       top.children.push({ block: { kind: 'heading', level: heading.level, text: heading.title }, start: i, end: i + 1 });
-      return;
+      return null;
     }
 
     const quoted = unquote(rest, col);
@@ -824,8 +841,7 @@ class BlockReader {
         start: i,
         end: i + 1,
       });
-      if (!tone) this.start(inner, i, quoted.col);
-      return;
+      return tone ? null : { rest: inner, col: quoted.col };
     }
 
     // ONLY A LIST THAT COULD START A DOCUMENT INTERRUPTS A PARAGRAPH, as in
@@ -848,8 +864,7 @@ class BlockReader {
         end: i + 1,
       };
       this.stack.push(list);
-      this.openItem(list, head, i, col);
-      return;
+      return this.openItem(list, head, i, col);
     }
 
     // A TABLE IS A HEADER PLUS ITS RULE, checked together, and after a list
@@ -862,23 +877,25 @@ class BlockReader {
     if (below !== undefined && TABLE_RULE.test(below) && splitRow(rest).length === splitRow(below).length) {
       this.closeLeaf(top);
       top.leaf = { kind: 'table', head: splitRow(rest), align: [], rows: [], ruled: false, start: i, end: i + 1 };
-      return;
+      return null;
     }
 
     if (leaf?.kind === 'paragraph' && !htmlBlockStart(lead)) {
       leaf.lines.push(rest);
       leaf.end = i + 1;
-      return;
+      return null;
     }
     this.closeLeaf(top);
     top.leaf = { kind: 'paragraph', lines: [rest], start: i, end: i + 1 };
+    return null;
   }
 
   /**
    * Open the item `head` starts on line `i` (whose piece starts at column
-   * `col`), and read its first line's content as the item's own first line.
+   * `col`), and answer its first line's content, to read as the item's own
+   * first line, or null when the marker stands alone.
    */
-  private openItem(list: ListFrame, head: ItemStart, i: number, col: number): void {
+  private openItem(list: ListFrame, head: ItemStart, i: number, col: number): { rest: string; col: number } | null {
     let text = head.text;
     let textCol = col + head.textCol;
     let checked: boolean | null = null;
@@ -901,7 +918,12 @@ class BlockReader {
       start: i,
       end: i + 1,
     });
-    if (!blank(text)) this.start(text, i, textCol);
+    return blank(text) ? null : { rest: text, col: textCol };
+  }
+
+  /** Read what is left of line `i` in the container just opened, if anything is. */
+  private readOn(next: { rest: string; col: number } | null, i: number): void {
+    if (next) this.start(next.rest, i, next.col);
   }
 
   /** Every open container has read up to line `i`. */

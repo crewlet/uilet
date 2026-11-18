@@ -631,3 +631,28 @@ describe('a table header on a lazy line', () => {
     ]);
   });
 });
+
+describe('a chain of containers on one line', () => {
+  /** How many lists or quotes deep the first block of `blocks` goes. */
+  const depth = (blocks: MarkdownBlock[]) => {
+    let n = 0;
+    let block = blocks[0];
+    while (block?.kind === 'list' || block?.kind === 'quote') {
+      n++;
+      block = block.kind === 'list' ? block.items[0]?.blocks[0] : block.blocks[0];
+    }
+    return n;
+  };
+
+  // Ten thousand overflowed a reader that called itself for each container;
+  // a hundred thousand overflows even one call a container.
+  test.each([
+    ['list items', '- ', 10000],
+    ['quotes', '> ', 10000],
+    ['list items', '- ', 100000],
+    ['quotes', '> ', 100000],
+  ])('of %s (%j), %i of them, opens without overflowing the stack', (_case, opener, count) => {
+    const blocks = parseMarkdown(opener.repeat(count) + 'x');
+    expect(depth(blocks)).toBe(count);
+  });
+});
