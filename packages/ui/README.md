@@ -226,6 +226,8 @@ The grammar reads a body in one pass over its lines, with the open quotes, lists
 - A fence opens on three or more backticks or tildes and closes only on a run of the same character at least as long, indented up to three spaces. A tab is the columns it fills from the start of its line, after a quote's `>` and before a fence's close as everywhere else.
 - In a code span, a backtick string is a whole run, so three backticks alone are text; a line ending is a space; and one space comes off each end only when both ends have one.
 - A run of emphasis or strikethrough delimiters with nothing between them (`***`, `~~~~~`) is text.
+- Strikethrough is GitHub's: a run of one or two tildes opens when it is followed by text and closes when it follows text, so `~~ ~~` and `a ~~ b ~~ c` are text, and `~one~` is struck.
+- Quotes and list items nest 100 deep at most, and a marker past that is its line's text, as markdown-it reads it: a hundred is a twelfth of the depth at which the editor and the canonical spelling run out of stack, and fifty times the deepest nesting in Crewlet's own documentation.
 - A line that opens containers one inside another (`> - > - x`) opens them however many there are.
 
 **The line readers answer differently**, so an application that walks lines with them sees the same blocks the grammar does:
