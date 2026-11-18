@@ -37,6 +37,14 @@
   color: var(--color-tooltip-meta);
 }
 
+/* A few short lines, one per child: stacked, each kept whole up to 28rem, never past the viewport. */
+.crewlet-tooltip--lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  max-width: min(28rem, calc(100vw - var(--spacing-4) * 2));
+}
+
 /* Inside a LayerHost the panel is absolute in that host's own box. */
 .crewlet-tooltip--in-host {
   position: absolute;

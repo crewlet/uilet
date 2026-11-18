@@ -91,6 +91,29 @@ export const Hoverable: Story = {
 };
 
 /**
+ * A few short lines, one per child, such as a limit's windows with their
+ * readings: they stack, and the panel widens to keep each line whole.
+ */
+export const Lines: Story = {
+  render: () => (
+    <div style={{ padding: 'var(--spacing-10)' }}>
+      <Tooltip
+        lines
+        content={
+          <>
+            <span>5-hour: 83% used, resets 17:00 UTC</span>
+            <span>Weekly: 41% used, resets Sun, Nov 1, 12:00 UTC</span>
+            <span>Weekly Opus: reached, sitting out until 13:30 UTC</span>
+          </>
+        }
+      >
+        <Button variant="secondary">Usage limits</Button>
+      </Tooltip>
+    </div>
+  ),
+};
+
+/**
  * A tooltip on a control that is unavailable, which is the case a native
  * `disabled` cannot serve: a disabled button receives no pointer events and
  * takes no focus, so the explanation for why it is unavailable cannot be

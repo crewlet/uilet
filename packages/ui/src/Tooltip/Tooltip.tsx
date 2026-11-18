@@ -56,8 +56,13 @@ type TriggerAttributes = Omit<HTMLAttributes<HTMLElement>, 'content' | 'children
 export interface TooltipProps extends TriggerAttributes {
   /** A ref to the TRIGGER element, composed with the child's own. */
   ref?: Ref<HTMLElement> | undefined;
-  /** One short line. A tooltip is not a place to put a list or a paragraph. */
+  /** One short line, or with `lines` a few. A tooltip is not a place for a paragraph. */
   content: ReactNode;
+  /**
+   * The content is a few short lines, one per child, such as a limit's windows
+   * with their readings: they stack, and the panel widens to keep each whole.
+   */
+  lines?: boolean | undefined;
   /** The preferred side. It flips when there is not room and there is more room the other way. */
   placement?: TooltipPlacement | undefined;
   /**
@@ -168,6 +173,7 @@ export function Tooltip({
   pressOpens = false,
   openDelay = OPEN_DELAY,
   closeDelay = CLOSE_DELAY,
+  lines = false,
   className,
   children,
   ref: forwardedRef,
@@ -416,6 +422,7 @@ export function Tooltip({
         'crewlet-tooltip',
         `crewlet-tooltip--${place?.side ?? (placement === 'top' ? 'above' : 'below')}`,
         container !== null && container !== document.body ? 'crewlet-tooltip--in-host' : 'crewlet-tooltip--fixed',
+        lines && 'crewlet-tooltip--lines',
         className,
       )}
       style={style}

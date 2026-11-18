@@ -8,6 +8,9 @@
  * the line away from exactly the reader who needed longer to read it.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useCallback, useLayoutEffect } from 'react';
@@ -667,3 +670,35 @@ test('stands one spacing step clear of its trigger', () => {
     Element.prototype.getBoundingClientRect = realRect;
   }
 });
+
+// Mutation: drop the class, or the rule's width, and a case fails.
+test('with lines the panel stacks each child as a line and may widen to keep each whole', () => {
+  render(
+    <Tooltip
+      lines
+      content={
+        <>
+          <span>5-hour: 83% used, resets 17:00 UTC</span>
+          <span>Weekly: 41% used, resets Sun, Nov 1, 12:00 UTC</span>
+        </>
+      }
+    >
+      <button>Usage limits</button>
+    </Tooltip>,
+  );
+  tabTo(screen.getByRole('button', { name: 'Usage limits' }));
+  expect(tip()!.classList.contains('crewlet-tooltip--lines')).toBe(true);
+  cleanup();
+  render(
+    <Tooltip content="Bold">
+      <button>Bold</button>
+    </Tooltip>,
+  );
+  tabTo(screen.getByRole('button', { name: 'Bold' }));
+  expect(tip()!.classList.contains('crewlet-tooltip--lines')).toBe(false);
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Tooltip.css'), 'utf8');
+  expect(css).toMatch(
+    /\.crewlet-tooltip--lines \{[^}]*flex-direction: column;[^}]*max-width: min\(28rem, calc\(100vw - var\(--spacing-4\) \* 2\)\);/,
+  );
+});
+
