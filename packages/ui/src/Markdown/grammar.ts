@@ -443,7 +443,7 @@ const HTML_BLOCK_STARTS: readonly RegExp[] = [
  * paragraph of its own rather than the item's last words, as every other
  * reader draws it.
  */
-function htmlBlockStart(line: string): boolean {
+export function htmlBlockStart(line: string): boolean {
   const html = /^ {0,3}(<.*)$/.exec(line)?.[1];
   return html !== undefined && HTML_BLOCK_STARTS.some((start) => start.test(html));
 }

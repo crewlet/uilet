@@ -455,3 +455,13 @@ describe('a list that cannot interrupt a paragraph, under another block', () => 
     expect(readMarkdown(written).doc.firstChild!.attrs.loose).toBe(false);
   });
 });
+
+describe('a paragraph that opens an HTML block, in an item', () => {
+  test('is a block of its own under the item\'s first paragraph, written tight', () => {
+    const text = '- a\n  <div>';
+    const item = readMarkdown(text).doc.firstChild!.firstChild!;
+    expect(item.childCount).toBe(2);
+    expect(readMarkdown(text).doc.firstChild!.attrs.loose).toBe(false);
+    expect(canonicalMarkdown(text)).toBe(text);
+  });
+});

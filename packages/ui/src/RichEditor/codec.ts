@@ -38,6 +38,7 @@ import {
   type MarkdownBlock,
   type MarkdownFence,
 } from '../Markdown/index.js';
+import { htmlBlockStart } from '../Markdown/grammar.js';
 import { schema } from './schema.js';
 
 // --- reading ----------------------------------------------------------------
@@ -493,6 +494,16 @@ function list(node: PMNode, s: Spelling, listMarker: string): string {
 }
 
 /**
+ * Whether a paragraph's first line, as written, opens an HTML block: its first
+ * node is plain text, which the writer leaves as it is, and that text does.
+ */
+function opensHtmlBlock(paragraph: PMNode): boolean {
+  const first = paragraph.firstChild;
+  if (!first?.isText || first.marks.length > 0) return false;
+  return htmlBlockStart(first.text ?? '');
+}
+
+/**
  * The items of a list as written, and whether it is written loose: as it was
  * read, or loose because two blocks of one item need a blank line between
  * them, which is what makes a list loose to every reader.
@@ -554,7 +565,9 @@ function needsBlank(prev: PMNode, next: PMNode): boolean {
   if (quoted(p) && quoted(n)) return true;
   switch (n) {
     case 'paragraph':
-      return true;
+      // A paragraph whose first line opens an HTML block ends the text above
+      // it as any block does ([htmlBlockStart]).
+      return !opensHtmlBlock(next);
     case 'table':
       return p === 'table';
     case 'bullet_list':
