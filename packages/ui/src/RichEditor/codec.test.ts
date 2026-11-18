@@ -465,3 +465,12 @@ describe('a paragraph that opens an HTML block, in an item', () => {
     expect(canonicalMarkdown(text)).toBe(text);
   });
 });
+
+describe('a run of delimiters as text', () => {
+  test.each([['    ***'], ['a ~~~~~ b']])('%j saved twice keeps its bytes', (text) => {
+    const once = canonicalMarkdown(text);
+    expect(canonicalMarkdown(once)).toBe(once);
+    expect(readMarkdown(once).doc.textContent).toBe(readMarkdown(text).doc.textContent);
+    expect(readMarkdown(text).doc.textContent).toContain(text.trim());
+  });
+});

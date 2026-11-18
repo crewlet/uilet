@@ -594,3 +594,14 @@ describe('a table header', () => {
     ]);
   });
 });
+
+describe('a run of emphasis delimiters with nothing between them', () => {
+  test.each(['***', '~~~~~', '___', 'a *** b', 'a ~~~~~ b'])('%j is text', (text) => {
+    expect(inline(text)).toEqual([]);
+  });
+
+  test('around real content is still emphasis', () => {
+    expect(inline('***both***')).toEqual([expect.objectContaining({ strong: '*both*' })]);
+    expect(inline('~~gone~~')).toEqual([expect.objectContaining({ del: 'gone' })]);
+  });
+});

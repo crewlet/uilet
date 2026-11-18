@@ -1093,8 +1093,23 @@ export interface MarkdownInlineMatch {
 export function* markdownInline(text: string): Generator<MarkdownInlineMatch> {
   const pattern = new RegExp(INLINE_SOURCE, 'gu');
   for (let m = pattern.exec(text); m !== null; m = pattern.exec(text)) {
-    yield { index: m.index, end: m.index + m[0].length, groups: (m.groups ?? {}) as MarkdownInlineGroups };
+    const groups = (m.groups ?? {}) as MarkdownInlineGroups;
+    // A RUN OF DELIMITERS WITH NOTHING ELSE BETWEEN THEM IS TEXT: `***` and
+    // `~~~~~` are not emphasis around a star or a tilde, as every CommonMark
+    // reader has it, and reading them so grew a backslash on every save. The
+    // walk goes on from the run's next character.
+    if (onlyDelimiters(groups)) {
+      pattern.lastIndex = m.index + 1;
+      continue;
+    }
+    yield { index: m.index, end: m.index + m[0].length, groups };
   }
+}
+
+/** Whether an emphasis, strong or strikethrough match holds nothing but its own delimiter character. */
+function onlyDelimiters(g: MarkdownInlineGroups): boolean {
+  const only = (text: string | undefined, char: string) => text !== undefined && [...text].every((c) => c === char);
+  return only(g.strong, '*') || only(g.em, '*') || only(g.strongUnder, '_') || only(g.emUnder, '_') || only(g.del, '~');
 }
 
 /**
