@@ -830,7 +830,9 @@ function escapeText(text: string, mode: 'light' | 'all', cell: boolean, next: PM
       const word = /[\p{L}\p{N}]/u;
       out += word.test(before) && word.test(after) ? '_' : '\\_';
     } else if (c === '~') {
-      out += after === '~' || before === '~' ? '\\~' : '~';
+      // One tilde is a strikethrough's run too (GFM), so a tilde is escaped
+      // unless whitespace, or the text's edge, stands on both sides of it.
+      out += /^\s?$/.test(before) && /^\s?$/.test(after) ? '~' : '\\~';
     } else if (c === '[') {
       // Only a bracket a destination follows could open a link or a picture.
       out += text.indexOf('](', i) >= 0 ? '\\[' : '[';

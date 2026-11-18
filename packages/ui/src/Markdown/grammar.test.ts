@@ -671,3 +671,23 @@ describe('a chain of containers on one line', () => {
     expect(depth(blocks)).toBe(count);
   });
 });
+
+describe('strikethrough', () => {
+  // GFM's, as micromark-extension-gfm-strikethrough reads it.
+  const dels = (text: string) => [...markdownInline(text)].map((m) => m.groups.del).filter((d) => d !== undefined);
+
+  test.each([
+    ['~~ ~~', []],
+    ['a ~~ b ~~ c', []],
+    ['~~~\n~~~', []],
+    ['~~~a~~~', []],
+    ['~5 and ~10', []],
+    ['~~a~', []],
+    ['~~a~~', ['a']],
+    ['~a~', ['a']],
+    ['a~~b~~c', ['b']],
+    ['(~~a~~)', ['a']],
+  ])('%j holds %j', (text, want) => {
+    expect(dels(text)).toEqual(want);
+  });
+});

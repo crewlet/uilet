@@ -474,3 +474,26 @@ describe('a run of delimiters as text', () => {
     expect(readMarkdown(text).doc.textContent).toContain(text.trim());
   });
 });
+
+describe('tildes that are no strikethrough', () => {
+  test.each([['~~ ~~'], ['a ~~ b ~~ c'], ['x\n    ~~~\n    ~~~'], ['about ~5 or ~10 minutes']])(
+    '%j saved twice keeps every character',
+    (text) => {
+      const want = readMarkdown(text).doc.textContent;
+      expect(want.replace(/ /g, '')).toBe(text.replace(/\s/g, ''));
+      const once = canonicalMarkdown(text);
+      expect(readMarkdown(once).doc.textContent).toBe(want);
+      expect(canonicalMarkdown(once)).toBe(once);
+    },
+  );
+
+  test('a strikethrough of one or two tildes is still one', () => {
+    for (const text of ['~~gone~~', '~gone~']) {
+      let struck = '';
+      readMarkdown(text).doc.descendants((n) => {
+        if (n.marks.some((m) => m.type.name === 'strike')) struck += n.text ?? '';
+      });
+      expect(struck).toBe('gone');
+    }
+  });
+});

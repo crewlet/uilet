@@ -1034,7 +1034,11 @@ function codeOf(leaf: Extract<Leaf, { kind: 'code' }>): MarkdownBlock {
  *  - an UNDERSCORE run also opens only after W or P and closes only before W
  *    or P, so one inside a word is a letter of it: `snake_case_name` stays
  *    itself, while `_word_` and `__init__` are still emphasis;
- *  - an ASTERISK inside a word still works both ways, as CommonMark says.
+ *  - an ASTERISK inside a word still works both ways, as CommonMark says;
+ *  - STRIKETHROUGH is GFM's: a run of ONE OR TWO tildes, whole, opens when
+ *    left-flanking and is closed by a run of the same length when
+ *    right-flanking, and a run of three or more is never strikethrough; so
+ *    `~~ ~~` and `a ~~ b ~~ c` are text, as GitHub draws them.
  *
  * Every rule is a lookaround, which is why the walk ([markdownInline]) runs
  * the pattern over the WHOLE text from a moving index rather than over what
@@ -1078,7 +1082,10 @@ const INLINE_SOURCE = [
   underOpens('__') + String.raw`(?<strongUnder>[\s\S]+?)` + underCloses('__'),
   leftFlanking(String.raw`\*`) + String.raw`(?<em>[\s\S]+?)` + rightFlanking(String.raw`\*`),
   underOpens('_') + String.raw`(?<emUnder>[\s\S]+?)` + underCloses('_'),
-  String.raw`~~(?<del>[\s\S]+?)~~`,
+  String.raw`(?<!~)(?=(?<tilde>~~?)(?!~))` +
+    leftFlanking(String.raw`\k<tilde>`) +
+    String.raw`(?<del>[\s\S]+?)(?<!~)` +
+    rightFlanking(String.raw`\k<tilde>(?!~)`),
 ].join('|');
 
 /** What one inline construct captured, by name. */
@@ -1098,6 +1105,8 @@ export interface MarkdownInlineGroups {
   strongUnder?: string;
   em?: string;
   emUnder?: string;
+  /** A strikethrough's run, one tilde or two. */
+  tilde?: string;
   del?: string;
 }
 
