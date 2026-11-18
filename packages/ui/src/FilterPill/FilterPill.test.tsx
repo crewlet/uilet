@@ -79,6 +79,27 @@ describe('the words', () => {
   });
 });
 
+// A VALUE THAT IS SOMEBODY wears their face; the sentence and the remove name stay words.
+test('a face before the value is drawn beside it and kept out of the sentence', () => {
+  const { container } = render(
+    <FilterPill
+      field="Assignee"
+      operator="is"
+      value="Ada"
+      valueLeading={<span data-testid="face">A</span>}
+      onRemove={() => {}}
+    />,
+  );
+  const leading = container.querySelector('.crewlet-filter-pill__value-leading')!;
+  expect(leading.getAttribute('aria-hidden')).toBe('true');
+  expect(leading.nextElementSibling?.classList.contains('crewlet-filter-pill__value')).toBe(true);
+  expect(screen.getByRole('button', { name: 'Remove the Assignee is Ada filter' })).toBeDefined();
+  // Without a value there is nothing for a face to stand beside.
+  cleanup();
+  const bare = render(<FilterPill field="Blocked" valueLeading={<span>A</span>} />).container;
+  expect(bare.querySelector('.crewlet-filter-pill__value-leading')).toBeNull();
+});
+
 describe('the remove control', () => {
   test('is a button named by the whole filter, and takes the filter off', () => {
     const remove = vi.fn();

@@ -1,6 +1,6 @@
-import { useId, useMemo, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { CheckGlyph } from '@crewlethq/icons/glyphs';
-import { DiffSummary, DiffView, collapseDiff, diffLines, diffStat } from '../DiffView/index.js';
+import { DiffView } from '../DiffView/index.js';
 import { EmptyState } from '../EmptyState/index.js';
 import { SegmentedControl } from '../SegmentedControl/index.js';
 import { cx } from '../utils/cx.js';
@@ -85,10 +85,9 @@ export interface VersionCompareProps {
  * reader picked first, so a comparison reads forward in time. The host orders
  * the two before it hands them over.
  *
- * THE CHANGES LENS IS A [DiffView] when the host hands over two texts, with
- * the [DiffSummary] above it; two identical texts are said in words ("Nothing
- * changed") rather than drawn as a pane of unmarked lines that reads as one
- * that failed to load. A comparison that is not two texts, such as the files
+ * THE CHANGES LENS IS A [DiffView] of the two texts when the host hands them
+ * over, with its counts above it; two identical texts are said in words
+ * ("Nothing changed") rather than drawn as a pane of unmarked lines. A comparison that is not two texts, such as the files
  * of two releases, is drawn by the host in `changes`.
  *
  * A LENS THAT CANNOT BE DRAWN IS ABSENT, not offered and then empty: a first
@@ -128,14 +127,6 @@ export function VersionCompare({
   const shown: VersionCompareLens =
     lens === 'versions' ? (canVersions ? 'versions' : 'changes') : canChanges ? 'changes' : 'versions';
 
-  // ONLY WHILE THE LENS IS ON SHOW: the table is quadratic, and a reader on
-  // the side by side lens has not asked for it.
-  const diff = useMemo(() => {
-    if (hostChanges || shown !== 'changes' || before === undefined || after === undefined) return null;
-    const lines = diffLines(before, after);
-    return { sections: collapseDiff(lines, context), stat: diffStat(lines) };
-  }, [hostChanges, shown, before, after, context]);
-
   const panes = [
     { key: 'from', label: fromLabel, node: from },
     { key: 'to', label: toLabel, node: to },
@@ -170,23 +161,28 @@ export function VersionCompare({
       </div>
       <HeadingLevelProvider level={inner}>
         {shown === 'changes' ? (
-          diff ? (
-            diff.stat.identical ? (
-              <EmptyState
-                size="compact"
-                icon={<CheckGlyph size="xl" />}
-                title={labels.identicalTitle}
-                description={labels.identicalDescription}
-              />
+          <div className="crewlet-version-compare__changes">
+            {hostChanges || before === undefined || after === undefined ? (
+              changes
             ) : (
-              <div className="crewlet-version-compare__changes">
-                <DiffSummary added={diff.stat.added} removed={diff.stat.removed} against={fromLabel} />
-                <DiffView sections={diff.sections} aria-label={labels.region(fromLabel, toLabel)} />
-              </div>
-            )
-          ) : (
-            <div className="crewlet-version-compare__changes">{changes}</div>
-          )
+              // Compared only while this lens is on show.
+              <DiffView
+                before={before}
+                after={after}
+                context={context}
+                against={fromLabel}
+                aria-label={labels.region(fromLabel, toLabel)}
+                empty={
+                  <EmptyState
+                    size="compact"
+                    icon={<CheckGlyph size="xl" />}
+                    title={labels.identicalTitle}
+                    description={labels.identicalDescription}
+                  />
+                }
+              />
+            )}
+          </div>
         ) : (
           <div className="crewlet-version-compare__versions">
             {note !== undefined && note !== null && <p className="crewlet-version-compare__note">{note}</p>}
