@@ -27,6 +27,8 @@ export interface ToolCallLogCall {
   group?: string | undefined;
   /** The key argument's first line, shown on one line and cut to fit. */
   detail?: string | undefined;
+  /** Which end of a detail too long for its line is cut: `start` keeps a path's file name in view. */
+  detailCut?: 'end' | 'start' | undefined;
   /** The whole input, shown on demand when it says more than the detail. */
   input?: string | undefined;
   /** Lines of the input past what the log holds. */
@@ -111,7 +113,7 @@ export interface ToolCallLogProps {
   entries: readonly ToolCallLogEntry[];
   /** The log's title, and its name for a screen reader. */
   label: string;
-  /** The run is still going: the log is busy and keeps the end in view. */
+  /** The run is still going: the log is busy and follows the end; a finished log opens at its start. */
   live?: boolean | undefined;
   /** What the copy action copies; no copy action without it. */
   copyText?: string | undefined;
@@ -193,6 +195,7 @@ export function ToolCallLog({
         <ChatThread
           label={label}
           busy={live}
+          follow={live}
           flush
           labels={{ jumpToLatest: labels.jumpToLatest, newItems: labels.newItems }}
           className="crewlet-tool-call-log__thread"
@@ -247,6 +250,16 @@ function StatusMark({ status, labels }: { status: ToolCallStatus; labels: ToolCa
   );
 }
 
+/** A detail on one line. Cut at its start, it runs right to left so the overflow and its ellipsis fall on the
+ *  left, its words isolated so they still read left to right. */
+function Detail({ text, cut = 'end' }: { text: string; cut?: 'end' | 'start' | undefined }) {
+  return (
+    <span className={cx('crewlet-tool-call-log__detail', cut === 'start' && 'crewlet-tool-call-log__detail--start')} title={text}>
+      {cut === 'start' ? <bdi>{text}</bdi> : text}
+    </span>
+  );
+}
+
 /** Whether the input says more than the detail does. */
 function inputBeyondDetail(call: ToolCallLogCall): boolean {
   if (call.input === undefined) return false;
@@ -259,16 +272,15 @@ function CallRow({ call, labels }: { call: ToolCallLogCall; labels: ToolCallLogL
   const id = useId();
   const input = call.input?.replace(/\n+$/, '') ?? '';
   const more = inputBeyondDetail(call);
-  const extra = input.split('\n').length - 1;
+  // Lines past the first, the ones the host did not keep included.
+  const extra = input.split('\n').length - 1 + (call.inputUnkept ?? 0);
   return (
     <div className="crewlet-tool-call-log__call" data-status={call.status}>
       <div className="crewlet-tool-call-log__head">
         <StatusMark status={call.status} labels={labels} />
         <span className="crewlet-tool-call-log__tool">{call.tool}</span>
         {call.detail ? (
-          <span className="crewlet-tool-call-log__detail" title={call.detail}>
-            {call.detail}
-          </span>
+          <Detail text={call.detail} cut={call.detailCut} />
         ) : (
           <span className="crewlet-tool-call-log__detail" />
         )}
@@ -336,9 +348,7 @@ function CallGroup({ tool, calls, labels }: { tool: string; calls: ToolCallLogCa
           </span>
         </button>
         {!open && last?.detail ? (
-          <span className="crewlet-tool-call-log__detail" title={last.detail}>
-            {last.detail}
-          </span>
+          <Detail text={last.detail} cut={last.detailCut} />
         ) : (
           <span className="crewlet-tool-call-log__detail" />
         )}
