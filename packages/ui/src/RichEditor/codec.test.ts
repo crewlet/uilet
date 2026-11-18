@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import { Fragment, type Node as PMNode } from 'prosemirror-model';
 import { parseMarkdown } from '../Markdown/index.js';
+import { MAX_NESTING } from '../Markdown/grammar.js';
 import { readMarkdown, signature, writeBlock, writeMarkdown } from './codec.js';
 import { canonicalMarkdown } from './roundtrip.js';
 import { schema } from './schema.js';
@@ -495,5 +496,24 @@ describe('tildes that are no strikethrough', () => {
       });
       expect(struck).toBe('gone');
     }
+  });
+});
+
+describe('a chain ten times the nesting cap', () => {
+  test.each([
+    ['list items', '- '],
+    ['quotes', '> '],
+  ])('of %s goes through the canonical spelling and a save', (_case, opener) => {
+    const text = opener.repeat(MAX_NESTING * 10) + 'x';
+    const written = canonicalMarkdown(text);
+    expect(signature(readMarkdown(written).doc)).toBe(signature(readMarkdown(text).doc));
+    expect(canonicalMarkdown(written)).toBe(written);
+    const { doc, source } = readMarkdown(text);
+    expect(writeMarkdown(doc, source)).toBe(text);
+    let deepest = 0;
+    readMarkdown(text).doc.descendants((node, _pos, parent) => {
+      if (node.isTextblock && parent) deepest = Math.max(deepest, node.textContent.length);
+    });
+    expect(deepest).toBe(opener.length * MAX_NESTING * 9 + 1);
   });
 });

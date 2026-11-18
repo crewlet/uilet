@@ -5,6 +5,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import {
+  MAX_NESTING,
   markdownClosesFence,
   markdownCodeText,
   markdownInline,
@@ -660,7 +661,8 @@ describe('a chain of containers on one line', () => {
   };
 
   // Ten thousand overflowed a reader that called itself for each container;
-  // a hundred thousand overflows even one call a container.
+  // a hundred thousand overflows even one call a container. The chain opens
+  // as deep as the nesting cap and is the innermost item's text past it.
   test.each([
     ['list items', '- ', 10000],
     ['quotes', '> ', 10000],
@@ -668,7 +670,7 @@ describe('a chain of containers on one line', () => {
     ['quotes', '> ', 100000],
   ])('of %s (%j), %i of them, opens without overflowing the stack', (_case, opener, count) => {
     const blocks = parseMarkdown(opener.repeat(count) + 'x');
-    expect(depth(blocks)).toBe(count);
+    expect(depth(blocks)).toBe(Math.min(count, MAX_NESTING));
   });
 });
 
@@ -689,5 +691,27 @@ describe('strikethrough', () => {
     ['(~~a~~)', ['a']],
   ])('%j holds %j', (text, want) => {
     expect(dels(text)).toEqual(want);
+  });
+});
+
+describe('nesting', () => {
+  /** How many lists or quotes deep the first block goes, and the block it ends on. */
+  const innermost = (blocks: MarkdownBlock[]) => {
+    let n = 0;
+    let block = blocks[0];
+    while (block?.kind === 'list' || block?.kind === 'quote') {
+      n++;
+      block = block.kind === 'list' ? block.items[0]?.blocks[0] : block.blocks[0];
+    }
+    return { depth: n, block };
+  };
+
+  test.each([
+    ['list items', '- '],
+    ['quotes', '> '],
+  ])('of %s stops at the cap, and the rest of the line is text', (_case, opener) => {
+    const { depth, block } = innermost(parseMarkdown(opener.repeat(MAX_NESTING * 10) + 'x'));
+    expect(depth).toBe(MAX_NESTING);
+    expect(block).toEqual({ kind: 'paragraph', text: opener.repeat(MAX_NESTING * 9) + 'x' });
   });
 });

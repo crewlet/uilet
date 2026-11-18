@@ -570,9 +570,27 @@ type Open = QuoteFrame | ItemFrame | ListFrame;
  * two items, and the first line that is not blank after a run of them inside
  * an item, which is answered once for the whole run.
  */
+/**
+ * How deep quotes and list items nest, at most. A line's markers past it are
+ * read as the line's text, as markdown-it's maxNesting reads them.
+ *
+ * WHY A CAP, AND WHY 100. The reader opens any depth in constant stack, but
+ * every consumer of the blocks walks them by recursion: the editor's read
+ * and write, the canonical spelling, and an application's renderer. Measured
+ * under Node's default stack in jsdom, `canonicalMarkdown` and the editor's
+ * read overflow at 1,250 nested list items (1,875 quotes), and a save after
+ * an edit at 1,407; the deepest nesting in crewlet's documentation, skills
+ * and examples is 2. A hundred is markdown-it's own default, a twelfth of
+ * the smallest overflow, and fifty times the deepest real page, so no page
+ * anybody writes meets it and no body anybody sends can take a reader down.
+ */
+export const MAX_NESTING = 100;
+
 class BlockReader {
   private readonly root: RootFrame = { kind: 'root', children: [], leaf: null, start: 0, end: 0 };
   private readonly stack: Open[] = [];
+  /** How many quotes and list items are open: what [MAX_NESTING] caps. */
+  private nesting = 0;
 
   constructor(private readonly lines: readonly string[]) {}
 
@@ -826,13 +844,16 @@ class BlockReader {
       return null;
     }
 
-    const quoted = unquote(rest, col);
+    // PAST THE NESTING CAP a quote's or an item's marker is the line's text.
+    const deepest = this.nesting >= MAX_NESTING;
+    const quoted = deepest ? null : unquote(rest, col);
     if (quoted) {
       this.closeLeaf(top);
       // A QUOTE WHOSE FIRST LINE NAMES A TONE IS A CALLOUT, and only that
       // line: `[!NOTE]` anywhere else is the text somebody wrote.
       const inner = quoted.rest;
       const tone = CALLOUT.exec(inner);
+      this.nesting++;
       this.stack.push({
         kind: 'quote',
         tone: tone ? ((tone[1] ?? 'note').toLowerCase() as MarkdownCalloutTone) : null,
@@ -849,7 +870,7 @@ class BlockReader {
     // A "-" or a "1." under a line of text is that text's next line, so a sum
     // wrapped before its last figure is not cut into a paragraph and a list,
     // and neither is a sentence wrapped before "365) days".
-    const head = itemStart(rest, col);
+    const head = deepest ? null : itemStart(rest, col);
     const interrupts = head !== null && head.text !== '' && (!head.ordered || head.number === 1);
     if (head && (leaf?.kind !== 'paragraph' || interrupts)) {
       this.closeLeaf(top);
@@ -907,6 +928,7 @@ class BlockReader {
       text = after;
     }
     list.end = i + 1;
+    this.nesting++;
     this.stack.push({
       kind: 'item',
       content: head.content,
@@ -961,6 +983,7 @@ class BlockReader {
   private closeFrom(depth: number): void {
     while (this.stack.length > depth) {
       const frame = this.stack.pop()!;
+      if (frame.kind !== 'list') this.nesting--;
       const parent = this.stack[this.stack.length - 1] ?? this.root;
       if (frame.kind === 'list') {
         const { ordered, number, marker, loose, items } = frame;
