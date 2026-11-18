@@ -259,7 +259,8 @@ function CallRow({ call, labels }: { call: ToolCallLogCall; labels: ToolCallLogL
   const id = useId();
   const input = call.input?.replace(/\n+$/, '') ?? '';
   const more = inputBeyondDetail(call);
-  const extra = input.split('\n').length - 1;
+  // Lines past the first, the ones the host did not keep included.
+  const extra = input.split('\n').length - 1 + (call.inputUnkept ?? 0);
   return (
     <div className="crewlet-tool-call-log__call" data-status={call.status}>
       <div className="crewlet-tool-call-log__head">

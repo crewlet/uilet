@@ -72,13 +72,16 @@ test('a long input opens on demand, the toggle saying how much more and whether 
   expect(panel.hidden).toBe(true);
 });
 
-test('a one-line input the detail cut opens in full, and what the log did not keep is said', () => {
+test('a one-line input the detail cut opens in full', () => {
   const long = `gh pr view 131 --json ${'state,'.repeat(40)}`;
-  render(
-    <ToolCallLog label="Log" entries={[call('c1', { tool: 'Bash', detail: `${long.slice(0, 40)}…`, input: long, inputUnkept: 12 })]} />,
-  );
+  render(<ToolCallLog label="Log" entries={[call('c1', { tool: 'Bash', detail: `${long.slice(0, 40)}…`, input: long })]} />);
   fireEvent.click(screen.getByRole('button', { name: 'Show in full' }));
   expect(screen.getByText(long)).toBeTruthy();
+});
+
+test('the toggle counts the lines the host did not keep, and the open input says so', () => {
+  render(<ToolCallLog label="Log" entries={[call('c1', { tool: 'Bash', detail: 'python3 -', input: HEREDOC, inputUnkept: 12 })]} />);
+  fireEvent.click(screen.getByRole('button', { name: '15 more lines' }));
   expect(screen.getByText('12 more lines were not kept.')).toBeTruthy();
 });
 
