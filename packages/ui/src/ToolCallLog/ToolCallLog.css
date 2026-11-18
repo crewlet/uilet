@@ -1,0 +1,298 @@
+/*
+ * ToolCallLog: an agent's run as rows in a well, a code block's surface. Tool
+ * rows are a status mark, the tool, its key argument in mono and a duration;
+ * the agent's own words read as sans narration between them.
+ */
+
+.crewlet-tool-call-log {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+}
+
+/* Straight in a card it takes the card's surface, as a code block does. */
+.crewlet-card > .crewlet-tool-call-log {
+  border: 0;
+  border-radius: var(--radius-none);
+  background: transparent;
+}
+
+.crewlet-tool-call-log__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  min-height: var(--size-row-md);
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-1) var(--spacing-3);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-tool-call-log__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-tool-call-log__label {
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.crewlet-tool-call-log__caption {
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-tool-call-log__copy {
+  flex: none;
+}
+
+/* Grows with its rows up to the bound, then scrolls inside the thread. */
+.crewlet-tool-call-log__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: var(--crewlet-tool-call-log-max-height, 28rem);
+}
+
+.crewlet-tool-call-log__thread .crewlet-chat-thread__items {
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+/* Room for the focus ring of the first and last rows' controls. */
+.crewlet-tool-call-log__thread .crewlet-chat-thread__scroller {
+  scroll-padding-block: var(--spacing-2);
+}
+
+.crewlet-tool-call-log__call,
+.crewlet-tool-call-log__group {
+  --crewlet-tool-call-log-gutter: calc(14px + var(--spacing-2));
+
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing-1) / 2);
+  min-width: 0;
+  padding-block: calc(var(--spacing-1) / 2);
+}
+
+.crewlet-tool-call-log__head {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--spacing-2);
+  min-width: 0;
+  min-height: var(--size-target-min);
+}
+
+.crewlet-tool-call-log__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-tool-call-log__mark-glyph {
+  display: inline-flex;
+}
+
+.crewlet-tool-call-log__mark--ok {
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-tool-call-log__mark--error {
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-tool-call-log__mark--running {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-tool-call-log__tool {
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+/* One line, cut to fit: the whole argument is its title and the open input. */
+.crewlet-tool-call-log__detail {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-tool-call-log__detail--start {
+  direction: rtl;
+  text-align: left;
+}
+
+.crewlet-tool-call-log__detail--start > bdi {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.crewlet-tool-call-log__duration {
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.crewlet-tool-call-log__error,
+.crewlet-tool-call-log__more,
+.crewlet-tool-call-log__full {
+  margin: 0;
+  margin-inline-start: var(--crewlet-tool-call-log-gutter);
+}
+
+.crewlet-tool-call-log__error {
+  min-width: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-feedback-danger-ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* A run's count of failures is words, not output. */
+.crewlet-tool-call-log__error--count {
+  font-family: var(--font-family-sans);
+}
+
+/* A quiet text control: the words and a chevron, the kit's focus ring. */
+.crewlet-tool-call-log__more,
+.crewlet-tool-call-log__group-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  min-height: var(--size-target-min);
+  padding: 0 var(--spacing-1);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.crewlet-tool-call-log__more {
+  align-self: flex-start;
+  margin-inline-start: calc(var(--crewlet-tool-call-log-gutter) - var(--spacing-1));
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-link-quiet);
+}
+
+.crewlet-tool-call-log__group-toggle {
+  margin-inline: calc(var(--spacing-1) * -1) 0;
+  color: inherit;
+}
+
+.crewlet-tool-call-log__more:hover,
+.crewlet-tool-call-log__group-toggle:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-tool-call-log__more:focus-visible,
+.crewlet-tool-call-log__group-toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+}
+
+.crewlet-tool-call-log__chevron {
+  display: inline-flex;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-tool-call-log__full[hidden],
+.crewlet-tool-call-log__members[hidden] {
+  display: none;
+}
+
+.crewlet-tool-call-log__input {
+  margin: var(--spacing-1) 0 0;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-inset);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.crewlet-tool-call-log__unkept {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-tool-call-log__members {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-inline-start: var(--crewlet-tool-call-log-gutter);
+  padding-inline-start: var(--spacing-2);
+  border-inline-start: 1px solid var(--color-border-default);
+}
+
+/* Narration: the agent's own words, sans and primary, set off from the rows. */
+.crewlet-tool-call-log__say {
+  margin: var(--spacing-1) 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-body);
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.crewlet-tool-call-log__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  margin: var(--spacing-1) 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-tertiary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.crewlet-tool-call-log__note-mark {
+  display: inline-flex;
+  flex: none;
+  height: calc(var(--font-size-xs) * var(--font-line-height-normal));
+  align-items: center;
+}
+
+.crewlet-tool-call-log__note-text {
+  min-width: 0;
+}
+
+.crewlet-tool-call-log__note--warning {
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-tool-call-log__note--danger {
+  color: var(--color-feedback-danger-ink);
+}
