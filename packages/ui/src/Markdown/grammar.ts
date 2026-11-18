@@ -154,10 +154,15 @@ const CALLOUT = /^\[!(note|tip|important|warning|caution)\]\s*$/i;
 const TASK = /^\[([ xX])\](?:\s+(.*))?$/;
 
 /**
- * Whether `line` closes a fence opened with `length` of `marker`'s character
- * (three when not given), by CommonMark's rule (4.5): a run of the SAME
- * character AT LEAST AS LONG as the opening's, indented up to three spaces,
- * and nothing after it but whitespace.
+ * Whether `line` closes a fence opened with `length` of `marker`'s character,
+ * by CommonMark's rule (4.5): a run of the SAME character AT LEAST AS LONG as
+ * the opening's, indented up to three spaces, and nothing after it but
+ * whitespace.
+ *
+ * THE LENGTH IS REQUIRED: it is the opening's, which [markdownFenceOf]
+ * answers. A default of three answered wrongly for every longer fence, and a
+ * caller that walked a body's lines with it ended a ```` block on its first
+ * ``` line.
  *
  * NOT `line.startsWith(marker)`. A closing fence carries NO INFO STRING, so a
  * literal ```` ```ts ```` line inside a ```` ```sh ```` sample is content, and
@@ -169,7 +174,7 @@ const TASK = /^\[([ xX])\](?:\s+(.*))?$/;
  * a fence in a list item whose closing line sits a space further in than its
  * opening still ends there.
  */
-export function markdownClosesFence(line: string, marker: MarkdownFence, length = 3): boolean {
+export function markdownClosesFence(line: string, marker: MarkdownFence, length: number): boolean {
   const char = marker[0] ?? '`';
   const indent = /^ {0,3}/.exec(line)?.[0].length ?? 0;
   let end = indent;

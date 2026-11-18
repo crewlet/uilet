@@ -5,6 +5,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import {
+  markdownClosesFence,
   markdownCodeText,
   markdownInline,
   parseMarkdown,
@@ -603,5 +604,19 @@ describe('a run of emphasis delimiters with nothing between them', () => {
   test('around real content is still emphasis', () => {
     expect(inline('***both***')).toEqual([expect.objectContaining({ strong: '*both*' })]);
     expect(inline('~~gone~~')).toEqual([expect.objectContaining({ del: 'gone' })]);
+  });
+});
+
+describe('markdownClosesFence', () => {
+  test("is held to the opening's length", () => {
+    expect(markdownClosesFence('````', '```', 4)).toBe(true);
+    expect(markdownClosesFence('```', '```', 4)).toBe(false);
+    expect(markdownClosesFence('   ~~~', '~~~', 3)).toBe(true);
+  });
+
+  test('takes the length as a required argument, with no default', () => {
+    // A function's length counts its parameters up to the first with a
+    // default: three when none of the three has one.
+    expect(markdownClosesFence.length).toBe(3);
   });
 });
