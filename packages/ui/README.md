@@ -208,7 +208,7 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.153.1
+## Changes in 0.154.0
 
 ### A list item holds blocks
 
@@ -222,20 +222,22 @@ The grammar reads a body in one pass over its lines, with the open quotes, lists
 - Only a list that could start a document interrupts a paragraph: an item with text, numbered from 1 if numbered. A wrapped line that begins `365) ` or `2. ` is the paragraph's next line.
 - A change of bullet character or ordered delimiter starts a new list. A marker, a rule or any other block start indented four or more columns starts nothing: it is text.
 - A list is loose when a blank line separates two of its items or two blocks of one item.
-- A table's rows run until a blank line or another block, so a line with no pipe under a table is a row of one cell.
+- A table opens only where its header and delimiter rows hold as many cells, and its rows run until a blank line or another block, so a line with no pipe under a table is a row of one cell. A table's header on a lazy line is the paragraph's text, as it is to GitHub.
 - A fence opens on three or more backticks or tildes and closes only on a run of the same character at least as long, indented up to three spaces. A tab is the columns it fills from the start of its line, after a quote's `>` and before a fence's close as everywhere else.
 - In a code span, a backtick string is a whole run, so three backticks alone are text; a line ending is a space; and one space comes off each end only when both ends have one.
+- A run of emphasis or strikethrough delimiters with nothing between them (`***`, `~~~~~`) is text.
+- A line that opens containers one inside another (`> - > - x`) opens them however many there are.
 
 **The line readers answer differently**, so an application that walks lines with them sees the same blocks the grammar does:
 
 - `markdownHeadingOf` reads a heading indented up to three spaces (it read only one at the line's start).
 - `markdownFenceOf` reads a fence indented up to three spaces and of three or more backticks or tildes, and answers its `indent` and `length` as well as its `marker` and `lang`.
-- `markdownClosesFence` accepts a close indented up to three spaces, and takes the opening's `length` (three when not given): only a run at least that long closes.
+- **Breaking:** `markdownClosesFence` takes the opening's `length` as a required third argument, and only a run at least that long closes. It accepts a close indented up to three spaces.
 - `markdownCodeText` reads a line ending in a span as a space, and takes one space off each end only when both ends have one.
 
-`RichEditor`'s list item holds any block, a code block and a heading after its first block included, and its writer puts every block back at the item's content indent. A tight list stays tight where the next block starts a block of its own, and is written loose where two blocks need a blank line between them; a rule right under a paragraph is written `***`. Two lists of one kind next to each other are written with alternating bullets (`-` and `*`) or delimiters (`.` and `)`), not two blank lines. A code span is written on one line, and a fence one longer than the longest run of its character in the code. In a code block inside an item, Enter, Tab and Shift-Tab act on the code, not the item. The editor's corpus holds the shapes (`list-item-blocks.md`).
+`RichEditor`'s list item holds any block, a code block and a heading after its first block included, and its writer puts every block back at the item's content indent. A tight list stays tight where the next block starts a block of its own, and is written loose where two blocks need a blank line between them; a rule right under a paragraph is written `***`. Two lists of one kind next to each other are written with alternating bullets (`-` and `*`) or delimiters (`.` and `)`), not two blank lines. A code span is written on one line and its text exactly, padded only where CommonMark needs it, and a fence one longer than the longest run of its character in the code. In a code block inside an item, Enter, Tab and Shift-Tab act on the code, not the item. The editor's corpus holds the shapes (`list-item-blocks.md`).
 
-What to change: an application that walks a body's lines with `markdownFenceOf` and `markdownClosesFence` passes the fence's `length` to `markdownClosesFence`. A body whose list items are indented less than their marker's width, or that relied on two blank lines or a change of bullet to keep one list, reads as CommonMark reads it.
+What to change: pass `markdownClosesFence` the opening fence's `length`, as `markdownFenceOf` answered it for the opening line; a call without it no longer type-checks. A body whose list items are indented less than their marker's width, or that relied on two blank lines or a change of bullet to keep one list, reads as CommonMark reads it.
 
 ## Changes in 0.153.0
 
