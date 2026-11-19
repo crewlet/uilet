@@ -162,7 +162,7 @@ async function buildVendorMarks() {
   return marks.length;
 }
 
-// Crewlet's own products (Worklet, Doclet, Chat, Gitlet, Ask Crewlet). Their own
+// Crewlet's own products (Worklet, Doclet, Chat, Gitlet, Ask Crewlet, the Advisor). Their own
 // directory beside the vendors', drawn by <ProductMark product="worklet" />:
 // they are ours, so they are not vendor marks, and not signature illustrations
 // either, since a catalogue sets them beside the vendors' marks at the

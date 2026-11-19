@@ -59,7 +59,7 @@ describe('a product mark', () => {
   it('is decoration until it is named', () => {
     const plain = render(ProductMark, { product: 'worklet' });
     assert.equal(attribute(plain, 'aria-hidden'), 'true');
-    for (const [product, title] of [['worklet', 'Worklet'], ['doclet', 'Doclet'], ['gitlet', 'Gitlet']]) {
+    for (const [product, title] of [['worklet', 'Worklet'], ['doclet', 'Doclet'], ['gitlet', 'Gitlet'], ['advisor', 'the Advisor']]) {
       const named = render(ProductMark, { product, title });
       assert.equal(attribute(named, 'role'), 'img', product);
       assert.equal(attribute(named, 'aria-label'), title, product);

@@ -5,6 +5,7 @@ import assistantTile from '@crewlethq/icons/svg/product/app-tile/assistant.svg';
 import chatTile from '@crewlethq/icons/svg/product/app-tile/chat.svg';
 import docletTile from '@crewlethq/icons/svg/product/app-tile/doclet.svg';
 import gitletTile from '@crewlethq/icons/svg/product/app-tile/gitlet.svg';
+import advisorTile from '@crewlethq/icons/svg/product/app-tile/advisor.svg';
 import workletTile from '@crewlethq/icons/svg/product/app-tile/worklet.svg';
 import { themeScope } from '../themeScope';
 
@@ -23,6 +24,7 @@ const NAMES: Record<Product, string> = {
   chat: 'Crewlet Chat',
   gitlet: 'Gitlet',
   assistant: 'Ask Crewlet',
+  advisor: 'Advisor',
 };
 
 const TILES: Record<Product, string> = {
@@ -31,6 +33,7 @@ const TILES: Record<Product, string> = {
   chat: chatTile,
   gitlet: gitletTile,
   assistant: assistantTile,
+  advisor: advisorTile,
 };
 
 const SIZES = [16, 20, 24, 32, 48, 64, 96] as const;

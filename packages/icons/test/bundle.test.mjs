@@ -119,7 +119,7 @@ describe('a build that looks a glyph up by name', () => {
 /*
  * THE PRODUCT MARKS' OWN ENTRY. An application draws the Assistant's mark in
  * its first paint (the Ask button), so the entry it imports from must reach
- * the five marks (both drawings of each) and the glyph frame and nothing
+ * the six marks (both drawings of each) and the glyph frame and nothing
  * else. Held two ways: the entry's own import graph, which no bundler setting
  * can widen, never reaches the root or another component's stylesheet; and a
  * consumer's build of it carries no vendor mark, no Crewlet figure and no
@@ -159,10 +159,10 @@ describe('a build that imports a product mark from its own entry', () => {
     assert.ok(!output.includes('crewlet-figure'), 'the Crewlet figure is in a bundle that only asked for a product mark');
     const drawn = [...glyphs].filter(([, elements]) => carries(output, elements)).map(([name]) => name);
     assert.deepEqual(drawn, []);
-    // The ten drawings (each product's 48 unit master and its 16 pixel grid
-    // drawing), their frame and the JSX calls: about 7 KB. The failure this
+    // The twelve drawings (each product's 48 unit master and its 16 pixel grid
+    // drawing), their frame and the JSX calls: about 8.3 KB. The failure this
     // catches is the root arriving, which is a hundred times this.
-    assert.ok(output.length < 8 * 1024, `the product mark bundles to ${output.length} bytes`);
+    assert.ok(output.length < 9 * 1024, `the product mark bundles to ${output.length} bytes`);
   });
 
   it('exports what the root exports for the marks, the same functions', async () => {

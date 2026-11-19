@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none">
+  <path data-part="ground" fill="#6a3cff" d="M0 0h180v180H0z"/>
+  <path data-part="body" fill="#7c56ff" d="M45 15h90l30 30v90l-30 30H45l-30-30V45z"/>
+  <path data-part="shade" fill="#5c24ff" d="M15 123v12l30 30h90l30-30v-12l-30 30H45z"/>
+  <path data-part="detail" fill-rule="evenodd" fill="#ffffff" d="M63 45L93 45L111 63L111 93L93 111L63 111L45 93L45 63ZM69 57L87 57L99 69L99 87L87 99L69 99L57 87L57 69Z"/>
+  <path data-part="detail" fill="#ffffff" d="M103.5 94.5L133.5 124.5L124.5 133.5L94.5 103.5Z"/>
+  <path data-part="detail" fill="#ffffff" d="M64.5 78L70.5 72L76.5 78L87 67.5L93 73.5L76.5 90Z"/>
+</svg>

@@ -137,13 +137,13 @@ import { ProductMark } from '@crewlethq/icons/product-mark';
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `product` | `Product`: `'worklet' \| 'doclet' \| 'chat' \| 'gitlet' \| 'assistant'` | required | Which of Crewlet's own products. |
+| `product` | `Product`: `'worklet' \| 'doclet' \| 'chat' \| 'gitlet' \| 'assistant' \| 'advisor'` | required | Which of Crewlet's own products. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `drawing` | `ProductMarkDrawing`: `'auto' \| 'small' \| 'master'` | `'auto'` | Which drawing to mount. `auto` mounts the 16 pixel grid drawing below 24 px and the master from 24 px up (see [Two drawings](#two-drawings)). |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `soon` | boolean | `false` | Draws a product that has not shipped hollow: a faint violet body under a violet keyline and figure. Never grey, which is how a vendor mark says "not connected". |
 
-The five services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. `PRODUCTS` lists them. Pair the Ask Crewlet mark with its name ("Ask Crewlet" on a button, in navigation and in catalogues), because a sparkle alone is also read as "new" or "favourite"; for the same reason, Crewlet's own "new" and "soon" cues never use a four point star.
+The six services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. `PRODUCTS` lists them. Pair the Ask Crewlet mark with its name ("Ask Crewlet" on a button, in navigation and in catalogues), because a sparkle alone is also read as "new" or "favourite"; for the same reason, Crewlet's own "new" and "soon" cues never use a four point star.
 
 | Product | Figure |
 | ------- | ------ |
@@ -152,10 +152,11 @@ The five services built into Crewlet each have a mark of their own, drawn from t
 | `chat` (talking with agents) | A chamfered speech bubble whose one horizontal window is the crewmate's visor, cut through to the tile. The family's one crew reference, with no eyes and no face. |
 | `gitlet` (the company's git repositories) | A branch leaving its trunk: three hollow chamfered commits, the two on the left joined by a straight trunk and the one on the upper right running down a 45 degree diagonal into the lower commit's chamfer, which meets it square. On the 16 pixel grid the commits are plain squares, as Worklet's open box is, so each keeps a one pixel wall and counter. |
 | `assistant` (asking Crewlet itself, as the signed-in person) | A four point concave spark with a small companion spark on the 45 degree axis that points into the octagon's upper right chamfer. No face: Ask Crewlet has no identity of its own, so it is a capability of Crewlet rather than a crew member. |
+| `advisor` (Crewlet checking the company's setup and work for what is worth changing) | A chamfered lens, the tile's own octagon drawn hollow, with its handle on the 45 degree axis toward the lower right chamfer and a tick inside: the company looked over and found sound, or a finding checked again before its fix. On the 16 pixel grid the lens keeps a one pixel wall and counter and drops the tick, which a four pixel counter cannot carry. |
 
 ### Construction
 
-All five stand on one tile: the crewmate head's octagon on the 48 unit grid, inset 2 units, with 9 unit chamfers at 45 degrees, so its weight sits beside a vendor mark's. A lower facet gives it the brand mark's depth. One white figure tells them apart, every straight edge orthogonal or a true 45 degree diagonal and every curve a circular arc, so no size shows a staircase. Interior detail is always a knockout through to the tile, never a second tone. Each file is a handful of paths, each tagged with the part it plays:
+All six stand on one tile: the crewmate head's octagon on the 48 unit grid, inset 2 units, with 9 unit chamfers at 45 degrees, so its weight sits beside a vendor mark's. A lower facet gives it the brand mark's depth. One white figure tells them apart, every straight edge orthogonal or a true 45 degree diagonal and every curve a circular arc, so no size shows a staircase. Interior detail is always a knockout through to the tile, never a second tone. Each file is a handful of paths, each tagged with the part it plays:
 
 | `data-part` | What it is | In |
 | ----------- | ---------- | -- |
@@ -204,7 +205,7 @@ import workletTile from '@crewlethq/icons/svg/product/app-tile/worklet.svg';
 <link rel="apple-touch-icon" href="/worklet-180.png" />
 ```
 
-All five share one frame on `0 0 180 180`: a full bleed `#6a3cff` ground, the octagon redrawn for 180 px in `#7c56ff` with its lower facet in `#5c24ff`, and the master's figure at 80 percent baked into absolute coordinates. Every figure sits inside the 72 px maskable safe zone, so a manifest may list a PNG exported from it as `any maskable`; a rounded or circle mask crops the octagon's corners, which is expected. Raster pipelines export the PNG from this file, and favicons from the 16 pixel grid drawing (16 px, and 32 px at 2x). A change to a figure is baked into its app tile too.
+All six share one frame on `0 0 180 180`: a full bleed `#6a3cff` ground, the octagon redrawn for 180 px in `#7c56ff` with its lower facet in `#5c24ff`, and the master's figure at 80 percent baked into absolute coordinates. Every figure sits inside the 72 px maskable safe zone, so a manifest may list a PNG exported from it as `any maskable`; a rounded or circle mask crops the octagon's corners, which is expected. Raster pipelines export the PNG from this file, and favicons from the 16 pixel grid drawing (16 px, and 32 px at 2x). A change to a figure is baked into its app tile too.
 
 ### Raw files
 
