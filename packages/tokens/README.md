@@ -929,4 +929,4 @@ regenerated on every build. `stylesheets/base.css` is the one stylesheet in this
 
 ## License
 
-The tokens, stylesheets and scripts are licensed under the MIT License, whose text is in [`LICENSE`](./LICENSE). The font files in `fonts/` are licensed under the SIL Open Font License 1.1, whose text and copyright notices are in [`fonts/OFL.txt`](./fonts/OFL.txt). The package manifest records both as the SPDX expression `MIT AND OFL-1.1`.
+The tokens, stylesheets and scripts are open source under the Apache License 2.0, whose text is in [`LICENSE`](./LICENSE); it ships in the package with the [`NOTICE`](./NOTICE) file. The font files in `fonts/` are licensed under the SIL Open Font License 1.1, whose text and copyright notices are in [`fonts/OFL.txt`](./fonts/OFL.txt). The package manifest records both as the SPDX expression `Apache-2.0 AND OFL-1.1`.

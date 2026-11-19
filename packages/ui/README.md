@@ -4523,4 +4523,4 @@ The tokens package emits plain CSS variables. Plain CSS keeps every consumer (an
 
 ## License
 
-MIT. The license text is in [`LICENSE`](./LICENSE), which ships in the package. The Crewlet name, logo and character are trademarks and are not covered by that license.
+Apache-2.0. The package is open source under the Apache License 2.0, whose text is in [`LICENSE`](./LICENSE); it ships in the package with the [`NOTICE`](./NOTICE) file. The Crewlet name, logo and character are trademarks and are not covered by that license.

@@ -206,4 +206,4 @@ It builds from `@crewlethq/tokens` and `@crewlethq/ui` as a consumer installs th
 
 ## License
 
-The code is licensed under the [MIT License](LICENSE). The Geist and Geist Mono font files in `dist/fonts/` are licensed under the SIL Open Font License 1.1 (`dist/fonts/OFL.txt`). The third-party code `kit.js` carries is under the licenses in `dist/THIRD_PARTY_NOTICES.txt`. The Crewlet name, logo and characters are not covered by these licenses; see [TRADEMARKS.md](TRADEMARKS.md).
+The code is open source under the [Apache License 2.0](LICENSE); it ships in the package with the [`NOTICE`](NOTICE) file. The Geist and Geist Mono font files in `dist/fonts/` are licensed under the SIL Open Font License 1.1 (`dist/fonts/OFL.txt`). The third-party code `kit.js` carries is under the licenses in `dist/THIRD_PARTY_NOTICES.txt`. The Crewlet name, logo and characters are not covered by these licenses; see [TRADEMARKS.md](TRADEMARKS.md).

@@ -96,4 +96,4 @@ Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE). The Crewlet name, logo and character are not covered by that license; see [TRADEMARKS.md](TRADEMARKS.md).
+By contributing, you agree that your contributions are licensed under the [Apache License 2.0](LICENSE). Third-party code you add must be under a license compatible with the Apache License 2.0 (permissive licenses such as MIT, BSD and Apache-2.0), and its license notice must ship with it. The Crewlet name, logo and character are not covered by that license; see [TRADEMARKS.md](TRADEMARKS.md).

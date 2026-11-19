@@ -42,7 +42,7 @@ function manifest(overrides = {}) {
   return {
     name: '@crewlethq/icons',
     version: '1.2.3',
-    license: 'MIT AND ISC',
+    license: 'Apache-2.0 AND ISC AND MIT',
     repository: { type: 'git', url: 'git+https://github.com/crewlet/uilet.git', directory: 'packages/icons' },
     exports: { '.': './dist/index.js' },
     files: ['dist'],
@@ -60,9 +60,11 @@ function repository(overrides = {}) {
   const files = {
     'package.json': { name: 'fixture', private: true, packageManager: 'npm@11.19.0', workspaces: ['packages/*'] },
     '.nvmrc': '24.21.0\n',
-    LICENSE: 'MIT License\n',
+    LICENSE: 'Apache License\n',
+    NOTICE: 'Crewlet\n',
     'packages/icons/package.json': manifest(),
-    'packages/icons/LICENSE': 'MIT License\n',
+    'packages/icons/LICENSE': 'Apache License\n',
+    'packages/icons/NOTICE': 'Crewlet\n',
     'package-lock.json': {
       lockfileVersion: 3,
       packages: {
@@ -219,10 +221,11 @@ describe('check', () => {
     });
 
     it('refuses a license other than the one expected for the package', () => {
-      // The expression the package shipped before its glyphs were Lucide's:
-      // a manifest still declaring it misstates the terms of the drawings.
-      const root = repository({ 'packages/icons/package.json': manifest({ license: 'MIT AND Apache-2.0' }) });
-      assert.deepEqual(problemsOf(root), ['packages/icons/package.json: "license" must be "MIT AND ISC"']);
+      // The expression the package shipped under before the project moved to
+      // the Apache License 2.0: a manifest still declaring it misstates the
+      // terms of the package's own code and artwork.
+      const root = repository({ 'packages/icons/package.json': manifest({ license: 'MIT AND ISC' }) });
+      assert.deepEqual(problemsOf(root), ['packages/icons/package.json: "license" must be "Apache-2.0 AND ISC AND MIT"']);
     });
   });
 
@@ -263,15 +266,24 @@ describe('tarballProblems', () => {
   const workspace = { directory: 'packages/icons', manifest: manifest() };
   const filename = 'crewlethq-icons-1.2.3.tgz';
 
-  it('passes a tarball with its entry points and an unchanged LICENSE', () => {
+  it('passes a tarball with its entry points and an unchanged LICENSE and NOTICE', () => {
     const root = repository();
-    assert.deepEqual(tarballProblems(root, workspace, filename, new Set(['package.json', 'LICENSE', 'dist/index.js'])), []);
+    assert.deepEqual(tarballProblems(root, workspace, filename, new Set(['package.json', 'LICENSE', 'NOTICE', 'dist/index.js'])), []);
   });
 
   it('refuses a tarball without a LICENSE', () => {
     const root = repository();
-    assert.deepEqual(tarballProblems(root, workspace, filename, new Set(['package.json', 'dist/index.js'])), [
+    assert.deepEqual(tarballProblems(root, workspace, filename, new Set(['package.json', 'NOTICE', 'dist/index.js'])), [
       'crewlethq-icons-1.2.3.tgz: ships no LICENSE; copy the root LICENSE into packages/icons',
+    ]);
+  });
+
+  it('refuses a tarball without a NOTICE', () => {
+    // The Apache License 2.0 asks for the NOTICE to reach every recipient,
+    // and npm only packs it when the manifest's "files" lists it.
+    const root = repository();
+    assert.deepEqual(tarballProblems(root, workspace, filename, new Set(['package.json', 'LICENSE', 'dist/index.js'])), [
+      'crewlethq-icons-1.2.3.tgz: ships no NOTICE; copy the root NOTICE into packages/icons',
     ]);
   });
 
@@ -281,7 +293,7 @@ describe('tarballProblems', () => {
       'TRADEMARKS.md': '# Trademarks\n',
       'packages/icons/TRADEMARKS.md': '# Outdated trademarks\n',
     });
-    const files = new Set(['package.json', 'LICENSE', 'TRADEMARKS.md', 'dist/index.js']);
+    const files = new Set(['package.json', 'LICENSE', 'NOTICE', 'TRADEMARKS.md', 'dist/index.js']);
     assert.deepEqual(tarballProblems(root, workspace, filename, files), [
       'crewlethq-icons-1.2.3.tgz: packages/icons/LICENSE differs from the root LICENSE; copy the root file again',
       'crewlethq-icons-1.2.3.tgz: packages/icons/TRADEMARKS.md differs from the root TRADEMARKS.md; copy the root file again',
@@ -290,7 +302,7 @@ describe('tarballProblems', () => {
 
   it('refuses font files shipped without the OFL.txt beside them', () => {
     const root = repository();
-    const files = new Set(['package.json', 'LICENSE', 'dist/index.js', 'fonts/geist-latin.woff2', 'other/OFL.txt']);
+    const files = new Set(['package.json', 'LICENSE', 'NOTICE', 'dist/index.js', 'fonts/geist-latin.woff2', 'other/OFL.txt']);
     assert.deepEqual(tarballProblems(root, workspace, filename, files), [
       'crewlethq-icons-1.2.3.tgz: ships font files in fonts/ without the OFL.txt their license requires beside them',
     ]);
@@ -300,7 +312,7 @@ describe('tarballProblems', () => {
 
   it('refuses vendored drawings shipped without the license beside them', () => {
     const root = repository();
-    const files = new Set(['package.json', 'LICENSE', 'dist/index.js', 'glyphs/x.svg', 'glyphs/chevron-down.svg']);
+    const files = new Set(['package.json', 'LICENSE', 'NOTICE', 'dist/index.js', 'glyphs/x.svg', 'glyphs/chevron-down.svg']);
     assert.deepEqual(tarballProblems(root, workspace, filename, files), [
       'crewlethq-icons-1.2.3.tgz: ships vendored drawings in glyphs/ without the LICENSE their license requires beside them',
     ]);
@@ -310,16 +322,16 @@ describe('tarballProblems', () => {
   });
 
   it('asks for the drawings notices only when drawings ship', () => {
-    // The package's own SVGs are MIT and sit in svg/. Only the vendored tree
-    // carries somebody else's terms.
+    // The package's own SVGs are under its own LICENSE and sit in svg/. Only
+    // the vendored tree carries somebody else's terms.
     const root = repository();
-    const files = new Set(['package.json', 'LICENSE', 'dist/index.js', 'svg/crewlet-icon.svg']);
+    const files = new Set(['package.json', 'LICENSE', 'NOTICE', 'dist/index.js', 'svg/crewlet-icon.svg']);
     assert.deepEqual(tarballProblems(root, workspace, filename, files), []);
   });
 
   it('refuses a missing entry point and a shipped source map', () => {
     const root = repository();
-    assert.deepEqual(tarballProblems(root, workspace, filename, new Set(['package.json', 'LICENSE', 'dist/index.js.map'])), [
+    assert.deepEqual(tarballProblems(root, workspace, filename, new Set(['package.json', 'LICENSE', 'NOTICE', 'dist/index.js.map'])), [
       'crewlethq-icons-1.2.3.tgz: packages/icons/package.json points at "dist/index.js", which the tarball does not contain',
       'crewlethq-icons-1.2.3.tgz: ships the source map "dist/index.js.map"',
     ]);
@@ -643,7 +655,7 @@ function uiManifest(version, overrides = {}) {
   return {
     name: '@crewlethq/ui',
     version,
-    license: 'MIT',
+    license: 'Apache-2.0',
     files: ['dist'],
     dependencies: { '@crewlethq/icons': version, '@crewlethq/tokens': version },
     peerDependencies: { react: '>=18' },
@@ -676,7 +688,7 @@ function differencesOf(previous, current) {
 }
 
 describe('tarballDifferences', () => {
-  const base = { LICENSE: 'MIT License\n', 'dist/index.js': 'export const a = 1;\n', 'dist/styles.css': '.a {}\n' };
+  const base = { LICENSE: 'Apache License\n', 'dist/index.js': 'export const a = 1;\n', 'dist/styles.css': '.a {}\n' };
 
   it('finds nothing when the contents are identical', () => {
     const files = { ...base, 'package.json': uiManifest('0.2.0') };
