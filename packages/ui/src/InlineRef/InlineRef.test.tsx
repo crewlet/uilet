@@ -94,8 +94,10 @@ test("the mark never parts from the first word, and a phrase wraps after it", ()
   // The rules that make it so: the head and a token are each one atomic box,
   // no wider than the line, that breaks inside only where no line holds it.
   const sheet = css("InlineRef.css");
-  expect(sheet).toContain(".crewlet-inline-ref:not(.crewlet-inline-ref--wrap),\n.crewlet-inline-ref--wrap > .crewlet-inline-ref__head {");
-  const atomic = rule(sheet, ".crewlet-inline-ref--wrap > .crewlet-inline-ref__head");
+  expect(sheet).toContain(
+    ".crewlet-inline-ref:not(.crewlet-inline-ref--wrap, .crewlet-inline-ref--flow),\n.crewlet-inline-ref--wrap:not(.crewlet-inline-ref--flow) > .crewlet-inline-ref__head {",
+  );
+  const atomic = rule(sheet, ".crewlet-inline-ref--wrap:not(.crewlet-inline-ref--flow) > .crewlet-inline-ref__head");
   expect(atomic).toContain("display: inline-block");
   expect(atomic).toContain("max-width: 100%");
   expect(atomic).toContain("overflow-wrap: anywhere");
@@ -223,7 +225,7 @@ test("punctuation handed to a reference is held with it, and is not part of a li
   const bound = container.querySelector(".crewlet-inline-ref-bound")!;
   expect(bound.textContent).toBe("(ENG-42)");
   expect(bound.querySelector("a")?.textContent).toBe("ENG-42");
-  expect(rule(css("InlineRef.css"), ".crewlet-inline-ref-bound")).toContain("display: inline-block");
+  expect(rule(css("InlineRef.css"), ".crewlet-inline-ref-bound:not(.crewlet-inline-ref-bound--flow)")).toContain("display: inline-block");
 });
 
 test("a wrapping reference holds an opening mark in its head, and a closing one after its words", () => {
@@ -252,4 +254,27 @@ test("a wrapping reference holds an opening mark in its head, and a closing one 
     "(",
     ")",
   ]);
+});
+
+test("a reference that flows is the row's own words, its punctuation no box either", () => {
+  const { container } = render(
+    <p>
+      handed{" "}
+      <InlineRef mark={<svg />} kind="Task" href="#/worklet/ENG-287" code flow open="(" close=")">
+        ENG-287
+      </InlineRef>
+    </p>,
+  );
+  expect(container.querySelector("a")?.className).toContain("crewlet-inline-ref--flow");
+  expect(container.querySelector(".crewlet-inline-ref-bound")?.className).toContain("crewlet-inline-ref-bound--flow");
+  // Its name and its parts are as every reference's.
+  expect(container.querySelector("a")?.textContent).toBe("Task: ENG-287");
+  const box = render(<InlineRef mark={<svg />}>ENG-1</InlineRef>).container;
+  expect(box.querySelector(".crewlet-inline-ref")?.className).not.toContain("crewlet-inline-ref--flow");
+  // The rules: a flowing reference and its punctuation are no atomic box.
+  const sheet = css("InlineRef.css");
+  expect(sheet).toContain(
+    ".crewlet-inline-ref:not(.crewlet-inline-ref--wrap, .crewlet-inline-ref--flow),\n.crewlet-inline-ref--wrap:not(.crewlet-inline-ref--flow) > .crewlet-inline-ref__head {",
+  );
+  expect(sheet).toContain(".crewlet-inline-ref-bound:not(.crewlet-inline-ref-bound--flow) {");
 });

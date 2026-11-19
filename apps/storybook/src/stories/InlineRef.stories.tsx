@@ -262,3 +262,38 @@ export const PunctuationAroundIt: Story = {
     </>
   ),
 };
+
+const pickedUp = (flow: boolean) => (
+  <>
+    Site Reliability Engineer was handed its next ready work item{' '}
+    <InlineRef href="#/worklet/ENG-287" kind="Task" title="Rotate the API signing keys" mark={<SquareKanbanGlyph />} code flow={flow}>
+      ENG-287
+    </InlineRef>
+  </>
+);
+
+const oneLine = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: 380 } as const;
+const twoLines = {
+  display: '-webkit-box',
+  WebkitBoxOrient: 'vertical',
+  WebkitLineClamp: 2,
+  overflow: 'hidden',
+  width: 300,
+} as const;
+
+/**
+ * A feed row cut to one line: a reference that `flow`s is the row's own words,
+ * so the ellipsis cuts them after its mark (the second row). Drawn as a box
+ * (the first), one crossing the edge is clipped whole, its mark kept and its
+ * words gone. A card's sentence clamped to two lines keeps the box (the third):
+ * it moves to the next line whole, so its mark is never left alone.
+ */
+export const InACutLine: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 12 }}>
+      <div style={oneLine}>{pickedUp(false)}</div>
+      <div style={oneLine}>{pickedUp(true)}</div>
+      <div style={twoLines}>Backend Engineer opened a change for review, and then {pickedUp(false)}</div>
+    </div>
+  ),
+};
