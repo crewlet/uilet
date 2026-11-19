@@ -124,8 +124,14 @@
   min-width: 0;
 }
 
+/* THE TITLE IS CUT AT ITS END, NEVER ITS LINK'S RING: a title is often a
+   link, whose focus ring stands up to 4px off it (2px at a 2px offset), above
+   and below a line only as tall as its words. Hidden, the line cut the ring's
+   top and bottom away and a focused title read as two brackets. `clip` with
+   that margin keeps the ellipsis and paints the whole ring. */
 .crewlet-attention-list__line {
-  overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: 4px;
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
