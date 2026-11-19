@@ -168,6 +168,11 @@
   overflow: hidden;
 }
 
+/* What the row draws over itself (its mark, its tray) closes with it. */
+.crewlet-inbox-row--leaving {
+  overflow: hidden;
+}
+
 .crewlet-inbox-row:hover {
   background: var(--color-surface-hover);
 }
@@ -175,6 +180,21 @@
 .crewlet-inbox-row--selected,
 .crewlet-inbox-row--selected:hover {
   background: var(--color-surface-pressed);
+}
+
+/*
+ * A TAG ON A WASHED ROW KEEPS ITS CONTRAST. The hover and the selected fill
+ * are translucent overlays, and a tinted tag (a status, "Answering") laid its
+ * own translucent tint over them: a composite the palette never measured,
+ * which fell under 4.5:1 for every tone in several themes (the info tag on a
+ * selected row measured 4.43:1 in light). The row hands its tags the sheet as
+ * their ground (Tag.css), so each pill paints its tint over an opaque rung,
+ * the pair the palette holds at 4.5:1 in every theme, while the row's wash
+ * shows around it.
+ */
+.crewlet-inbox-row:hover,
+.crewlet-inbox-row--selected {
+  --crewlet-tag-ground: var(--color-surface-background);
 }
 
 /*
@@ -237,8 +257,6 @@
  * mark hangs from the same top, beside the name's line and the one under it.
  */
 .crewlet-inbox-row__control--leading {
-  --crewlet-inbox-row-lift: max(0px, (var(--size-target-min) - 1lh) / 2);
-
   padding-top: calc(var(--spacing-2) + var(--spacing-1) / 2 - var(--crewlet-inbox-row-lift));
 }
 
@@ -253,6 +271,36 @@
   justify-content: center;
   min-width: var(--size-target-min);
   min-height: max(var(--size-target-min), 1lh);
+}
+
+/*
+ * THE MARK IS DRAWN BESIDE THE CONTROL, NOT IN IT. Inside, a face's initials
+ * were the control's first visible words while its name began with the
+ * title, so the words a person saw and the name they had to say differed
+ * (WCAG 2.5.3). The slot inside keeps a copy nobody sees, so the words lay
+ * out exactly as they did, and the mark itself is laid over that slot from
+ * the row: at the control's own top and start pads (the row's body starts
+ * where the control does), taking no press, so a press on the face is a
+ * press on the row.
+ */
+.crewlet-inbox-row--leading {
+  /* How far the words move down to centre the name's line on a target-sized
+     mark, which the control's top pad gives back (above); declared on the row
+     so the mark drawn over the slot reads the same lift. */
+  --crewlet-inbox-row-lift: max(0px, (var(--size-target-min) - 1lh) / 2);
+
+  position: relative;
+}
+
+.crewlet-inbox-row__leading--place {
+  visibility: hidden;
+}
+
+.crewlet-inbox-row__leading--drawn {
+  position: absolute;
+  inset-block-start: calc(var(--spacing-2) + var(--spacing-1) / 2 - var(--crewlet-inbox-row-lift));
+  inset-inline-start: var(--spacing-2);
+  pointer-events: none;
 }
 
 .crewlet-inbox-row__main {
@@ -482,21 +530,38 @@
 }
 
 /*
- * THE QUICK ACTIONS FLOAT, never reflow: lifted over the end of the first
- * line (the time) while the row is hovered or holds focus, and taking no room
- * otherwise. Shown by opacity rather than display, so Tab still reaches them
- * from the row and focus brings them up.
+ * THE QUICK ACTIONS STAND BESIDE THE TIME, never over it, and never reflow.
+ * The tray floats at the end of the first line while the row is hovered or
+ * holds focus, and the time (with any status) moves aside to stand before
+ * it. The room it moves into is kept at the end of the name's line all the
+ * time, in the float's place (`--crewlet-inbox-row-room`: the tray's width,
+ * which the row measures into `--crewlet-inbox-row-tray`, from where the
+ * tray stands to where the words end, and a gap), so the name never wraps
+ * differently under the pointer and the row keeps its height.
+ *
+ * HIDDEN, NOT ONLY CLEAR, while the row is neither hovered nor focused: a
+ * tray drawn at zero opacity was a Tab stop on every row, two stops a row in
+ * a list that is meant to be one. The row that holds focus shows its tray,
+ * so Tab from the row reaches its actions, and focus brings them up.
  */
 .crewlet-inbox-row--actions {
+  --crewlet-inbox-row-tray-end: var(--spacing-2);
+  --crewlet-inbox-row-words-end: var(--spacing-2);
+  --crewlet-inbox-row-room: max(
+    0px,
+    var(--crewlet-inbox-row-tray, 0px) + var(--crewlet-inbox-row-tray-end) + var(--spacing-2) - var(--crewlet-inbox-row-words-end)
+  );
+
   position: relative;
 }
 
 .crewlet-inbox-row__actions {
   position: absolute;
   top: var(--crewlet-inbox-row-actions-top, 0px);
-  inset-inline-end: var(--spacing-2);
+  inset-inline-end: var(--crewlet-inbox-row-tray-end, var(--spacing-2));
   z-index: 1;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 
@@ -504,7 +569,22 @@
 .crewlet-inbox-row:focus-within > .crewlet-inbox-row__actions,
 .crewlet-inbox-row__actions:has([aria-expanded='true']) {
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
+}
+
+.crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place {
+  padding-inline-end: var(--crewlet-inbox-row-room);
+}
+
+.crewlet-inbox-row--actions .crewlet-inbox-row__head-end--drawn {
+  transition: inset-inline-end var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-inbox-row--actions:hover .crewlet-inbox-row__head-end--drawn,
+.crewlet-inbox-row--actions:focus-within .crewlet-inbox-row__head-end--drawn,
+.crewlet-inbox-row--actions:has(> .crewlet-inbox-row__actions [aria-expanded='true']) .crewlet-inbox-row__head-end--drawn {
+  inset-inline-end: var(--crewlet-inbox-row-room);
 }
 
 /* ---- Chat density -------------------------------------------------------- */
@@ -549,10 +629,15 @@
   border-bottom: 1px solid var(--color-border-default);
   /* The tray sits on the name's line: its middle on the line's middle. */
   --crewlet-inbox-row-actions-top: calc(var(--spacing-4) + var(--crewlet-chat-line) * var(--crewlet-chat-text) / 2 - var(--crewlet-chat-toolbar) / 2);
+  /* It stands a step in from the row's end, where the words end at the side inset. */
+  --crewlet-inbox-row-tray-end: var(--spacing-3);
+  --crewlet-inbox-row-words-end: var(--crewlet-chat-pad-x);
 }
 
-.crewlet-inbox-list--chat .crewlet-inbox-row__actions {
-  inset-inline-end: var(--spacing-3);
+/* The mark at the chat row's own pads. */
+.crewlet-inbox-list--chat .crewlet-inbox-row__leading--drawn {
+  inset-block-start: var(--spacing-4);
+  inset-inline-start: var(--crewlet-chat-pad-x);
 }
 
 /* The face hangs from the row's top pad, beside the name's line and the one
@@ -634,6 +719,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .crewlet-inbox-row,
+  .crewlet-inbox-row--actions .crewlet-inbox-row__head-end--drawn,
   .crewlet-inbox-row--leaving {
     transition: none;
   }

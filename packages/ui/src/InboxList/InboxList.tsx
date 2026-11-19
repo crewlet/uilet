@@ -54,22 +54,84 @@ const InboxDensity = createContext<InboxListDensity>('default');
  * between them to read one at a time. It promises no columns, so it draws
  * none, and its rows are as tall as their words rather than one fixed height.
  */
-/** The rows' own controls, in reading order, skipping a row that is leaving. */
-const ROW_CONTROLS = '.crewlet-inbox-row:not(.crewlet-inbox-row--leaving) > .crewlet-inbox-row__body > .crewlet-inbox-row__control';
+/** The rows that can be reached, in reading order, skipping a row that is leaving. */
+const ROWS = '.crewlet-inbox-row:not(.crewlet-inbox-row--leaving)';
+/** A row's own control. */
+const CONTROL = ':scope > .crewlet-inbox-row__body > .crewlet-inbox-row__control';
+/** What can take focus inside a row's task line, the controls a host draws there. */
+const ASIDE_CONTROLS =
+  ':scope > .crewlet-inbox-row__body > .crewlet-inbox-row__aside :is(a[href], button, input, select, textarea, [tabindex])';
+/** The tab order a host gave a task line's control, kept while the list takes it out of the order. */
+const PARKED = 'data-crewlet-inbox-tabindex';
+
+/** The rows a reader can reach now: not leaving, and not in a closed group. */
+function reachableRows(list: Element): HTMLElement[] {
+  return [...list.querySelectorAll<HTMLElement>(ROWS)].filter((row) => !row.closest('[hidden]'));
+}
+
+function controlOf(row: Element): HTMLElement | null {
+  return row.querySelector<HTMLElement>(CONTROL);
+}
+
+/** Takes a control out of the tab order, keeping the order its host gave it. */
+function park(control: HTMLElement) {
+  if (!control.hasAttribute(PARKED)) control.setAttribute(PARKED, control.getAttribute('tabindex') ?? '');
+  if (control.getAttribute('tabindex') !== '-1') control.tabIndex = -1;
+}
+
+/** Puts a parked control back in the tab order its host gave it. */
+function unpark(control: HTMLElement) {
+  const given = control.getAttribute(PARKED);
+  if (given === null) return;
+  control.removeAttribute(PARKED);
+  if (given === '') control.removeAttribute('tabindex');
+  else control.setAttribute('tabindex', given);
+}
+
+/**
+ * ONE TAB STOP FOR THE WHOLE LIST. The row that holds the stop (the one focus
+ * was last in, else the open one, else the first) keeps its control and its
+ * task line in the tab order; every other row's control and task line leave
+ * it, so Tab enters the list once, reaches that row's own task and actions,
+ * and leaves. Written on the DOM after the rows are drawn, as `Toolbar` does,
+ * because the rows are a host's own elements, drawn by groups and wrappers
+ * that redraw without the list. Only a value that differs is written.
+ */
+function rove(list: Element, held: Element | null) {
+  const rows = reachableRows(list);
+  const stop =
+    (held !== null && rows.includes(held as HTMLElement) ? held : undefined) ??
+    rows.find((row) => controlOf(row)?.getAttribute('aria-current') === 'true') ??
+    rows[0];
+  for (const row of rows) {
+    const control = controlOf(row);
+    if (!control) continue;
+    const next = row === stop ? '0' : '-1';
+    if (control.getAttribute('tabindex') !== next) control.setAttribute('tabindex', next);
+    for (const each of row.querySelectorAll<HTMLElement>(ASIDE_CONTROLS)) {
+      if (row === stop) unpark(each);
+      else park(each);
+    }
+  }
+}
 
 /**
  * THE ARROW KEYS WALK THE ROWS. From a row's control, Up and Down move focus
- * to the row before or after it, and Home and End to the first and the last;
- * every row stays a Tab stop as well, and a key pressed anywhere else in the
- * list (a task's link, a row's actions) is left alone.
+ * to the row before or after it, and Home and End to the first and the last.
+ * The list is one Tab stop (`rove`), so the arrows are how a reader moves
+ * between rows, and Tab from a row reaches its own task and actions. A key
+ * pressed anywhere else in the list (a task's link, a row's actions) is left
+ * alone, and so is one that only passed through it from a layer drawn
+ * elsewhere (a row's menu).
  */
 function walkRows(event: KeyboardEvent<HTMLElement>) {
   if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
   const target = event.target;
   if (!(target instanceof HTMLElement) || !target.matches('.crewlet-inbox-row__control')) return;
-  const rows = [...event.currentTarget.querySelectorAll<HTMLElement>(ROW_CONTROLS)].filter(
-    (row) => !row.closest('[hidden]'),
-  );
+  if (!event.currentTarget.contains(target)) return;
+  const rows = reachableRows(event.currentTarget)
+    .map(controlOf)
+    .filter((control): control is HTMLElement => control !== null);
   const at = rows.indexOf(target);
   if (at < 0) return;
   const next =
@@ -87,15 +149,46 @@ function walkRows(event: KeyboardEvent<HTMLElement>) {
   next?.focus();
 }
 
-export function InboxList({ label, density = 'default', className, children, onKeyDown, ...rest }: InboxListProps) {
+export function InboxList({ label, density = 'default', className, children, onKeyDown, onFocus, ...rest }: InboxListProps) {
+  const root = useRef<HTMLElement | null>(null);
+  // The row focus was last in, which holds the list's one Tab stop.
+  const held = useRef<Element | null>(null);
+  const sync = useCallback(() => {
+    if (root.current) rove(root.current, held.current);
+  }, []);
+  // After every draw of the list, and after every change to its rows that a
+  // group or a host's wrapper makes without drawing the list again: a row
+  // arriving, leaving or opening, a group closing.
+  useLayoutEffect(sync);
+  useEffect(() => {
+    const list = root.current;
+    if (!list || typeof MutationObserver === 'undefined') return;
+    const observer = new MutationObserver(sync);
+    observer.observe(list, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['aria-current', 'hidden', 'class'],
+    });
+    return () => observer.disconnect();
+  }, [sync]);
   return (
     // The keys are heard from the rows' own buttons as they bubble: the list
     // takes no focus and no press of its own.
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <nav
       {...rest}
+      ref={root}
       aria-label={label}
       className={cx('crewlet-inbox-list', density === 'chat' && 'crewlet-inbox-list--chat', className)}
+      onFocus={(event) => {
+        onFocus?.(event);
+        const row = event.target instanceof Element ? event.target.closest('.crewlet-inbox-row') : null;
+        if (row && root.current?.contains(row)) {
+          held.current = row;
+          sync();
+        }
+      }}
       onKeyDown={(event) => {
         onKeyDown?.(event);
         walkRows(event);
@@ -406,6 +499,22 @@ export type InboxRowLines = 2 | 3 | 'all';
 /** A row outside a list element is reported once a page, not once a row. */
 let toldOutsideList = false;
 
+/**
+ * Where focus goes when a row that holds it leaves: the control of the next
+ * row the reader can reach, or of the one before it when it was the last.
+ */
+function neighbourOf(row: HTMLElement | null): HTMLElement | null {
+  if (!row) return null;
+  const scope = row.closest('.crewlet-inbox-list') ?? row.parentElement;
+  if (!scope) return null;
+  const all = [...scope.querySelectorAll<HTMLElement>('.crewlet-inbox-row')].filter(
+    (each) => each === row || (!each.classList.contains('crewlet-inbox-row--leaving') && !each.closest('[hidden]')),
+  );
+  const at = all.indexOf(row);
+  const next = all[at + 1] ?? all[at - 1];
+  return next ? controlOf(next) : null;
+}
+
 export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'onClick' | 'title'> {
   /** Who the row is from: a seat's or a person's name. */
   title: ReactNode;
@@ -430,7 +539,12 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
   /**
    * Before the words: an avatar or a mark, at the target size. Its slot is at
    * least a target square and grows to fit a larger mark, such as a 32px face,
-   * with the name's line beside its top.
+   * with the name's line beside its top. A picture of who the row is from,
+   * which the title says in words: it is drawn beside the row's control
+   * rather than inside it, so the control's visible words begin with its
+   * name, and what it says to a screen reader (if anything: pass a face
+   * `decorative`) is the control's description rather than the start of its
+   * name.
    */
   leading?: ReactNode;
   /** What the row says, in up to three lines (`lines`). */
@@ -450,11 +564,13 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
   /** A small glyph before the context, hidden from a screen reader: the kind of row. */
   contextIcon?: ReactNode;
   /**
-   * The row's quick actions (a `MessageActions` tray): floated over the end
-   * of its first line, over the time, while the row is hovered or holds
-   * focus. Never a reflow: the row keeps its height and its words their
-   * place. Outside the row's control, so each action is a control of its own,
-   * reached by Tab after the row.
+   * The row's quick actions (a `MessageActions` tray): shown at the end of
+   * its first line while the row is hovered or holds focus, with the time
+   * and any status moved aside to stand beside it, never under it. Never a
+   * reflow: the room the tray takes is kept at the end of the name's line, so
+   * the words never move. Outside the row's control, so each action is a
+   * control of its own, reached by Tab from the row; a row that does not
+   * hold focus keeps its tray out of the tab order.
    */
   actions?: ReactNode;
   /** Drawn after the words in the quiet ink, inside the same three lines: a comment's own text. */
@@ -534,6 +650,15 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
  * caller names in the head (`status`): every word stays legible, and the
  * state is never carried by a decoration alone.
  *
+ * ITS WORDS START WITH ITS NAME. A person who speaks what they see says the
+ * name, so the control's visible text begins with it (WCAG 2.5.3, label in
+ * name). The leading mark is a picture, and a face's initials are letters
+ * nobody says: it is drawn over the control's leading slot from outside it,
+ * while a copy nobody sees or reads holds the slot's place inside it.
+ *
+ * THE TIME IS NEVER COVERED. A row's quick actions show beside the time,
+ * which moves aside into room the name's line always keeps for them.
+ *
  * NOTHING IS CUT AT THE EDGE. The name and its qualifier wrap to two lines
  * before they stop, the time keeps a column of its own and never wraps, and
  * the words take up to three lines before they stop, so a row says what it is
@@ -579,6 +704,7 @@ export function InboxRow({
    * takes nothing. Under reduced motion it simply goes.
    */
   const self = useRef<HTMLLIElement | null>(null);
+  const tray = useRef<HTMLDivElement | null>(null);
   const presence = usePresence(!leaving, self, INBOX_ROW_LEAVE);
   // AN ITEM OF NO LIST is read as no list at all: a screen reader announces
   // neither the count nor the position. Said once, in development.
@@ -592,8 +718,10 @@ export function InboxRow({
     );
   }, []);
   const gone = !presence.present;
+  // Focus in a row that leaves goes to the row after it, or the one before:
+  // in a list that is one Tab stop, a reader is never dropped to the page.
   useLayoutEffect(() => {
-    if (presence.leaving) releaseFocus(self.current);
+    if (presence.leaving) releaseFocus(self.current, neighbourOf(self.current));
   }, [presence.leaving]);
   // Once for each leave, however often the row is drawn while it is gone.
   const told = useRef(false);
@@ -619,17 +747,37 @@ export function InboxRow({
    * control still names itself from its parts (`aria-labelledby`), in the
    * order they are drawn, each set apart by a space for a reader that walks
    * the content.
+   *
+   * THE NAME STARTS WITH THE TITLE. The leading mark was the first thing in
+   * the control, and a face's initials ("JF") were its first visible words
+   * while the name began with the title: a person saying "Jane Founder" was
+   * saying words the control did not start with. The mark is drawn outside
+   * the control now, over the slot a hidden copy of it holds, and whatever it
+   * says is the control's description.
    */
   const ids = useId();
   const part = (name: string) => `${ids}-${name}`;
+  const hasLeading = leading !== undefined;
   const hasQualifier = qualifier !== undefined;
   const hasStatus = status !== undefined && status !== null;
   const hasMeta = meta !== undefined;
   const hasOutcome = outcome !== undefined && outcome !== null;
   const hasContext = context !== undefined && context !== null;
   const hasActions = actions !== undefined && actions !== null && actions !== false;
+  // THE TRAY'S WIDTH, kept on the row, so the name's line keeps that much room
+  // for it and the time moves aside into it (InboxList.css).
+  useLayoutEffect(() => {
+    const row = self.current;
+    const box = tray.current;
+    if (!hasActions || !row || !box) return;
+    const measure = () => row.style.setProperty('--crewlet-inbox-row-tray', `${box.offsetWidth}px`);
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [hasActions, gone]);
   const labelledBy = [
-    leading === undefined ? null : part('leading'),
     part('title'),
     hasQualifier ? part('qualifier') : null,
     hasStatus || hasMeta ? part('end') : null,
@@ -653,18 +801,20 @@ export function InboxRow({
   );
   const contents = (
     <>
-      {leading === undefined ? null : (
-        <>
-          <span id={part('leading')} className="crewlet-inbox-row__leading">
-            {leading}
-          </span>{' '}
-        </>
-      )}
+      {hasLeading ? (
+        // THE LEADING SLOT'S PLACE: a copy nobody sees or reads, so the words
+        // lay out beside the mark exactly as before, while the mark itself is
+        // drawn over it from outside the control.
+        <span aria-hidden className="crewlet-inbox-row__leading crewlet-inbox-row__leading--place">
+          {leading}
+        </span>
+      ) : null}
       <span className="crewlet-inbox-row__main">
         <span className="crewlet-inbox-row__head">
           <span className="crewlet-inbox-row__head-text">
-            {hasStatus || hasMeta ? (
-              // THE FLOAT'S PLACE, held by a copy nobody reads or sees.
+            {hasStatus || hasMeta || hasActions ? (
+              // THE FLOAT'S PLACE, held by a copy nobody reads or sees, with
+              // the room a row's quick actions take kept at its end.
               <span aria-hidden className="crewlet-inbox-row__head-end crewlet-inbox-row__head-end--place">
                 {headEnd}
               </span>
@@ -756,20 +906,35 @@ export function InboxRow({
 
   const controlClass = cx(
     'crewlet-inbox-row__control',
-    leading !== undefined && 'crewlet-inbox-row__control--leading',
+    hasLeading && 'crewlet-inbox-row__control--leading',
     unread && 'crewlet-inbox-row__control--unread',
     actionable && 'crewlet-inbox-row__control--actionable',
     done && 'crewlet-inbox-row__control--done',
   );
   const current = selected ? 'true' : undefined;
+  const describedBy = hasLeading ? part('leading') : undefined;
 
   const control =
     href !== undefined ? (
-      <a className={controlClass} href={href} aria-current={current} aria-labelledby={labelledBy} onClick={onClick}>
+      <a
+        className={controlClass}
+        href={href}
+        aria-current={current}
+        aria-labelledby={labelledBy}
+        aria-describedby={describedBy}
+        onClick={onClick}
+      >
         {contents}
       </a>
     ) : (
-      <button type="button" className={controlClass} aria-current={current} aria-labelledby={labelledBy} onClick={onClick}>
+      <button
+        type="button"
+        className={controlClass}
+        aria-current={current}
+        aria-labelledby={labelledBy}
+        aria-describedby={describedBy}
+        onClick={onClick}
+      >
         {contents}
       </button>
     );
@@ -783,6 +948,7 @@ export function InboxRow({
       className={cx(
         'crewlet-inbox-row',
         selected && 'crewlet-inbox-row--selected',
+        hasLeading && 'crewlet-inbox-row--leading',
         hasActions && 'crewlet-inbox-row--actions',
         arrived && 'crewlet-inbox-row--arrived',
         presence.leaving && 'crewlet-inbox-row--leaving',
@@ -796,7 +962,16 @@ export function InboxRow({
           <div className="crewlet-inbox-row__aside">{aside}</div>
         )}
       </div>
-      {hasActions ? <div className="crewlet-inbox-row__actions">{actions}</div> : null}
+      {hasLeading ? (
+        <span id={part('leading')} className="crewlet-inbox-row__leading crewlet-inbox-row__leading--drawn">
+          {leading}
+        </span>
+      ) : null}
+      {hasActions ? (
+        <div ref={tray} className="crewlet-inbox-row__actions">
+          {actions}
+        </div>
+      ) : null}
     </li>
   );
 }

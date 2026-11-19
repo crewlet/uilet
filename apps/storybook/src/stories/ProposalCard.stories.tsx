@@ -268,6 +268,30 @@ export const WithCautionAtStepUp: Story = {
   args: { ...WithCautionAndTerms.args, state: 'stepup' },
 };
 
+/**
+ * A WAIT THAT HAS RUN OUT: the host still holds the card as waiting, but its
+ * expiry has passed, so it reads "Expired" with no decision rather than
+ * offering an approval that would be refused for lateness.
+ */
+export const LapsedWhileWaiting: Story = {
+  args: { ...create, state: 'pending', onPrepareAgain: () => {}, expiresAt: new Date(Date.now() - 60 * 1000) },
+};
+
+/**
+ * The same wait running out on screen: twenty seconds after the story opens
+ * the countdown reaches its instant and the card turns expired, its buttons
+ * replaced by the strip.
+ */
+function LapsingCard(props: ProposalCardProps) {
+  const [expiresAt] = useState(() => new Date(Date.now() + 20 * 1000));
+  return <ProposalCard {...props} expiresAt={expiresAt} />;
+}
+
+export const LapsesOnScreen: Story = {
+  render: (args) => <LapsingCard {...args} />,
+  args: { ...create, state: 'pending', onPrepareAgain: () => {} },
+};
+
 /** EVERYTHING TOGETHER: the danger tone, a confirmation and the technical details. */
 export const DangerCombined: Story = {
   args: { ...removeSeat, state: 'pending', confirmation: removeConfirmation, details: removeDetails },

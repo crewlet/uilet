@@ -604,7 +604,7 @@ test('the foot says a step-up is ahead only while the card waits, since the step
   }
 });
 
-test('the foot counts down to the expiry on the shared clock, and says once it has passed', () => {
+test('the foot counts down to the expiry on the shared clock, only while the card can be decided', () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-11-15T10:00:00Z'));
   const expiresAt = '2026-11-15T10:14:00Z';
@@ -613,19 +613,85 @@ test('the foot counts down to the expiry on the shared clock, and says once it h
   // The exact instant is the element's own, for a machine and on hover.
   expect(time.tagName).toBe('TIME');
   expect(time.getAttribute('datetime')).toBe('2026-11-15T10:14:00.000Z');
-  act(() => {
-    vi.setSystemTime(new Date('2026-11-15T10:14:30Z'));
-    vi.advanceTimersByTime(1000);
-  });
-  expect(screen.getByText(PROPOSAL_CARD_LABELS.lapsed)).toBeTruthy();
   // Only while it can be decided: a settled or busy card has no time left to count.
   for (const state of ['applying', 'applied', 'declined', 'expired', 'stale', 'failed'] as const) {
     rerender(card(state, { expiresAt }));
-    expect(screen.queryByText(PROPOSAL_CARD_LABELS.lapsed), state).toBeNull();
+    expect(document.querySelector('.crewlet-proposal-card__terms'), state).toBeNull();
   }
-  // A value that names no instant draws nothing rather than a guess.
+  // A value that names no instant draws nothing rather than a guess, and never expires the card.
   rerender(card('pending', { expiresAt: 'not a time' }));
   expect(document.querySelector('.crewlet-proposal-card__terms')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Apply to this list' })).toBeTruthy();
+});
+
+/*
+ * A WAIT THAT HAS RUN OUT IS EXPIRED. The card used to keep "Needs your
+ * approval" and both buttons beside a line saying it could no longer be
+ * approved: a host that had not yet heard the engine settle it drew a card
+ * that contradicted itself, and a press on Approve could only be refused.
+ */
+test('a waiting card whose expiry has passed reads as expired, with no decision, from its first draw', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-11-15T10:20:00Z'));
+  for (const state of ['pending', 'stepup'] as const) {
+    const onPrepareAgain = vi.fn();
+    const { container, unmount } = render(
+      card(state, { expiresAt: '2026-11-15T10:14:00Z', notice: 'Sign in again to approve this.', onPrepareAgain }),
+    );
+    expect(screen.getByRole('region', { name: 'Filter this list Expired' }), state).toBeTruthy();
+    expect(screen.getByText(PROPOSAL_CARD_LABELS.expiredNotice), state).toBeTruthy();
+    // The host's sentence was written for the wait, so it is not the lapsed card's.
+    expect(screen.queryByText('Sign in again to approve this.'), state).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Decline' }), state).toBeNull();
+    expect(screen.queryByRole('button', { name: /Apply to this list|Confirm it’s you/ }), state).toBeNull();
+    expect(screen.queryByText(PROPOSAL_CARD_LABELS.lapsed), state).toBeNull();
+    expect(container.querySelector('.crewlet-proposal-card__terms'), state).toBeNull();
+    const root = container.querySelector('.crewlet-proposal-card')!;
+    expect(root.classList.contains('crewlet-proposal-card--expired'), state).toBe(true);
+    expect(root.getAttribute('data-lapsed'), state).toBe('true');
+    // An expired card can still be prepared again.
+    fireEvent.click(screen.getByRole('button', { name: PROPOSAL_CARD_LABELS.prepareAgain }));
+    expect(onPrepareAgain, state).toHaveBeenCalledTimes(1);
+    unmount();
+  }
+});
+
+test('a card whose wait runs out on screen turns expired on that tick, and focus on its buttons lands on the strip', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-11-15T10:13:57Z'));
+  const onApprove = vi.fn();
+  render(card('pending', { expiresAt: '2026-11-15T10:14:00Z', onApprove }));
+  const approve = screen.getByRole('button', { name: 'Apply to this list' });
+  approve.focus();
+  expect(screen.getByText(`${PROPOSAL_CARD_LABELS.expires} in 3s`)).toBeTruthy();
+  act(() => vi.advanceTimersByTime(2000));
+  // Still a second left: still a decision.
+  expect(screen.getByRole('button', { name: 'Apply to this list' })).toBe(approve);
+  act(() => vi.advanceTimersByTime(1000));
+  expect(screen.getByRole('region', { name: 'Filter this list Expired' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Apply to this list' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Decline' })).toBeNull();
+  // Focus is never dropped to the page: it lands on what replaced the buttons.
+  expect(document.activeElement).toBe(screen.getByText(PROPOSAL_CARD_LABELS.expiredNotice).closest('[tabindex="-1"]'));
+  expect(onApprove).not.toHaveBeenCalled();
+});
+
+test('only a wait lapses: a card being carried out, or already settled, keeps its own state past the expiry', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-11-15T10:20:00Z'));
+  const expiresAt = '2026-11-15T10:14:00Z';
+  const { container, rerender } = render(card('applying', { expiresAt }));
+  // An approval already given in time is being carried out.
+  expect(screen.getByRole('region', { name: 'Filter this list Applying' })).toBeTruthy();
+  expect(container.querySelector('[data-lapsed]')).toBeNull();
+  for (const state of ['applied', 'declined', 'stale', 'failed'] as const) {
+    rerender(card(state, { expiresAt, receipt: 'Applied the filter' }));
+    expect(container.querySelector(`.crewlet-proposal-card--${state}`), state).not.toBeNull();
+  }
+  // A new expiry handed to the same card in place counts again.
+  rerender(card('pending', { expiresAt: '2026-11-15T10:30:00Z' }));
+  expect(screen.getByRole('button', { name: 'Apply to this list' })).toBeTruthy();
+  expect(screen.getByText(`${PROPOSAL_CARD_LABELS.expires} in 10m`)).toBeTruthy();
 });
 
 test('a caution and the terms carry no axe violation while the card waits', async () => {

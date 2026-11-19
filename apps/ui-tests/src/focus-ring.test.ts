@@ -180,8 +180,10 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'AvatarPicker/AvatarPicker.css | button.crewlet-avatar-picker:focus-visible',
       // A command palette step's chip, a soft tint with no edge of its own.
       'CommandPalette/CommandPalette.css | .crewlet-palette__step:focus-visible',
-      // A link preview unfurled under a message: a bar and words, no box.
-      'LinkCard/LinkCard.css | .crewlet-link-card:focus-visible',
+      // A link preview unfurled under a message: a bar and words, no box. Its
+      // link is the title, stretched over the preview, so the preview draws
+      // the ring round itself while its link holds focus.
+      'LinkCard/LinkCard.css | .crewlet-link-card:has(> .crewlet-link-card__link:focus-visible)',
       // NOT HERE: a box that clips its words and draws its link's ring for it
       // (a header fact's value, an org label's name, truncating text). Its
       // ring is inside its own box, since one standing off it is cut by the
