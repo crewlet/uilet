@@ -212,3 +212,39 @@ export const WithATooltip: Story = {
     </BothThemes>
   ),
 };
+
+const labels: MenuEntry[] = [
+  { key: 'frontend', label: 'repo:frontend', checked: true, onSelect: () => {} },
+  { key: 'security', label: 'security', checked: true, onSelect: () => {} },
+  { key: 'billing', label: 'billing', checked: false, onSelect: () => {} },
+];
+
+/**
+ * The trigger is the value it changes (`valueTrigger`). A value of words takes
+ * the hover ground; a value of pills is pointed at pill by pill, so only the
+ * pill under the pointer draws its hover.
+ */
+export const AsTheValue: Story = {
+  render: () => (
+    <BothThemes>
+      <DescriptionList fit>
+        <DescriptionList.Item term="Status">
+          <Menu label="Status of ENG-1" valueTrigger trigger="In progress" items={actions} />
+        </DescriptionList.Item>
+        <DescriptionList.Item term="Labels">
+          <Menu
+            label="Labels of ENG-1"
+            valueTrigger
+            trigger={
+              <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 'var(--spacing-1)' }}>
+                <Tag appearance="outline">repo:frontend</Tag>
+                <Tag appearance="outline">security</Tag>
+              </span>
+            }
+            items={labels}
+          />
+        </DescriptionList.Item>
+      </DescriptionList>
+    </BothThemes>
+  ),
+};

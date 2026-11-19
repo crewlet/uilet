@@ -300,6 +300,8 @@
 .crewlet-tag--neutral.crewlet-tag--outline {
   border-color: var(--color-border-strong);
   --crewlet-tag-ink: var(--color-text-tertiary);
+  /* Its hover goes one step past that edge, as the neutral soft pill's does. */
+  --crewlet-tag-line: var(--color-border-strong-hover);
 }
 
 /*
