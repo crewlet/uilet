@@ -128,6 +128,18 @@ test('every row stands on the list\'s own columns, so each Details and each fix 
   expect(css).not.toMatch(/\b(16|28|52)px\b/);
 });
 
+test('a title cut to its line still paints the whole focus ring of the link it holds', () => {
+  // A link's ring stands 4px off it (2px at a 2px offset). A line that clips
+  // its overflow with no margin, `hidden` included, cut the ring's top and
+  // bottom away, at every width (a phone's line wraps, and still clips).
+  const css = sheet();
+  const line = rule(css, '.crewlet-attention-list__line');
+  expect(line).toMatch(/overflow: clip;/);
+  expect(line).toMatch(/overflow-clip-margin: 4px;/);
+  expect(line).toMatch(/text-overflow: ellipsis;/);
+  expect(css).not.toMatch(/\.crewlet-attention-list__line[^{]*\{[^}]*overflow: hidden/);
+});
+
 test('the mark takes a column only where a row has one, read off every row, folded or not', () => {
   const plain: AttentionItem[] = [{ key: 'a', tone: 'warning', title: 'One' }];
   const { container, rerender } = render(<AttentionList items={plain} />);
