@@ -323,7 +323,7 @@ A vendor mark goes into `svg/vendor/` instead, and is added to the `VENDORS` lis
 
 Four families coexist in this package:
 
-**Brand artwork**: `crewlet-icon` (the Crewlet mark) and `crewlet-reading` (a full-colour illustration of the Crewlet character reading a newspaper), together with `CrewletFigure`. Filled artwork on its own viewBox; render it as supplied. `crewlet-reading` is a large, detailed illustration (about 670 KB of SVG), so reserve it for hero and empty-state surfaces rather than inline icon slots. The Crewlet name, mark and character are trademarks that the MIT License does not cover; see [TRADEMARKS.md](./TRADEMARKS.md) before using them outside an official Crewlet product.
+**Brand artwork**: `crewlet-icon` (the Crewlet mark) and `crewlet-reading` (a full-colour illustration of the Crewlet character reading a newspaper), together with `CrewletFigure`. Filled artwork on its own viewBox; render it as supplied. `crewlet-reading` is a large, detailed illustration (about 670 KB of SVG), so reserve it for hero and empty-state surfaces rather than inline icon slots. The Crewlet name, mark and character are trademarks that the Apache License 2.0 does not cover; see [TRADEMARKS.md](./TRADEMARKS.md) before using them outside an official Crewlet product.
 
 **Feature illustrations** (80x80): `hierarchy`, `company-as-code`, `turn-engine`, `code-sandbox`, `knowledge` and `human-in-loop`. One per capability the platform leads with, so a reader arriving from the README, the marketing site or the docs meets the same six marks. Self-contained artwork with its own gradients and background disc, so it does not inherit `currentColor`. The build prefixes every `id` in a file with that file's name, because inline SVGs share the page's id space; keep gradient and other `id` references inside the file that defines them.
 
@@ -477,8 +477,8 @@ Every Material Symbols name the package shipped, and its successor. A row's Luci
 
 ## License
 
-MIT AND ISC.
+Apache-2.0 AND ISC AND MIT.
 
-The package's own code and artwork are MIT; the license text is in [`LICENSE`](./LICENSE), which ships in the package. The vendored Lucide drawings in `glyphs/` are under the ISC License, and those Lucide derives from Feather are under Feather's MIT License as well; upstream's own [`glyphs/LICENSE`](./glyphs/LICENSE) carries both texts and ships beside them.
+The package's own code and artwork are open source under the Apache License 2.0; the license text is in [`LICENSE`](./LICENSE), which ships in the package with the [`NOTICE`](./NOTICE) file. The vendored Lucide drawings in `glyphs/` are under the ISC License, and those Lucide derives from Feather are under Feather's MIT License as well; upstream's own [`glyphs/LICENSE`](./glyphs/LICENSE) carries both texts and ships beside them.
 
-Both licenses cover copyright only. The Crewlet name, logo and character are trademarks, and so are the third-party marks in `svg/vendor/`. [`TRADEMARKS.md`](./TRADEMARKS.md), which also ships in the package, says how each may be used.
+None of these licenses grants a right to use a trademark. The Crewlet name, logo and character are trademarks, and so are the third-party marks in `svg/vendor/`. [`TRADEMARKS.md`](./TRADEMARKS.md), which also ships in the package, says how each may be used.

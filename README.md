@@ -89,6 +89,6 @@ Report vulnerabilities privately, as described in [SECURITY.md](SECURITY.md). Do
 
 ## License
 
-The code and assets in this repository are licensed under the [MIT License](LICENSE); each published package carries the same `LICENSE` file. The Geist and Geist Mono font files in `@crewlethq/tokens` are licensed under the SIL Open Font License 1.1 (see [`packages/tokens/fonts/OFL.txt`](packages/tokens/fonts/OFL.txt)). The Lucide glyph drawings in `@crewlethq/icons` are licensed under the ISC License, and those Lucide derives from Feather under the MIT License as well (see [`packages/icons/glyphs/LICENSE`](packages/icons/glyphs/LICENSE)).
+Crewlet's design system is open source. The code and assets in this repository are licensed under the [Apache License 2.0](LICENSE); each published package carries the same `LICENSE` and [`NOTICE`](NOTICE) files. The Geist and Geist Mono font files in `@crewlethq/tokens` are licensed under the SIL Open Font License 1.1 (see [`packages/tokens/fonts/OFL.txt`](packages/tokens/fonts/OFL.txt)). The Lucide glyph drawings in `@crewlethq/icons` are licensed under the ISC License, and those Lucide derives from Feather under the MIT License as well (see [`packages/icons/glyphs/LICENSE`](packages/icons/glyphs/LICENSE)).
 
-The Crewlet name, logo and character are trademarks and are not licensed under the MIT License. See [TRADEMARKS.md](TRADEMARKS.md).
+The Crewlet name, logo and character are trademarks and are not licensed under the Apache License 2.0. See [TRADEMARKS.md](TRADEMARKS.md).

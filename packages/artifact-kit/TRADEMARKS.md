@@ -1,6 +1,6 @@
 # Trademarks
 
-"Crewlet", the Crewlet logo and the Crewlet character (in every pose, illustration, animation and rigged or trimmed variant) are trademarks of Crewlet. The source code and assets in this repository are licensed under the MIT License, and that license covers copyright only: it grants no right to use these trademarks.
+"Crewlet", the Crewlet logo and the Crewlet character (in every pose, illustration, animation and rigged or trimmed variant) are trademarks of Crewlet. The source code and assets in this repository are licensed under the Apache License 2.0, and that license covers copyright and patents only: it grants no right to use these trademarks.
 
 ## What you may do
 
@@ -32,9 +32,9 @@ They are here for nominative use: naming the application a feature connects to, 
 
 The OpenAI, Meta and Kimi marks, which name the Codex, Muse Code and Kimi Code harnesses, were supplied for this use. Each file is its owner's own published drawing of that mark.
 
-Crewlet claims no rights in these marks. They are excluded from the MIT License's grant for the same reason the Crewlet marks are: that license covers copyright, and a trademark is not copyright.
+Crewlet claims no rights in these marks. They are excluded from the Apache License's grant for the same reason the Crewlet marks are: that license covers copyright and patents, and a trademark is neither.
 
-One file there is not a third-party mark: `ssh.svg` is Crewlet's own drawing for its SSH connection (SSH is a protocol, and no vendor publishes a mark for it). It is licensed under the MIT License like the rest of the package's artwork.
+One file there is not a third-party mark: `ssh.svg` is Crewlet's own drawing for its SSH connection (SSH is a protocol, and no vendor publishes a mark for it). It is licensed under the Apache License 2.0 like the rest of the package's artwork.
 
 ## The glyph set
 

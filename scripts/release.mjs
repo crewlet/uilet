@@ -27,8 +27,8 @@
 //   node scripts/release.mjs pack <directory>
 //     Runs `check`, packs every published package into <directory>, and
 //     verifies each tarball: every entry point the manifest declares is inside
-//     it, no source map is, it carries the root LICENSE (and TRADEMARKS.md,
-//     when it ships one) unchanged, every directory of font files carries the
+//     it, no source map is, it carries the root LICENSE and NOTICE (and
+//     TRADEMARKS.md, when it ships one) unchanged, every directory of font files carries the
 //     OFL.txt the font license requires, and vendored third-party drawings
 //     carry the LICENSE theirs requires.
 //
@@ -81,30 +81,34 @@ export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SCOPE = '@crewlethq/';
 const REPOSITORY_URL = 'git+https://github.com/crewlet/uilet.git';
 const REGISTRY = 'https://registry.npmjs.org';
-// The SPDX expression each published package must declare. @crewlethq/tokens
-// ships the Geist and Geist Mono font files, which stay under the SIL Open
-// Font License, and @crewlethq/icons ships the Lucide drawings, which stay
-// under the ISC License (and, for those Lucide derives from Feather, the MIT
-// License the package already names), so MIT alone would misstate the terms
-// of part of either tarball. @crewlethq/artifact-kit copies the same font
-// files into its bundle and bundles the Lucide drawings the sheet's glyphs
-// are (with React, under MIT), so it carries both expressions.
+// The SPDX expression each published package must declare. The project's own
+// code and assets are under the Apache License 2.0. @crewlethq/tokens ships
+// the Geist and Geist Mono font files, which stay under the SIL Open Font
+// License, and @crewlethq/icons ships the Lucide drawings, which stay under
+// the ISC License (and, for those Lucide derives from Feather, the MIT
+// License), so Apache-2.0 alone would misstate the terms of part of either
+// tarball. @crewlethq/artifact-kit copies the same font files into its bundle
+// and bundles the Lucide drawings the sheet's glyphs are (with React, under
+// MIT), so it carries every one of those expressions.
 const LICENSES = {
-  '@crewlethq/tokens': 'MIT AND OFL-1.1',
-  '@crewlethq/icons': 'MIT AND ISC',
-  '@crewlethq/ui': 'MIT',
-  '@crewlethq/artifact-kit': 'MIT AND OFL-1.1 AND ISC',
+  '@crewlethq/tokens': 'Apache-2.0 AND OFL-1.1',
+  '@crewlethq/icons': 'Apache-2.0 AND ISC AND MIT',
+  '@crewlethq/ui': 'Apache-2.0',
+  '@crewlethq/artifact-kit': 'Apache-2.0 AND OFL-1.1 AND ISC AND MIT',
 };
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
 // Every lockfile an install in this repository reads.
 const LOCKFILES = ['package-lock.json'];
-// Root files a published package ships a copy of. LICENSE is required in
-// every tarball; the others are verified whenever a tarball carries them.
-const REQUIRED_NOTICES = ['LICENSE'];
+// Root files a published package ships a copy of. LICENSE and NOTICE are
+// required in every tarball, because the Apache License 2.0 asks for both to
+// reach everyone who receives a copy; the others are verified whenever a
+// tarball carries them. npm adds LICENSE to a tarball on its own, and NOTICE
+// only when the manifest's "files" lists it.
+const REQUIRED_NOTICES = ['LICENSE', 'NOTICE'];
 const OPTIONAL_NOTICES = ['TRADEMARKS.md'];
 // The vendored third-party drawings, and the notice their own license makes
 // travel with them. This is NOT a copy of a root file: it is upstream's terms,
-// which the package's MIT LICENSE does not cover.
+// which the package's own LICENSE does not cover.
 const GLYPHS_DIRECTORY = 'glyphs';
 const GLYPHS_NOTICES = ['LICENSE'];
 // Trusted publishing (the OIDC exchange) arrived in npm 11.5.1; an older npm

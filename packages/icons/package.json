@@ -2,7 +2,7 @@
   "name": "@crewlethq/icons",
   "version": "0.2.0",
   "description": "Crewlet signature illustrated icons, vendor marks, and the Lucide glyph set as React components.",
-  "license": "MIT AND ISC",
+  "license": "Apache-2.0 AND ISC AND MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/crewlet/uilet.git",
@@ -49,6 +49,7 @@
     "favicon",
     "glyphs",
     "svg",
+    "NOTICE",
     "TRADEMARKS.md"
   ],
   "scripts": {

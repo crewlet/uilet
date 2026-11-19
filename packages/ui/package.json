@@ -2,7 +2,7 @@
   "name": "@crewlethq/ui",
   "version": "0.2.0",
   "description": "Crewlet shared React components built on @crewlethq/tokens and @crewlethq/icons.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/crewlet/uilet.git",
@@ -32,7 +32,8 @@
   },
   "files": [
     "dist",
-    "scripts"
+    "scripts",
+    "NOTICE"
   ],
   "scripts": {
     "build": "node scripts/write-barrel.mjs && tsup && tsc -p tsconfig.build.json && node scripts/bundle-css.mjs",
