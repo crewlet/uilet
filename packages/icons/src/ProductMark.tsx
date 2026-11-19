@@ -7,7 +7,7 @@ import * as masters from './generated/products/index.js';
 import * as small from './generated/products/small/index.js';
 
 /** Crewlet's own products, each with a mark of its own. */
-export const PRODUCTS = ['worklet', 'doclet', 'chat', 'gitlet', 'assistant'] as const;
+export const PRODUCTS = ['worklet', 'doclet', 'chat', 'gitlet', 'assistant', 'advisor'] as const;
 
 export type Product = (typeof PRODUCTS)[number];
 
@@ -56,6 +56,7 @@ const drawings: Record<Product, { small: Drawing; master: Drawing }> = {
   chat: { small: small.Chat, master: masters.Chat },
   gitlet: { small: small.Gitlet, master: masters.Gitlet },
   assistant: { small: small.Assistant, master: masters.Assistant },
+  advisor: { small: small.Advisor, master: masters.Advisor },
 };
 
 /**
@@ -78,15 +79,17 @@ function drawsSmall(size: GlyphSize | undefined, drawing: ProductMarkDrawing): b
 /**
  * The mark of one of Crewlet's own products: Worklet (projects and tasks),
  * Doclet (spaces and pages), Chat (talking with agents), Gitlet (the
- * company's git repositories) and Ask Crewlet (asking Crewlet itself, as the
- * signed-in person).
+ * company's git repositories), Ask Crewlet (asking Crewlet itself, as the
+ * signed-in person) and the Advisor (Crewlet checking the company's setup and
+ * work for what is worth changing).
  *
  * ONE FAMILY WITH THE BRAND MARK. Each stands on the same tile: the crewmate
  * head's octagon, chamfered at 45 degrees, in the brand violet with a deeper
  * lower facet for the brand mark's depth. What tells them apart is one white
  * figure each: a tick over one open task (Worklet), a page with a chamfer
  * fold (Doclet), a speech bubble with the crewmate's visor (Chat), a branch
- * leaving its trunk (Gitlet), and two sparks (Ask Crewlet). Ask Crewlet has no face: it acts as the person who
+ * leaving its trunk (Gitlet), two sparks (Ask Crewlet), and a lens over a tick
+ * (the Advisor). Ask Crewlet has no face: it acts as the person who
  * asks and has no identity of its own, so it is drawn as a capability of
  * Crewlet rather than as one more member of a crew.
  *
