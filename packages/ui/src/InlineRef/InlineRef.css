@@ -14,9 +14,12 @@
 }
 
 /* A token moves to the next line whole, as an atomic box no wider than the
-   line, and breaks inside only where no line can hold it. */
-.crewlet-inline-ref:not(.crewlet-inline-ref--wrap),
-.crewlet-inline-ref--wrap > .crewlet-inline-ref__head {
+   line, and breaks inside only where no line can hold it. One that FLOWS
+   (`flow`, for a row cut to one line) is the row's own words instead, so the
+   row's ellipsis cuts them after the mark, where a box crossing its edge was
+   clipped whole; it and its punctuation are no box. */
+.crewlet-inline-ref:not(.crewlet-inline-ref--wrap, .crewlet-inline-ref--flow),
+.crewlet-inline-ref--wrap:not(.crewlet-inline-ref--flow) > .crewlet-inline-ref__head {
   display: inline-block;
   max-width: 100%;
   overflow-wrap: anywhere;
@@ -24,7 +27,7 @@
 
 /* A reference and the punctuation around it are one atomic box, so a line
    never breaks between "(" and the reference (peelPunctuation). */
-.crewlet-inline-ref-bound {
+.crewlet-inline-ref-bound:not(.crewlet-inline-ref-bound--flow) {
   display: inline-block;
   max-width: 100%;
   overflow-wrap: anywhere;

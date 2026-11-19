@@ -43,6 +43,15 @@ export interface InlineRefProps {
    * reference is one token and moves to the next line whole.
    */
   wrap?: boolean | undefined;
+  /**
+   * Laid out as the line's own words rather than as one box, for a line cut to
+   * one row (`white-space: nowrap` with `text-overflow: ellipsis`): the cut
+   * then falls inside the words, after the mark. As a box, a reference crossing
+   * the row's edge was clipped whole, leaving its mark and none of its words.
+   * A line that wraps (a clamp) keeps the box, which moves to the next line
+   * whole, where a flowing reference's mark could stay behind alone.
+   */
+  flow?: boolean | undefined;
   /** Read after the words of a link that leaves the application. */
   newTabLabel?: string | undefined;
   /**
@@ -119,6 +128,7 @@ export function InlineRef({
   title,
   code = false,
   wrap = false,
+  flow = false,
   newTabLabel = 'opens in a new tab',
   open = '',
   close = '',
@@ -132,6 +142,7 @@ export function InlineRef({
     'crewlet-inline-ref',
     code && 'crewlet-inline-ref--code',
     wrap && 'crewlet-inline-ref--wrap',
+    flow && 'crewlet-inline-ref--flow',
     target !== null && 'crewlet-inline-ref--link',
     className,
   );
@@ -198,9 +209,10 @@ export function InlineRef({
       </>
     );
   }
-  // One atomic box with its punctuation, outside the link, no wider than the line.
+  // One atomic box with its punctuation, outside the link, no wider than the
+  // line; under `flow`, one run of the line's words the line may cut.
   return open || close ? (
-    <span className="crewlet-inline-ref-bound">
+    <span className={cx('crewlet-inline-ref-bound', flow && 'crewlet-inline-ref-bound--flow')}>
       {open}
       {ref}
       {close}
