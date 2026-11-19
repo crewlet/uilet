@@ -10,7 +10,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
 import { CircleDashedGlyph } from '@crewlethq/icons/glyphs';
-import { installMotion } from '../../../../apps/ui-tests/src/cascade.js';
+import { installMotion, installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { STEP_STATES, StepList, stepDetailPieces, type StepListStep } from './index.js';
 
 afterEach(cleanup);
@@ -101,6 +101,56 @@ test('a detail breaks only at a space or after a slash, a question mark or an am
   expect(container.querySelector('.crewlet-step-list__detail')!.textContent).toBe(
     'search_work · GET /work/search?q=flaky+sign-in+test',
   );
+});
+
+/*
+ * WHY IS PROSE, WHAT WAS ASKED IS MONO. A refused step's sentence was joined
+ * into the request line and drawn in its code face, so the answer to "why did
+ * this not happen" read as one more technical string.
+ */
+test('a note is a sentence in the body face, before the request line in the mono face', () => {
+  const uninstall = installSheets('Stepper/StepList.css');
+  try {
+    const { container } = render(
+      <StepList
+        label="Steps"
+        steps={[
+          {
+            id: 'read',
+            label: 'Read a web page',
+            state: 'refused',
+            note: 'This address did not come from you, a search or a page, so it was not read.',
+            detail: 'fetch_web_page · GET https://example.com/',
+          },
+          { id: 'list', label: 'List tasks', state: 'done', note: 'Read 12 tasks.' },
+        ]}
+      />,
+    );
+    const [refused, done] = Array.from(container.querySelectorAll('.crewlet-step-list__step'));
+    const note = within(refused as HTMLElement).getByText(/did not come from you/);
+    expect(note.className).toBe('crewlet-step-list__note');
+    // Never inside the request line's code element, and read before it.
+    expect(note.closest('code')).toBeNull();
+    const detail = refused!.querySelector('.crewlet-step-list__detail')!;
+    expect(detail.textContent).toBe('fetch_web_page · GET https://example.com/');
+    expect(note.compareDocumentPosition(detail) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The body face for the sentence, the mono face for the request.
+    const noteFace = getComputedStyle(note).fontFamily;
+    const detailFace = getComputedStyle(detail).fontFamily;
+    expect(noteFace).not.toBe('');
+    expect(noteFace).not.toBe(detailFace);
+    expect(noteFace).toBe(getComputedStyle(container.querySelector('.crewlet-step-list__note')!).fontFamily);
+    expect(detailFace).toMatch(/mono/i);
+    expect(noteFace).not.toMatch(/mono/i);
+    // A note stands without a detail, and the step reads it after its state.
+    expect(within(done as HTMLElement).getByText('Read 12 tasks.').className).toBe('crewlet-step-list__note');
+    expect(done!.querySelector('.crewlet-step-list__detail')).toBeNull();
+    expect(refused!.textContent).toBe(
+      'Read a web page, Not permittedThis address did not come from you, a search or a page, so it was not read.fetch_web_page · GET https://example.com/',
+    );
+  } finally {
+    uninstall();
+  }
 });
 
 test('under reduced motion the running ring stops and stays open', () => {

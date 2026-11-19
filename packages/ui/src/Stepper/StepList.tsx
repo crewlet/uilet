@@ -92,11 +92,20 @@ export interface StepListStep {
   /** How long it took, already formatted: "0.4s". Drawn in the mono face at the end of the label's line. */
   duration?: string | undefined;
   /**
-   * What the step asked for, in the mono face under the label: the tool and
-   * the request it made (`get_spend · GET /tokens/breakdown?group=seat`). A
-   * string breaks only at a space or after `/`, `?` or `&`, never inside a
-   * name such as `sign-in`, and wraps inside a piece only when that piece is
-   * wider than the line. A node is drawn as given.
+   * A sentence for a person, under the label in the body face: why a step
+   * failed or was refused, in the engine's words ("This address did not come
+   * from you, a search or a page, so it was not read."). Prose, wrapped as
+   * words wrap, and drawn before `detail`, which stays the technical line.
+   */
+  note?: ReactNode;
+  /**
+   * What the step asked for, in the mono face under the label (and under
+   * `note`): the tool and the request it made (`get_spend · GET
+   * /tokens/breakdown?group=seat`). A machine's line, never a sentence for a
+   * person, which is `note`. A string breaks only at a space or after `/`,
+   * `?` or `&`, never inside a name such as `sign-in`, and wraps inside a
+   * piece only when that piece is wider than the line. A node is drawn as
+   * given.
    */
   detail?: ReactNode;
 }
@@ -158,6 +167,12 @@ function Detail({ children }: { children: ReactNode }) {
  * however far the detail under it wraps, and the request's own mark in the
  * chip above stands in the same column.
  *
+ * WORDS FOR A PERSON ARE PROSE, A REQUEST IS MONO. Why a step failed or was
+ * refused is a sentence (`note`), drawn in the body face; what it asked the
+ * system for is a machine's line (`detail`), drawn in the mono face under it.
+ * A refusal set in the face of a request line read as one more technical
+ * string rather than as the answer to "why did this not happen".
+ *
  * AN ORDERED LIST, because the order is what happened. Each state is also
  * said in words after the step's label, because the mark is a picture of it.
  *
@@ -185,6 +200,9 @@ export function StepList({ steps, label, summary, labels: overrides, className, 
                 {step.label}
                 <VisuallyHidden>{`, ${labels[step.state]}`}</VisuallyHidden>
               </span>
+              {step.note === undefined || step.note === null ? null : (
+                <span className="crewlet-step-list__note">{step.note}</span>
+              )}
               {step.detail === undefined ? null : (
                 <code className="crewlet-step-list__detail">
                   <Detail>{step.detail}</Detail>

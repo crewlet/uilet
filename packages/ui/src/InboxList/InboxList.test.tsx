@@ -7,12 +7,17 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { memo, useState } from 'react';
-import { afterEach, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { DEFAULT_THEME_ID, themeRegistry } from '@crewlethq/tokens';
+import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex, type Rgb } from '@crewlethq/tokens/test/palette';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
+import { MessageAction, MessageActions } from '../MessageActions/index.js';
+import { Tag } from '../Tag/index.js';
 import { INBOX_ROW_LEAVE, InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle } from './index.js';
 
 afterEach(cleanup);
@@ -732,7 +737,15 @@ test('the context line is part of the row’s name, after the words, with its gl
   expect(glyph.getAttribute('aria-hidden')).toBe('true');
 });
 
-test('quick actions float outside the row’s control, shown on hover or focus and never reflowing', () => {
+/*
+ * THE TRAY STANDS BESIDE THE TIME, NEVER OVER IT. It floated over the end of
+ * the first line, so on hover and on focus the row's Delete covered its
+ * "12s ago". Now the time moves aside into room the name's line always keeps
+ * for the tray (the float's place ends in it), so neither the time nor the
+ * words are covered and nothing reflows. The geometry is measured in the
+ * layout suite; this pins the cascade that makes it.
+ */
+test('quick actions stand outside the row’s control, beside the time, in room the name’s line keeps for them', () => {
   const uninstall = installSheets('InboxList/InboxList.css');
   try {
     const { container } = render(
@@ -744,22 +757,42 @@ test('quick actions float outside the row’s control, shown on hover or focus a
         </InboxGroup>
       </InboxList>,
     );
-    const action = screen.getByRole('button', { name: 'Mark as read' });
+    const action = within(container).getByText('Mark as read');
     const control = container.querySelector('.crewlet-inbox-row__control')!;
     expect(control.contains(action)).toBe(false);
     const tray = action.parentElement!;
     expect(tray.classList.contains('crewlet-inbox-row__actions')).toBe(true);
-    expect(tray.parentElement!.classList.contains('crewlet-inbox-row--actions')).toBe(true);
+    const row = tray.parentElement!;
+    expect(row.classList.contains('crewlet-inbox-row--actions')).toBe(true);
     const style = getComputedStyle(tray);
     expect(style.position).toBe('absolute');
     expect(style.opacity).toBe('0');
     expect(style.display).not.toBe('none');
-    expect(getComputedStyle(tray.parentElement!).position).toBe('relative');
+    // Hidden, not only clear: a row that does not hold focus keeps its tray out of the tab order.
+    expect(style.visibility).toBe('hidden');
+    expect(getComputedStyle(row).position).toBe('relative');
+    // The row measures its tray onto itself, the width the name's line keeps room for.
+    expect(row.style.getPropertyValue('--crewlet-inbox-row-tray')).toMatch(/^\d+px$/);
+    // With no time to move aside, the place is still drawn, to hold the room.
+    const place = row.querySelector('.crewlet-inbox-row__head-end--place')!;
+    expect(place.getAttribute('aria-hidden')).toBe('true');
   } finally {
     uninstall();
   }
-  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'InboxList.css'), 'utf8').replace(/\s+/g, ' ');
-  expect(css).toContain('.crewlet-inbox-row:hover > .crewlet-inbox-row__actions, .crewlet-inbox-row:focus-within > .crewlet-inbox-row__actions');
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'InboxList.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\s+/g, ' ');
+  // Shown, and in the tab order, while the row is hovered or holds focus, or its menu is open.
+  expect(css).toContain(
+    '.crewlet-inbox-row:hover > .crewlet-inbox-row__actions, .crewlet-inbox-row:focus-within > .crewlet-inbox-row__actions, .crewlet-inbox-row__actions:has([aria-expanded=\'true\']) { opacity: 1; visibility: visible; pointer-events: auto; }',
+  );
+  // The room is kept at the end of the float's place at all times, so the words never move.
+  expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place { padding-inline-end: var(--crewlet-inbox-row-room); }');
+  // And the time moves into it whenever the tray shows.
+  expect(css).toContain(
+    '.crewlet-inbox-row--actions:hover .crewlet-inbox-row__head-end--drawn, .crewlet-inbox-row--actions:focus-within .crewlet-inbox-row__head-end--drawn, .crewlet-inbox-row--actions:has(> .crewlet-inbox-row__actions [aria-expanded=\'true\']) .crewlet-inbox-row__head-end--drawn { inset-inline-end: var(--crewlet-inbox-row-room); }',
+  );
+  expect(css).toMatch(/\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-room: max\( 0px, var\(--crewlet-inbox-row-tray, 0px\) \+ var\(--crewlet-inbox-row-tray-end\) \+ var\(--spacing-2\) - var\(--crewlet-inbox-row-words-end\) \);/);
 });
 
 test('chat density sets rows full bleed with a hairline between them, and a group as a day', () => {
@@ -832,44 +865,310 @@ test('the arrow keys walk the rows, and Home and End go to the ends', () => {
   expect(document.activeElement).toBe(action);
 });
 
+/** A history of conversations as a list of its own: rows with a time, a Delete each, and a task line on one. */
+function History({ open = 'two' }: { open?: string }) {
+  const row = (key: string, title: string, aside?: string) => (
+    <InboxRow
+      key={key}
+      title={title}
+      meta="2m"
+      href={`#/ask/${key}`}
+      selected={open === key}
+      aside={aside === undefined ? undefined : <a href={`#/task/${key}`}>{aside}</a>}
+      actions={
+        <MessageActions label={`Actions for ${title}`}>
+          <MessageAction label={`Delete ${title}`} icon={<svg />} />
+        </MessageActions>
+      }
+    >
+      {null}
+    </InboxRow>
+  );
+  return (
+    <>
+      <button type="button">Before</button>
+      <InboxList label="Your conversations" density="chat">
+        <InboxGroup label="Today">
+          {row('one', 'One', 'ENG-1')}
+          {row('two', 'Two', 'ENG-2')}
+        </InboxGroup>
+        <InboxGroup label="Yesterday">{row('three', 'Three')}</InboxGroup>
+      </InboxList>
+      <button type="button">After</button>
+    </>
+  );
+}
+
+/*
+ * ONE TAB STOP FOR THE LIST. Every row was a Tab stop and so was its Delete,
+ * two presses a row: fifty conversations cost a hundred presses to get past.
+ * Now Tab enters the list once, on the open row, reaches that row's own task
+ * and actions, and leaves; the arrows move between rows, and the row they
+ * land on is the one Tab comes back to.
+ */
+test('the list is one Tab stop: Tab reaches the open row, its own task and actions, then leaves', async () => {
+  const uninstall = installSheets('InboxList/InboxList.css');
+  try {
+    render(<History />);
+    const user = userEvent.setup();
+    const control = (title: string) => screen.getByRole('link', { name: `${title} 2m` });
+    screen.getByRole('button', { name: 'Before' }).focus();
+    await user.tab();
+    expect(document.activeElement).toBe(control('Two'));
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'ENG-2' }));
+    await user.tab();
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Delete Two');
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'After' }));
+    // Back in from below: the open row's own controls, and nothing of the others.
+    await user.tab({ shift: true });
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'ENG-2' }));
+    await user.tab({ shift: true });
+    expect(document.activeElement).toBe(control('Two'));
+    await user.tab({ shift: true });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Before' }));
+
+    // The arrows walk the rows, and the row they land on holds the stop.
+    control('Two').focus();
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(control('Three'));
+    expect(control('Three').getAttribute('tabindex')).toBe('0');
+    for (const other of ['One', 'Two']) expect(control(other).getAttribute('tabindex')).toBe('-1');
+    // Another row's task line leaves the order with its row, and comes back with it.
+    expect(screen.getByRole('link', { name: 'ENG-2' }).getAttribute('tabindex')).toBe('-1');
+    await user.tab();
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Delete Three');
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'After' }));
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(document.activeElement).toBe(control('Three'));
+    await user.keyboard('{Home}');
+    expect(document.activeElement).toBe(control('One'));
+    expect(screen.getByRole('link', { name: 'ENG-1' }).hasAttribute('tabindex')).toBe(false);
+    expect(screen.getByRole('link', { name: 'ENG-2' }).getAttribute('tabindex')).toBe('-1');
+  } finally {
+    uninstall();
+  }
+});
+
+test('with nothing open the first row holds the stop, and a row drawn later takes none of its own', async () => {
+  function Growing() {
+    const [rows, setRows] = useState(['a', 'b']);
+    return (
+      <InboxGroup label="Today">
+        {rows.map((key) => (
+          <InboxRow key={key} title={`Row ${key}`} onClick={() => setRows((was) => [...was, `${key}${was.length}`])}>
+            Words of {key}
+          </InboxRow>
+        ))}
+      </InboxGroup>
+    );
+  }
+  // The group redraws on its own; the list does not draw again.
+  const Rows = memo(Growing);
+  render(
+    <InboxList label="Inbox">
+      <Rows />
+    </InboxList>,
+  );
+  const controls = () => [...document.querySelectorAll<HTMLElement>('.crewlet-inbox-row__control')];
+  expect(controls().map((each) => each.getAttribute('tabindex'))).toEqual(['0', '-1']);
+  act(() => controls()[1]!.click());
+  await waitFor(() => expect(controls()).toHaveLength(3));
+  await waitFor(() => expect(controls().map((each) => each.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']));
+});
+
+test('focus in a row that leaves goes to the row after it, or before it when it was the last', () => {
+  const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
+  const control = (key: string) => within(rowOf(key)).getByRole('button');
+  driveMotion(rowOf('b')).start({ transition: INBOX_ROW_LEAVE.transitions[0] });
+  control('b').focus();
+  rerender(<Needs keys={['a', 'c']} />);
+  expect(document.activeElement).toBe(control('c'));
+  driveMotion(rowOf('c')).start({ transition: INBOX_ROW_LEAVE.transitions[0] });
+  rerender(<Needs keys={['a']} />);
+  expect(document.activeElement).toBe(control('a'));
+});
+
 /*
  * A ROW'S VISIBLE WORDS AND ITS NAME RUN IN ONE ORDER, so a person who speaks
  * what they see can name it (WCAG 2.5.3, label in name). The time came first
  * in the source, to float, while the name read it after the title: the two
  * orders differed on every row with a time.
  */
-test('a row reads its visible words in the order of its name', () => {
-  render(
-    <InboxList label="Activity">
-      <InboxGroup label="Activity" hideLabel>
-        <InboxRow
-          title="Product Manager"
-          qualifier="executor"
-          meta="5h"
-          where="on ENG-304"
-          leading={<span>PM</span>}
-          onClick={() => {}}
-        >
-          Merge pull request 90?
-        </InboxRow>
-      </InboxGroup>
-    </InboxList>,
-  );
-  const row = screen.getByRole('button', { name: /Merge pull request 90/ });
-  const visible: string[] = [];
-  const walk = (node: Node) => {
-    if (node instanceof Element && node.getAttribute('aria-hidden') === 'true') return;
-    if (node.nodeType === Node.TEXT_NODE) visible.push(node.textContent ?? '');
-    node.childNodes.forEach(walk);
-  };
-  walk(row);
-  const squash = (words: string) => words.replace(/\s+/g, ' ').trim();
-  const name = squash(
-    (row.getAttribute('aria-labelledby') ?? '')
-      .split(' ')
-      .map((id) => document.getElementById(id)?.textContent ?? '')
-      .join(' '),
-  );
-  expect(name).toBe('PM Product Manager executor 5h on ENG-304 Merge pull request 90?');
-  expect(name).toContain(squash(visible.join(' ')));
+test('a row reads its visible words in the order of its name, and its name starts with them', () => {
+  const uninstall = installSheets('InboxList/InboxList.css');
+  try {
+    render(
+      <InboxList label="Activity">
+        <InboxGroup label="Activity" hideLabel>
+          <InboxRow
+            title="Product Manager"
+            qualifier="executor"
+            meta="5h"
+            where="on ENG-304"
+            leading={<span>PM</span>}
+            onClick={() => {}}
+          >
+            Merge pull request 90?
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>,
+    );
+    const row = screen.getByRole('button', { name: /Merge pull request 90/ });
+    // What a person SEES in the control, as a label-in-name check reads it:
+    // every drawn word, a mark's initials included, and nothing drawn invisible.
+    const seen: string[] = [];
+    const walk = (node: Node) => {
+      if (node instanceof Element && getComputedStyle(node).visibility === 'hidden') return;
+      if (node.nodeType === Node.TEXT_NODE) seen.push(node.textContent ?? '');
+      node.childNodes.forEach(walk);
+    };
+    walk(row);
+    const squash = (words: string) => words.replace(/\s+/g, ' ').trim();
+    const name = squash(
+      (row.getAttribute('aria-labelledby') ?? '')
+        .split(' ')
+        .map((id) => document.getElementById(id)?.textContent ?? '')
+        .join(' '),
+    );
+    expect(name).toBe('Product Manager executor 5h on ENG-304 Merge pull request 90?');
+    // The name STARTS with what is seen (WCAG 2.5.3): the initials were the
+    // control's first visible words while its name began with the title.
+    expect(squash(seen.join(' '))).toBe(name);
+    // The mark is drawn beside the control, over a slot a hidden copy holds,
+    // and what it says is the control's description.
+    const mark = document.getElementById(row.getAttribute('aria-describedby') ?? '')!;
+    expect(mark.textContent).toBe('PM');
+    expect(row.contains(mark)).toBe(false);
+    expect(mark.closest('li')).toBe(row.closest('li'));
+    expect(getComputedStyle(mark).position).toBe('absolute');
+    expect(getComputedStyle(mark).pointerEvents).toBe('none');
+    const slot = row.querySelector('.crewlet-inbox-row__leading--place')!;
+    expect(slot.getAttribute('aria-hidden')).toBe('true');
+    expect(getComputedStyle(slot).visibility).toBe('hidden');
+    // Laid over the slot: at the control's own top and start pads.
+    expect(px(mark, 'inset-inline-start')).toBeGreaterThan(0);
+    expect(px(mark, 'inset-inline-start')).toBe(px(row, 'padding-left'));
+    expect(px(mark, 'inset-block-start')).toBeGreaterThan(0);
+    expect(px(mark, 'inset-block-start')).toBeCloseTo(px(row, 'padding-top'), 5);
+  } finally {
+    uninstall();
+  }
+});
+
+/*
+ * A TAG ON A WASHED ROW KEEPS 4.5:1. The hover and the selected fill are
+ * translucent overlays, and a tinted tag laid its own translucent tint over
+ * them, a composite nothing measured: the info tag ("Answering") on a selected
+ * row measured 4.43:1 in light. Measured here as a browser paints it, from the
+ * two stylesheets: the row's wash over each rung it may stand on, and the
+ * tag's tint over the ground the row hands it, or over that wash when it hands
+ * none. Every tinted variant Tag.css declares, in every theme, light and dark.
+ */
+describe('a tag on a hovered or selected row', () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const strip = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rowCss = strip(readFileSync(resolve(here, 'InboxList.css'), 'utf8'));
+  const tagCss = strip(readFileSync(resolve(here, '../Tag/Tag.css'), 'utf8'));
+  const dist = resolve(here, '../../../tokens/dist/css');
+  const sheet = (name: string) => readFileSync(resolve(dist, name), 'utf8');
+  /* Token names are spelled without their dashes here, as Tag's suite does, so the package's variable scan does not read them as declarations. */
+  const token = (name: string) => `--${name}`;
+
+  /** The rules of a stylesheet, one selector to an entry. */
+  function rulesOf(css: string): { selector: string; body: string }[] {
+    const found: { selector: string; body: string }[] = [];
+    for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      for (const selector of (match[1] ?? '').split(',')) found.push({ selector: selector.trim(), body: match[2] ?? '' });
+    }
+    return found;
+  }
+  /** What a rule for exactly this selector binds a property to, as the token it reads. */
+  function bound(css: string, selector: string, property: string): string | undefined {
+    const pattern = new RegExp(`(?:^|[;\\s])${property.replace(/[-]/g, '\\-')}:\\s*var\\((--[\\w-]+)\\)`);
+    let last: string | undefined;
+    for (const rule of rulesOf(css)) if (rule.selector === selector) last = pattern.exec(rule.body)?.[1] ?? last;
+    return last;
+  }
+  /** Every tinted variant: a `.crewlet-tag--<name>` rule binding a fill and an ink. */
+  const variants = [...tagCss.matchAll(/\.crewlet-tag--([\w-]+)\s*\{([^}]*)\}/g)].flatMap((match) => {
+    const fill = /--crewlet-tag-fill:\s*var\((--[\w-]+)\)/.exec(match[2] ?? '')?.[1];
+    const ink = /--crewlet-tag-ink:\s*var\((--[\w-]+)\)/.exec(match[2] ?? '')?.[1];
+    return fill && ink ? [{ variant: match[1] ?? '', fill, ink }] : [];
+  });
+  const washes = [
+    { state: 'hovered', selector: '.crewlet-inbox-row:hover' },
+    { state: 'selected', selector: '.crewlet-inbox-row--selected' },
+  ];
+  const themes = themeRegistry.map((theme) => ({
+    id: theme.id,
+    sources: {
+      tokens: sheet('tokens.css'),
+      themes: theme.id === DEFAULT_THEME_ID ? sheet('themes.css') : `${sheet('themes.css')}\n${sheet(`themes/${theme.id}.css`)}`,
+      ...(theme.id === DEFAULT_THEME_ID ? {} : { palette: theme.id }),
+    },
+  }));
+
+  function colour(values: Map<string, string>, name: string, ground: Rgb): Rgb {
+    let raw = values.get(name);
+    for (let hops = 0; hops < 8; hops += 1) {
+      const alias = /^var\((--[\w-]+)\)$/.exec((raw ?? '').trim());
+      if (!alias) break;
+      raw = values.get(alias[1] ?? '');
+    }
+    if (raw === undefined) throw new Error(`${name} has no value`);
+    return parseHex(raw) ?? flatten(raw, ground);
+  }
+
+  test('the suite measures what the stylesheets declare', () => {
+    expect(variants.map((pair) => pair.variant)).toEqual(expect.arrayContaining(['info', 'success', 'warning', 'danger', 'brand']));
+    for (const { selector } of washes) expect(bound(rowCss, selector, 'background'), selector).toBeDefined();
+    expect(themes.length).toBeGreaterThan(8);
+  });
+
+  test('the tint paints over the ground a row hands down, and the row hands one in each wash', () => {
+    // Tag.css: the tint is a layer over the ground, so a ground named by an ancestor is what the tint composites on.
+    const base = rulesOf(tagCss).find((rule) => rule.selector === '.crewlet-tag')?.body ?? '';
+    expect(base).toMatch(/background:\s*linear-gradient\(var\(--crewlet-tag-fill\), var\(--crewlet-tag-fill\)\), var\(--crewlet-tag-ground, transparent\)/);
+    for (const { selector } of washes) {
+      expect(bound(rowCss, selector, '--crewlet-tag-ground'), selector).toBe(token('color-surface-background'));
+    }
+    // The rule reaches a tag drawn in the row's status, which is where a state tag stands.
+    const { container } = render(
+      <InboxList label="Your conversations" density="chat">
+        <InboxGroup label="Today" hideLabel>
+          <InboxRow title="Summarise every open item" status={<Tag size="xs" variant="info">Answering</Tag>} selected href="#/ask/1">
+            {null}
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>,
+    );
+    const drawn = container.querySelector('.crewlet-inbox-row__head-end--drawn .crewlet-tag')!;
+    expect(drawn.closest('.crewlet-inbox-row--selected')).not.toBeNull();
+  });
+
+  test('every tinted tag keeps 4.5:1 on every rung, hovered and selected, in every theme', () => {
+    const failures: string[] = [];
+    for (const theme of themes) {
+      for (const [state, values] of Object.entries(paletteStates(theme.sources))) {
+        if (state === 'base') continue;
+        const page = colour(values, token('color-surface-background'), { r: 0, g: 0, b: 0 });
+        for (const wash of washes) {
+          const overlay = bound(rowCss, wash.selector, 'background')!;
+          const ground = bound(rowCss, wash.selector, '--crewlet-tag-ground');
+          for (const rung of OPAQUE_SURFACES) {
+            const row = flatten(values.get(overlay) ?? '', colour(values, rung, page));
+            const beneath = ground === undefined ? row : colour(values, ground, page);
+            for (const { variant, fill, ink } of variants) {
+              const ratio = contrast(colour(values, ink, page), flatten(values.get(fill) ?? '', beneath));
+              if (ratio < 4.5) failures.push(`${theme.id} ${state}: ${variant} on a ${wash.state} row on ${rung}: ${ratio.toFixed(2)}:1`);
+            }
+          }
+        }
+      }
+    }
+    expect(failures).toEqual([]);
+  });
 });

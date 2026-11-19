@@ -1,0 +1,148 @@
+/**
+ * AN INBOX ROW'S QUICK ACTIONS STAND BESIDE ITS TIME, AND THE LIST IS ONE TAB
+ * STOP, as a browser lays it out and moves focus through it.
+ *
+ * The tray floated over the end of the first line, so hovering or focusing a
+ * conversation laid its Delete over "12s ago". And every row was two Tab
+ * stops, the row and then its Delete: a hundred presses past fifty
+ * conversations. Measured on the drawn page: the tray never covers the time
+ * or the status, the name never moves when the tray comes, and Tab enters
+ * the list once, reaches the row's own action, and leaves.
+ */
+import { afterEach, describe, expect, test } from 'vitest';
+import { page, userEvent } from 'vitest/browser';
+import { flushSync } from 'react-dom';
+import { createRoot, type Root } from 'react-dom/client';
+import type { ReactNode } from 'react';
+import { InboxGroup, InboxList, InboxRow, MessageAction, MessageActions, Tag, type InboxListDensity } from '@crewlethq/ui';
+import { CheckGlyph, TrashGlyph } from '@crewlethq/icons/glyphs';
+
+let root: Root | null = null;
+let host: HTMLDivElement | null = null;
+
+afterEach(() => {
+  flushSync(() => root?.unmount());
+  host?.remove();
+  root = null;
+  host = null;
+});
+
+async function mount(node: ReactNode): Promise<HTMLElement> {
+  await page.viewport(1280, 800);
+  host = document.createElement('div');
+  host.style.cssText = 'width: 350px;';
+  document.body.append(host);
+  root = createRoot(host);
+  flushSync(() => root!.render(node));
+  await document.fonts.ready;
+  return host;
+}
+
+/** Whether two boxes share any area, past a rounding half pixel. */
+const overlap = (a: DOMRect, b: DOMRect) =>
+  Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5;
+
+/** Settled: every transition the tray's arrival starts has run. */
+const settle = () => new Promise((done) => setTimeout(done, 400));
+
+function History({ density, tools }: { density: InboxListDensity; tools: 1 | 2 }) {
+  const row = (key: string, title: string, when: string, answering = false) => (
+    <InboxRow
+      key={key}
+      title={title}
+      meta={<time>{when}</time>}
+      status={answering ? <Tag size="xs" variant="info">Answering</Tag> : undefined}
+      selected={answering}
+      href={`#/ask/${key}`}
+      actions={
+        <MessageActions label={`Actions for ${title}`}>
+          {tools === 2 ? <MessageAction label="Mark as read" icon={<CheckGlyph />} /> : null}
+          <MessageAction label="Delete" icon={<TrashGlyph />} />
+        </MessageActions>
+      }
+    >
+      {null}
+    </InboxRow>
+  );
+  return (
+    <>
+      <button type="button">Before</button>
+      <InboxList label="Your conversations" density={density}>
+        <InboxGroup label="Today">
+          {row('one', 'Summarise every open item in every unit of the company', '16s ago', true)}
+          {row('two', 'Summarise every item in the company', '12s ago')}
+          {row('three', 'Follow-ups on the release', '2m ago')}
+        </InboxGroup>
+      </InboxList>
+      <button type="button">After</button>
+    </>
+  );
+}
+
+describe.each([
+  ['chat', 1],
+  ['default', 2],
+] as const)('a %s list with %i action(s) a row', (density, tools) => {
+  test('the tray stands beside the time and the status, and the name does not move', async () => {
+    const shown = await mount(<History density={density} tools={tools} />);
+    // Every row by focus; the open row, with its status, under the pointer too.
+    for (const [index, row] of [...shown.querySelectorAll<HTMLElement>('.crewlet-inbox-row')].entries()) {
+      const control = row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!;
+      const title = row.querySelector('.crewlet-inbox-row__title')!;
+      const end = row.querySelector('.crewlet-inbox-row__head-end--drawn')!;
+      // The name's first line: a long name wraps, and its later lines run the row's full width under the time's line.
+      const line = () => title.getClientRects()[0]!;
+      const rest = { title: line(), end: end.getBoundingClientRect() };
+      // At rest the tray is neither seen nor reached.
+      const tray = row.querySelector<HTMLElement>('.crewlet-inbox-row__actions')!;
+      expect(getComputedStyle(tray).visibility).toBe('hidden');
+
+      for (const how of index === 0 ? (['focus', 'hover'] as const) : (['focus'] as const)) {
+        if (how === 'focus') control.focus();
+        else await userEvent.hover(row);
+        await settle();
+        expect(getComputedStyle(tray).visibility, how).toBe('visible');
+        const box = tray.querySelector('.crewlet-message-actions')!.getBoundingClientRect();
+        const now = { title: line(), end: end.getBoundingClientRect() };
+        // Never over the time or a status, and with a gap before the tray.
+        expect(overlap(box, now.end), `${how}: the tray covers the time`).toBe(false);
+        expect(box.left - now.end.right, how).toBeGreaterThanOrEqual(4);
+        for (const part of end.querySelectorAll('.crewlet-inbox-row__meta, .crewlet-inbox-row__status')) {
+          expect(overlap(box, part.getBoundingClientRect()), `${how}: the tray covers ${part.className}`).toBe(false);
+        }
+        // The name keeps its place and its width, and stays clear of the time.
+        expect(now.title.left).toBeCloseTo(rest.title.left, 1);
+        expect(now.title.width).toBeCloseTo(rest.title.width, 1);
+        expect(now.title.top).toBeCloseTo(rest.title.top, 1);
+        expect(now.end.left - now.title.right, `${how}: the name runs under the time`).toBeGreaterThanOrEqual(0);
+        expect(overlap(box, now.title), `${how}: the tray covers the name`).toBe(false);
+        if (how === 'focus') control.blur();
+        else await userEvent.unhover(row);
+      }
+      await settle();
+      // Back at rest the time returns to the end of the line.
+      expect(end.getBoundingClientRect().right).toBeCloseTo(rest.end.right, 1);
+    }
+  });
+
+  test('Tab enters the list once, reaches the row’s own actions, and leaves', async () => {
+    const shown = await mount(<History density={density} tools={tools} />);
+    const controls = [...shown.querySelectorAll<HTMLElement>('.crewlet-inbox-row__control')];
+    shown.querySelector<HTMLElement>('button')!.focus();
+    await userEvent.tab();
+    // The open row holds the stop.
+    expect(document.activeElement).toBe(controls[0]);
+    await userEvent.tab();
+    expect(document.activeElement?.closest('.crewlet-inbox-row__actions')?.parentElement).toBe(controls[0]!.closest('li'));
+    await userEvent.tab();
+    expect(document.activeElement?.textContent).toBe('After');
+    // The arrows move between rows, and Tab follows the row they land on.
+    controls[0]!.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(controls[1]);
+    await userEvent.tab();
+    expect(document.activeElement?.closest('li')).toBe(controls[1]!.closest('li'));
+    await userEvent.tab();
+    expect(document.activeElement?.textContent).toBe('After');
+  });
+});

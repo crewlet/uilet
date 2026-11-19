@@ -208,6 +208,20 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.161.0
+
+### Cards and lists that say what is true, once, to every reader
+
+- **A `ProposalCard` whose wait has run out is expired.** A card the host still holds as `pending` or `stepup` whose `expiresAt` has passed reads "Expired" with `labels.expiredNotice` ("This proposal expired. Nothing changed.") and draws no decision, whether the instant had passed before it was drawn or passes while it is on screen: the countdown hears the tick that makes it due, and the card settles before that frame is painted, moving focus off a button that leaves to the strip, as any settling card does. A card being carried out (`applying`) or already settled keeps its own state, and a host's `notice`, written for the wait, gives way to the expired sentence. The root carries `data-lapsed` while it is so. `labels.lapsed` is no longer drawn, and is kept so a host that passes it still compiles. Stories: `ProposalCard` Lapsed While Waiting, Lapses On Screen.
+- **A `StepList` step says why in prose.** `note` (on `StepListStep`) is a sentence for a person, under the label in the body face and the secondary ink, before `detail`, which stays the request line in the mono face. A refusal or a failure's reason was set in the request line's code face. Stories: `StepList` Refused With Reason, Failed With Reason.
+- **An `InboxList` is one Tab stop.** The row focus was last in (else the open row, else the first) keeps its control and its `aside` controls in the tab order, and every other row's leave it, so Tab enters the list once, reaches that row's own task and actions, and leaves; the arrow keys, Home and End move between rows, and the row they land on is the stop. A row's quick-actions tray is hidden (not only clear) while the row is neither hovered nor focused, so it is no Tab stop of its own. Focus in a row that leaves goes to the next row, or the one before. A row outside an `InboxList` is a Tab stop as before. Story: `InboxList` Conversation History.
+- **A row's quick actions stand beside its time, never over it.** The time and any status move aside into room the name's first line always keeps for the tray (the row measures the tray onto itself as `--crewlet-inbox-row-tray`), so neither is covered and the name never moves or rewraps.
+- **An `InboxRow`'s name starts with the words it shows** (WCAG 2.5.3). The `leading` mark is drawn over its slot from outside the control, with a hidden copy holding the slot, so a face's initials are no longer the control's first visible words; what the mark says to a screen reader is the control's description rather than the start of its name. Pass a face `decorative`, as the title names who.
+- **A `LinkCard` is named by the words it shows.** The link is now the title, stretched over the whole preview so a press anywhere follows it and the focus ring rings the preview; the source, the details and the owner describe it. The preview's root is a `div` carrying `className` and `style`; every other attribute (`onClick`, an id, a data attribute) is the link's (`crewlet-link-card__link`).
+- **A `Tag` on a hovered or selected row keeps 4.5:1.** A tinted tag paints its tint over `--crewlet-tag-ground` when an ancestor names one, and an `InboxRow` names the sheet while it is hovered or selected, so the pill is the composite the palette measures rather than its tint over the row's translucent wash (the info tag measured 4.43:1 on a selected row in light, and every tone fell under 4.5:1 there in several themes).
+
+What to change: nothing is required. To show a step's reason as prose, pass it as `note` and keep only the request in `detail`. A stylesheet that selected `a.crewlet-link-card` selects `.crewlet-link-card__link` (the link) or `.crewlet-link-card` (the preview).
+
 ## Changes in 0.157.0
 
 ### A list item holds blocks

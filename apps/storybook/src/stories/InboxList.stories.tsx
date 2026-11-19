@@ -17,7 +17,16 @@ import {
   ReadingPaneTitle,
   Tag,
 } from '@crewlethq/ui';
-import { ArrowUpRightGlyph, AtSignGlyph, CheckGlyph, MessageSquareGlyph, MessagesSquareGlyph, FaceSlightlySmilingGlyph } from '@crewlethq/icons/glyphs';
+import {
+  ArrowUpRightGlyph,
+  AtSignGlyph,
+  CheckGlyph,
+  MessageSquareGlyph,
+  MessagesSquareGlyph,
+  FaceSlightlySmilingGlyph,
+  TrashGlyph,
+} from '@crewlethq/icons/glyphs';
+import { BothThemes } from '../BothThemes';
 
 /**
  * The inbox's column. Each row names who it is from, says in up to three
@@ -496,7 +505,7 @@ function SaidScreen({ initial = '', width }: { initial?: string; width?: number 
 /**
  * CHAT DENSITY, NOTHING OPEN: a list of messages at the transcript's scale,
  * read at full width and in full, each with why it is here under it. Hover a
- * row for its quick actions, floated over its time.
+ * row for its quick actions, shown beside its time, which moves aside for them.
  */
 export const ChatDensity: Story = {
   render: () => <SaidScreen />,
@@ -516,4 +525,71 @@ export const ChatDensityOpen: Story = {
 /** On a phone the open item is the whole screen, with the way back at its start. */
 export const ChatDensityPhone: Story = {
   render: () => <SaidScreen initial="s2" width={390} />,
+};
+
+const CONVERSATIONS = [
+  { key: 'c1', title: 'Summarise every open item in every unit', when: '16s ago', answering: true },
+  { key: 'c2', title: 'Summarise every item in the company', when: '12s ago' },
+  { key: 'c3', title: 'Follow-ups on the release', when: '2m ago' },
+  { key: 'c4', title: 'Held work and paused seats', when: '9m ago', waiting: true },
+];
+
+function Conversations() {
+  const [open, setOpen] = useState('c1');
+  return (
+    <div style={{ width: 340 }}>
+      <InboxList label="Your conversations" density="chat">
+        <InboxGroup label="Today">
+          {CONVERSATIONS.map((each) => (
+            <InboxRow
+              key={each.key}
+              title={each.title}
+              meta={<time>{each.when}</time>}
+              status={
+                each.answering ? (
+                  <Tag size="xs" variant="info">
+                    Answering
+                  </Tag>
+                ) : each.waiting ? (
+                  <Tag size="xs" variant="warning">
+                    Needs approval
+                  </Tag>
+                ) : undefined
+              }
+              selected={open === each.key}
+              onClick={() => setOpen(each.key)}
+              actions={
+                <MessageActions label={`Actions for ${each.title}`}>
+                  <MessageAction label="Delete" icon={<TrashGlyph />} />
+                </MessageActions>
+              }
+            >
+              {null}
+            </InboxRow>
+          ))}
+        </InboxGroup>
+      </InboxList>
+    </div>
+  );
+}
+
+/**
+ * A HISTORY OF CONVERSATIONS: one Tab stop for the whole list, on the open
+ * row. The arrow keys move between rows, and Tab from a row reaches its own
+ * Delete, then leaves the list. Hovered or focused, a row shows its Delete
+ * beside the time, which moves aside into room the title's line always keeps
+ * for it, so the time is never covered and the title never moves. A status
+ * tag on the open, washed row keeps 4.5:1: its tint is painted over the
+ * sheet rather than over the row's wash. In both themes.
+ */
+export const ConversationHistory: Story = {
+  render: () => (
+    <BothThemes>
+      <Conversations />
+    </BothThemes>
+  ),
+  play: async ({ canvasElement }) => {
+    const rows = [...canvasElement.querySelectorAll<HTMLElement>('[data-theme-panel="light"] .crewlet-inbox-row__control')];
+    await expect(rows.map((row) => row.getAttribute('tabindex'))).toEqual(['0', '-1', '-1', '-1']);
+  },
 };

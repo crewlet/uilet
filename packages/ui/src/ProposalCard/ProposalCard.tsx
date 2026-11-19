@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type HTMLAttributes, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type HTMLAttributes, type ReactNode } from 'react';
 import {
   BanGlyph,
   CircleAlertGlyph,
@@ -14,7 +14,7 @@ import { Checkbox } from '../Checkbox/index.js';
 import type { DiffListLabels } from '../DiffList/index.js';
 import { Disclosure } from '../Disclosure/index.js';
 import { ReceiptStrip, RefusalStrip } from '../ReceiptStrip/index.js';
-import { formatExact, formatUntil, toInstant, toISO, useNow, type TimeValue } from '../RelativeTime/index.js';
+import { currentNow, formatExact, formatUntil, toInstant, toISO, useNow, type TimeValue } from '../RelativeTime/index.js';
 import { Spinner } from '../Spinner/index.js';
 import { StatusCard, type StatusCardStatus } from '../StatusCard/index.js';
 import { cx } from '../utils/cx.js';
@@ -133,7 +133,12 @@ export interface ProposalCardLabels {
   stepUpAhead: string;
   /** What leads the time left on a card with `expiresAt`: "Expires" followed by "in 12m". */
   expires: string;
-  /** Said in place of the time left once `expiresAt` has passed and the card still waits. */
+  /**
+   * @deprecated No longer drawn. A card whose `expiresAt` passes while it
+   * waits reads as `expired` itself ("Expired", `expiredNotice`, no
+   * decision), so nothing says it lapsed beside buttons that still offer it.
+   * Kept so a host that passes it still compiles.
+   */
   lapsed: string;
 }
 
@@ -281,11 +286,19 @@ export interface ProposalCardProps extends Omit<HTMLAttributes<HTMLElement>, 'ti
   /**
    * When the proposal stops waiting. While the card can be decided its foot
    * counts down to it ("Expires in 12m") on the shared clock, with the exact
-   * instant on hover, and says `labels.lapsed` once it has passed. An
-   * unparseable value draws nothing.
+   * instant on hover. Once it has passed, a card that still waits (`pending`
+   * or `stepup`) IS EXPIRED: it reads "Expired" with `labels.expiredNotice`
+   * and draws no decision, whether the instant had passed before the card
+   * was drawn or passes while it is on screen. An unparseable value draws
+   * nothing and never expires the card.
    */
   expiresAt?: TimeValue;
-  /** Replaces the default sentence of a step-up, declined, expired or stale card. */
+  /**
+   * Replaces the default sentence of a step-up, declined, expired or stale
+   * card, in the state the host gave. A waiting card that has lapsed says
+   * `labels.expiredNotice` instead: a notice written for the wait no longer
+   * describes it.
+   */
   notice?: ReactNode;
   labels?: Partial<ProposalCardLabels> | undefined;
   /** Words for the change list. */
@@ -344,24 +357,37 @@ function headingOf(state: ProposalState, kind: ProposalKind, labels: ProposalCar
 }
 
 /**
- * The time a card has left, counted on the shared clock so every card in a
- * thread agrees, with the exact instant on the element and on hover; once it
- * has passed, that it can no longer be approved. Its own component so only a
- * card that draws it subscribes to the clock: a thread of settled cards does
- * not re-render every second.
+ * Whether an instant has come, read the way the countdown reads it: "due"
+ * once fewer than half a second of it is left, so the card turns expired at
+ * the moment its countdown would stop counting, never a tick after.
  */
-function TimeLeft({ at, labels }: { at: TimeValue; labels: ProposalCardLabels }) {
+function isDue(at: number, now: number): boolean {
+  return formatUntil(at, now) === 'due';
+}
+
+/**
+ * The time a card has left, counted on the shared clock so every card in a
+ * thread agrees, with the exact instant on the element and on hover. Its own
+ * component so only a card that draws it subscribes to the clock: a thread of
+ * settled cards does not re-render every second.
+ *
+ * IT IS ALSO WHAT HEARS THE WAIT RUN OUT. On the tick that makes the instant
+ * due it tells the card (`onDue`), before the frame is painted, and the card
+ * turns expired; so the countdown itself never draws a time that has passed.
+ */
+function TimeLeft({ at, labels, onDue }: { at: TimeValue; labels: ProposalCardLabels; onDue: () => void }) {
   const until = formatUntil(at, useNow());
+  const due = until === 'due';
+  useLayoutEffect(() => {
+    if (due) onDue();
+  }, [due, onDue]);
+  if (due) return null;
   return (
     <span className="crewlet-proposal-card__term">
       <ClockGlyph size="xs" />
-      {until === 'due' ? (
-        labels.lapsed
-      ) : (
-        <time dateTime={toISO(at) ?? undefined} title={formatExact(at) ?? undefined}>
-          {labels.expires} {until}
-        </time>
-      )}
+      <time dateTime={toISO(at) ?? undefined} title={formatExact(at) ?? undefined}>
+        {labels.expires} {until}
+      </time>
     </span>
   );
 }
@@ -414,6 +440,14 @@ function TimeLeft({ at, labels }: { at: TimeValue; labels: ProposalCardLabels })
  * THE PRECISE REQUEST IS THERE, FOLDED (`details`): a compact disclosure,
  * collapsed by default, for a reader who wants the method, path and body.
  *
+ * A WAIT THAT HAS RUN OUT IS EXPIRED, whatever the host still holds. A card
+ * whose `expiresAt` has passed while it waits on the person reads "Expired"
+ * and "This proposal expired. Nothing changed." and draws no decision, so it
+ * never offers an approval that would be refused for lateness. It turns
+ * expired on its first draw when the instant has already passed, and on the
+ * clock's tick when it passes on screen, moving focus off a button that
+ * leaves as any settling card does.
+ *
  * WHAT DECIDING INVOLVES IS SAID BEFORE THE PRESS. A change prepared from
  * somebody else's words says so first (`caution`), and the foot says whether
  * approving asks for a fresh sign-in (`stepUp`) and how long the decision
@@ -423,7 +457,7 @@ function TimeLeft({ at, labels }: { at: TimeValue; labels: ProposalCardLabels })
 export function ProposalCard({
   title,
   subtitle,
-  state,
+  state: given,
   scope = 'server',
   kind = 'change',
   summary,
@@ -447,7 +481,7 @@ export function ProposalCard({
   caution,
   stepUp = false,
   expiresAt,
-  notice,
+  notice: givenNotice,
   labels: overrides,
   changeLabels,
   diffLabels,
@@ -455,6 +489,19 @@ export function ProposalCard({
   ...rest
 }: ProposalCardProps) {
   const labels = overrides ? { ...PROPOSAL_CARD_LABELS, ...overrides } : PROPOSAL_CARD_LABELS;
+
+  // A WAIT THAT HAS RUN OUT: a card the host still holds as waiting on the
+  // person, whose expiry has come, is drawn as the expired card it is. Read
+  // from the shared clock on every draw, so a card drawn after its instant
+  // is expired from its first frame, and told by the countdown (`onDue`) on
+  // the tick that makes the instant due while it is on screen.
+  const waits = given === 'pending' || given === 'stepup';
+  const instant = waits ? toInstant(expiresAt) : null;
+  const [lapsedAt, setLapsedAt] = useState<number | null>(null);
+  const lapsed = instant !== null && (lapsedAt === instant || isDue(instant, currentNow()));
+  const onDue = useCallback(() => setLapsedAt(instant), [instant]);
+  const state: ProposalState = lapsed ? 'expired' : given;
+  const notice = lapsed ? undefined : givenNotice;
   const settled = SETTLED.has(state);
   const uid = useId();
   const cardId = rest.id ?? `${uid}-card`;
@@ -506,7 +553,7 @@ export function ProposalCard({
             {labels.stepUpAhead}
           </span>
         ) : null}
-        {expiry === undefined ? null : <TimeLeft at={expiry} labels={labels} />}
+        {expiry === undefined ? null : <TimeLeft at={expiry} labels={labels} onDue={onDue} />}
       </p>
     ) : null;
 
@@ -664,6 +711,7 @@ export function ProposalCard({
         className,
       )}
       data-state={state}
+      data-lapsed={lapsed || undefined}
       data-tone={danger ? 'danger' : undefined}
       data-outcome={state === 'failed' ? failureOutcome : undefined}
     >

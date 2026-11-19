@@ -58,10 +58,37 @@
   --crewlet-link-card-dot: var(--color-feedback-danger);
 }
 
-/* No box to ring over: the ring stands off the preview's words. */
-.crewlet-link-card:focus-visible {
+/*
+ * THE TITLE IS THE LINK, STRETCHED OVER THE PREVIEW. Only the title is the
+ * link, so its name is the words it shows (WCAG 2.5.3), and a layer of it
+ * covers the whole preview, so a press on the source, the details or the bar
+ * follows it as a press on the title does. The source, the details and the
+ * owner are its description.
+ */
+.crewlet-link-card__link {
+  display: block;
+  max-width: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.crewlet-link-card__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+/* No box to ring over: the ring stands off the preview's words, round the
+   whole preview, which is what the link covers. The title's own ring would
+   draw a second one inside it. */
+.crewlet-link-card:has(> .crewlet-link-card__link:focus-visible) {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
+}
+
+.crewlet-link-card__link:focus-visible {
+  outline: 2px solid transparent;
 }
 
 /* The app it comes from: its mark and its name, small and quiet. */
@@ -91,15 +118,15 @@
   overflow-wrap: anywhere;
 }
 
-/* THE TITLE ALONE IS UNDERLINED. The document's base underlines every link
-   under the pointer, and an underline on the link runs through all of its
-   lines (the source, the details, the owner), which no line inside can
-   take off again. */
-a.crewlet-link-card:hover {
+/* THE TITLE ALONE IS UNDERLINED, under the pointer anywhere on the preview
+   (the link's layer covers it). The document's base underlines every link
+   under the pointer, which the link takes off for itself and gives back to
+   the title. */
+a.crewlet-link-card__link:hover {
   text-decoration: none;
 }
 
-a.crewlet-link-card:hover .crewlet-link-card__title {
+a.crewlet-link-card__link:hover .crewlet-link-card__title {
   color: var(--color-brand-accent-ink);
   text-decoration: underline;
   text-underline-offset: 2px;

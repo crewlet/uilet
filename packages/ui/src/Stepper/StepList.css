@@ -100,6 +100,20 @@
 }
 
 /*
+ * WHY, IN A SENTENCE FOR A PERSON: the body face, a step down from the label,
+ * in the secondary ink, wrapping as words do. It is read, so it is never set
+ * in the request line's mono face or its tertiary ink.
+ */
+.crewlet-step-list__note {
+  display: block;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-secondary);
+  overflow-wrap: break-word;
+}
+
+/*
  * WHAT THE STEP ASKED FOR, in the mono face. Each piece between separators is
  * one inline block, so a line breaks only between pieces (at a space, or
  * after `/`, `?` or `&`) and a piece wraps inside itself only when it alone

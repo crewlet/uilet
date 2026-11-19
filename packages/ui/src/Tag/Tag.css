@@ -36,6 +36,17 @@
    * The boundary at rest is `--crewlet-tag-edge`: transparent for a tinted
    * pill, whose hue already separates it from any neutral ground, and the
    * strong border step for the neutral one (see its rule below).
+   *
+   * A TINT IS TRANSLUCENT, SO IT IS ONLY AS GOOD AS WHAT IS UNDER IT. The
+   * palette holds each ink at 4.5:1 on its own soft tint over the four opaque
+   * rungs, and nowhere else. A row that draws a translucent overlay of its
+   * own (hovered, selected) put a second wash under the tint, and the ink
+   * fell under 4.5:1 there: 4.43:1 for the info pill on a selected inbox row
+   * in light, 3.74:1 for success on a pressed raised row in one dark theme.
+   * So the tint is painted over `--crewlet-tag-ground` when an ancestor names
+   * one, an opaque rung such a row hands down, and the pill is then exactly
+   * the composite the palette measures, whatever the row draws around it.
+   * Nothing names it by default, and a pill paints over what is beneath it.
    */
   --crewlet-tag-height: calc(22px * var(--density, 1));
   --crewlet-tag-floor: 0px;
@@ -57,7 +68,7 @@
   padding: 0 var(--crewlet-tag-pad);
   border: 1px solid var(--crewlet-tag-edge);
   border-radius: var(--radius-pill);
-  background: var(--crewlet-tag-fill);
+  background: linear-gradient(var(--crewlet-tag-fill), var(--crewlet-tag-fill)), var(--crewlet-tag-ground, transparent);
   color: var(--crewlet-tag-ink);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-xs);

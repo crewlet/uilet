@@ -61,14 +61,22 @@ export interface LinkCardProps
  * message rather than a card laid on it, and the same unfurl serves a room's
  * list of everything shared in it.
  *
- * NAMED BY ITS TITLE. The whole preview is one link, so a reader moving
- * through the links of a room hears "WRK-41 Fix the login redirect" and then
- * where it is from and what state it is in as its description, rather than
- * every line run together as one name.
+ * THE LINK IS THE TITLE, AND IT IS NAMED BY WHAT IT SHOWS. A reader moving
+ * through the links of a room hears "WRK-41 Fix the login redirect", and then
+ * where it is from and what state it is in as its description. The link used
+ * to be the whole preview, named by its title alone while it showed the
+ * source, the details and the owner as well: a link whose visible words were
+ * not its name, so a person who said what they saw could not reach it (WCAG
+ * 2.5.3, label in name). Now only the title is the link, its name its own
+ * words, and it stretches over the whole preview, so a press anywhere on the
+ * preview still follows it and its ring still rings the whole preview.
  *
  * AN ADDRESS IS FOLLOWED ONLY WHEN IT IS SAFE. The href passes `safeHref`, so
  * a `javascript:` or a bare relative address in a message never becomes a
  * link; the preview is still drawn, as words.
+ *
+ * `className` and `style` are the preview's; every other attribute (a press
+ * handler, an id, a data attribute) is the link's.
  */
 export function LinkCard({
   href,
@@ -83,31 +91,34 @@ export function LinkCard({
   statusTone = 'neutral',
   owner,
   className,
+  style,
   ...rest
 }: LinkCardProps) {
   const id = useId();
   const safe = href === undefined ? null : safeHref(href);
   const ids = {
-    title: `${id}-title`,
-    tab: `${id}-tab`,
     source: `${id}-source`,
     meta: `${id}-meta`,
     status: `${id}-status`,
     owner: `${id}-owner`,
   };
-  const body = (
+  const words = (
+    <span className="crewlet-link-card__title">
+      {code ? <span className="crewlet-link-card__code">{code}</span> : null}
+      {code ? ' ' : null}
+      {title}
+    </span>
+  );
+  const sourceLine = (
+    <span id={ids.source} className="crewlet-link-card__source">
+      <span className="crewlet-link-card__mark" aria-hidden="true">
+        {source.mark}
+      </span>
+      {source.name}
+    </span>
+  );
+  const details = (
     <>
-      <span id={ids.source} className="crewlet-link-card__source">
-        <span className="crewlet-link-card__mark" aria-hidden="true">
-          {source.mark}
-        </span>
-        {source.name}
-      </span>
-      <span id={ids.title} className="crewlet-link-card__title">
-        {code ? <span className="crewlet-link-card__code">{code}</span> : null}
-        {code ? ' ' : null}
-        {title}
-      </span>
       {meta ? (
         <span id={ids.meta} className="crewlet-link-card__meta">
           {meta}
@@ -133,12 +144,14 @@ export function LinkCard({
       ) : null}
     </>
   );
-  const classes = cx('crewlet-link-card', `crewlet-link-card--${statusTone}`, className);
+  const classes = cx('crewlet-link-card', `crewlet-link-card--${statusTone}`, safe === null && 'crewlet-link-card--inert', className);
 
   if (safe === null) {
     return (
-      <div className={cx(classes, 'crewlet-link-card--inert')} title={address}>
-        {body}
+      <div className={classes} style={style} title={address}>
+        {sourceLine}
+        {words}
+        {details}
       </div>
     );
   }
@@ -149,17 +162,25 @@ export function LinkCard({
     .filter(Boolean)
     .join(' ');
   return (
-    <a
-      {...rest}
-      href={safe}
-      title={address}
-      className={classes}
-      aria-labelledby={external ? `${ids.title} ${ids.tab}` : ids.title}
-      aria-describedby={describedBy}
-      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-    >
-      {body}
-      {external ? <VisuallyHidden id={ids.tab}>{newTabLabel}</VisuallyHidden> : null}
-    </a>
+    <div className={classes} style={style}>
+      {sourceLine}
+      <a
+        {...rest}
+        href={safe}
+        title={address}
+        className="crewlet-link-card__link"
+        aria-describedby={describedBy}
+        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      >
+        {words}
+        {external ? (
+          <>
+            {' '}
+            <VisuallyHidden>{newTabLabel}</VisuallyHidden>
+          </>
+        ) : null}
+      </a>
+      {details}
+    </div>
   );
 }

@@ -52,6 +52,36 @@ export const Refused: Story = {
   },
 };
 
+/**
+ * WHY, AS PROSE: a refused step says why in a sentence for a person, in the
+ * body face, and the request it made stays on its own mono line under it.
+ */
+export const RefusedWithReason: Story = {
+  args: {
+    label: 'Steps',
+    steps: [
+      {
+        id: 'read',
+        label: 'Read a web page',
+        state: 'refused',
+        note: 'This address did not come from you, a search or a page, so it was not read.',
+        detail: 'fetch_web_page · GET https://example.com/?q=report',
+      },
+    ],
+  },
+};
+
+/** A failed step whose reason is the only thing under it, for a reader who is not shown the request. */
+export const FailedWithReason: Story = {
+  args: {
+    label: 'Steps',
+    steps: [
+      read,
+      { ...ceiling, state: 'failed', duration: '30s', note: 'The budgets did not answer in time. Try again in a minute.', detail: undefined },
+    ],
+  },
+};
+
 export const WaitingForApproval: Story = {
   args: {
     label: 'Steps',
