@@ -362,3 +362,15 @@
   font-weight: inherit;
   color: inherit;
 }
+
+/*
+ * A VALUE OF PILLS (labels, a status badge) is pointed at pill by pill: the
+ * trigger paints no ground, and the pill under the pointer draws its hover line.
+ */
+.crewlet-menu-anchor > .crewlet-btn.crewlet-menu__value-trigger:has(.crewlet-tag):is(:hover, :active) {
+  background: transparent;
+}
+
+.crewlet-menu__value-trigger .crewlet-tag:hover {
+  border-color: var(--crewlet-tag-line);
+}
