@@ -1,5 +1,5 @@
 /** A reference inside a sentence: its mark, its words, and a link only where the address is safe. */
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -65,6 +65,35 @@ test("an app route opens in place, as the application, and says nothing of a tab
   expect(link.textContent).toBe("Task: GP-66");
   expect(link.getAttribute("target")).toBeNull();
   expect(link.getAttribute("rel")).toBeNull();
+});
+
+test("an app route opens the application's own way on a plain press, and a new-tab press stays the browser's", () => {
+  const opened: string[] = [];
+  render(
+    <InlineRef href="#/artifacts/a1" kind="Artifact" onFollow={() => opened.push("a1")}>
+      Launch plan
+    </InlineRef>,
+  );
+  const link = screen.getByRole("link");
+  // Still a link with its address, so a new tab, a copy and a screen reader read it as one.
+  expect(link.getAttribute("href")).toBe("#/artifacts/a1");
+  expect(fireEvent.click(link)).toBe(false);
+  expect(opened).toEqual(["a1"]);
+  for (const press of [{ metaKey: true }, { ctrlKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 }]) {
+    expect(fireEvent.click(link, press), JSON.stringify(press)).toBe(true);
+  }
+  expect(opened).toEqual(["a1"]);
+});
+
+test("a link that leaves the application never opens the application's way", () => {
+  const opened: string[] = [];
+  render(
+    <InlineRef href="https://github.com/gophrase/backend/pull/14" kind="GitHub" onFollow={() => opened.push("pr")}>
+      gophrase/backend#14
+    </InlineRef>,
+  );
+  expect(fireEvent.click(screen.getByRole("link"))).toBe(true);
+  expect(opened).toEqual([]);
 });
 
 test("an address no browser should follow is drawn as words, never as a link", () => {
