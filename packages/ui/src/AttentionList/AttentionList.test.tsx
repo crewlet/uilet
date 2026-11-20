@@ -140,6 +140,24 @@ test('a title cut to its line still paints the whole focus ring of the link it h
   expect(css).not.toMatch(/\.crewlet-attention-list__line[^{]*\{[^}]*overflow: hidden/);
 });
 
+test('what a row\'s action opened is drawn open under that row, named, with no Details to press', () => {
+  const items: AttentionItem[] = [
+    { key: 'a', tone: 'warning', title: 'Releases wait on one seat', action: <button type="button">Batch releases</button>,
+      panel: <button type="button">Confirm</button>, panelLabel: 'Apply: Batch releases per window' },
+    { key: 'b', tone: 'info', title: 'Quiet one' },
+  ];
+  render(<AttentionList items={items} />);
+  const panel = screen.getByRole('region', { name: 'Apply: Batch releases per window' });
+  expect(panel.textContent).toBe('Confirm');
+  // IN ITS OWN ROW: the panel is the first row's, never another's.
+  const [first, second] = screen.getAllByRole('listitem');
+  expect(first!.contains(panel)).toBe(true);
+  expect(second!.querySelector('.crewlet-attention-list__panel')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Details' })).toBeNull();
+  const css = sheet();
+  expect(rule(css, '.crewlet-attention-list__panel')).toMatch(/grid-column: text \/ end/);
+});
+
 test('the mark takes a column only where a row has one, read off every row, folded or not', () => {
   const plain: AttentionItem[] = [{ key: 'a', tone: 'warning', title: 'One' }];
   const { container, rerender } = render(<AttentionList items={plain} />);
