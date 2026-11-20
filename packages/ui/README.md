@@ -208,6 +208,14 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.164.0
+
+### A map packed to its room
+
+`GraphCanvas` sizes each lane to what it holds and packs the lanes into the canvas's room (a band splits over shelves only where that fits clearly larger), cards as wide as their names between `--crewlet-graph-canvas-card-min-width` and `-max-width`, styled (wider, or a second line) for the most names whole at the fit. A name never draws under the tile size, the zoom bar's corner stays clear, and an untouched fit refits when the map is packed again. `layoutGraph` takes `room`, `corner`, `itemWidths`, `titleWidths` and `reading`; `GraphLane.columns` is the fewest columns a lane stands in.
+
+**Breaking:** `GraphLayout.columns` is gone and `GraphGrid` holds a grid per shelf; `CanvasHandle` adds `refit()` and `Canvas` adds `onRoomChange`.
+
 ## Changes in 0.161.0
 
 ### Cards and lists that say what is true, once, to every reader

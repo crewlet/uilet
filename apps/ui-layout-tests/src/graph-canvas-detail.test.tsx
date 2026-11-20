@@ -82,7 +82,7 @@ async function mapAt(k: number): Promise<HTMLElement> {
   flushSync(() =>
     root!.render(<GraphCanvas label="Map" bands={BANDS} nodes={NODES} edges={[]} initialView={{ x: 40, y: 60, k }} />),
   );
-  await expect.poll(() => host!.querySelector('.crewlet-graph-canvas__lane-title')).not.toBeNull();
+  await expect.poll(() => host!.querySelector('.crewlet-graph-canvas__world .crewlet-graph-canvas__lane-title')).not.toBeNull();
   await expect
     .poll(() => host!.querySelector<HTMLElement>('.crewlet-graph-canvas__world')!.dataset.detail)
     .toBeDefined();
@@ -91,6 +91,12 @@ async function mapAt(k: number): Promise<HTMLElement> {
 
 /** How tall an element is on screen, after the map's own scale. */
 const drawn = (el: Element) => el.getBoundingClientRect().height;
+
+/** The zoom the map is drawn at: the one asked for, or the fit where that is the least it zooms out to. */
+function zoomOf(map: HTMLElement): number {
+  const transform = map.querySelector<HTMLElement>('.crewlet-canvas__world')!.style.transform;
+  return Number(/scale\(([-\d.e]+)\)/.exec(transform)![1]);
+}
 
 /** The size an element's type is drawn at on screen: its own size times the map's zoom. */
 function typeOnScreen(el: Element, k: number): number {
@@ -101,7 +107,7 @@ describe('a map zoomed out', () => {
   test('at full size a card is a card, and its type is its own', async () => {
     const map = await mapAt(1);
     expect(map.querySelector<HTMLElement>('.crewlet-graph-canvas__world')!.dataset.detail).toBe('cards');
-    const title = map.querySelector('.crewlet-graph-canvas__lane-title')!;
+    const title = map.querySelector('.crewlet-graph-canvas__world .crewlet-graph-canvas__lane-title')!;
     // Nothing grows past its own size when the map is not zoomed out.
     expect(typeOnScreen(title, 1)).toBeLessThanOrEqual(11.5);
   });
@@ -137,7 +143,7 @@ describe('a map zoomed out', () => {
     const fill = (shape: string) =>
       getComputedStyle(map.querySelector(`.crewlet-graph-canvas__shapes [data-shape="${shape}"]`)!).fill;
     const pane = getComputedStyle(map.querySelector('.crewlet-graph-canvas__lane')!).fill;
-    const ground = getComputedStyle(map.querySelector('.crewlet-graph-canvas__lane-title')!).backgroundColor;
+    const ground = getComputedStyle(map.querySelector('.crewlet-graph-canvas__world .crewlet-graph-canvas__lane-title')!).backgroundColor;
     for (const shape of ['card', 'danger']) {
       expect(fill(shape), shape).not.toBe('none');
       expect(fill(shape), shape).not.toBe(pane);
@@ -149,12 +155,14 @@ describe('a map zoomed out', () => {
   for (const k of [0.75, 0.4, 0.2, 0.1]) {
     test(`at ${Math.round(k * 100)}% a cluster's title and count hold their size on screen, inside the cluster`, async () => {
       const map = await mapAt(k);
+      const shown = zoomOf(map);
+      expect(shown).toBeLessThanOrEqual(Math.max(k, 0.2));
       const lanes = [...map.querySelectorAll('.crewlet-graph-canvas__lane')];
-      const titles = [...map.querySelectorAll('.crewlet-graph-canvas__lane-title')];
+      const titles = [...map.querySelectorAll('.crewlet-graph-canvas__world .crewlet-graph-canvas__lane-title')];
       expect(titles).toHaveLength(BANDS[0]!.lanes.length);
       titles.forEach((title, i) => {
-        expect(typeOnScreen(title, k)).toBeGreaterThanOrEqual(10.5);
-        expect(typeOnScreen(title, k)).toBeLessThanOrEqual(11.5);
+        expect(typeOnScreen(title, shown)).toBeGreaterThanOrEqual(10.5);
+        expect(typeOnScreen(title, shown)).toBeLessThanOrEqual(11.5);
         const figure = title.querySelector('.crewlet-graph-canvas__lane-count')!;
         const count = figure.getBoundingClientRect();
         const lane = lanes[i]!.getBoundingClientRect();

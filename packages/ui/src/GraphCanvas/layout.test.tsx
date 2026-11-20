@@ -4,8 +4,12 @@
  */
 
 import { describe, expect, test } from 'vitest';
+import { CANVAS_FIT_PADDING, fitView } from '../Canvas/geometry.js';
 import {
+  GRAPH_LAYOUT_ROOM,
+  GRAPH_SPLIT_GAIN,
   graphItemKey,
+  graphTileLines,
   graphTrunks,
   placeTrunkLabels,
   layoutGraph,
@@ -17,6 +21,7 @@ import {
   type GraphLayoutInput,
   type GraphLayoutNode,
   type GraphMetrics,
+  type GraphReading,
   type GraphRoute,
   type GraphTrunk,
 } from './layout.js';
@@ -25,7 +30,11 @@ import { graphStep } from './walk.js';
 
 const METRICS: GraphMetrics = {
   cardWidth: 216,
+  cardMinWidth: 160,
+  cardMaxWidth: 320,
   cardHeight: 52,
+  cardTallHeight: 72,
+  cardBare: 60,
   gutter: 64,
   rowGap: 20,
   laneHead: 32,
@@ -40,6 +49,18 @@ const BANDS: GraphLayoutBand[] = [
   { id: 'around', titled: true, lanes: ['code', 'observability', 'tools'] },
 ];
 const LANES = BANDS.flatMap((band) => band.lanes);
+
+/** A room wide enough that no band splits. */
+const WIDE_ROOM = { width: 4000, height: 900 };
+
+/** The rooms the invariants hold in: the default, a wide and short window's, and a phone's. */
+const ROOMS = [GRAPH_LAYOUT_ROOM, { width: 2400, height: 560 }, { width: 420, height: 760 }];
+
+/** Each entry's card width with its name on one line, from 120 to 420: short names and long. */
+function namesOf(seed: number, nodes: readonly GraphLayoutNode[]): Map<string, number> {
+  const random = prng(seed * 7 + 1);
+  return new Map(nodes.map((node) => [graphItemKey('node', node.id), 120 + Math.floor(random() * 300)]));
+}
 
 /** mulberry32. */
 function prng(seed: number): () => number {
@@ -183,14 +204,33 @@ function crossings(routes: readonly GraphRoute[]): number {
 }
 
 describe('layoutGraph', () => {
-  test('no two items overlap, over random maps', () => {
-    for (let seed = 1; seed <= 25; seed++) {
-      const layout = layoutGraph({ ...randomMap(seed, 60), open: (id) => !id.endsWith('g2') }, METRICS);
-      for (let i = 0; i < layout.items.length; i++) {
-        for (let j = i + 1; j < layout.items.length; j++) {
-          const a = layout.items[i]!;
-          const b = layout.items[j]!;
-          expect(overlaps(a, b), `seed ${seed}: ${a.key} overlaps ${b.key}`).toBe(false);
+  test('no two items and no two lane frames overlap, over random maps in every room', () => {
+    for (const room of ROOMS) {
+      for (let seed = 1; seed <= 25; seed++) {
+        const map = randomMap(seed, 60);
+        const layout = layoutGraph(
+          { ...map, open: (id) => !id.endsWith('g2'), room, itemWidths: namesOf(seed, map.nodes) },
+          METRICS,
+        );
+        for (let i = 0; i < layout.items.length; i++) {
+          for (let j = i + 1; j < layout.items.length; j++) {
+            const a = layout.items[i]!;
+            const b = layout.items[j]!;
+            expect(overlaps(a, b), `seed ${seed} in ${room.width}x${room.height}: ${a.key} overlaps ${b.key}`).toBe(false);
+          }
+        }
+        for (let i = 0; i < layout.lanes.length; i++) {
+          for (let j = i + 1; j < layout.lanes.length; j++) {
+            const a = layout.lanes[i]!;
+            const b = layout.lanes[j]!;
+            expect(overlaps(a.panel, b.panel), `seed ${seed}: ${a.id} overlaps ${b.id}`).toBe(false);
+          }
+          const panel = layout.lanes[i]!.panel;
+          // Nothing outside the map, which is what a fit shows.
+          expect(panel.x).toBeGreaterThanOrEqual(0);
+          expect(panel.y).toBeGreaterThanOrEqual(0);
+          expect(panel.x + panel.width).toBeLessThanOrEqual(layout.bounds.width);
+          expect(panel.y + panel.height).toBeLessThanOrEqual(layout.bounds.height);
         }
       }
     }
@@ -235,17 +275,30 @@ describe('layoutGraph', () => {
     }
   });
 
-  test('no route runs through a card or a header it does not belong to', () => {
+  // Mutation: cross a shelf between by the target's own channel instead of an alley, and a route
+  // split across shelves runs through the cards of the shelf between.
+  test('no route runs through a card or a header it does not belong to, in every room', () => {
     const through: string[] = [];
-    for (let seed = 1; seed <= 25; seed++) {
-      const layout = layoutGraph({ ...randomMap(seed, 70), open: (id) => !id.endsWith('g1') }, METRICS);
-      for (const route of layout.routes) {
-        for (const item of layout.items) {
-          if (item.key === route.from || item.key === route.to) continue;
-          route.points.slice(1).forEach((point, i) => {
-            if (crossesInside(route.points[i]!, point, item))
-              through.push(`seed ${seed}: ${route.key} through ${item.key}`);
-          });
+    for (const room of ROOMS) {
+      for (let seed = 1; seed <= 25; seed++) {
+        const map = randomMap(seed, 70);
+        const layout = layoutGraph(
+          { ...map, open: (id) => !id.endsWith('g1'), room, itemWidths: namesOf(seed, map.nodes) },
+          METRICS,
+        );
+        for (const route of layout.routes) {
+          const own = new Set([layout.itemByKey.get(route.from)!.lane, layout.itemByKey.get(route.to)!.lane]);
+          // A lane's title band is crossed by no route but its own lanes' runs.
+          const heads = layout.lanes
+            .filter((lane) => !own.has(lane.id))
+            .map((lane) => ({ ...lane.head, key: `head of ${lane.id}` }));
+          for (const item of [...layout.items, ...heads]) {
+            if (item.key === route.from || item.key === route.to) continue;
+            route.points.slice(1).forEach((point, i) => {
+              if (crossesInside(route.points[i]!, point, item))
+                through.push(`seed ${seed} in ${room.width}x${room.height}: ${route.key} through ${item.key}`);
+            });
+          }
         }
       }
     }
@@ -292,51 +345,38 @@ describe('layoutGraph', () => {
     }
   });
 
-  test('a band with fewer lanes gives its spare columns to its fullest lane, whose cards flow across it', () => {
+  // Mutation: stand every lane of a shelf as many rows as its tallest, as the shared grid did, and
+  // the data lane's frame runs down beside the entry lane's empty.
+  test('each lane is a frame sized to what it holds, ending at its own last row', () => {
     const nodes = [
-      ...Array.from({ length: 5 }, (_, i) => ({ id: `r${i}`, lane: 'code' })),
-      ...Array.from({ length: 6 }, (_, i) => ({ id: `t${i}`, lane: 'tools' })),
+      ...Array.from({ length: 19 }, (_, i) => ({ id: `e${i}`, lane: 'entry' })),
+      ...Array.from({ length: 3 }, (_, i) => ({ id: `d${i}`, lane: 'data' })),
     ];
-    const layout = layoutGraph({ bands: BANDS, nodes, edges: [], open: allOpen }, METRICS);
-    expect(layout.columns).toBe(5);
-    const spans = BANDS[1]!.lanes.map((lane) => layout.laneById.get(lane)!.span);
-    // Six tool servers take the first spare column and five repositories the second; the empty lane takes none.
-    expect(spans).toEqual([2, 1, 2]);
-    const code = layout.items.filter((item) => item.lane === 'code');
-    expect(code.map((item) => [item.row, item.col])).toEqual([
-      [0, 0],
-      [0, 1],
-      [1, 0],
-      [1, 1],
-      [2, 0],
-    ]);
+    const layout = layoutGraph({ bands: BANDS, nodes, edges: [], open: allOpen, room: WIDE_ROOM }, METRICS);
+    const entry = layout.laneById.get('entry')!;
+    const data = layout.laneById.get('data')!;
+    expect(entry.band).toBe(data.band);
+    const pitch = METRICS.cardHeight + METRICS.rowGap;
+    for (const lane of [entry, data]) {
+      const lastRow = Math.max(...lane.items.map((key) => layout.itemByKey.get(key)!.row));
+      const lastBottom = layout.grid.bandRowsTop[lane.band]! + lastRow * pitch + METRICS.cardHeight;
+      expect(lane.panel.y + lane.panel.height).toBeCloseTo(lastBottom + METRICS.lanePad, 6);
+    }
+    expect(data.panel.height).toBeLessThan(entry.panel.height);
   });
 
-  test('spare columns no lane gains from are shared out evenly', () => {
-    const nodes = ['code', 'observability', 'tools'].map((lane) => ({ id: lane, lane }));
-    const layout = layoutGraph({ bands: BANDS, nodes, edges: [], open: allOpen }, METRICS);
-    expect(BANDS[1]!.lanes.map((lane) => layout.laneById.get(lane)!.span)).toEqual([2, 2, 1]);
-  });
-
-  test('a lane takes the columns it asks for, and the map is as wide as its widest band', () => {
-    const nodes = [
-      ...Array.from({ length: 6 }, (_, i) => ({ id: `s${i}`, lane: 'services' })),
-      ...Array.from({ length: 4 }, (_, i) => ({ id: `d${i}`, lane: 'data' })),
-      { id: 'repo', lane: 'code' },
-    ];
-    const laneColumns = new Map([
-      ['services', 3],
-      ['data', 2],
-    ]);
-    const layout = layoutGraph({ bands: BANDS, nodes, edges: [], open: allOpen, laneColumns }, METRICS);
-    // Entry 1, services 3, runtime 1, data 2, platforms 1.
-    expect(layout.columns).toBe(8);
-    expect(BANDS[0]!.lanes.map((lane) => layout.laneById.get(lane)!.span)).toEqual([1, 3, 1, 2, 1]);
-    expect(layout.laneById.get('services')!.rows).toBe(2);
-    // The band under it shares the same eight columns out among its three lanes.
-    const under = BANDS[1]!.lanes.map((lane) => layout.laneById.get(lane)!.span);
-    expect(under.reduce((sum, span) => sum + span, 0)).toBe(8);
-    expect(Math.min(...under)).toBeGreaterThanOrEqual(2);
+  test('a lane stands in at least the columns it asks for, and the pack gives it more where that fits the room', () => {
+    const nodes = Array.from({ length: 12 }, (_, i) => ({ id: `s${i}`, lane: 'services' }));
+    const asked = layoutGraph(
+      { bands: BANDS, nodes, edges: [], open: allOpen, laneColumns: new Map([['services', 3]]) },
+      METRICS,
+    );
+    expect(asked.laneById.get('services')!.span).toBeGreaterThanOrEqual(3);
+    // A wide, short room lays twelve services out wide; a tall, narrow one stacks them.
+    const wide = layoutGraph({ bands: BANDS, nodes, edges: [], open: allOpen, room: { width: 2400, height: 500 } }, METRICS);
+    const tall = layoutGraph({ bands: BANDS, nodes, edges: [], open: allOpen, room: { width: 500, height: 2400 } }, METRICS);
+    expect(wide.laneById.get('services')!.span).toBeGreaterThan(tall.laneById.get('services')!.span);
+    expect(wide.laneById.get('services')!.rows).toBeLessThan(tall.laneById.get('services')!.rows);
   });
 
   test('entries that name a column stand in it, each column centred on the tallest', () => {
@@ -349,12 +389,22 @@ describe('layoutGraph', () => {
       { id: 'orders', lane: 'services', column: 9 },
     ];
     const layout = layoutGraph(
-      { bands: BANDS, nodes, edges: [], open: allOpen, laneColumns: new Map([['services', 3]]) },
+      {
+        bands: BANDS,
+        nodes,
+        edges: [],
+        open: allOpen,
+        laneColumns: new Map([['services', 3]]),
+        // A tall room, where the pack gives the lane no column more than it asks for.
+        room: { width: 1200, height: 2400 },
+      },
       METRICS,
     );
+    const services = layout.laneById.get('services')!;
+    expect(services.span).toBe(3);
     const at = (id: string) => {
       const item = layout.itemByKey.get(graphItemKey('node', id))!;
-      return [item.col - layout.laneById.get('services')!.col, item.row];
+      return [item.col - services.col, item.row];
     };
     // One entry beside three stands on the middle row.
     expect(at('web')).toEqual([0, 1]);
@@ -363,7 +413,7 @@ describe('layoutGraph', () => {
     // A column past the lane's last is its last.
     expect(at('billing')[0]).toBe(2);
     expect(at('orders')[0]).toBe(2);
-    expect(layout.laneById.get('services')!.rows).toBe(3);
+    expect(services.rows).toBe(3);
   });
 
   test('the edges that order a lane are not the edges drawn, so hiding a line moves no card', () => {
@@ -436,8 +486,8 @@ describe('layoutGraph', () => {
       before += crossings(unswept({ ...map, open: allOpen }).routes);
     }
     // The fixtures' own figures, so an ordering that draws worse maps is seen.
-    expect(before).toBe(2591);
-    expect(after).toBeLessThanOrEqual(1547);
+    expect(before).toBe(1983);
+    expect(after).toBeLessThanOrEqual(913);
   });
 
   test('the same input gives the same map', () => {
@@ -507,6 +557,164 @@ function unswept(input: GraphLayoutInput): GraphLayout {
   const placed = layoutGraph({ ...input, edges: [] }, METRICS);
   return { ...placed, routes: routeGraphEdges(placed, input.edges) };
 }
+
+/** The atlas's three rows of lanes, and the reference company's counts in them. */
+const ATLAS_BANDS: GraphLayoutBand[] = [
+  { id: 'request', titled: false, lanes: ['entry', 'services', 'data'] },
+  { id: 'under', titled: false, lanes: ['runtime', 'platforms'] },
+  { id: 'around', titled: false, lanes: ['code', 'observability', 'tools'] },
+];
+const ATLAS_COUNTS: Record<string, number> = {
+  entry: 19,
+  services: 11,
+  data: 3,
+  runtime: 3,
+  platforms: 9,
+  code: 17,
+  observability: 11,
+  tools: 8,
+};
+function atlasMap(): Omit<GraphLayoutInput, 'open'> {
+  const nodes = Object.entries(ATLAS_COUNTS).flatMap(([lane, count]) =>
+    Array.from({ length: count }, (_, i) => ({ id: `${lane}-${i}`, lane })),
+  );
+  return { bands: ATLAS_BANDS, nodes, edges: [] };
+}
+const READING: GraphReading = { cardsZoom: 0.5, tilesZoom: 0.3, cardName: 13, tileName: 10 };
+
+/** How many names a layout leaves whole at its fit, read as [GraphReading] says. */
+function wholeNames(layout: GraphLayout, widths: ReadonlyMap<string, number>): number {
+  const k = Math.min(1, layout.fit);
+  if (k < READING.tilesZoom) return 0;
+  const grown = Math.max(1, READING.tileName / (READING.cardName * k));
+  const bare = METRICS.cardBare!;
+  return layout.items.filter((item) => {
+    if (item.kind !== 'node') return false;
+    const tall = item.height > METRICS.cardHeight + 0.5;
+    const lines = tall && (k >= READING.cardsZoom || graphTileLines(k, item.height, READING.tileName) === 2) ? 1.8 : 1;
+    return (widths.get(item.key)! - bare) * grown <= (item.width - bare) * lines + 0.5;
+  }).length;
+}
+
+describe('the pack', () => {
+  // THE FIT EACH ROOM THE ATLAS IS READ IN GIVES THE REFERENCE COMPANY, at no
+  // less than these floors (the figures measured, less a twentieth). Mutation:
+  // give every lane its fewest columns, as one shared grid did, and the wide
+  // rooms fall under their floors.
+  test.each([
+    ['1920 by 860', { width: 1626, height: 494 }, 0.477],
+    ['1440 by 900', { width: 1146, height: 494 }, 0.418],
+    ['1024 by 768', { width: 730, height: 502 }, 0.334],
+    ['390 by 844', { width: 350, height: 457 }, 0.208],
+  ])('the reference company fits a %s window at least as large as its floor', (_, room, floor) => {
+    const layout = layoutGraph({ ...atlasMap(), open: allOpen, room }, METRICS);
+    expect(layout.fit).toBeGreaterThanOrEqual(floor);
+    const view = fitView(layout.bounds, room, CANVAS_FIT_PADDING, 0);
+    expect(view.k).toBeCloseTo(Math.min(1, layout.fit), 6);
+    // Nothing is outside the canvas at the fit.
+    for (const lane of layout.lanes) {
+      expect(lane.panel.x * view.k + view.x).toBeGreaterThanOrEqual(-0.5);
+      expect(lane.panel.y * view.k + view.y).toBeGreaterThanOrEqual(-0.5);
+      expect((lane.panel.x + lane.panel.width) * view.k + view.x).toBeLessThanOrEqual(room.width + 0.5);
+      expect((lane.panel.y + lane.panel.height) * view.k + view.y).toBeLessThanOrEqual(room.height + 0.5);
+    }
+  });
+
+  // Mutation: never split a band, and the tall room fits the map no larger than the wide
+  // room's arrangement does.
+  test('a band stands on several shelves only where that fits the room better, and the map still reads in order', () => {
+    const wide = layoutGraph({ ...atlasMap(), open: allOpen, room: { width: 1626, height: 494 } }, METRICS);
+    expect(wide.bands.map((band) => band.source)).toEqual([0, 1, 2]);
+    const room = { width: 300, height: 900 };
+    const tall = layoutGraph({ ...atlasMap(), open: allOpen, room }, METRICS);
+    expect(tall.bands.length).toBeGreaterThan(3);
+    expect(tall.fit).toBeGreaterThan(fitView(wide.bounds, room, CANVAS_FIT_PADDING, 0).k * GRAPH_SPLIT_GAIN);
+    for (const layout of [wide, tall]) {
+      // Shelf by shelf and left to right is the caller's order of bands and lanes.
+      expect(layout.lanes.map((lane) => lane.id)).toEqual(ATLAS_BANDS.flatMap((band) => band.lanes));
+      expect(layout.lanes.map((lane) => lane.source)).toEqual([0, 0, 0, 1, 1, 2, 2, 2]);
+    }
+  });
+
+  test('a lane sizes its cards to its widest name between the bounds, and a longer name takes two lines', () => {
+    const nodes = [
+      { id: 'short', lane: 'data' },
+      { id: 'shorter', lane: 'data' },
+      { id: 'mid', lane: 'services' },
+      { id: 'long', lane: 'entry' },
+      { id: 'longer', lane: 'entry' },
+    ];
+    const widths = new Map([
+      [graphItemKey('node', 'short'), 120],
+      [graphItemKey('node', 'shorter'), 100],
+      [graphItemKey('node', 'mid'), 250],
+      [graphItemKey('node', 'long'), 300],
+      [graphItemKey('node', 'longer'), 500],
+    ]);
+    const layout = layoutGraph({ bands: ATLAS_BANDS, nodes, edges: [], open: allOpen, itemWidths: widths, room: WIDE_ROOM }, METRICS);
+    const card = (id: string) => layout.itemByKey.get(graphItemKey('node', id))!;
+    expect(card('short').width).toBe(METRICS.cardMinWidth);
+    expect(card('mid').width).toBe(250);
+    expect(card('long').width).toBe(METRICS.cardMaxWidth);
+    expect(card('longer').height).toBe(METRICS.cardTallHeight);
+    // A shelf's cards are one height, so its rows stay one grid.
+    expect(card('short').height).toBe(METRICS.cardTallHeight);
+  });
+
+  // Mutation: keep the first style rather than the one that leaves the most
+  // names whole, and the wide cards' names are cut at the fit.
+  test('cards are styled for the most names whole at the fit', () => {
+    const map = atlasMap();
+    // Names a little past a card at its standard width: two lines of it read them where the widest
+    // cards, the first style tried, cost the fit too much to.
+    const widths = new Map(
+      map.nodes.map((node, i) => [graphItemKey('node', node.id), 150 + ((i * 37) % 100)] as const),
+    );
+    const room = { width: 1626, height: 494 };
+    const styled = layoutGraph({ ...map, open: allOpen, room, itemWidths: widths, reading: READING }, METRICS);
+    const narrow = layoutGraph(
+      { ...map, open: allOpen, room, itemWidths: widths },
+      { ...METRICS, cardMaxWidth: METRICS.cardWidth },
+    );
+    const wide = layoutGraph({ ...map, open: allOpen, room, itemWidths: widths }, METRICS);
+    expect(wholeNames(styled, widths)).toBeGreaterThanOrEqual(wholeNames(narrow, widths));
+    expect(wholeNames(styled, widths)).toBeGreaterThan(wholeNames(wide, widths));
+    expect(wholeNames(styled, widths)).toBeGreaterThan(map.nodes.length / 2);
+  });
+
+  // Mutation: drop the corner from the pack, and the lane at the top right of
+  // the map is drawn under the zoom bar.
+  test.each([
+    ['1920 by 860', { width: 1626, height: 494 }],
+    ['1440 by 900', { width: 1146, height: 494 }],
+    ['1024 by 768', { width: 730, height: 502 }],
+  ])('the corner a bar covers stays clear at the fit of a %s window', (_, room) => {
+    const corner = { width: 186, height: 48, at: 'top' as const };
+    const layout = layoutGraph({ ...atlasMap(), open: allOpen, room, corner }, METRICS);
+    const view = fitView(layout.bounds, room, CANVAS_FIT_PADDING, 0);
+    const bar = { x: room.width - corner.width, y: 0, width: corner.width, height: corner.height };
+    for (const lane of layout.lanes) {
+      const drawn = {
+        x: lane.panel.x * view.k + view.x,
+        y: lane.panel.y * view.k + view.y,
+        width: lane.panel.width * view.k,
+        height: lane.panel.height * view.k,
+      };
+      expect(overlaps(drawn, bar), `${lane.id} under the bar`).toBe(false);
+    }
+  });
+
+  // Mutation: size the frames for titles at full size, and a narrow lane's
+  // title, held at its size on screen, is cut at the fit.
+  test('a lane is never narrower than its title at the fit', () => {
+    const titles = new Map(ATLAS_BANDS.flatMap((band) => band.lanes).map((lane) => [lane, 180] as const));
+    for (const room of [{ width: 1626, height: 494 }, { width: 730, height: 502 }]) {
+      const layout = layoutGraph({ ...atlasMap(), open: allOpen, room, titleWidths: titles }, METRICS);
+      const k = Math.min(1, layout.fit);
+      for (const lane of layout.lanes) expect(lane.head.width * k, lane.id).toBeGreaterThanOrEqual(180 - 0.5);
+    }
+  });
+});
 
 describe('placeTrunkLabels', () => {
   /** A trunk across a gap from y 100 to 132, its level run at 116. */
@@ -605,14 +813,16 @@ describe('graphStep', () => {
       bands: BANDS,
       nodes: [
         { id: 'site', lane: 'entry' },
-        { id: 'api', lane: 'services' },
-        { id: 'jobs', lane: 'services' },
+        // One column named, so the two stand one over the other.
+        { id: 'api', lane: 'services', column: 0 },
+        { id: 'jobs', lane: 'services', column: 0 },
         { id: 'web', lane: 'runtime', group: 'aws' },
         { id: 'repo', lane: 'code' },
       ],
       groups: [{ id: 'aws', lane: 'runtime' }],
       edges: [],
       open: allOpen,
+      room: WIDE_ROOM,
     },
     METRICS,
   );
@@ -642,6 +852,7 @@ describe('graphStep', () => {
         edges: [],
         open: allOpen,
         laneColumns: new Map([['services', 2]]),
+        room: WIDE_ROOM,
       },
       METRICS,
     );
@@ -659,6 +870,27 @@ describe('graphStep', () => {
     expect(graphStep(layout, node('web'), { key: 'ArrowUp' })).toBe(graphItemKey('head', 'aws'));
     expect(graphStep(layout, node('site'), { key: 'ArrowDown' })).toBe(node('repo'));
     expect(graphStep(layout, node('repo'), { key: 'ArrowUp' })).toBe(node('site'));
+  });
+
+  // Mutation: walk to the next lane of the shelf, as the walk did when a band was one row, and the
+  // last lane of a shelf is a dead end.
+  test('a band split over shelves walks on from the end of one shelf to the next lane of its band', () => {
+    const narrow = layoutGraph(
+      {
+        bands: BANDS,
+        nodes: LANES.map((lane) => ({ id: lane, lane })),
+        edges: [],
+        open: allOpen,
+        room: { width: 360, height: 1400 },
+      },
+      METRICS,
+    );
+    const request = narrow.lanes.filter((lane) => lane.source === 0);
+    expect(new Set(request.map((lane) => lane.band)).size).toBeGreaterThan(1);
+    for (let i = 0; i + 1 < request.length; i++) {
+      expect(graphStep(narrow, request[i]!.items[0]!, { key: 'ArrowRight' })).toBe(request[i + 1]!.items[0]);
+      expect(graphStep(narrow, request[i + 1]!.items[0]!, { key: 'ArrowLeft' })).toBe(request[i]!.items[0]);
+    }
   });
 
   test('Home and End go to a lane ends, and with Control to the map ends; a key the walk has no use for is not its', () => {

@@ -9,15 +9,20 @@
  * radius tokens and type. The one exception is the legend's health key, which
  * is the notch it explains.
  *
- * Every card is one size, set here, so the layout reads it once from a probe
- * rather than measuring each card. Colour never carries a state alone: health
+ * A lane's cards are as wide as its widest name, between the two widths set
+ * here, past which a name takes two lines; the layout reads the sizes from
+ * probes and measures only the names. Colour never carries a state alone: health
  * is a notch and a badge with a glyph, the selection a filled card with a
  * glow, and an unconfirmed entry a dashed edge.
  */
 
 .crewlet-graph-canvas {
   --crewlet-graph-canvas-card-width: 11rem;
+  --crewlet-graph-canvas-card-min-width: 7.5rem;
+  --crewlet-graph-canvas-card-max-width: 20rem;
   --crewlet-graph-canvas-card-height: 2.375rem;
+  /* A card whose name takes two lines. */
+  --crewlet-graph-canvas-card-tall-height: 3.25rem;
   --crewlet-graph-canvas-cell: 2.125rem;
   /* The drawing's corner: square, a hairline's worth of rounding. */
   --crewlet-graph-canvas-corner: 2px;
@@ -41,8 +46,10 @@
   --crewlet-graph-canvas-flow-lit-duration: 0.9s;
   --crewlet-graph-canvas-selected-glow: 18px;
   --crewlet-graph-canvas-popup-width: 18rem;
-  /* The size a tile's name is held at on screen: the least type the kit sets. */
+  /* The least a name is drawn at on screen, at any zoom a name is drawn: the least type the kit sets. */
   --crewlet-graph-canvas-tile-name: var(--font-size-badge);
+  /* Full size outside the world, where names and titles are measured: the world declares its own. */
+  --crewlet-graph-canvas-hold: 1;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -106,7 +113,9 @@
 .crewlet-graph-canvas__lane-head,
 .crewlet-graph-canvas__band-title,
 .crewlet-graph-canvas__trunk-label,
-.crewlet-graph-canvas__probe {
+.crewlet-graph-canvas__probe,
+.crewlet-graph-canvas__title-probe,
+.crewlet-graph-canvas__names {
   position: absolute;
   top: 0;
   left: 0;
@@ -122,9 +131,50 @@
 /* ── the probes the layout reads its sizes from ────────────────────────── */
 
 .crewlet-graph-canvas__probe,
-.crewlet-graph-canvas__empty-probe {
+.crewlet-graph-canvas__empty-probe,
+.crewlet-graph-canvas__title-probe,
+.crewlet-graph-canvas__names {
   visibility: hidden;
   pointer-events: none;
+}
+
+.crewlet-graph-canvas__card.crewlet-graph-canvas__probe--narrow {
+  width: var(--crewlet-graph-canvas-card-min-width);
+}
+
+.crewlet-graph-canvas__card.crewlet-graph-canvas__probe--wide {
+  width: var(--crewlet-graph-canvas-card-max-width);
+  height: var(--crewlet-graph-canvas-card-tall-height);
+}
+
+/* A card's own parts with no name: what each measured name is added to. */
+.crewlet-graph-canvas__card.crewlet-graph-canvas__probe--bare {
+  width: max-content;
+}
+
+/* Where names are measured, each on one line. */
+.crewlet-graph-canvas__names {
+  white-space: nowrap;
+}
+
+.crewlet-graph-canvas__names > span {
+  display: inline-block;
+}
+
+.crewlet-graph-canvas__names > .crewlet-graph-canvas__tile-name {
+  font-size: var(--crewlet-graph-canvas-tile-name);
+}
+
+/* A cluster's title at full size, as wide as it wants: a frame is never narrower. */
+.crewlet-graph-canvas__title-probe {
+  --crewlet-graph-canvas-hold: 1;
+  width: max-content;
+}
+
+.crewlet-graph-canvas__title-probe > .crewlet-graph-canvas__lane-title {
+  position: static;
+  max-width: none;
+  transform: none;
 }
 
 /* The channel between columns, where upright runs stand, and the gap between rows, where level ones do. */
@@ -453,12 +503,25 @@
   font-size: var(--font-size-badge);
 }
 
+/*
+ * A NAME NEVER DRAWS UNDER A TILE'S SIZE: scaled with the map, a card's name
+ * was smaller at half size than the tile's held name just under it.
+ */
 .crewlet-graph-canvas__name {
   flex: 1;
   min-width: 0;
-  font-size: var(--font-size-compact);
+  font-size: max(
+    var(--font-size-compact),
+    calc(var(--crewlet-graph-canvas-tile-name) * var(--crewlet-graph-canvas-hold))
+  );
   font-weight: var(--font-weight-medium);
   line-height: var(--font-line-height-snug);
+}
+
+/* Two lines fit a tall card at any zoom a card is drawn at; a word with no other break breaks anywhere. */
+.crewlet-graph-canvas__card[data-tall] .crewlet-graph-canvas__name {
+  overflow-wrap: anywhere;
+  line-height: var(--font-line-height-tight);
 }
 
 .crewlet-graph-canvas__card--group .crewlet-graph-canvas__group-count {
@@ -671,6 +734,14 @@
 .crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__card[data-attention] .crewlet-graph-canvas__cell {
   background: var(--crewlet-graph-canvas-tone);
   color: var(--color-surface-frame);
+}
+
+/* A tile too short for a second line: see graphTileLines. */
+.crewlet-graph-canvas__world[data-detail='tiles']:not([data-tile-lines='2'])
+  .crewlet-graph-canvas__card[data-tall]
+  .crewlet-graph-canvas__name {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
 }
 
 .crewlet-graph-canvas__world[data-detail='tiles'] .crewlet-graph-canvas__name,

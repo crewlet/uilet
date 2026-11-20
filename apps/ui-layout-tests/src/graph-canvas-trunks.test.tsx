@@ -80,7 +80,7 @@ const meet = (a: DOMRect, b: DOMRect) =>
 
 function clashes(map: HTMLElement): string[] {
   const labels = rects(map, '.crewlet-graph-canvas__trunk-label');
-  const titles = rects(map, '.crewlet-graph-canvas__lane-title');
+  const titles = rects(map, '.crewlet-graph-canvas__world .crewlet-graph-canvas__lane-title');
   const cards = rects(map, '.crewlet-graph-canvas__items .crewlet-graph-canvas__card');
   const out: string[] = [];
   labels.forEach((label, i) => {

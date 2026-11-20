@@ -1,10 +1,16 @@
 /**
- * The layout of a layered map, as pure functions. Every lane of a band shares
- * one row grid, so an edge runs along a gap between rows, never through a card.
- * Lanes are input, and the same input always gives the same picture.
+ * The layout of a layered map, as pure functions. Each lane is a frame sized
+ * to what it holds: its own columns, its cards as wide as their names (up to a
+ * cap, past which a name takes two lines) and as many rows as it fills. The
+ * caller's bands are rows of meaning, top to bottom; the pack splits a band
+ * into shelves of lanes where that fits the room better, and picks each lane's
+ * columns so the whole map fits the room as large as it can. The lanes of a
+ * shelf share its row grid, so an edge runs along a gap between rows or
+ * lanes, never through a card. The same input always gives the same picture.
  */
 
-import type { CanvasPoint, CanvasRect } from '../Canvas/geometry.js';
+import { CANVAS_FIT_MAX_ZOOM, CANVAS_FIT_PADDING } from '../Canvas/geometry.js';
+import type { CanvasPoint, CanvasRect, CanvasSize } from '../Canvas/geometry.js';
 
 /** A band of lanes, top to bottom; its lanes read left to right. */
 export interface GraphLayoutBand {
@@ -40,8 +46,17 @@ export interface GraphLayoutEdge {
 
 /** The sizes the layout is drawn at, measured from the stylesheet. */
 export interface GraphMetrics {
+  /** A card whose width is not measured, and each column of an empty lane. */
   cardWidth: number;
+  /** The narrowest a card sized to its name is: `cardWidth` unless named. */
+  cardMinWidth?: number | undefined;
+  /** The widest a card sized to its name is; a longer name takes two lines. `cardWidth` unless named. */
+  cardMaxWidth?: number | undefined;
   cardHeight: number;
+  /** A card whose name takes two lines: `cardHeight` unless named. */
+  cardTallHeight?: number | undefined;
+  /** A card's own parts with no name, which each measured name is added to. */
+  cardBare?: number | undefined;
   /** The channel between two columns, where vertical runs of edges go. */
   gutter: number;
   /** The gap between two rows, where horizontal runs of edges go. */
@@ -50,7 +65,7 @@ export interface GraphMetrics {
   laneHead: number;
   /** The room a titled band's title takes above its lane headers. */
   bandHead: number;
-  /** The space between two bands. */
+  /** The space between two shelves, and between two lanes of one shelf. */
   bandGap: number;
   /** How far a lane's panel reaches past its cards. */
   lanePad: number;
@@ -68,10 +83,47 @@ export interface GraphLayoutInput {
   edges: readonly GraphLayoutEdge[];
   /** The edges that decide the order inside a lane: `edges` unless given, so hiding a line never moves a card. */
   ordering?: readonly GraphLayoutEdge[] | undefined;
-  /** How many columns a lane asks for, by lane id. Unlisted lanes ask for one. */
+  /** The fewest columns a lane stands in, by lane id. Unlisted lanes take what the pack gives them. */
   laneColumns?: ReadonlyMap<string, number> | undefined;
-  /** The height an empty lane's message takes, by lane id. Unlisted lanes keep one row. */
+  /** The height an empty lane's message takes, by lane id, set [GRAPH_EMPTY_COLUMNS] cards wide. Unlisted lanes keep one row. */
   emptyHeights?: ReadonlyMap<string, number> | undefined;
+  /** Each card's width with its name on one line, by item key ([graphItemKey]). An unlisted card is `cardWidth` wide. */
+  itemWidths?: ReadonlyMap<string, number> | undefined;
+  /** Each lane's title width at full size, by lane id: its panel is never narrower than its title at the fit. */
+  titleWidths?: ReadonlyMap<string, number> | undefined;
+  /** The room the map is fitted into: [GRAPH_LAYOUT_ROOM] unless named. */
+  room?: CanvasSize | undefined;
+  /** The corner of the room a bar covers, in screen pixels: the top or bottom shelf leaves it clear. */
+  corner?: GraphCorner | undefined;
+  /** How a name is drawn at a zoom, so the cards are styled for the most names whole at the fit. */
+  reading?: GraphReading | undefined;
+}
+
+/** A corner of the room something is drawn over, at its right end. */
+export interface GraphCorner {
+  width: number;
+  height: number;
+  at: 'top' | 'bottom';
+}
+
+/**
+ * How the map draws a name at a zoom: at its own size, never under `tileName`
+ * on screen, and nowhere under `tilesZoom`.
+ */
+export interface GraphReading {
+  /** From this zoom up a tall card draws its name on two lines. */
+  cardsZoom: number;
+  /** From this zoom up to `cardsZoom`, a tall tile takes two lines where it is tall enough: see [graphTileLines]. */
+  tilesZoom: number;
+  /** A name's own size in the world, and the least it draws at on screen. */
+  cardName: number;
+  tileName: number;
+}
+
+/** How wide a card grows for its name, and whether a longer name takes a second line or is cut. */
+interface CardStyle {
+  cap: number;
+  wrap: boolean;
 }
 
 /**
@@ -87,8 +139,9 @@ export interface GraphItem extends CanvasRect {
   /** The entry's id, the group's id, or the lane's id for an empty lane. */
   id: string;
   lane: string;
+  /** The shelf it stands on. */
   band: number;
-  /** The first column and row it covers, in its band's grid. */
+  /** The first column and row it covers, in its shelf's grid. */
   col: number;
   row: number;
   cols: number;
@@ -97,12 +150,15 @@ export interface GraphItem extends CanvasRect {
 
 export interface GraphLanePlaced {
   id: string;
+  /** The shelf it stands on. */
   band: number;
-  /** The first column, and how many it spans. */
+  /** The caller's band it belongs to. */
+  source: number;
+  /** The first column, in its shelf's grid, and how many it spans. */
   col: number;
   span: number;
   rows: number;
-  /** Its panel: the header and every row, with its padding. */
+  /** Its panel: the header and every row it fills, with its padding. */
   panel: CanvasRect;
   /** Its header's box, above the first row. */
   head: CanvasRect;
@@ -112,13 +168,18 @@ export interface GraphLanePlaced {
   count: number;
 }
 
+/** A shelf: a row of lanes from one of the caller's bands, which may stand on several. */
 export interface GraphBandPlaced {
   id: string;
   index: number;
-  /** Its title's box, for a titled band. */
+  /** The caller's band its lanes belong to. */
+  source: number;
+  /** Its title's box, on the first shelf of a titled band. */
   title: CanvasRect | null;
   rowsTop: number;
   rows: number;
+  /** The foot of its tallest lane. */
+  bottom: number;
 }
 
 export interface GraphGroupPlaced {
@@ -150,7 +211,7 @@ export interface GraphRoute {
 export interface GraphLayout {
   bounds: CanvasRect;
   metrics: GraphMetrics;
-  columns: number;
+  /** The shelves, top to bottom. */
   bands: GraphBandPlaced[];
   lanes: GraphLanePlaced[];
   laneById: ReadonlyMap<string, GraphLanePlaced>;
@@ -165,21 +226,29 @@ export interface GraphLayout {
   routeOfEdge: ReadonlyMap<string, string>;
   /** What routing another set of edges needs: see [routeGraphEdges]. */
   grid: GraphGrid;
+  /** The zoom the room fits the map at, which the pack made as large as it could. */
+  fit: number;
 }
 
-/** The streets and cells edges are routed through. */
+/** The streets and channels edges are routed through, each shelf its own grid. */
 export interface GraphGrid {
-  /** Each column's left edge. */
-  colX: readonly number[];
-  /** Each vertical channel's centre: channel `c` is left of column `c`, the last one right of the last column. */
-  channelX: readonly number[];
+  /** Each shelf's column left edges. */
+  colX: readonly (readonly number[])[];
+  /** Each shelf's vertical channel centres: channel `c` is left of column `c`, the last one right of the last column. */
+  channelX: readonly (readonly number[])[];
+  /** Each shelf's channels clear from its top to its bottom: the ones either side of each lane. */
+  alleys: readonly (readonly number[])[];
+  /** How far parallel runs in a channel may spread, by shelf then channel. */
+  channelRoom: readonly (readonly number[])[];
+  /** How many columns each shelf has. */
+  bandColumns: readonly number[];
   /** Every horizontal street, top to bottom. */
   streets: readonly GraphStreet[];
-  /** Each band's own streets, as indices into `streets`, top to bottom. */
+  /** Each shelf's own streets, as indices into `streets`, top to bottom. */
   bandStreets: readonly (readonly number[])[];
-  /** The street in the gap above each band after the first, by the band's index. */
+  /** The street in the gap above each shelf after the first, by the shelf's index. */
   gapStreets: ReadonlyMap<number, number>;
-  /** Whether a cell holds anything, by band: `occupied[band][row * columns + col]`. */
+  /** Whether a cell holds anything, by shelf: `occupied[band][row * bandColumns[band] + col]`. */
   occupied: readonly Uint8Array[];
   bandRows: readonly number[];
   bandRowsTop: readonly number[];
@@ -187,10 +256,12 @@ export interface GraphGrid {
 
 export interface GraphStreet {
   y: number;
-  /** The band whose rows it runs between, or -1 for the gap between two bands. */
+  /** The shelf whose rows it runs between, or -1 for the gap between two shelves. */
   band: number;
-  /** For the gap between two bands, the lower band's index; -1 otherwise. */
+  /** For the gap between two shelves, the lower shelf's index; -1 otherwise. */
   gap: number;
+  /** How far parallel runs along it may spread. */
+  room: number;
   /** Whether a group box's edge runs beside it in a column, by column: a run there would double that edge. */
   dirty: Uint8Array;
   /** Whether it runs through an empty lane's message in a column, by column. */
@@ -203,6 +274,49 @@ export interface GraphStreet {
  * sweep is linear in the entries and edges.
  */
 export const GRAPH_ORDER_SWEEPS = 8;
+
+/** The room a map is packed for when its caller names none: a 16:9 screen's. */
+export const GRAPH_LAYOUT_ROOM: CanvasSize = { width: 1600, height: 900 };
+
+/** How many cards wide an empty lane's message is set: one card wide, a sentence of twenty words stood eight lines tall. */
+export const GRAPH_EMPTY_COLUMNS = 2;
+
+/**
+ * HOW MUCH LARGER A FIT A SPLIT BAND MUST BUY: a band on two shelves reads as
+ * two rows, so the pack keeps a band whole unless splitting it fits the map
+ * more than a twentieth larger.
+ */
+export const GRAPH_SPLIT_GAIN = 1.05;
+
+/**
+ * THE LEAST ZOOM A LANE'S TITLE IS WIDENED FOR. A title holds its size on
+ * screen, so at a fit under full size it is wider in world units than its
+ * frame, and under the zoom names are drawn at it is what is left to read.
+ * Frames are widened for it down to a fifth; under that a title gives way.
+ */
+const TITLE_HOLD_FLOOR = 0.2;
+
+/**
+ * HOW MANY TIMES THE PACK SIZES THE TITLES FOR THE FIT IT FOUND, each time
+ * for the last fit, until the fit moves under a hundredth: wider titles lower
+ * the fit a little, so it settles in a few.
+ */
+const TITLE_PASSES = 6;
+const TITLE_SLACK = 0.03;
+
+/**
+ * HOW TALL A TILE MUST BE ON SCREEN, in its name's own size, for that name to
+ * take two lines: two lines and a tenth of a line above and below.
+ */
+export const GRAPH_TILE_TWO_LINES = 2.2;
+
+/** How many lines a tile `height` tall in the world gives its name at `zoom`. */
+export function graphTileLines(zoom: number, height: number, tileName: number): 1 | 2 {
+  return zoom * height >= GRAPH_TILE_TWO_LINES * tileName ? 2 : 1;
+}
+
+/** How much of a second line a name fills, the line breaking between words: a judgement, nine tenths. */
+const TWO_LINE_FILL = 0.9;
 
 /** The space between two parallel runs in one channel or street. */
 const TRACK_STEP = 6;
@@ -227,6 +341,264 @@ interface Block {
   id: string;
   members: string[];
   index: number;
+}
+
+/** A lane as the pack reads it. */
+export interface GraphLaneShape {
+  id: string;
+  /** The caller's band it belongs to. */
+  source: number;
+  /** How many rows it fills at `columns` columns, from `minColumns` to `maxColumns`. */
+  rows: (columns: number) => number;
+  minColumns: number;
+  maxColumns: number;
+  cardWidth: number;
+  cardHeight: number;
+  /** Its title's width at full size. */
+  title: number;
+}
+
+/** What the pack decided: each shelf's lanes, each lane's columns, and the fit it expects. */
+export interface GraphPack {
+  shelves: { source: number; lanes: string[] }[];
+  columns: Map<string, number>;
+  fit: number;
+  /** How much wider than at full size each lane's title was taken to be. */
+  hold: number;
+  /** How many rows each lane under the corner stands down (or up, at the bottom) to leave it clear. */
+  drops: Map<string, number>;
+}
+
+interface ShelfOption {
+  width: number;
+  height: number;
+  columns: number[];
+  /** Each lane's right edge from the shelf's start, and the rows it fills. */
+  rights: number[];
+  rows: number[];
+  pitch: number;
+  /** The room above its first row: a band's title and the lane headers. */
+  head: number;
+}
+
+/**
+ * Packs lanes into shelves for a room: each caller's band on one shelf or a
+ * few in reading order, and each lane as many columns as keeps it no taller
+ * than its shelf needs. Among the packs that fit the room largest (a split
+ * band must buy [GRAPH_SPLIT_GAIN]), the one with the fewest shelves.
+ */
+export function packGraphLanes(
+  bands: readonly GraphLayoutBand[],
+  shapes: ReadonlyMap<string, GraphLaneShape>,
+  metrics: GraphMetrics,
+  room: CanvasSize,
+  corner?: GraphCorner,
+): GraphPack {
+  const { gutter, rowGap, laneHead, bandHead, bandGap, lanePad, margin } = metrics;
+  const roomX = Math.max(1, room.width - 2 * CANVAS_FIT_PADDING);
+  const roomY = Math.max(1, room.height - 2 * CANVAS_FIT_PADDING);
+  const fitOf = (width: number, height: number) => Math.min(roomX / width, roomY / height);
+
+  // The fewest columns that keep a lane at most `rows` tall: rows never grow with columns.
+  const columnsFor = (shape: GraphLaneShape, rows: number): number => {
+    let lo = shape.minColumns;
+    let hi = shape.maxColumns;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (shape.rows(mid) <= rows) hi = mid;
+      else lo = mid + 1;
+    }
+    return lo;
+  };
+
+  const attempt = (hold: number) => {
+    const laneWidth = (shape: GraphLaneShape, columns: number) =>
+      Math.max(columns * shape.cardWidth + (columns - 1) * gutter, shape.title * hold) + 2 * lanePad;
+    // ---- each run of lanes one shelf could hold: its widths and heights, narrowest last
+    const options = new Map<string, ShelfOption[]>();
+    const shelfOptions = (b: number, start: number, end: number): ShelfOption[] => {
+      const key = `${b}:${start}:${end}`;
+      const known = options.get(key);
+      if (known) return known;
+      const lanes = bands[b]!.lanes.slice(start, end).map((id) => shapes.get(id)!);
+      const pitch = Math.max(...lanes.map((shape) => shape.cardHeight)) + rowGap;
+      const head = (start === 0 && bands[b]!.titled ? bandHead : 0) + laneHead;
+      const least = Math.max(...lanes.map((shape) => shape.rows(shape.maxColumns)));
+      const heights = new Set<number>();
+      for (const shape of lanes) {
+        for (let c = shape.minColumns; c <= shape.maxColumns; c++) {
+          const rows = shape.rows(c);
+          if (rows >= least) heights.add(rows);
+          if (rows <= least) break;
+        }
+      }
+      const found: ShelfOption[] = [];
+      for (const rows of [...heights].sort((a, b) => a - b)) {
+        const columns = lanes.map((shape) => columnsFor(shape, rows));
+        const filled = lanes.map((shape, i) => shape.rows(columns[i]!));
+        const rights: number[] = [];
+        let width = 0;
+        lanes.forEach((shape, i) => {
+          width += (i > 0 ? bandGap : 0) + laneWidth(shape, columns[i]!);
+          rights.push(width);
+        });
+        const height = head + Math.max(...filled) * pitch - rowGap + lanePad;
+        found.push({ width, height, columns, rights, rows: filled, pitch, head });
+      }
+      // Widest (and shortest) first; keep only those a narrower one does not beat on height.
+      found.sort((a, b) => b.width - a.width || a.height - b.height);
+      const kept: ShelfOption[] = [];
+      for (const option of found) {
+        const last = kept[kept.length - 1];
+        if (!last || option.width < last.width - 1e-6) kept.push(option);
+      }
+      options.set(key, kept);
+      return kept;
+    };
+    // The shortest option of a shelf no wider than `most`: the options run widest and shortest first.
+    const within = (list: readonly ShelfOption[], most: number): ShelfOption | null => {
+      let lo = 0;
+      let hi = list.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (list[mid]!.width <= most + 1e-6) hi = mid;
+        else lo = mid + 1;
+      }
+      return list[lo] ?? null;
+    };
+    // ---- the ways each band splits into shelves, in reading order
+    const splits = bands.map((band) => {
+      const count = band.lanes.length;
+      const out: number[][] = [];
+      for (let mask = 0; mask < 1 << Math.max(0, count - 1); mask++) {
+        const cuts = [0];
+        for (let i = 1; i < count; i++) if (mask & (1 << (i - 1))) cuts.push(i);
+        cuts.push(count);
+        out.push(cuts);
+      }
+      return out;
+    });
+    const widths = new Set<number>();
+    splits.forEach((list, b) => {
+      for (const cuts of list) {
+        for (let i = 0; i + 1 < cuts.length; i++) for (const option of shelfOptions(b, cuts[i]!, cuts[i + 1]!)) widths.add(option.width);
+      }
+    });
+    // ---- every width the map could be held to, at each most shelves a band may take
+    interface Candidate {
+      fit: number;
+      shelves: number;
+      area: number;
+      chosen: { b: number; cuts: number[]; picks: ShelfOption[] }[];
+      drops: Map<string, number>;
+    }
+    const candidates: Candidate[] = [];
+    const most = Math.max(1, ...bands.map((band) => band.lanes.length));
+    const sorted = [...widths].sort((a, b) => a - b);
+    for (let allowed = 1; allowed <= most; allowed++) {
+      for (const width of sorted) {
+        let height = 0;
+        let wide = 0;
+        let shelves = 0;
+        const chosen: Candidate['chosen'] = [];
+        let fits = true;
+        for (let b = 0; b < bands.length && fits; b++) {
+          let best: { height: number; wide: number; cuts: number[]; picks: ShelfOption[] } | null = null;
+          for (const cuts of splits[b]!) {
+            if (cuts.length - 1 > allowed) continue;
+            let h = (cuts.length - 2) * bandGap;
+            let w = 0;
+            const picks: ShelfOption[] = [];
+            for (let i = 0; i + 1 < cuts.length; i++) {
+              const pick = within(shelfOptions(b, cuts[i]!, cuts[i + 1]!), width);
+              if (!pick) {
+                h = Infinity;
+                break;
+              }
+              h += pick.height;
+              w = Math.max(w, pick.width);
+              picks.push(pick);
+            }
+            if (h === Infinity) continue;
+            if (!best || h < best.height - 1e-6) best = { height: h, wide: w, cuts, picks };
+          }
+          if (!best) fits = false;
+          else {
+            height += best.height + (b > 0 ? bandGap : 0);
+            wide = Math.max(wide, best.wide);
+            shelves += best.cuts.length - 1;
+            chosen.push({ b, cuts: best.cuts, picks: best.picks });
+          }
+        }
+        if (!fits) continue;
+        const w = wide + 2 * margin;
+        let h = height + 2 * margin;
+        const drops = new Map<string, number>();
+        // THE SHELF AT THE CORNERED END KEEPS THE CORNER CLEAR: each of its lanes the corner reaches
+        // over stands as many rows away as it covers, which costs nothing while the lane is shorter
+        // than its shelf. Where the map is narrower than the room, the slack beside it counts.
+        if (corner && corner.width > 0 && corner.height > 0) {
+          const k = fitOf(w, h);
+          const slackX = Math.max(0, roomX - w * k) / 2;
+          const slackY = Math.max(0, roomY - h * k) / 2;
+          const reach = Math.max(0, corner.width - CANVAS_FIT_PADDING - slackX) / k;
+          const top = corner.at === 'top';
+          const band = top ? chosen[0]! : chosen[chosen.length - 1]!;
+          const index = top ? 0 : band.picks.length - 1;
+          const pick = band.picks[index]!;
+          const lanes = bands[band.b]!.lanes.slice(band.cuts[index]!, band.cuts[index + 1]!);
+          const offset = (top ? pick.head - laneHead : 0) + margin;
+          const away = Math.ceil(Math.max(0, (corner.height - CANVAS_FIT_PADDING - slackY) / k - offset) / pick.pitch);
+          if (reach > 0 && away > 0) {
+            let filled = 0;
+            lanes.forEach((lane, i) => {
+              const under = pick.rights[i]! > w - 2 * margin - reach;
+              if (under) drops.set(lane, away);
+              filled = Math.max(filled, pick.rows[i]! + (under ? away : 0));
+            });
+            h += Math.max(0, pick.head + filled * pick.pitch - rowGap + lanePad - pick.height);
+          }
+        }
+        candidates.push({ fit: fitOf(w, h), shelves, area: w * h, chosen, drops });
+      }
+    }
+    const capped = (one: Candidate) => Math.min(CANVAS_FIT_MAX_ZOOM, one.fit);
+    const top = Math.max(...candidates.map(capped));
+    let pick = candidates[0]!;
+    for (const one of candidates) {
+      if (capped(one) * GRAPH_SPLIT_GAIN < top) continue;
+      const better =
+        capped(pick) * GRAPH_SPLIT_GAIN < top ||
+        one.shelves < pick.shelves ||
+        (one.shelves === pick.shelves &&
+          (capped(one) > capped(pick) + 1e-9 ||
+            (Math.abs(capped(one) - capped(pick)) <= 1e-9 && one.area < pick.area - 1e-6)));
+      if (better) pick = one;
+    }
+    return pick;
+  };
+
+  // A title holds its size on screen, so in world units it depends on the fit: a pack at full size
+  // says about what the fit is, and each next one sizes the titles for the fit the last one found.
+  let hold = 1;
+  let chosen = attempt(hold);
+  for (let pass = 1; pass < TITLE_PASSES; pass++) {
+    // A little over the last fit, which the wider titles lower a little more.
+    const next = (1 + TITLE_SLACK) / Math.min(1, Math.max(TITLE_HOLD_FLOOR, chosen.fit));
+    if (Math.abs(next - hold) <= hold * 0.01) break;
+    hold = next;
+    chosen = attempt(hold);
+  }
+  const shelves: GraphPack['shelves'] = [];
+  const columns = new Map<string, number>();
+  for (const { b, cuts, picks } of chosen.chosen) {
+    for (let i = 0; i + 1 < cuts.length; i++) {
+      const lanes = bands[b]!.lanes.slice(cuts[i]!, cuts[i + 1]!);
+      lanes.forEach((lane, j) => columns.set(lane, picks[i]!.columns[j]!));
+      shelves.push({ source: b, lanes: [...lanes] });
+    }
+  }
+  return { shelves, columns, fit: chosen.fit, hold, drops: chosen.drops };
 }
 
 /**
@@ -321,12 +693,68 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
   const columnOf = new Map<string, number>();
   for (const node of nodes) if (node.column !== undefined && node.group === undefined) columnOf.set(node.id, node.column);
 
+  // ---- each lane's cards: as wide as its widest name up to a cap, past which a name takes two
+  // lines or is cut, as the style the pack picks says
+  const { cardWidth, cardHeight, gutter, rowGap, laneHead, bandHead, bandGap, lanePad, margin } = metrics;
+  const cardMin = Math.min(cardWidth, metrics.cardMinWidth ?? cardWidth);
+  const cardMax = Math.max(cardWidth, metrics.cardMaxWidth ?? cardWidth);
+  const tallHeight = Math.max(cardHeight, metrics.cardTallHeight ?? cardHeight);
+  const laneKeys = new Map<string, string[]>();
+  for (const lane of allLanes) {
+    laneKeys.set(
+      lane,
+      blocksOf
+        .get(lane)!
+        .flatMap((block) =>
+          block.kind === 'closed'
+            ? [graphItemKey('summary', block.id)]
+            : block.members.map((id) => graphItemKey('node', id)),
+        ),
+    );
+  }
+  const widthOf = (key: string) => input.itemWidths?.get(key) ?? cardWidth;
+  const cardsFor = (style: CardStyle) => {
+    const out = new Map<string, { width: number; height: number }>();
+    for (const lane of allLanes) {
+      const keys = laneKeys.get(lane)!;
+      let widest = keys.length === 0 ? cardWidth : 0;
+      for (const key of keys) widest = Math.max(widest, widthOf(key));
+      out.set(lane, {
+        width: Math.min(style.cap, Math.max(cardMin, widest)),
+        height: style.wrap && widest > style.cap + 0.5 ? tallHeight : cardHeight,
+      });
+    }
+    return out;
+  };
+  // How many names a fit at `zoom` leaves whole.
+  const readable = (cards: ReadonlyMap<string, { width: number; height: number }>, zoom: number): number => {
+    const reading = input.reading;
+    if (!reading) return 0;
+    const k = Math.min(CANVAS_FIT_MAX_ZOOM, zoom);
+    const bare = metrics.cardBare ?? 0;
+    if (k < reading.tilesZoom) return 0;
+    // A name holds a tile's size on screen, so under that it is wider in the world than at full size.
+    const grown = Math.max(1, reading.tileName / (reading.cardName * k));
+    let count = 0;
+    for (const lane of allLanes) {
+      const card = cards.get(lane)!;
+      const room = card.width - bare;
+      const tall = card.height > cardHeight + 0.5;
+      // A second line holds a little less than the first: a line breaks between words.
+      const lines =
+        tall && (k >= reading.cardsZoom || graphTileLines(k, card.height, reading.tileName) === 2) ? 2 * TWO_LINE_FILL : 1;
+      for (const key of laneKeys.get(lane)!) {
+        if ((widthOf(key) - bare) * grown <= room * lines + 0.5) count += 1;
+      }
+    }
+    return count;
+  };
+
   // ---- rows: where each block of a lane lands
-  const pitch = metrics.cardHeight + metrics.rowGap;
-  const emptyRowsOf = (lane: string): number => {
+  const emptyRowsOf = (lane: string, pitch: number): number => {
     const height = input.emptyHeights?.get(lane);
     if (height === undefined || height <= 0) return 1;
-    return Math.max(1, Math.ceil((height + metrics.rowGap) / pitch));
+    return Math.max(1, Math.ceil((height + rowGap) / pitch));
   };
   interface Cell {
     key: string;
@@ -337,24 +765,28 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     cols: number;
     rows: number;
   }
-  const placeLane = (lane: string, span = laneCols.get(lane)!.span): { cells: Cell[]; rows: number } => {
+  const asked = (lane: string) => Math.max(1, Math.trunc(input.laneColumns?.get(lane) ?? 1));
+  const named = (lane: string) =>
+    blocksOf.get(lane)!.every((block) => block.kind === 'loose') &&
+    blocksOf.get(lane)!.some((block) => columnOf.has(block.id));
+  const placeLane = (lane: string, span: number, pitch: number): { cells: Cell[]; rows: number } => {
     const blocks = blocksOf.get(lane)!;
     const cells: Cell[] = [];
     if (blocks.length === 0) {
-      const rows = emptyRowsOf(lane);
+      const rows = emptyRowsOf(lane, pitch);
       cells.push({ key: graphItemKey('empty', lane), kind: 'empty', id: lane, col: 0, row: 0, cols: span, rows });
       return { cells, rows };
     }
     // COLUMNS THAT MEAN SOMETHING: a lane of loose entries, some naming a column, stands column by
     // column, each column in the lane's order and centred on the tallest.
-    if (span > 1 && blocks.every((block) => block.kind === 'loose') && blocks.some((block) => columnOf.has(block.id))) {
+    if (span > 1 && named(lane)) {
       const stacks: Block[][] = Array.from({ length: span }, () => []);
       for (const block of blocks) {
-        const named = columnOf.get(block.id);
+        const column = columnOf.get(block.id);
         let at = 0;
-        if (named === undefined) {
+        if (column === undefined) {
           for (let c = 1; c < span; c++) if (stacks[c]!.length < stacks[at]!.length) at = c;
-        } else at = Math.min(span - 1, Math.max(0, Math.trunc(named)));
+        } else at = Math.min(span - 1, Math.max(0, Math.trunc(column)));
         stacks[at]!.push(block);
       }
       const rows = Math.max(...stacks.map((stack) => stack.length));
@@ -413,53 +845,111 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     return { cells, rows: row };
   };
 
-  // ---- columns: every band as wide as the widest. A narrower band splits its spare columns
-  // evenly, then gives each leftover to the tallest lane it shortens, else to the narrowest.
-  // An empty lane gains nothing.
-  const asked = (lane: string) => Math.max(1, Math.trunc(input.laneColumns?.get(lane) ?? 1));
-  const widthOf = (band: GraphLayoutBand) => band.lanes.reduce((sum, lane) => sum + asked(lane), 0);
-  const columns = Math.max(1, ...bands.map(widthOf));
-  const laneCols = new Map<string, { col: number; span: number }>();
-  for (const band of bands) {
-    const even = Math.floor((columns - widthOf(band)) / Math.max(1, band.lanes.length));
-    const spans = band.lanes.map((lane) => asked(lane) + even);
-    const rowsAt = (i: number, span: number) => {
-      const lane = band.lanes[i]!;
-      return blocksOf.get(lane)!.length === 0 ? 1 : placeLane(lane, span).rows;
-    };
-    for (let spare = columns - spans.reduce((sum, span) => sum + span, 0); spare > 0; spare--) {
-      let pick = 0;
-      let best: [number, number, number] = [-1, -1, -Infinity];
-      spans.forEach((span, i) => {
-        const now = rowsAt(i, span);
-        const gains = now > rowsAt(i, span + 1);
-        const score: [number, number, number] = [gains ? 1 : 0, gains ? now : 0, -span];
-        if (
-          score[0] > best[0] ||
-          (score[0] === best[0] && (score[1] > best[1] || (score[1] === best[1] && score[2] > best[2])))
-        ) {
-          best = score;
-          pick = i;
-        }
-      });
-      spans[pick]! += 1;
+  // ---- the pack: which lanes share a shelf, and how many columns each lane takes
+  const standardPitch = cardHeight + rowGap;
+  const forms = new Map<string, Omit<GraphLaneShape, 'cardWidth' | 'cardHeight'>>();
+  for (const lane of allLanes) {
+    const blocks = blocksOf.get(lane)!;
+    const title = input.titleWidths?.get(lane) ?? 0;
+    if (blocks.length === 0) {
+      const columns = Math.max(asked(lane), GRAPH_EMPTY_COLUMNS);
+      const rows = emptyRowsOf(lane, standardPitch);
+      forms.set(lane, { id: lane, source: laneBand.get(lane)!, rows: () => rows, minColumns: columns, maxColumns: columns, title });
+      continue;
     }
-    let col = 0;
-    band.lanes.forEach((lane, i) => {
-      laneCols.set(lane, { col, span: spans[i]! });
-      col += spans[i]!;
-    });
+    // A run of cards between open groups wraps at the lane's width; past its longest run a column adds nothing.
+    let run = 0;
+    let longest = 1;
+    let cellsCount = 0;
+    for (const block of blocks) {
+      if (block.kind === 'group') {
+        longest = Math.max(longest, run, block.members.length);
+        run = 0;
+        cellsCount += block.members.length;
+      } else {
+        run += 1;
+        cellsCount += 1;
+      }
+    }
+    longest = Math.max(longest, run);
+    // A lane whose entries name columns stands in as many as they name, or as the caller asks, past
+    // which a named column is the lane's last.
+    const isNamed = named(lane);
+    let least = 1;
+    if (isNamed && !input.laneColumns?.has(lane)) {
+      for (const block of blocks) least = Math.max(least, Math.trunc(columnOf.get(block.id) ?? 0) + 1);
+    }
+    const maxColumns = isNamed ? cellsCount : longest;
+    const minColumns = Math.min(maxColumns, Math.max(least, asked(lane)));
+    const memo = new Map<number, number>();
+    const rows = (columns: number) => {
+      let known = memo.get(columns);
+      if (known === undefined) memo.set(columns, (known = placeLane(lane, columns, standardPitch).rows));
+      return known;
+    };
+    forms.set(lane, { id: lane, source: laneBand.get(lane)!, rows, minColumns, maxColumns, title });
   }
+  // THE STYLE THAT LEAVES THE MOST NAMES WHOLE AND LEGIBLE AT THE FIT, then the largest fit: wide
+  // cards and second lines read more of each name, and cost the fit the room they take.
+  const caps = [cardMax, (cardWidth + cardMax) / 2, cardWidth];
+  const styles: CardStyle[] =
+    input.reading && input.itemWidths
+      ? caps.flatMap((cap) => [
+          { cap, wrap: true },
+          { cap, wrap: false },
+        ])
+      : [{ cap: cardMax, wrap: true }];
+  let chosen: { cards: Map<string, { width: number; height: number }>; packed: GraphPack; score: number } | null = null;
+  for (const style of styles) {
+    const cards = cardsFor(style);
+    const shapes = new Map<string, GraphLaneShape>();
+    for (const [lane, form] of forms) {
+      const card = cards.get(lane)!;
+      shapes.set(lane, { ...form, cardWidth: card.width, cardHeight: card.height });
+    }
+    const packed = packGraphLanes(bands, shapes, metrics, input.room ?? GRAPH_LAYOUT_ROOM, input.corner);
+    const score = readable(cards, packed.fit);
+    const fit = Math.min(CANVAS_FIT_MAX_ZOOM, packed.fit);
+    if (
+      !chosen ||
+      score > chosen.score + 1e-6 ||
+      (Math.abs(score - chosen.score) <= 1e-6 && fit > Math.min(CANVAS_FIT_MAX_ZOOM, chosen.packed.fit) + 1e-9)
+    ) {
+      chosen = { cards, packed, score };
+    }
+  }
+  const laneCard = chosen!.cards;
+  const packed = chosen!.packed;
+
+  // ---- each shelf's lanes, their first column in the shelf's grid, and its card height and pitch
+  const shelves = packed.shelves;
+  const laneShelf = new Map<string, number>();
+  const laneCols = new Map<string, { col: number; span: number }>();
+  const shelfColumns: number[] = [];
+  const shelfCard: number[] = [];
+  shelves.forEach((shelf, s) => {
+    let col = 0;
+    for (const lane of shelf.lanes) {
+      const span = packed.columns.get(lane)!;
+      laneShelf.set(lane, s);
+      laneCols.set(lane, { col, span });
+      col += span;
+    }
+    shelfColumns.push(col);
+    shelfCard.push(Math.max(...shelf.lanes.map((lane) => laneCard.get(lane)!.height)));
+  });
+  const pitchOf = (s: number) => shelfCard[s]! + rowGap;
+  const widestShelf = Math.max(1, ...shelfColumns);
 
   // ---- ordering: barycentric sweeps over the lanes, both ways
-  /* An item's place for ordering: its band, then its row, then its column, as one number. */
+  /* An item's place for ordering: its shelf, then its row, then its column, as one number. */
   const rank = new Float64Array(itemLane.length);
   const rankLane = (lane: string) => {
-    const b = laneBand.get(lane)!;
-    const { col } = laneCols.get(lane)!;
-    for (const cell of placeLane(lane).cells) {
+    const s = laneShelf.get(lane)!;
+    const { col, span } = laneCols.get(lane)!;
+    for (const cell of placeLane(lane, span, pitchOf(s)).cells) {
       const index = itemIndex.get(cell.key);
-      if (index !== undefined) rank[index] = b * 1e6 + cell.row * columns + col + cell.col;
+      if (index !== undefined) rank[index] = s * 1e6 + cell.row * widestShelf + col + cell.col;
     }
   };
   allLanes.forEach(rankLane);
@@ -509,55 +999,127 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     }
   }
 
-  // ---- geometry
-  const { cardWidth, cardHeight, gutter, rowGap, laneHead, bandHead, bandGap, lanePad, margin } = metrics;
-  const colX = Array.from({ length: columns }, (_, c) => margin + gutter / 2 + c * (cardWidth + gutter));
-  const channelX = Array.from({ length: columns + 1 }, (_, c) => margin + c * (cardWidth + gutter));
-  const placedLanes = new Map(allLanes.map((lane) => [lane, placeLane(lane)]));
-  const bandRows = bands.map((band) => Math.max(1, ...band.lanes.map((lane) => placedLanes.get(lane)!.rows)));
+  // ---- geometry: each shelf's lanes side by side from the left margin, each lane its own columns
+  // A lane under the corner stands its drop away from it: rows down at the top, up at the bottom.
+  const dropOf = (lane: string) => packed.drops.get(lane) ?? 0;
+  const placedLanes = new Map(
+    allLanes.map((lane) => {
+      const placed = placeLane(lane, laneCols.get(lane)!.span, pitchOf(laneShelf.get(lane)!));
+      return [lane, placed] as const;
+    }),
+  );
+  const colX: number[][] = [];
+  const channelX: number[][] = [];
+  const alleys: number[][] = [];
+  const channelRoom: number[][] = [];
+  const laneLeft = new Map<string, { panel: number; first: number; right: number }>();
+  let worldRight = margin;
+  shelves.forEach((shelf) => {
+    const xs: number[] = [];
+    const channels: number[] = [];
+    const rooms: number[] = [];
+    const clear: number[] = [];
+    let x = margin;
+    shelf.lanes.forEach((lane, i) => {
+      const { span } = laneCols.get(lane)!;
+      const card = laneCard.get(lane)!;
+      const first = x + lanePad;
+      const cards = span * card.width + (span - 1) * gutter;
+      const title = (input.titleWidths?.get(lane) ?? 0) * packed.hold;
+      const right = x + Math.max(cards, title) + 2 * lanePad;
+      // The channel left of the lane's first column is the alley before it.
+      clear.push(xs.length);
+      channels.push(i === 0 ? Math.max(0, x - bandGap / 2) : x - bandGap / 2);
+      rooms.push(Math.max(0, bandGap - 2 * TRACK_STEP));
+      for (let c = 0; c < span; c++) {
+        if (c > 0) {
+          channels.push(first + c * (card.width + gutter) - gutter / 2);
+          rooms.push(Math.max(0, gutter - 2 * lanePad));
+        }
+        xs.push(first + c * (card.width + gutter));
+      }
+      laneLeft.set(lane, { panel: x, first, right });
+      x = right + bandGap;
+    });
+    const end = x - bandGap;
+    clear.push(xs.length);
+    channels.push(end + bandGap / 2);
+    rooms.push(Math.max(0, bandGap - 2 * TRACK_STEP));
+    colX.push(xs);
+    channelX.push(channels);
+    alleys.push(clear);
+    channelRoom.push(rooms);
+    worldRight = Math.max(worldRight, end);
+  });
+  const bandRows = shelves.map((shelf) =>
+    Math.max(1, ...shelf.lanes.map((lane) => placedLanes.get(lane)!.rows + dropOf(lane))),
+  );
+  const fromTop = input.corner?.at === 'top';
   const bandsPlaced: GraphBandPlaced[] = [];
   const bandRowsTop: number[] = [];
   let y = margin;
-  bands.forEach((band, b) => {
-    const title = band.titled
-      ? { x: channelX[0]!, y, width: channelX[columns]! - channelX[0]!, height: bandHead }
-      : null;
-    if (band.titled) y += bandHead;
+  shelves.forEach((shelf, s) => {
+    const firstOfBand = s === 0 || shelves[s - 1]!.source !== shelf.source;
+    const titled = firstOfBand && bands[shelf.source]!.titled;
+    const title = titled ? { x: margin, y, width: worldRight - margin, height: bandHead } : null;
+    if (titled) y += bandHead;
     const rowsTop = y + laneHead;
     bandRowsTop.push(rowsTop);
-    bandsPlaced.push({ id: band.id, index: b, title, rowsTop, rows: bandRows[b]! });
-    y = rowsTop + bandRows[b]! * pitch - rowGap + lanePad + (b < bands.length - 1 ? bandGap : 0);
+    bandsPlaced.push({
+      id: firstOfBand ? bands[shelf.source]!.id : `${bands[shelf.source]!.id}:${s}`,
+      index: s,
+      source: shelf.source,
+      title,
+      rowsTop,
+      rows: bandRows[s]!,
+      bottom: rowsTop + bandRows[s]! * pitchOf(s) - rowGap + lanePad,
+    });
+    y = rowsTop + bandRows[s]! * pitchOf(s) - rowGap + lanePad + (s < shelves.length - 1 ? bandGap : 0);
   });
-  const bounds: CanvasRect = { x: 0, y: 0, width: channelX[columns]! + margin, height: y + margin };
+  const bounds: CanvasRect = { x: 0, y: 0, width: worldRight + margin, height: y + margin };
 
   const items: GraphItem[] = [];
   const itemByKey = new Map<string, GraphItem>();
   const lanes: GraphLanePlaced[] = [];
-  const occupied = bands.map((_, b) => new Uint8Array(bandRows[b]! * columns));
-  const rowY = (b: number, row: number) => bandRowsTop[b]! + row * pitch;
+  const occupied = shelves.map((_, s) => new Uint8Array(bandRows[s]! * shelfColumns[s]!));
+  const rowY = (s: number, row: number) => bandRowsTop[s]! + row * pitchOf(s);
   for (const lane of allLanes) {
-    const b = laneBand.get(lane)!;
+    const s = laneShelf.get(lane)!;
     const { col, span } = laneCols.get(lane)!;
-    const { cells } = placedLanes.get(lane)!;
-    const left = colX[col]!;
-    const right = colX[col + span - 1]! + cardWidth;
-    const rowsTop = bandRowsTop[b]!;
-    const rowsBottom = rowsTop + bandRows[b]! * pitch - rowGap;
-    const head: CanvasRect = { x: left, y: rowsTop - laneHead, width: right - left, height: laneHead };
+    const own = placedLanes.get(lane)!;
+    const shift = fromTop ? dropOf(lane) : 0;
+    const cells = shift === 0 ? own.cells : own.cells.map((cell) => ({ ...cell, row: cell.row + shift }));
+    const rows = own.rows;
+    const card = laneCard.get(lane)!;
+    const height = shelfCard[s]!;
+    const pitch = pitchOf(s);
+    const at = laneLeft.get(lane)!;
+    const rowsTop = bandRowsTop[s]!;
+    const rowsBottom = rowsTop + (rows + shift) * pitch - rowGap;
+    const head: CanvasRect = {
+      x: at.first,
+      y: rowsTop + shift * pitch - laneHead,
+      width: at.right - lanePad - at.first,
+      height: laneHead,
+    };
     const keys: string[] = [];
     for (const cell of cells) {
-      const x = colX[col + cell.col]!;
+      const x = colX[s]![col + cell.col]!;
       // A header is one column wide even in a wider lane, so the channels inside the lane stay clear of it.
       const width =
-        cell.cols === 1 || cell.kind === 'head' ? cardWidth : colX[col + cell.col + cell.cols - 1]! + cardWidth - x;
+        cell.kind === 'empty'
+          ? at.right - lanePad - x
+          : cell.cols === 1 || cell.kind === 'head'
+            ? card.width
+            : colX[s]![col + cell.col + cell.cols - 1]! + card.width - x;
       // A header is the lower half of its row: the upper half is the room above its box.
-      const top = rowY(b, cell.row) + (cell.kind === 'head' ? cardHeight / 2 : 0);
+      const top = rowY(s, cell.row) + (cell.kind === 'head' ? height / 2 : 0);
       const item: GraphItem = {
         key: cell.key,
         kind: cell.kind,
         id: cell.id,
         lane,
-        band: b,
+        band: s,
         col: col + cell.col,
         row: cell.row,
         cols: cell.cols,
@@ -565,26 +1127,28 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
         x,
         y: top,
         width,
-        height: cell.kind === 'head' ? cardHeight / 2 : cell.rows * pitch - rowGap,
+        height: cell.kind === 'head' ? height / 2 : cell.rows * pitch - rowGap,
       };
       items.push(item);
       itemByKey.set(item.key, item);
       keys.push(item.key);
+      const columns = shelfColumns[s]!;
       for (let r = cell.row; r < cell.row + cell.rows; r++) {
-        for (let c = item.col; c < item.col + cell.cols; c++) occupied[b]![r * columns + c] = 1;
+        for (let c = item.col; c < Math.min(columns, item.col + cell.cols); c++) occupied[s]![r * columns + c] = 1;
       }
     }
     const count = (blocksOf.get(lane) ?? []).reduce((sum, block) => sum + block.members.length, 0);
     lanes.push({
       id: lane,
-      band: b,
+      band: s,
+      source: laneBand.get(lane)!,
       col,
       span,
-      rows: placedLanes.get(lane)!.rows,
+      rows,
       panel: {
-        x: left - lanePad,
+        x: at.panel,
         y: head.y,
-        width: right - left + 2 * lanePad,
+        width: at.right - at.panel,
         height: rowsBottom + lanePad - head.y,
       },
       head,
@@ -592,6 +1156,8 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
       count,
     });
   }
+  // The walk and the reading order go shelf by shelf, left to right.
+  lanes.sort((a, b) => a.band - b.band || a.col - b.col);
 
   // ---- groups: an open group's box runs from its header row to its last member
   const groupsPlaced: GraphGroupPlaced[] = [];
@@ -609,72 +1175,94 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
         return Math.max(bottom, item.row);
       }, head.row);
       const { col, span } = laneCols.get(lane)!;
+      const s = head.band;
       const top = head.y;
-      const bottom = rowY(head.band, last) + cardHeight + lanePad / 2;
+      const bottom = rowY(s, last) + shelfCard[s]! + lanePad / 2;
+      const left = colX[s]![col]!;
       groupsPlaced.push({
         id: block.id,
         lane,
         open: true,
         box: {
-          x: colX[col]! - lanePad / 2,
+          x: left - lanePad / 2,
           y: top,
-          width: colX[col + span - 1]! + cardWidth - colX[col]! + lanePad,
+          width: colX[s]![col + span - 1]! + laneCard.get(lane)!.width - left + lanePad,
           height: bottom - top,
         },
         members: [...block.members],
       });
-      boxBottoms.push({ band: head.band, col, span, row: last });
+      boxBottoms.push({ band: s, col, span, row: last });
     }
   }
 
-  // ---- streets: the gap under every row, and the middle of every band gap
+  // ---- streets: the gap under every row of a shelf, and the middle of every gap between shelves
   const streets: GraphStreet[] = [];
   const empties = items.filter((item) => item.kind === 'empty');
-  bands.forEach((_, b) => {
-    for (let row = 0; row < bandRows[b]!; row++) {
+  shelves.forEach((_, s) => {
+    const columns = shelfColumns[s]!;
+    for (let row = 0; row < bandRows[s]!; row++) {
       const dirty = new Uint8Array(columns);
       const blocked = new Uint8Array(columns);
       for (const box of boxBottoms) {
-        if (box.band !== b || box.row !== row) continue;
+        if (box.band !== s || box.row !== row) continue;
         for (let c = box.col; c < box.col + box.span; c++) dirty[c] = 1;
       }
       for (const empty of empties) {
-        if (empty.band !== b || row < empty.row || row >= empty.row + empty.rows - 1) continue;
-        for (let c = empty.col; c < empty.col + empty.cols; c++) blocked[c] = 1;
+        if (empty.band !== s || row < empty.row || row >= empty.row + empty.rows - 1) continue;
+        for (let c = empty.col; c < Math.min(columns, empty.col + empty.cols); c++) blocked[c] = 1;
       }
-      streets.push({ y: rowY(b, row) + cardHeight + rowGap / 2, band: b, gap: -1, dirty, blocked });
+      streets.push({
+        y: rowY(s, row) + shelfCard[s]! + rowGap / 2,
+        band: s,
+        gap: -1,
+        room: Math.max(0, rowGap - 4),
+        dirty,
+        blocked,
+      });
     }
   });
-  bandsPlaced.forEach((band, b) => {
-    if (b === 0) return;
-    const above = bandRowsTop[b - 1]! + bandRows[b - 1]! * pitch - rowGap + lanePad;
+  bandsPlaced.forEach((band, s) => {
+    if (s === 0) return;
+    const above = bandRowsTop[s - 1]! + bandRows[s - 1]! * pitchOf(s - 1) - rowGap + lanePad;
     const below = band.title ? band.title.y : band.rowsTop - laneHead;
     streets.push({
       y: (above + below) / 2,
       band: -1,
-      gap: b,
-      dirty: new Uint8Array(columns),
-      blocked: new Uint8Array(columns),
+      gap: s,
+      room: Math.max(0, below - above - 2 * STREET_TRACK_STEP),
+      dirty: new Uint8Array(0),
+      blocked: new Uint8Array(0),
     });
   });
   streets.sort((a, b) => a.y - b.y);
-  const bandStreets: number[][] = bands.map(() => []);
+  const bandStreets: number[][] = shelves.map(() => []);
   const gapStreets = new Map<number, number>();
   streets.forEach((street, i) => {
     if (street.band >= 0) bandStreets[street.band]!.push(i);
     else gapStreets.set(street.gap, i);
   });
 
-  const grid: GraphGrid = { colX, channelX, streets, bandStreets, gapStreets, occupied, bandRows, bandRowsTop };
+  const grid: GraphGrid = {
+    colX,
+    channelX,
+    alleys,
+    channelRoom,
+    bandColumns: shelfColumns,
+    streets,
+    bandStreets,
+    gapStreets,
+    occupied,
+    bandRows,
+    bandRowsTop,
+  };
   const itemOfNode = keyOfNode;
 
-  const partial = { metrics, columns, itemByKey, itemOfNode, grid };
+  const partial = { metrics, itemByKey, itemOfNode, grid };
   const routed = routeAll(partial, input.edges);
 
   return {
     bounds,
     metrics,
-    columns,
     bands: bandsPlaced,
     lanes,
     laneById: new Map(lanes.map((lane) => [lane.id, lane])),
@@ -686,11 +1274,12 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     routes: routed.routes,
     routeOfEdge: routed.routeOfEdge,
     grid,
+    fit: packed.fit,
   };
 }
 
 /** The parts of a layout routing reads. */
-type Routable = Pick<GraphLayout, 'metrics' | 'columns' | 'itemByKey' | 'itemOfNode' | 'grid'>;
+type Routable = Pick<GraphLayout, 'metrics' | 'itemByKey' | 'itemOfNode' | 'grid'>;
 
 /**
  * Routes a set of edges over a layout that is already placed, such as the
@@ -702,6 +1291,12 @@ export function routeGraphEdges(layout: GraphLayout, edges: readonly GraphLayout
 
 type Side = 'left' | 'right';
 
+/** A vertical corridor: a channel of one shelf. */
+interface Channel {
+  band: number;
+  channel: number;
+}
+
 interface Plan {
   key: string;
   from: GraphItem;
@@ -709,25 +1304,25 @@ interface Plan {
   edges: string[];
   exit: Side;
   entry: Side;
-  /** The channel the run leaving the source takes, and the one arriving at the target. */
-  out: number;
-  in: number;
-  /** The street between them, when the two channels differ and no row runs straight through. */
-  street: number | null;
-  /** A straight run along the source's row, when the cells between are empty. */
-  straight: boolean;
+  /**
+   * The channels the path runs up or down, in order: the one beside the
+   * source, any alleys it crosses shelves by, and the one beside the target.
+   */
+  channels: Channel[];
+  /** The street between each two channels in turn. */
+  streets: number[];
   fromY: number;
   toY: number;
-  outX: number;
-  inX: number;
-  streetY: number;
+  /** Each channel's run, and each street's, once tracks are given. */
+  xs: number[];
+  ys: number[];
 }
 
 function routeAll(
   layout: Routable,
   edges: readonly GraphLayoutEdge[],
 ): { routes: GraphRoute[]; routeOfEdge: Map<string, string> } {
-  const { itemByKey, itemOfNode, grid, columns, metrics } = layout;
+  const { itemByKey, itemOfNode, grid, metrics } = layout;
   const plans = new Map<string, Plan>();
   const routeOfEdge = new Map<string, string>();
   for (const edge of edges) {
@@ -741,9 +1336,10 @@ function routeAll(
       known.edges.push(edge.id);
       continue;
     }
-    plans.set(key, plan(key, itemByKey.get(a)!, itemByKey.get(b)!, edge.id, grid, columns, metrics));
+    plans.set(key, plan(key, itemByKey.get(a)!, itemByKey.get(b)!, edge.id, grid, metrics));
   }
   const list = [...plans.values()];
+  const channelAt = (one: Channel) => grid.channelX[one.band]![one.channel]!;
 
   // ---- ports: the edges on one side of a card spread down it, in the order of where they go
   const sides = new Map<string, { plan: Plan; end: 'from' | 'to'; toward: number }[]>();
@@ -755,15 +1351,17 @@ function routeAll(
   };
   const centre = (item: GraphItem) => item.y + item.height / 2;
   for (const one of list) {
+    const first = one.streets[0];
+    const last = one.streets[one.streets.length - 1];
     attach(one.from, one.exit, {
       plan: one,
       end: 'from',
-      toward: one.street === null ? centre(one.to) : grid.streets[one.street]!.y,
+      toward: first === undefined ? centre(one.to) : grid.streets[first]!.y,
     });
     attach(one.to, one.entry, {
       plan: one,
       end: 'to',
-      toward: one.street === null ? centre(one.from) : grid.streets[one.street]!.y,
+      toward: last === undefined ? centre(one.from) : grid.streets[last]!.y,
     });
   }
   for (const [key, entries] of sides) {
@@ -781,54 +1379,41 @@ function routeAll(
   // ---- tracks: parallel runs in one channel or street stand apart
   interface Run {
     plan: Plan;
-    which: 'out' | 'in' | 'street';
+    /** Which of its plan's channels or streets it is. */
+    at: number;
     lo: number;
     hi: number;
   }
-  const verticals = new Map<number, Run[]>();
+  const verticals = new Map<string, { channel: Channel; runs: Run[] }>();
   const horizontals = new Map<number, Run[]>();
-  const push = <K>(map: Map<K, Run[]>, key: K, run: Run) => {
-    let runs = map.get(key);
-    if (!runs) map.set(key, (runs = []));
-    runs.push(run);
-  };
   for (const one of list) {
-    if (one.straight) {
-      push(verticals, one.in, {
-        plan: one,
-        which: 'in',
-        lo: Math.min(one.fromY, one.toY),
-        hi: Math.max(one.fromY, one.toY),
-      });
-    } else if (one.street === null) {
-      push(verticals, one.out, {
-        plan: one,
-        which: 'out',
-        lo: Math.min(one.fromY, one.toY),
-        hi: Math.max(one.fromY, one.toY),
-      });
-    } else {
-      const sy = grid.streets[one.street]!.y;
-      push(verticals, one.out, { plan: one, which: 'out', lo: Math.min(one.fromY, sy), hi: Math.max(one.fromY, sy) });
-      push(verticals, one.in, { plan: one, which: 'in', lo: Math.min(sy, one.toY), hi: Math.max(sy, one.toY) });
-      const ax = grid.channelX[one.out]!;
-      const bx = grid.channelX[one.in]!;
-      push(horizontals, one.street, { plan: one, which: 'street', lo: Math.min(ax, bx), hi: Math.max(ax, bx) });
-    }
+    const n = one.channels.length;
+    one.channels.forEach((channel, i) => {
+      const a = i === 0 ? one.fromY : grid.streets[one.streets[i - 1]!]!.y;
+      const b = i === n - 1 ? one.toY : grid.streets[one.streets[i]!]!.y;
+      const key = `${channel.band}:${channel.channel}`;
+      let slot = verticals.get(key);
+      if (!slot) verticals.set(key, (slot = { channel, runs: [] }));
+      slot.runs.push({ plan: one, at: i, lo: Math.min(a, b), hi: Math.max(a, b) });
+    });
+    one.streets.forEach((street, j) => {
+      const a = channelAt(one.channels[j]!);
+      const b = channelAt(one.channels[j + 1]!);
+      let runs = horizontals.get(street);
+      if (!runs) horizontals.set(street, (runs = []));
+      runs.push({ plan: one, at: j, lo: Math.min(a, b), hi: Math.max(a, b) });
+    });
   }
-  const verticalRoom = Math.max(0, metrics.gutter - 2 * metrics.lanePad);
-  for (const [channel, runs] of verticals) {
-    const offsets = assignTracks(runs, TRACK_STEP, verticalRoom);
+  for (const { channel, runs } of verticals.values()) {
+    const offsets = assignTracks(runs, TRACK_STEP, grid.channelRoom[channel.band]![channel.channel] ?? 0);
     runs.forEach((run, i) => {
-      const x = grid.channelX[channel]! + offsets[i]!;
-      if (run.which === 'out') run.plan.outX = x;
-      else run.plan.inX = x;
+      run.plan.xs[run.at] = channelAt(channel) + offsets[i]!;
     });
   }
   for (const [street, runs] of horizontals) {
-    const offsets = assignTracks(runs, STREET_TRACK_STEP, Math.max(0, metrics.rowGap - 4));
+    const offsets = assignTracks(runs, STREET_TRACK_STEP, grid.streets[street]!.room);
     runs.forEach((run, i) => {
-      run.plan.streetY = grid.streets[street]!.y + offsets[i]!;
+      run.plan.ys[run.at] = grid.streets[street]!.y + offsets[i]!;
     });
   }
 
@@ -836,31 +1421,14 @@ function routeAll(
   const routes: GraphRoute[] = list.map((one) => {
     const startX = one.exit === 'right' ? one.from.x + one.from.width : one.from.x;
     const endX = one.entry === 'right' ? one.to.x + one.to.width : one.to.x;
-    let points: CanvasPoint[];
-    if (one.straight) {
-      points = [
-        { x: startX, y: one.fromY },
-        { x: one.inX, y: one.fromY },
-        { x: one.inX, y: one.toY },
-        { x: endX, y: one.toY },
-      ];
-    } else if (one.street === null) {
-      points = [
-        { x: startX, y: one.fromY },
-        { x: one.outX, y: one.fromY },
-        { x: one.outX, y: one.toY },
-        { x: endX, y: one.toY },
-      ];
-    } else {
-      points = [
-        { x: startX, y: one.fromY },
-        { x: one.outX, y: one.fromY },
-        { x: one.outX, y: one.streetY },
-        { x: one.inX, y: one.streetY },
-        { x: one.inX, y: one.toY },
-        { x: endX, y: one.toY },
-      ];
-    }
+    let points: CanvasPoint[] = [
+      { x: startX, y: one.fromY },
+      { x: one.xs[0]!, y: one.fromY },
+    ];
+    one.streets.forEach((_, j) => {
+      points.push({ x: one.xs[j]!, y: one.ys[j]! }, { x: one.xs[j + 1]!, y: one.ys[j]! });
+    });
+    points.push({ x: one.xs[one.xs.length - 1]!, y: one.toY }, { x: endX, y: one.toY });
     points = simplify(points);
     // The line stops at the arrowhead's base, so its end never shows through the point.
     const direction = one.entry === 'right' ? -1 : 1;
@@ -892,9 +1460,9 @@ export interface GraphTrunk {
   /** The middle of its run: where its count is written while nothing is in the way there. */
   label: CanvasPoint;
   /**
-   * The gap it crosses: from the upper cluster's foot (`top`) to the lower
-   * one's head (`bottom`), with its level run at `y` from `x1` to `x2`. Where
-   * its count may be written: see [placeTrunkLabels].
+   * The gap it crosses into the lower cluster: from the foot of what stands
+   * above (`top`) to the lower cluster's head (`bottom`), with its level run at
+   * `y` from `x1` to `x2`. Where its count may be written: see [placeTrunkLabels].
    */
   run: { x1: number; x2: number; y: number; top: number; bottom: number };
   box: CanvasRect;
@@ -904,12 +1472,14 @@ export interface GraphTrunk {
 const TRUNK_INSET = 48;
 
 /**
- * The trunks of a set of edges: one per pair of lanes in neighbouring bands,
- * straight down where the two panels overlap and stepped through the gap
- * between the bands where they do not. Edges inside one band have no trunk.
+ * The trunks of a set of edges: one per pair of lanes in neighbouring bands of
+ * the caller's, straight down where the two panels overlap and stepped through
+ * the gap between their shelves where they do not. Where a band stands on
+ * several shelves, a trunk crosses those between by the alley nearest its
+ * lower end. Edges inside one band have no trunk.
  */
 export function graphTrunks(
-  layout: Pick<GraphLayout, 'laneById'>,
+  layout: Pick<GraphLayout, 'laneById' | 'grid' | 'bands'>,
   edges: readonly GraphLayoutEdge[],
   laneOf: (node: string) => string | undefined,
 ): GraphTrunk[] {
@@ -917,13 +1487,15 @@ export function graphTrunks(
   for (const edge of edges) {
     const a = layout.laneById.get(laneOf(edge.from) ?? '');
     const b = layout.laneById.get(laneOf(edge.to) ?? '');
-    if (!a || !b || Math.abs(a.band - b.band) !== 1) continue;
+    if (!a || !b || Math.abs(a.source - b.source) !== 1) continue;
     const [upper, lower] = a.band < b.band ? [a, b] : [b, a];
     const key = `${upper.id}>${lower.id}`;
     const pair = pairs.get(key);
     if (pair) pair.count += 1;
     else pairs.set(key, { upper, lower, count: 1 });
   }
+  const { grid } = layout;
+  const gapY = (band: number) => grid.streets[grid.gapStreets.get(band)!]!.y;
   return [...pairs].map(([key, { upper, lower, count }]) => {
     const from = upper.panel;
     const to = lower.panel;
@@ -932,28 +1504,63 @@ export function graphTrunks(
     const hi = Math.min(from.x + from.width, to.x + to.width) - inset;
     const mid = from.x + from.width / 2;
     const left = to.x + to.width / 2 < mid;
-    const x1 = lo <= hi ? Math.min(hi, Math.max(lo, mid)) : left ? from.x + inset : from.x + from.width - inset;
-    const x2 = lo <= hi ? x1 : left ? to.x + to.width - inset : to.x + inset;
     const y1 = from.y + from.height;
     const y2 = to.y;
-    const turn = (y1 + y2) / 2;
-    const points = simplify([
-      { x: x1, y: y1 },
-      { x: x1, y: turn },
-      { x: x2, y: turn },
-      { x: x2, y: y2 },
-    ]);
+    let points: CanvasPoint[];
+    let run: GraphTrunk['run'];
+    if (lower.band === upper.band + 1) {
+      const x1 = lo <= hi ? Math.min(hi, Math.max(lo, mid)) : left ? from.x + inset : from.x + from.width - inset;
+      const x2 = lo <= hi ? x1 : left ? to.x + to.width - inset : to.x + inset;
+      const turn = gapY(lower.band);
+      points = [
+        { x: x1, y: y1 },
+        { x: x1, y: turn },
+        { x: x2, y: turn },
+        { x: x2, y: y2 },
+      ];
+      run = { x1, x2, y: turn, top: y1, bottom: y2 };
+    } else {
+      // Down into the gap under the upper shelf, through each shelf between by its alley nearest
+      // the lower end, and into the gap over the lower shelf.
+      const x1 = Math.min(from.x + from.width - inset, Math.max(from.x + inset, mid));
+      const x2 = Math.min(to.x + to.width - inset, Math.max(to.x + inset, to.x + to.width / 2));
+      points = [{ x: x1, y: y1 }];
+      let x = x1;
+      for (let band = upper.band + 1; band < lower.band; band++) {
+        const across = grid.channelX[band]![nearestAlley(grid, band, x2)]!;
+        points.push({ x, y: gapY(band) }, { x: across, y: gapY(band) });
+        x = across;
+      }
+      const turn = gapY(lower.band);
+      points.push({ x, y: turn }, { x: x2, y: turn }, { x: x2, y: y2 });
+      run = { x1: x, x2, y: turn, top: layout.bands[lower.band - 1]!.bottom, bottom: y2 };
+    }
+    points = simplify(points);
     return {
       key,
       from: upper.id,
       to: lower.id,
       count,
       d: pathOf(points),
-      label: { x: (x1 + x2) / 2, y: turn },
-      run: { x1, x2, y: turn, top: y1, bottom: y2 },
+      label: { x: (run.x1 + run.x2) / 2, y: run.y },
+      run,
       box: boxOf(points),
     };
   });
+}
+
+/** The alley of a shelf nearest `x`: a channel clear from the shelf's top to its bottom. */
+function nearestAlley(grid: Pick<GraphGrid, 'alleys' | 'channelX'>, band: number, x: number): number {
+  let best = 0;
+  let bestDistance = Infinity;
+  for (const channel of grid.alleys[band]!) {
+    const distance = Math.abs(grid.channelX[band]![channel]! - x);
+    if (distance < bestDistance - 1e-6) {
+      bestDistance = distance;
+      best = channel;
+    }
+  }
+  return best;
 }
 
 /** How far apart two counts written in one gap stand, so they never touch. */
@@ -1029,62 +1636,73 @@ function overlaps(a: CanvasRect, b: CanvasRect, gap: number): boolean {
   );
 }
 
-/** Decides which channels and street an edge takes, before ports and tracks are known. */
-function plan(
-  key: string,
-  from: GraphItem,
-  to: GraphItem,
-  edge: string,
-  grid: GraphGrid,
-  columns: number,
-  metrics: GraphMetrics,
-): Plan {
-  const forward = to.col > from.col;
-  const back = to.col < from.col;
-  const exit: Side = back ? 'left' : 'right';
-  const entry: Side = forward ? 'left' : 'right';
-  const out = forward ? from.col + 1 : back ? from.col : from.col + 1;
-  const into = forward ? to.col : back ? to.col + 1 : to.col + 1;
+/**
+ * Decides which channels and streets an edge takes, before ports and tracks
+ * are known. Inside one shelf, as before: a channel beside each end and the
+ * street between them. Across shelves: down (or up) the channel beside the
+ * source to the gap next to its shelf, through each shelf between by its
+ * alley nearest the target, and into the target's shelf by the channel beside it.
+ */
+function plan(key: string, from: GraphItem, to: GraphItem, edge: string, grid: GraphGrid, metrics: GraphMetrics): Plan {
   const fromY = from.y + from.height / 2;
   const toY = to.y + to.height / 2;
-  const base: Plan = {
+  const base = (exit: Side, entry: Side, channels: Channel[], streets: number[]): Plan => ({
     key,
     from,
     to,
     edges: [edge],
     exit,
     entry,
-    out,
-    in: into,
-    street: null,
-    straight: false,
+    channels,
+    streets,
     fromY,
     toY,
-    outX: grid.channelX[out]!,
-    inX: grid.channelX[into]!,
-    streetY: 0,
-  };
-  if (out === into && from.band === to.band) return base;
+    xs: channels.map((one) => grid.channelX[one.band]![one.channel]!),
+    ys: streets.map((street) => grid.streets[street]!.y),
+  });
+  if (from.band !== to.band) {
+    const forward = to.x >= from.x + from.width;
+    const back = to.x + to.width <= from.x;
+    const exit: Side = back ? 'left' : 'right';
+    const entry: Side = forward ? 'left' : 'right';
+    const out = exit === 'right' ? from.col + 1 : from.col;
+    const into = entry === 'left' ? to.col : to.col + 1;
+    const step = to.band > from.band ? 1 : -1;
+    const target = grid.channelX[to.band]![into]!;
+    const channels: Channel[] = [{ band: from.band, channel: out }];
+    const streets: number[] = [];
+    for (let band = from.band; band !== to.band; band += step) {
+      streets.push(grid.gapStreets.get(step > 0 ? band + 1 : band)!);
+      const next = band + step;
+      channels.push(next === to.band ? { band: next, channel: into } : { band: next, channel: nearestAlley(grid, next, target) });
+    }
+    return base(exit, entry, channels, streets);
+  }
+  const forward = to.col > from.col;
+  const back = to.col < from.col;
+  const exit: Side = back ? 'left' : 'right';
+  const entry: Side = forward ? 'left' : 'right';
+  const out = forward ? from.col + 1 : back ? from.col : from.col + 1;
+  const into = forward ? to.col : back ? to.col + 1 : to.col + 1;
+  const band = from.band;
+  if (out === into) return base(exit, entry, [{ band, channel: out }], []);
+  const columns = grid.bandColumns[band]!;
   // Straight along the source's row, when every cell it crosses is empty.
-  if (from.band === to.band && from.row === to.row) {
+  if (from.row === to.row) {
     const lo = Math.min(from.col, to.col) + 1;
     const hi = Math.max(from.col, to.col) - 1;
-    const cells = grid.occupied[from.band]!;
+    const cells = grid.occupied[band]!;
     let free = true;
     for (let c = lo; c <= hi && free; c++) if (cells[from.row * columns + c]) free = false;
-    if (free) return { ...base, straight: true };
+    if (free) return base(exit, entry, [{ band, channel: into }], []);
   }
-  // Otherwise along a street: inside the band, one between the two rows, nearest the target, clear
-  // of a group's edge and an empty lane's message; between bands, the gap beside the source's band.
+  // Otherwise along a street of the shelf: one between the two rows, nearest the target, clear of a
+  // group's edge and an empty lane's message.
   const lo = Math.min(fromY, toY);
   const hi = Math.max(fromY, toY);
   const crossed: number[] = [];
   for (let c = Math.min(out, into); c < Math.max(out, into); c++) crossed.push(c);
   const pitch = metrics.cardHeight + metrics.rowGap;
-  if (from.band !== to.band) {
-    const gap = grid.gapStreets.get(from.band < to.band ? from.band + 1 : from.band);
-    return { ...base, street: gap ?? null };
-  }
   const cost = (i: number) => {
     const street = grid.streets[i]!;
     const between = street.y >= lo && street.y <= hi;
@@ -1096,7 +1714,7 @@ function plan(
     return Math.abs(street.y - toY) + penalty;
   };
   // Outward from the street nearest the target: a street further away than the best cost so far cannot win.
-  const list = grid.bandStreets[from.band]!;
+  const list = grid.bandStreets[band]!;
   let at = 0;
   let top = list.length;
   while (at < top) {
@@ -1120,7 +1738,16 @@ function plan(
       best = list[i]!;
     }
   }
-  return { ...base, street: best < 0 ? null : best };
+  if (best < 0) return base(exit, entry, [{ band, channel: out }], []);
+  return base(
+    exit,
+    entry,
+    [
+      { band, channel: out },
+      { band, channel: into },
+    ],
+    [best],
+  );
 }
 
 /**

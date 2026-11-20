@@ -70,9 +70,18 @@ export type CanvasEase = 'near' | 'travel';
 export type CanvasOpening = (room: CanvasRect, fit: CanvasView) => CanvasView | null;
 
 /** What a screen can ask of a canvas it holds a ref to. */
+/** The corner of a canvas's room its zoom bar covers: its right end, at the top or the bottom. */
+export interface CanvasCorner {
+  width: number;
+  height: number;
+  at: 'top' | 'bottom';
+}
+
 export interface CanvasHandle {
   /** Show all of the content. Eases, unless reduced motion is set. */
   fit(): void;
+  /** Fit again at once, where the view is still the last fit: for content a resize reshaped. A moved view stays. */
+  refit(): void;
   /** Zoom about the viewport centre. */
   zoomBy(factor: number): void;
   /** Zoom about the viewport centre to one scale, 1 being actual size, within the limits. */
@@ -284,6 +293,11 @@ export interface CanvasProps {
    */
   onViewChange?: ((view: CanvasView, viewport: CanvasSize) => void) | undefined;
   /**
+   * Called with the room a fit is made in (the viewport clear of the end bar)
+   * and the corner of it the zoom bar covers, whenever either changes.
+   */
+  onRoomChange?: ((room: CanvasSize, corner: CanvasCorner | null) => void) | undefined;
+  /**
    * The view to open on instead of the fit, read once when the first content
    * is placed and kept reachable; a [CanvasOpening] is asked at that moment.
    */
@@ -315,6 +329,7 @@ export function Canvas({
   labels,
   onReady,
   onViewChange,
+  onRoomChange,
   initialView,
   ref,
   className,
@@ -356,6 +371,8 @@ export function Canvas({
    * room it leaves, so no card is drawn under it. Measured from the viewport.
    */
   const endBar = useRef<HTMLDivElement>(null);
+  const zoomBar = useRef<HTMLDivElement>(null);
+  const [corner, setCorner] = useState<CanvasCorner | null>(null);
   const hasEnd = overlayEnd !== undefined && overlayEnd !== null && overlayEnd !== false;
   const [band, setBand] = useState({ top: 0, bottom: 0 });
   const bandNow = useRef(band);
@@ -500,6 +517,37 @@ export function Canvas({
     }
   }, [ready, size, content, apply, fitOf, refitOnResize]);
 
+  // ---- the corner the zoom bar covers, and the room a fit is made in -----------
+  useLayoutEffect(() => {
+    const bar = zoomBar.current;
+    const box = viewport.current;
+    const read = () => {
+      let next: CanvasCorner | null = null;
+      if (bar && box) {
+        const own = bar.getBoundingClientRect();
+        const pane = box.getBoundingClientRect();
+        if (own.width > 0 && own.height > 0) {
+          const top = controlsPlacement === 'top-right';
+          next = {
+            width: Math.max(0, pane.right - own.left),
+            height: Math.max(0, top ? own.bottom - pane.top : pane.bottom - own.top),
+            at: top ? 'top' : 'bottom',
+          };
+        }
+      }
+      setCorner((was) =>
+        was && next && was.width === next.width && was.height === next.height && was.at === next.at ? was : next,
+      );
+    };
+    // Read with the viewport's size: the bar's own size moves only with what it holds.
+    read();
+  }, [controls, controlsPlacement, size, touchActive]);
+  const reportRoom = useRef(onRoomChange);
+  reportRoom.current = onRoomChange;
+  useLayoutEffect(() => {
+    if (room.width > 0 && room.height > 0) reportRoom.current?.({ width: room.width, height: room.height }, corner);
+  }, [room.width, room.height, corner]);
+
   // ---- tell the caller where the view is -----------------------------------
   const reportView = useRef(onViewChange);
   reportView.current = onViewChange;
@@ -534,6 +582,12 @@ export function Canvas({
       fit: () => {
         const bounds = contentNow.current;
         if (bounds) fitNow(bounds);
+      },
+      refit: () => {
+        const bounds = contentNow.current;
+        if (!bounds || !sameView(fitted.current, viewNow.current)) return;
+        apply(fitOf(bounds), false);
+        fitted.current = viewNow.current;
       },
       zoomBy: (factor) => {
         const { width, height } = sizeNow.current;
@@ -880,7 +934,7 @@ export function Canvas({
          * One group in one corner: the zoom bar, then the caller's bars under
          * it, all acting on the canvas.
          */
-        <div className="crewlet-canvas__controls" data-placement={controlsPlacement}>
+        <div className="crewlet-canvas__controls" data-placement={controlsPlacement} ref={zoomBar}>
           {(controls || touchActive) && (
             <div className="crewlet-canvas__bar">
               {touchActive && (

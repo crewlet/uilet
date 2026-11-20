@@ -2,8 +2,8 @@
  * The keyboard walk over a laid out map, as a pure function of the layout.
  *
  * The arrows move the way they point. Up and Down move along a lane's column
- * and on into the band above or below; Left and Right move to the next column
- * of the lane, then to the item nearest in height in the lane beside; Home
+ * and on into the shelf above or below; Left and Right move to the next column
+ * of the lane, then to the item nearest in height in the band's next lane; Home
  * and End go to a lane's ends, and with Control or Command to the map's. An
  * empty lane is a stop too, so its message is read.
  */
@@ -88,9 +88,12 @@ function besideColumn(layout: GraphLayout, item: GraphItem, lane: GraphLanePlace
   return best;
 }
 
-/** The item nearest in height in the next lane of the same band, or nothing at the band's end. */
+/**
+ * The item nearest in height in the next lane of the same band, or nothing at
+ * the band's end: a band on several shelves walks on to its next shelf.
+ */
 function besideLane(layout: GraphLayout, item: GraphItem, lane: GraphLanePlaced, step: 1 | -1): string | null {
-  const inBand = layout.lanes.filter((one) => one.band === lane.band);
+  const inBand = layout.lanes.filter((one) => one.source === lane.source);
   const next = inBand[inBand.indexOf(lane) + step];
   if (!next) return null;
   return nearest(layout, next.items, (other) => Math.abs(middle(other) - middle(item)));

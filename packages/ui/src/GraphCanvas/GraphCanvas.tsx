@@ -32,6 +32,7 @@ import {
   CANVAS_FIT_PADDING,
   Canvas,
   type CanvasGround,
+  type CanvasCorner,
   type CanvasHandle,
   type CanvasLabels,
   type CanvasOpening,
@@ -49,6 +50,7 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import {
   graphItemKey,
+  graphTileLines,
   graphTrunks,
   layoutGraph,
   placeTrunkLabels,
@@ -67,7 +69,7 @@ export interface GraphLane {
   id: string;
   /** Its name, set into its outline: "Runtime". */
   label: string;
-  /** How many columns of entries it is wide. One unless named. */
+  /** The fewest columns of entries it stands in; the map gives it as many more as fit the room best. */
   columns?: number | undefined;
   /** What an empty lane says would fill it. Drawn in the lane, and read when the walk reaches it. */
   empty?: ReactNode;
@@ -116,11 +118,11 @@ export interface GraphNode {
   group?: string | undefined;
   /** The column of its lane it stands in, from 0, in a lane of several: see [GraphLayoutNode]. */
   column?: number | undefined;
-  /** Its name, on one line: "orders-db". */
+  /** Its name: "orders-db". Its card is as wide as it, up to a cap, past which it takes two lines. */
   name: string;
   /** The whole name, where `name` is a short form of it: the hover text, and what is read. */
   title?: string | undefined;
-  /** Read after the name and never drawn, a card being one line: "postgres 16, eu-west-1". */
+  /** Read after the name and never drawn: "postgres 16, eu-west-1". */
   caption?: string | undefined;
   /** What it is, read after the name: "Database". */
   kind?: string | undefined;
@@ -399,12 +401,15 @@ export interface GraphCanvasProps {
 }
 
 const CARD_PROBE = 'crewlet:graph-canvas-card';
+const NARROW_PROBE = 'crewlet:graph-canvas-card-narrow';
+const WIDE_PROBE = 'crewlet:graph-canvas-card-wide';
 const GAP_PROBE = 'crewlet:graph-canvas-gap';
 const PAD_PROBE = 'crewlet:graph-canvas-pad';
 const HEAD_PROBE = 'crewlet:graph-canvas-head';
 const BAND_PROBE = 'crewlet:graph-canvas-band';
-const PROBES = [CARD_PROBE, GAP_PROBE, PAD_PROBE, HEAD_PROBE, BAND_PROBE];
+const PROBES = [CARD_PROBE, NARROW_PROBE, WIDE_PROBE, GAP_PROBE, PAD_PROBE, HEAD_PROBE, BAND_PROBE];
 const emptyProbe = (lane: string) => `crewlet:graph-canvas-empty:${lane}`;
+
 
 const NO_GROUPS: readonly GraphGroup[] = [];
 const AT_REST: ReadonlySet<GraphEdgeFamily> = new Set<GraphEdgeFamily>(['flow', 'support']);
@@ -522,11 +527,15 @@ export function GraphCanvas({
   const metrics = useMemo<GraphMetrics | null>(() => {
     if (!measured(PROBES)) return null;
     const card = sizes.get(CARD_PROBE)!;
+    const wide = sizes.get(WIDE_PROBE)!;
     const gap = sizes.get(GAP_PROBE)!;
     const pad = sizes.get(PAD_PROBE)!;
     return {
       cardWidth: card.width,
+      cardMinWidth: sizes.get(NARROW_PROBE)!.width,
+      cardMaxWidth: wide.width,
       cardHeight: card.height,
+      cardTallHeight: wide.height,
       gutter: gap.width,
       rowGap: gap.height,
       laneHead: sizes.get(HEAD_PROBE)!.height,
@@ -550,6 +559,89 @@ export function GraphCanvas({
     return out;
   }, [emptyLanes, sizes]);
 
+  // ---- each cluster's tally of what is wrong inside it, and how many it holds -------
+  const tallies = useMemo(() => {
+    const out = new Map<string, Partial<Record<GraphAttentionTone, number>>>();
+    for (const node of nodes) {
+      if (!node.attention) continue;
+      let tally = out.get(node.lane);
+      if (!tally) out.set(node.lane, (tally = {}));
+      tally[node.attention.tone] = (tally[node.attention.tone] ?? 0) + 1;
+    }
+    return out;
+  }, [nodes]);
+  const laneCounts = useMemo(() => {
+    const out = new Map<string, number>();
+    for (const node of nodes) out.set(node.lane, (out.get(node.lane) ?? 0) + 1);
+    return out;
+  }, [nodes]);
+
+  // ---- each card's width with its name on one line, and each lane title's -----------
+  const namesHost = useRef<HTMLDivElement>(null);
+  const texts = useMemo(() => [...nodes.map((node) => node.name), ...groups.map((group) => group.label)], [nodes, groups]);
+  const names = useTextWidths(namesHost, texts);
+  // THE PARTS SET IN TYPE ARE READ ONCE THE PAGE'S FONTS LOADED, with the names, in the same pass:
+  // read as a resize after the first fit, a title a font widened packed the map a second time.
+  const root = useRef<HTMLDivElement>(null);
+  const [typeset, setTypeset] = useState<{ bare: number; bareGroup: number; titles: ReadonlyMap<string, number> } | null>(
+    null,
+  );
+  const measuredParts = metrics !== null;
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el || !names.ready || !measuredParts) return;
+    const width = (selector: string) => el.querySelector<HTMLElement>(selector)?.offsetWidth ?? 0;
+    const titles = new Map<string, number>();
+    for (const probe of el.querySelectorAll<HTMLElement>('.crewlet-graph-canvas__title-probe')) {
+      if (probe.dataset.lane !== undefined && probe.offsetWidth > 0) titles.set(probe.dataset.lane, probe.offsetWidth);
+    }
+    const next = {
+      bare: width('.crewlet-graph-canvas__probe--bare:not(.crewlet-graph-canvas__card--group)'),
+      bareGroup: width('.crewlet-graph-canvas__probe--bare.crewlet-graph-canvas__card--group'),
+      titles,
+    };
+    setTypeset((was) =>
+      was && was.bare === next.bare && was.bareGroup === next.bareGroup && sameWidths(was.titles, next.titles)
+        ? was
+        : next,
+    );
+  }, [names.ready, names.version, measuredParts, bands, laneCounts, tallies]);
+  const itemWidths = useMemo(() => {
+    const bare = typeset?.bare ?? 0;
+    const bareGroup = typeset?.bareGroup ?? 0;
+    if (!names.widths || bare <= 0) return undefined;
+    const out = new Map<string, number>();
+    for (const node of nodes) {
+      const width = names.widths.get(node.name);
+      if (width !== undefined) out.set(graphItemKey('node', node.id), bare + width);
+    }
+    for (const group of groups) {
+      const width = names.widths.get(group.label);
+      if (width !== undefined) out.set(graphItemKey('summary', group.id), bareGroup + width);
+    }
+    return out;
+  }, [names.widths, nodes, groups, typeset]);
+  const titleWidths = typeset?.titles;
+
+  // ---- the room a fit is made in, which the layout packs the map for --------------
+  const [room, setRoom] = useState<{ size: CanvasSize; corner: CanvasCorner | null } | null>(null);
+  const roomChanged = useCallback((next: CanvasSize, corner: CanvasCorner | null) => {
+    // EXACT, to the pixel: the pack picks a style by the level of detail the fit lands at, and a
+    // room held to a coarser step put a fit it expected at 0.495 at 0.502, the other side of half.
+    const size = { width: Math.floor(next.width), height: Math.floor(next.height) };
+    const held = corner ? { ...corner, width: Math.ceil(corner.width), height: Math.ceil(corner.height) } : null;
+    setRoom((was) =>
+      was &&
+      was.size.width === size.width &&
+      was.size.height === size.height &&
+      was.corner?.width === held?.width &&
+      was.corner?.height === held?.height &&
+      was.corner?.at === held?.at
+        ? was
+        : { size, corner: held },
+    );
+  }, []);
+
   // ---- the layout --------------------------------------------------------------
   const layoutBands = useMemo(
     () => bands.map((band) => ({ id: band.id, titled: Boolean(band.label), lanes: band.lanes.map((lane) => lane.id) })),
@@ -561,7 +653,7 @@ export function GraphCanvas({
     return out;
   }, [bands]);
   const layout = useMemo<GraphLayout | null>(() => {
-    if (!metrics) return null;
+    if (!metrics || !room) return null;
     return layoutGraph(
       {
         bands: layoutBands,
@@ -572,13 +664,44 @@ export function GraphCanvas({
         ordering: carrying,
         laneColumns,
         emptyHeights,
+        itemWidths,
+        titleWidths,
+        room: room.size,
+        corner: room.corner ?? undefined,
+        reading: names.sizes
+          ? {
+              cardsZoom: GRAPH_CANVAS_DETAIL_ZOOM,
+              tilesZoom: GRAPH_CANVAS_TILE_ZOOM,
+              cardName: names.sizes.card,
+              tileName: names.sizes.tile,
+            }
+          : undefined,
       },
-      metrics,
+      { ...metrics, cardBare: typeset?.bare ?? 0 },
     );
-  }, [metrics, layoutBands, nodes, groups, openSet, restEdges, carrying, laneColumns, emptyHeights]);
-  // The first placement waits for every empty lane's message; a lane emptied later is measured in place.
+  }, [
+    metrics,
+    room,
+    layoutBands,
+    nodes,
+    groups,
+    openSet,
+    restEdges,
+    carrying,
+    laneColumns,
+    emptyHeights,
+    itemWidths,
+    titleWidths,
+    names.sizes,
+    typeset,
+  ]);
+  // The first placement waits for every empty lane's message and every name's width; a lane emptied
+  // later is measured in place.
   const everPlaced = useRef(false);
-  const placed = layout !== null && (everPlaced.current || measured(emptyLanes.map((lane) => emptyProbe(lane.id))));
+  const placed =
+    layout !== null &&
+    (everPlaced.current ||
+      (names.ready && typeset !== null && measured(emptyLanes.map((lane) => emptyProbe(lane.id)))));
   if (placed) everPlaced.current = true;
   const laneOf = useMemo(() => new Map(bands.flatMap((band) => band.lanes.map((lane) => [lane.id, lane]))), [bands]);
 
@@ -765,10 +888,19 @@ export function GraphCanvas({
   // own element rather than through a render: a pinch moves it every frame.
   const zoomNow = useRef(1);
   const worldEl = useRef<HTMLDivElement | null>(null);
+  // HOW MANY LINES A TALL TILE'S NAME TAKES at this zoom, written on the world as the zoom is.
+  const tileLinesNow = useRef<() => void>(() => {});
+  tileLinesNow.current = () => {
+    const el = worldEl.current;
+    if (!el || !metrics || !names.sizes) return;
+    el.dataset.tileLines = String(graphTileLines(zoomNow.current, metrics.cardTallHeight ?? metrics.cardHeight, names.sizes.tile));
+  };
   const world = useCallback((el: HTMLDivElement | null) => {
     worldEl.current = el;
     el?.style.setProperty(ZOOM_PROPERTY, String(zoomNow.current));
+    tileLinesNow.current();
   }, []);
+  useLayoutEffect(() => tileLinesNow.current(), [metrics, names.sizes]);
   const viewChanged = useCallback(
     (view: CanvasView, size: CanvasSize) => {
       onViewChange?.(view, size);
@@ -776,6 +908,7 @@ export function GraphCanvas({
       if (view.k !== zoomNow.current) {
         zoomNow.current = view.k;
         worldEl.current?.style.setProperty(ZOOM_PROPERTY, String(view.k));
+        tileLinesNow.current();
       }
       placeCardNow.current();
       placeTrunksNow.current();
@@ -823,7 +956,6 @@ export function GraphCanvas({
   useLayoutEffect(() => placeTrunksNow.current(), [layout, trunks, mounted]);
 
   // ---- the opening view: the whole map, or the entry a link names ----------------
-  const root = useRef<HTMLDivElement>(null);
   // THE CANVAS WAITS FOR THE MAP'S OWN BOX, so its first fit is made in the room the map will have.
   const [sized, setSized] = useState(false);
   // A narrow map has no room to float anything over the picture, so its legend and dock stand under it.
@@ -954,6 +1086,16 @@ export function GraphCanvas({
     if (filled) fittedFilled.current = true;
     canvas.current?.fit();
   }, [fitKey, placed, filled]);
+
+  // A MAP STILL AT ITS FIT FITS AGAIN WHEN IT IS PACKED AGAIN: a new room, newly loaded type, or an
+  // answer that reshaped a lane or its title. A view the reader moved stays where it is.
+  const fittedLayout = useRef<GraphLayout | null>(null);
+  useLayoutEffect(() => {
+    if (!placed) return;
+    const was = fittedLayout.current;
+    fittedLayout.current = layout;
+    if (was && was !== layout) canvas.current?.refit();
+  }, [placed, layout]);
 
   // ---- keys and presses ------------------------------------------------------------------
   const typed = useRef<TypeAheadState>({ text: '', at: 0 });
@@ -1095,6 +1237,7 @@ export function GraphCanvas({
           key={item.key}
           {...common}
           node={node}
+          tall={layout !== null && item.height > layout.metrics.cardHeight + 0.5}
           selected={item.id === selectedId}
           state={nodeDimmed(item.id) ? 'dim' : reach?.nodes.has(item.id) ? 'lit' : 'rest'}
           onPoint={onItemPoint}
@@ -1115,6 +1258,7 @@ export function GraphCanvas({
           lead={group?.lead}
           count={members.length}
           attention={item.kind === 'summary' ? worstOf(members) : undefined}
+          tall={layout !== null && item.kind === 'summary' && item.height > layout.metrics.cardHeight + 0.5}
           dimmed={drawn?.itemDimmed(item.key) ?? false}
           selected={item.key === selectedKey}
           text={text}
@@ -1133,16 +1277,6 @@ export function GraphCanvas({
   const height = layout?.bounds.height ?? 0;
 
   // ---- each cluster's tally of what is wrong inside it ------------------------------------
-  const tallies = useMemo(() => {
-    const out = new Map<string, Partial<Record<GraphAttentionTone, number>>>();
-    for (const node of nodes) {
-      if (!node.attention) continue;
-      let tally = out.get(node.lane);
-      if (!tally) out.set(node.lane, (tally = {}));
-      tally[node.attention.tone] = (tally[node.attention.tone] ?? 0) + 1;
-    }
-    return out;
-  }, [nodes]);
   const laneName = (id: string, count: number) => {
     const tally = tallies.get(id);
     const words = TONES.flatMap((tone) => (tally?.[tone] && tones?.[tone] ? [`${tally[tone]} ${tones[tone]}`] : []));
@@ -1240,14 +1374,22 @@ export function GraphCanvas({
       overlayEnd={end}
       hint={hint}
       ground={ground}
-      largestItemWidth={metrics?.cardWidth}
+      largestItemWidth={metrics ? Math.max(metrics.cardWidth, metrics.cardMaxWidth ?? 0) : undefined}
       labels={text}
       minZoom={minZoom}
       refitOnResize
       initialView={opening}
       onViewChange={viewChanged}
+      onRoomChange={roomChanged}
     >
       <Probes measure={measure} />
+      {bands.flatMap((band) =>
+        band.lanes.map((lane) => (
+          <div key={lane.id} className="crewlet-graph-canvas__title-probe" data-lane={lane.id} aria-hidden="true" inert>
+            <LaneTitle label={lane.label} count={laneCounts.get(lane.id) ?? 0} tally={tallies.get(lane.id)} />
+          </div>
+        )),
+      )}
       {emptyLanes.map((lane) => {
         const placedLane = layout?.laneById.get(lane.id);
         return (
@@ -1303,7 +1445,7 @@ export function GraphCanvas({
                 data-band={band.id}
                 style={placedStyle(band.title)}
               >
-                <span>{bands[band.index]!.label}</span>
+                <span>{bands[band.source]!.label}</span>
               </div>
             ) : null,
           )}
@@ -1345,30 +1487,17 @@ export function GraphCanvas({
               {text.trunk(trunk.count)}
             </span>
           ))}
-          {layout.lanes.map((lane) => {
-            const tally = tallies.get(lane.id);
-            return (
-              <div
-                key={lane.id}
-                className="crewlet-graph-canvas__lane-head"
-                aria-hidden="true"
-                data-lane={lane.id}
-                style={placedStyle(lane.head)}
-              >
-                <span className="crewlet-graph-canvas__lane-title">
-                  <span className="crewlet-graph-canvas__lane-label">{laneOf.get(lane.id)?.label}</span>
-                  <span className="crewlet-graph-canvas__lane-count">{lane.count}</span>
-                  {TONES.map((tone) =>
-                    tally?.[tone] ? (
-                      <span key={tone} className="crewlet-graph-canvas__lane-tone" data-tone={tone}>
-                        {tally[tone]}
-                      </span>
-                    ) : null,
-                  )}
-                </span>
-              </div>
-            );
-          })}
+          {layout.lanes.map((lane) => (
+            <div
+              key={lane.id}
+              className="crewlet-graph-canvas__lane-head"
+              aria-hidden="true"
+              data-lane={lane.id}
+              style={placedStyle(lane.head)}
+            >
+              <LaneTitle label={laneOf.get(lane.id)?.label} count={lane.count} tally={tallies.get(lane.id)} />
+            </div>
+          ))}
           {mounted?.detail === 'marks' ? (
             <Shapes
               layout={layout}
@@ -1380,7 +1509,7 @@ export function GraphCanvas({
           ) : null}
           <div className="crewlet-graph-canvas__items">
             {bands.map((band, b) => {
-              const lanes = layout.lanes.filter((lane) => lane.band === b);
+              const lanes = layout.lanes.filter((lane) => lane.source === b);
               const inner = lanes.map((lane) => (
                 <div key={lane.id} role="group" aria-label={laneName(lane.id, lane.count)}>
                   {(shownByLane.get(lane.id) ?? []).map(renderItem)}
@@ -1413,6 +1542,7 @@ export function GraphCanvas({
       onPointerDownCapture={onPointerDownCapture}
       onClick={onGroundClick}
     >
+      <div ref={namesHost} className="crewlet-graph-canvas__names" aria-hidden="true" />
       {/* A fullscreen element paints only its own subtree, so what the map opens is hosted inside it. */}
       {ownFullscreen ? (
         <LayerHost>
@@ -1438,6 +1568,33 @@ function Probes({ measure }: { measure: (id: string) => (el: HTMLElement | null)
         className="crewlet-graph-canvas__card crewlet-graph-canvas__probe"
         aria-hidden="true"
       />
+      <div
+        ref={measure(NARROW_PROBE)}
+        className="crewlet-graph-canvas__card crewlet-graph-canvas__probe crewlet-graph-canvas__probe--narrow"
+        aria-hidden="true"
+      />
+      <div
+        ref={measure(WIDE_PROBE)}
+        className="crewlet-graph-canvas__card crewlet-graph-canvas__probe crewlet-graph-canvas__probe--wide"
+        aria-hidden="true"
+      />
+      {/* A card with no name, and a closed group's with no name and a four figure count: what a name is added to. */}
+      <div
+        className="crewlet-graph-canvas__card crewlet-graph-canvas__probe crewlet-graph-canvas__probe--bare"
+        aria-hidden="true"
+      >
+        <span className="crewlet-graph-canvas__cell" />
+        <span className="crewlet-graph-canvas__name" />
+      </div>
+      <div
+        className="crewlet-graph-canvas__card crewlet-graph-canvas__card--group crewlet-graph-canvas__probe crewlet-graph-canvas__probe--bare"
+        aria-hidden="true"
+      >
+        <span className="crewlet-graph-canvas__cell" />
+        <span className="crewlet-graph-canvas__name" />
+        <span className="crewlet-graph-canvas__group-count">0000</span>
+        <ChevronRightGlyph size="xs" className="crewlet-graph-canvas__chevron" />
+      </div>
       <div
         ref={measure(GAP_PROBE)}
         className="crewlet-graph-canvas__gap crewlet-graph-canvas__probe"
@@ -1466,6 +1623,145 @@ function Probes({ measure }: { measure: (id: string) => (el: HTMLElement | null)
   );
 }
 
+/** A cluster's title, set into its outline: its name, its count and its tally of what needs a person. */
+function LaneTitle({
+  label,
+  count,
+  tally,
+}: {
+  label: ReactNode;
+  count: number;
+  tally: Partial<Record<GraphAttentionTone, number>> | undefined;
+}) {
+  return (
+    <span className="crewlet-graph-canvas__lane-title">
+      <span className="crewlet-graph-canvas__lane-label">{label}</span>
+      <span className="crewlet-graph-canvas__lane-count">{count}</span>
+      {TONES.map((tone) =>
+        tally?.[tone] ? (
+          <span key={tone} className="crewlet-graph-canvas__lane-tone" data-tone={tone}>
+            {tally[tone]}
+          </span>
+        ) : null,
+      )}
+    </span>
+  );
+}
+
+/** The classes a card's name is drawn with, which its width is measured in. */
+const NAME_CLASSES = 'crewlet-text crewlet-text--inherit crewlet-graph-canvas__name';
+/** What a tile's name size on screen is read from. */
+const TILE_NAME_CLASS = 'crewlet-graph-canvas__tile-name';
+
+/**
+ * Each text's width on one line in a card's name type, measured in one pass
+ * in `host` and kept until the page's fonts change. `widths` stays null where
+ * nothing lays text out (jsdom), so every card keeps the standard width;
+ * `ready` says the first measure is done, after the page's fonts loaded.
+ */
+function useTextWidths(
+  host: RefObject<HTMLDivElement | null>,
+  texts: readonly string[],
+): {
+  widths: ReadonlyMap<string, number> | null;
+  /** A card's name size, and a tile's on screen, in px. */
+  sizes: { card: number; tile: number } | null;
+  ready: boolean;
+  version: number;
+} {
+  const known = useRef(new Map<string, number>());
+  const [version, setVersion] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [state, setState] = useState<{
+    widths: ReadonlyMap<string, number> | null;
+    sizes: { card: number; tile: number } | null;
+    ready: boolean;
+  }>({ widths: null, sizes: null, ready: false });
+  // THE FACES A NAME AND A TITLE ARE SET IN, LOADED BEFORE THE FIRST MEASURE: a page loads a face
+  // only once something is set in it, so the fonts were "ready" with the name's face not asked for,
+  // and the names were measured in the fallback's.
+  useLayoutEffect(() => {
+    const el = host.current;
+    const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+    if (loaded || !el) return;
+    if (!fonts) {
+      setLoaded(true);
+      return;
+    }
+    const name = document.createElement('span');
+    name.className = NAME_CLASSES;
+    const title = document.createElement('span');
+    title.className = 'crewlet-graph-canvas__lane-title';
+    const label = document.createElement('span');
+    label.className = 'crewlet-graph-canvas__lane-label';
+    title.append(label);
+    el.replaceChildren(name, title);
+    const faces = [getComputedStyle(name).font, getComputedStyle(label).font].filter((face) => face !== '');
+    el.replaceChildren();
+    let live = true;
+    void Promise.all(faces.map((face) => fonts.load(face).catch(() => [])))
+      .then(() => fonts.ready)
+      .then(() => {
+        if (live) setLoaded(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, [host, loaded]);
+  useEffect(() => {
+    const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+    if (!fonts) return;
+    const again = () => {
+      known.current = new Map();
+      setVersion((was) => was + 1);
+    };
+    fonts.addEventListener('loadingdone', again);
+    return () => fonts.removeEventListener('loadingdone', again);
+  }, []);
+  useLayoutEffect(() => {
+    const el = host.current;
+    if (!el || !loaded) return;
+    const missing = [...new Set(texts)].filter((text) => !known.current.has(text));
+    const tile = document.createElement('span');
+    tile.className = TILE_NAME_CLASS;
+    const spans = missing.map((text) => {
+      const span = document.createElement('span');
+      span.className = NAME_CLASSES;
+      span.textContent = text;
+      return span;
+    });
+    const probe = document.createElement('span');
+    probe.className = NAME_CLASSES;
+    el.replaceChildren(probe, tile, ...spans);
+    const widths = spans.map((span) => span.getBoundingClientRect().width);
+    const sizes = { card: parseFloat(getComputedStyle(probe).fontSize), tile: parseFloat(getComputedStyle(tile).fontSize) };
+    const laidOut = probe.offsetParent !== null || el.getBoundingClientRect().width > 0;
+    el.replaceChildren();
+    if (!laidOut || (missing.length > 0 && widths.every((width) => width === 0))) {
+      setState((was) => (was.ready && was.widths === null ? was : { widths: null, sizes: null, ready: true }));
+      return;
+    }
+    missing.forEach((text, i) => known.current.set(text, Math.ceil(widths[i]!)));
+    const all = new Map(texts.map((text) => [text, known.current.get(text) ?? 0]));
+    setState((was) =>
+      was.ready &&
+      was.widths &&
+      sameWidths(was.widths, all) &&
+      was.sizes?.card === sizes.card &&
+      was.sizes.tile === sizes.tile
+        ? was
+        : { widths: all, sizes, ready: true },
+    );
+  }, [host, texts, loaded, version]);
+  return { ...state, version };
+}
+
+function sameWidths(a: ReadonlyMap<string, number>, b: ReadonlyMap<string, number>): boolean {
+  if (a.size !== b.size) return false;
+  for (const [key, value] of a) if (b.get(key) !== value) return false;
+  return true;
+}
+
 interface ItemProps {
   itemKey: string;
   item: GraphItem;
@@ -1492,6 +1788,7 @@ const GraphCard = memo(function GraphCard({
   onFocusItem,
   onItemKey,
   node,
+  tall,
   selected,
   state,
   onPoint,
@@ -1500,6 +1797,8 @@ const GraphCard = memo(function GraphCard({
   unconfirmedLabel,
 }: ItemProps & {
   node: GraphNode;
+  /** Its name takes up to two lines. */
+  tall: boolean;
   selected: boolean;
   /** Lit by the selection or the pointer, pushed back by it, or neither. */
   state: 'lit' | 'dim' | 'rest';
@@ -1530,8 +1829,9 @@ const GraphCard = memo(function GraphCard({
       data-unconfirmed={node.unconfirmed ? '' : undefined}
       data-selected={selected ? '' : undefined}
       data-state={state}
+      data-tall={tall ? '' : undefined}
       className="crewlet-graph-canvas__card"
-      style={{ transform: `translate(${item.x}px, ${item.y}px)` }}
+      style={cardStyle(item)}
       onClick={() => onPress(itemKey)}
       onFocus={() => {
         onFocusItem(itemKey);
@@ -1546,7 +1846,13 @@ const GraphCard = memo(function GraphCard({
         {node.glyph}
         {node.mark ? <span className="crewlet-graph-canvas__mark">{node.mark}</span> : null}
       </span>
-      <Text variant="inherit" truncate className="crewlet-graph-canvas__name" aria-hidden="true">
+      <Text
+        variant="inherit"
+        truncate={!tall}
+        clamp={tall ? 2 : undefined}
+        className="crewlet-graph-canvas__name"
+        aria-hidden="true"
+      >
         {node.name}
       </Text>
       {node.attention ? (
@@ -1571,6 +1877,7 @@ const GraphGroupItem = memo(function GraphGroupItem({
   lead,
   count,
   attention,
+  tall,
   dimmed,
   selected,
   text,
@@ -1579,6 +1886,8 @@ const GraphGroupItem = memo(function GraphGroupItem({
   lead: ReactNode;
   count: number;
   attention: GraphAttention | undefined;
+  /** A closed group's name takes up to two lines. */
+  tall: boolean;
   dimmed: boolean;
   /** A closed group holding the selection is drawn selected. */
   selected: boolean;
@@ -1599,11 +1908,9 @@ const GraphGroupItem = memo(function GraphGroupItem({
       data-attention={attention?.tone}
       data-state={dimmed ? 'dim' : 'rest'}
       data-selected={selected ? '' : undefined}
+      data-tall={tall ? '' : undefined}
       className={open ? 'crewlet-graph-canvas__head' : 'crewlet-graph-canvas__card crewlet-graph-canvas__card--group'}
-      style={{
-        transform: `translate(${item.x}px, ${item.y}px)`,
-        ...(open ? { width: `${item.width}px`, height: `${item.height}px` } : {}),
-      }}
+      style={cardStyle(item)}
       onClick={() => onPress(itemKey)}
       onFocus={() => onFocusItem(itemKey)}
       onKeyDown={onItemKey}
@@ -1629,7 +1936,13 @@ const GraphGroupItem = memo(function GraphGroupItem({
           <span className="crewlet-graph-canvas__cell" aria-hidden="true">
             {lead ?? <ChevronRightGlyph size="sm" />}
           </span>
-          <Text variant="inherit" truncate className="crewlet-graph-canvas__name" aria-hidden="true">
+          <Text
+            variant="inherit"
+            truncate={!tall}
+            clamp={tall ? 2 : undefined}
+            className="crewlet-graph-canvas__name"
+            aria-hidden="true"
+          >
             {label}
           </Text>
           <span className="crewlet-graph-canvas__group-count" aria-hidden="true">
@@ -1767,6 +2080,11 @@ function Shapes({
 function roundRect(rect: CanvasRect, r: number): string {
   const { x, y, width: w, height: h } = rect;
   return `M${x + r} ${y}h${w - 2 * r}q${r} 0 ${r} ${r}v${h - 2 * r}q0 ${r} ${-r} ${r}h${-(w - 2 * r)}q${-r} 0 ${-r} ${-r}v${-(h - 2 * r)}q0 ${-r} ${r} ${-r}Z`;
+}
+
+/** A card's place and size: each lane sizes its cards to their names. */
+function cardStyle(item: GraphItem) {
+  return { transform: `translate(${item.x}px, ${item.y}px)`, width: `${item.width}px`, height: `${item.height}px` };
 }
 
 function placedStyle(rect: CanvasRect) {

@@ -147,7 +147,8 @@ function roomOf(canvas: DOMRect): { top: number; bottom: number } {
 
 const cases: Array<{ name: string; size: typeof WIDE; count: number; detail: GraphDetail }> = [
   { name: 'a small map on a laptop, as cards', size: WIDE, count: 12, detail: 'cards' },
-  { name: 'a hundred and twenty entries on a laptop, as tiles', size: WIDE, count: 120, detail: 'tiles' },
+  { name: 'a hundred and twenty entries on a laptop, as cards', size: WIDE, count: 120, detail: 'cards' },
+  { name: 'three hundred entries on a laptop, as tiles', size: WIDE, count: 300, detail: 'tiles' },
   { name: 'six hundred entries on a laptop, as marks', size: WIDE, count: 600, detail: 'marks' },
   { name: 'a hundred and twenty entries on a phone, as marks', size: PHONE, count: 120, detail: 'marks' },
 ];
