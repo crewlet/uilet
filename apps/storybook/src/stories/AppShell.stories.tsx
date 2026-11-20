@@ -770,13 +770,13 @@ function FoldingRail({ at }: { at: string }) {
               <CompactNavItem label="Settings" icon={<SettingsGlyph size="sm" />} href="#/settings" />
             </CompactNav>
             {/* THE FACE AT THE TILES' STEP (`sm`, 26px), centred on their line. */}
-            <AccountRow avatar={<Avatar name="Miles" kind="human" size="sm" decorative />} name="Miles" detail="miles.crewlet" href="#/account" />
+            <AccountRow avatar={<Avatar name="Mira" kind="human" size="sm" decorative />} name="Mira" detail="mira.crewlet" href="#/account" />
           </>
         ) : (
           <AccountRow
-            avatar={<Avatar name="Miles" kind="human" size="md" decorative />}
-            name="Miles"
-            detail="miles.crewlet"
+            avatar={<Avatar name="Mira" kind="human" size="md" decorative />}
+            name="Mira"
+            detail="mira.crewlet"
             href="#/account"
             actions={<IconButtonLink href="#/settings" label="Settings" size="sm" icon={<SettingsGlyph size="sm" />} />}
           />

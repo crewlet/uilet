@@ -892,7 +892,7 @@ describe('the verdict', () => {
 
 describe('the mark', () => {
   test('draws a glyph on the corner, in the notch a status uses, and keeps the face', () => {
-    const { container } = render(<Avatar name="Miles" kind="human" mark={<KeyGlyph size="xs" />} />);
+    const { container } = render(<Avatar name="Mira" kind="human" mark={<KeyGlyph size="xs" />} />);
     const frame = container.firstElementChild as HTMLElement;
     expect(frame.className).toBe('crewlet-avatar-frame');
     const face = frame.querySelector('.crewlet-avatar')!;
@@ -915,27 +915,27 @@ describe('the mark', () => {
     const key = <KeyGlyph size="xs" />;
     render(
       <>
-        <Avatar name="Miles" kind="human" mark={key} markLabel="signed in with an API token" />
+        <Avatar name="Mira" kind="human" mark={key} markLabel="signed in with an API token" />
         <Avatar name="Lee Park" kind="human" mark={key} />
         <span>
-          <Avatar name="Miles" kind="human" mark={key} markLabel="signed in with an API token" decorative /> Miles
+          <Avatar name="Mira" kind="human" mark={key} markLabel="signed in with an API token" decorative /> Mira
         </span>
       </>,
     );
     expect(screen.getAllByRole('img').map((badge) => badge.getAttribute('aria-label'))).toEqual([
-      'Miles avatar, signed in with an API token',
+      'Mira avatar, signed in with an API token',
       'Lee Park avatar',
     ]);
   });
 
   test('an image says the mark in its alternative text', () => {
     const key = <KeyGlyph size="xs" />;
-    render(<Avatar name="Miles" kind="human" src="data:image/png;base64," mark={key} markLabel="via a token" />);
-    expect(screen.getByRole('img').getAttribute('alt')).toBe('Miles, via a token');
+    render(<Avatar name="Mira" kind="human" src="data:image/png;base64," mark={key} markLabel="via a token" />);
+    expect(screen.getByRole('img').getAttribute('alt')).toBe('Mira, via a token');
   });
 
   test('a marked badge draws no ring, since the notch is cut from the outline the ring follows', () => {
-    const { container } = render(<Avatar name="Miles" kind="human" ring="brand" mark={<KeyGlyph size="xs" />} />);
+    const { container } = render(<Avatar name="Mira" kind="human" ring="brand" mark={<KeyGlyph size="xs" />} />);
     expect(container.innerHTML).not.toContain('ring-');
   });
 
@@ -948,7 +948,7 @@ describe('the mark', () => {
       cleanup();
       const palette = themeColours(theme);
       const token = (name: string) => parseHex(palette.get(property(name)) ?? '');
-      const { container } = render(<Avatar name="Miles" kind="human" mark={<KeyGlyph size="xs" />} />);
+      const { container } = render(<Avatar name="Mira" kind="human" mark={<KeyGlyph size="xs" />} />);
       const drawn = getComputedStyle(container.querySelector('.crewlet-avatar__status--mark')!);
       expect(channels(drawn.backgroundColor), theme).toEqual(token('color-surface-elevated'));
       expect(channels(drawn.outlineColor), theme).toEqual(token('color-border-strong'));
@@ -961,9 +961,9 @@ describe('the mark', () => {
     const key = <KeyGlyph size="xs" />;
     const { container } = render(
       <>
-        <Avatar name="Miles" kind="human" mark={key} markLabel="signed in with an API token" />
+        <Avatar name="Mira" kind="human" mark={key} markLabel="signed in with an API token" />
         <span>
-          <Avatar name="Miles" kind="human" mark={key} decorative /> Miles
+          <Avatar name="Mira" kind="human" mark={key} decorative /> Mira
         </span>
       </>,
     );
@@ -975,7 +975,7 @@ describe('the mark', () => {
 test('a face in a sentence is sized by its words, with no size of its own on it', () => {
   const { container } = render(
     <p>
-      Ask <Avatar name="Miles Okafor" kind="human" size="text" decorative /> Miles.
+      Ask <Avatar name="Mira Okafor" kind="human" size="text" decorative /> Mira.
     </p>,
   );
   const face = container.querySelector<HTMLElement>('.crewlet-avatar')!;

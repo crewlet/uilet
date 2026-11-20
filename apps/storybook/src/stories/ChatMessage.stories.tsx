@@ -273,7 +273,7 @@ export const Mention: Story = {
         Migration is staged on the canary.
       </Row>
       <Row id="b" who={DESIGNER} at="10:51" highlight="mention">
-        @Miles can you sign off the empty state before I hand it over?
+        @Mira can you sign off the empty state before I hand it over?
       </Row>
       <Row id="c" who={PM} at="10:52">
         Thanks both.
@@ -424,7 +424,7 @@ export const Everything: Story = {
         PR 41 is green and ready to merge.
       </Row>
       <Row id="d" who={DESIGNER} at="11:07" highlight="mention">
-        @Miles the empty state needs your sign-off.
+        @Mira the empty state needs your sign-off.
       </Row>
       <Row id="e" who={DESIGNER} at="11:08" continuation pending="sending" withActions={false}>
         Uploading the new icons now.

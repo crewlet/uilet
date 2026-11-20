@@ -181,7 +181,7 @@ test("a room's catch up lists what was said, each point citing its message with 
       about="The release branch is cut and two reviews wait."
       needs={[]}
       points={[
-        { key: 'p1', text: 'Miles cut the release branch.', source: { label: "Open Miles's message", onSelect: () => opened.push('m1') } },
+        { key: 'p1', text: 'Mira cut the release branch.', source: { label: "Open Mira's message", onSelect: () => opened.push('m1') } },
         { key: 'p2', text: 'Two pull requests wait for review.', source: { label: 'Open the thread', onSelect: () => opened.push('t2') } },
         { key: 'p3', text: 'The deploy window moved to Friday.' },
       ]}
@@ -190,11 +190,11 @@ test("a room's catch up lists what was said, each point citing its message with 
   const list = screen.getByRole('list', { name: 'What was said' });
   const items = [...list.querySelectorAll('li')];
   expect(items.map((item) => item.querySelector('.crewlet-brief-card__point-text')!.textContent)).toEqual([
-    'Miles cut the release branch.',
+    'Mira cut the release branch.',
     'Two pull requests wait for review.',
     'The deploy window moved to Friday.',
   ]);
-  fireEvent.click(screen.getByRole('button', { name: "Open Miles's message" }));
+  fireEvent.click(screen.getByRole('button', { name: "Open Mira's message" }));
   fireEvent.click(screen.getByRole('button', { name: 'Open the thread' }));
   expect(opened).toEqual(['m1', 't2']);
   // A point with no source draws no press.

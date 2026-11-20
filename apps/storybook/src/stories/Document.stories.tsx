@@ -49,7 +49,7 @@ function Body() {
         </li>
         <li>
           <input type="checkbox" disabled aria-label="Not done" readOnly />
-          <div>Exact minimum settlement, if Miles approves it in FAIR-1.</div>
+          <div>Exact minimum settlement, if Mira approves it in FAIR-1.</div>
         </li>
       </ul>
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scroller a keyboard must be able to reach (WCAG 2.1.1) */}

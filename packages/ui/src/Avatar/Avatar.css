@@ -107,7 +107,7 @@
   /*
    * AN INLINE BLOCK, not a flex box, because it sits inside words a reader
    * copies: a browser copies a line break before an inline flex container,
-   * so "ask @miles" came out over two lines. Its initials are centred on the
+   * so "ask @mira" came out over two lines. Its initials are centred on the
    * strut below, so the face's own line takes no height.
    */
   display: inline-block;

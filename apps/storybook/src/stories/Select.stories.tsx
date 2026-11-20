@@ -276,7 +276,7 @@ export const Native: Story = {
 };
 
 const owners: SelectOption[] = [
-  { value: 'miles', label: 'Miles Okafor', hint: 'Person', leading: <UserGlyph size="sm" /> },
+  { value: 'mira', label: 'Mira Okafor', hint: 'Person', leading: <UserGlyph size="sm" /> },
   { value: 'engineer', label: 'Software Engineer', hint: 'Agent', leading: <BotGlyph size="sm" /> },
   { value: 'sre', label: 'Site Reliability', hint: 'Agent', leading: <BotGlyph size="sm" /> },
   { value: 'engineering', label: 'Engineering', hint: 'Unit', leading: <NetworkGlyph size="sm" /> },
@@ -292,7 +292,7 @@ const owners: SelectOption[] = [
  */
 export const LeadingAndHint: Story = {
   render: function Render() {
-    const [value, setValue] = useState<SelectValue | SelectValue[] | undefined>('miles');
+    const [value, setValue] = useState<SelectValue | SelectValue[] | undefined>('mira');
     const [resting, setResting] = useState<string>('nowhere');
     return (
       <div style={{ width: 320, display: 'grid', gap: 12 }}>

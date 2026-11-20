@@ -46,12 +46,12 @@ test('takes the info tone for others and the warning tone for the reader, never 
       <p>
         <MentionChip onPress={() => {}}>@Designer</MentionChip>
         <MentionChip tone="self" onPress={() => {}}>
-          @Miles
+          @Mira
         </MentionChip>
       </p>,
     );
     const other = screen.getByRole('button', { name: '@Designer' });
-    const you = screen.getByRole('button', { name: '@Miles' });
+    const you = screen.getByRole('button', { name: '@Mira' });
     expect(channels(getComputedStyle(other).color)).toEqual(channels(themeColour('light', property('color-feedback-info-ink'))));
     expect(channels(getComputedStyle(you).color)).toEqual(channels(themeColour('light', property('color-feedback-warning-ink'))));
     expect(getComputedStyle(other).fontWeight).toBe('400');

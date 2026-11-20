@@ -51,15 +51,15 @@ test('as an option it is never a tab stop, says whether it is selected, and draw
   render(
     <ul role="listbox" aria-label="People" aria-multiselectable="true">
       <PersonRow as="option" id="p-0" avatar={<span />} name="Ada" selected highlighted />
-      <PersonRow as="option" id="p-1" avatar={<span />} name="Miles" disabled />
+      <PersonRow as="option" id="p-1" avatar={<span />} name="Mira" disabled />
     </ul>,
   );
-  const [ada, miles] = screen.getAllByRole('option');
+  const [ada, mira] = screen.getAllByRole('option');
   expect(ada!.getAttribute('aria-selected')).toBe('true');
   expect(ada!.classList.contains('is-highlighted')).toBe(true);
   expect(ada!.hasAttribute('tabindex')).toBe(false);
-  expect(miles!.getAttribute('aria-selected')).toBe('false');
-  expect(miles!.getAttribute('aria-disabled')).toBe('true');
+  expect(mira!.getAttribute('aria-selected')).toBe('false');
+  expect(mira!.getAttribute('aria-disabled')).toBe('true');
 });
 
 test('a row\'s own control stands beside its button, never inside it, and keeps its own name', () => {
@@ -99,7 +99,7 @@ test('a list of rows carries no axe violation', async () => {
           <PersonRow avatar={<span />} name="Ada" detail="Reviewing PR 41" mark="toggle" selected={false} />
         </li>
         <li>
-          <PersonRow avatar={<span />} name="Miles" detail="Designer" mark="toggle" selected />
+          <PersonRow avatar={<span />} name="Mira" detail="Designer" mark="toggle" selected />
         </li>
         <li>
           <PersonRow avatar={<span />} name="QA" detail="Gets every message" action={<Switch label="QA gets every message" labelHidden checked onChange={() => {}} />} />

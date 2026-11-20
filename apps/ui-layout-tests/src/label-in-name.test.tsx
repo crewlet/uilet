@@ -66,7 +66,7 @@ test('a link preview is named by the words it shows', async () => {
         meta="Due Friday"
         status="In progress"
         statusTone="info"
-        owner={{ face: <Avatar name="Miles Rowe" size={16} decorative />, name: 'Miles Rowe' }}
+        owner={{ face: <Avatar name="Mira Rowe" size={16} decorative />, name: 'Mira Rowe' }}
       />
     </>,
   );

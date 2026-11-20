@@ -31,7 +31,7 @@ export const WithFollowMode: Story = {
         {following && <FollowBanner name={following.name} onStop={() => setFollowing(null)} />}
         <PeopleRail
           members={ROOM}
-          self={{ name: 'Miles', kind: 'human' }}
+          self={{ name: 'Mira', kind: 'human' }}
           following={following ? peopleRailKey(following) : undefined}
           onFollow={setFollowing}
           onClose={() => {}}
@@ -50,5 +50,5 @@ export const WithFollowMode: Story = {
 
 /** Only the reader is here. */
 export const Alone: Story = {
-  args: { members: [], self: { name: 'Miles', kind: 'human' } },
+  args: { members: [], self: { name: 'Mira', kind: 'human' } },
 };

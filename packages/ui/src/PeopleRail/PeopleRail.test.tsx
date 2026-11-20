@@ -91,7 +91,7 @@ test('plain, it is the list alone: no region, no heading and no close of its own
     <PeopleRail
       variant="plain"
       members={[{ id: 's1', seat: 'maya', name: 'Maya Ortiz', kind: 'human', activity: 'editing', hue: 'purple' }]}
-      self={{ name: 'Miles', kind: 'human' }}
+      self={{ name: 'Mira', kind: 'human' }}
       onClose={() => {}}
     />,
   );

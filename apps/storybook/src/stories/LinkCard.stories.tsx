@@ -31,7 +31,7 @@ export const Previews: Story = {
         meta="Due Friday · 3 subtasks"
         status="In progress"
         statusTone="info"
-        owner={owner('Miles Chen')}
+        owner={owner('Mira Chen')}
       />
       <LinkCard
         href="#/doclet/release-notes"
