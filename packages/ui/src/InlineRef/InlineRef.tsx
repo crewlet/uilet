@@ -1,4 +1,4 @@
-import { Children, cloneElement, isValidElement, type ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, type MouseEvent, type ReactNode } from 'react';
 import { safeHref } from '../Markdown/grammar.js';
 import { cx } from '../utils/cx.js';
 
@@ -33,6 +33,13 @@ export interface InlineRefProps {
    * never as a link, so a caller cannot hand a sentence a `javascript:` one.
    */
   href?: string | undefined;
+  /**
+   * Opens an app route (`#/...`) the application's own way, such as beside a
+   * drawer, on a plain press, in place of the browser following it. A press
+   * that asks for a new tab or window stays the browser's, and a link that
+   * leaves the application never calls it.
+   */
+  onFollow?: (() => void) | undefined;
   /** The whole of what it shortens, for a pointer reader: the full address. */
   title?: string | undefined;
   /** An identifier (a reference, a key, a commit) is set in mono, at `InlineCode`'s size. */
@@ -113,7 +120,8 @@ function splitHead(children: ReactNode): { head: ReactNode; rest: ReactNode[] } 
  * A LINK THAT LEAVES THE APPLICATION opens a tab and withholds the referrer
  * and the opener, as every link a sentence carries must: the words around it
  * were often written by an agent from something it read elsewhere. An app
- * route (`#/...`) is the application, and opens in place.
+ * route (`#/...`) is the application, and opens in place, or the
+ * application's own way where it says one (`onFollow`).
  *
  * NEVER A MARK ALONE AT A LINE'S END: the mark and the first word are one
  * unbreakable run, and a reference that is not a phrase (`wrap`) moves to the
@@ -125,6 +133,7 @@ export function InlineRef({
   kind,
   children,
   href,
+  onFollow,
   title,
   code = false,
   wrap = false,
@@ -137,6 +146,14 @@ export function InlineRef({
   const target = href === undefined ? null : safeHref(href);
   const hasMark = mark !== undefined && mark !== null;
   const external = target !== null && !target.startsWith('#');
+  const follow =
+    onFollow && target !== null && !external
+      ? (event: MouseEvent<HTMLAnchorElement>) => {
+          if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
+          onFollow();
+        }
+      : undefined;
   const { head, rest } = wrap ? splitHead(children) : { head: children, rest: [] };
   const classes = cx(
     'crewlet-inline-ref',
@@ -195,6 +212,7 @@ export function InlineRef({
         className={classes}
         href={target}
         title={title}
+        onClick={follow}
         {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
       >
         {body}

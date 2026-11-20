@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useState } from 'react';
 import { VendorMark } from '@crewlethq/icons';
 import { GlobeGlyph, SquareKanbanGlyph } from '@crewlethq/icons/glyphs';
-import { Avatar, ChoiceButtons, ColorChip, InlineCode, InlineRef } from '@crewlethq/ui';
+import { ArtifactRef, Avatar, ChoiceButtons, ColorChip, InlineCode, InlineRef } from '@crewlethq/ui';
 
 /**
  * A reference named inside a sentence, drawn with the mark that says what it
@@ -126,6 +127,41 @@ export const InASentence: Story = {
       </p>
     </>
   ),
+};
+
+/**
+ * A card that opens what it names the application's own way (`onFollow`), here
+ * beside a drawer: a plain press opens it, and a press asking for a new tab is
+ * still the browser's. The line under the sentence says what was opened last.
+ */
+export const OpensTheApplicationsWay: Story = {
+  render: function Render() {
+    const [opened, setOpened] = useState('nothing yet');
+    return (
+      <>
+        <p>
+          <InlineRef
+            href="#/company/org/seats/qa"
+            kind="Agent"
+            markShape="face"
+            mark={<Avatar name="QA" kind="agent" size="text" decorative />}
+            onFollow={() => setOpened('QA')}
+          >
+            QA
+          </InlineRef>{' '}
+          can open{' '}
+          <ArtifactRef
+            kind="slides"
+            title="Deck link previews for the spring launch"
+            href="#/artifacts/a1"
+            onFollow={() => setOpened('Deck link previews for the spring launch')}
+          />
+          .
+        </p>
+        <p>{`Opened: ${opened}`}</p>
+      </>
+    );
+  },
 };
 
 /**

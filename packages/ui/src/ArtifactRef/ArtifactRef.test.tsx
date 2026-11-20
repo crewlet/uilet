@@ -3,7 +3,7 @@
  * with the kind said first, drawn as a work item's key is.
  */
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { SquareKanbanGlyph } from '@crewlethq/icons/glyphs';
 import { InlineRef } from '../InlineRef/index.js';
@@ -22,6 +22,13 @@ test('is a link named by its title, the kind said before it and its glyph drawn 
   const mark = link.querySelector('.crewlet-inline-ref__mark--glyph');
   expect(mark?.getAttribute('aria-hidden')).toBe('true');
   expect(mark?.querySelector('svg')).not.toBeNull();
+});
+
+test("opens the application's own way where the application says one", () => {
+  let opened = 0;
+  render(<ArtifactRef kind="slides" title="Q4 roadmap" href="#/artifacts/a1" onFollow={() => (opened += 1)} />);
+  expect(fireEvent.click(screen.getByRole('link'))).toBe(false);
+  expect(opened).toBe(1);
 });
 
 test("takes a work item key's size, ink and hover: the same reference, with a title that wraps", () => {
