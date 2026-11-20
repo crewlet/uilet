@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ChangeList, ChangeListItems, ColorChip, Inline, type ChangeListRow } from '@crewlethq/ui';
+import { ArtifactRef, Avatar, ChangeList, ChangeListItems, ColorChip, Inline, InlineRef, type ChangeListRow } from '@crewlethq/ui';
 
 /**
  * What a change will do, field by field, as a before and after (decision
@@ -156,3 +156,29 @@ export const InlineChips: Story = {
   name: 'Inline, values as chips',
   args: { layout: 'inline', rows: levels },
 };
+
+const seat = (name: string, kind: 'agent' | 'human' = 'agent') => (
+  <InlineRef
+    href={`#/company/org/seats/${name.toLowerCase().replace(/ /g, '-')}`}
+    kind={kind === 'human' ? 'Person' : 'Agent'}
+    markShape="face"
+    mark={<Avatar name={name} kind={kind} size="text" decorative />}
+    wrap
+  >
+    {name}
+  </InlineRef>
+);
+
+const records: ChangeListRow[] = [
+  {
+    kind: 'fact',
+    label: 'Artifact',
+    value: <ArtifactRef kind="slides" title="Deck link previews for the spring launch" href="#/artifacts/a1" />,
+  },
+  { kind: 'changed', label: 'Assignee', from: seat('Agent CTO'), to: seat('Agent PM') },
+  { kind: 'added', label: 'Member', to: seat('Agent SWE') },
+  { kind: 'removed', label: 'Member', from: seat('Jane Founder', 'human') },
+];
+
+/** Records a change names, each its face or its kind's glyph: an old or removed one struck whole, in the value's ink. */
+export const RecordsInValues: Story = { args: { heading: 'What will change', rows: records } };

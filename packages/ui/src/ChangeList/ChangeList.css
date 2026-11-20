@@ -156,6 +156,20 @@
   text-decoration-thickness: 1px;
 }
 
+/* A REFERENCE IN A STRUCK VALUE (a seat, an artifact) is struck in the value's ink:
+   its words sit in an atomic box, which takes no decoration from around it. */
+.crewlet-change-list :is(.crewlet-change-list__from, .crewlet-change-list__removed, .crewlet-change-list__deleted)
+  :is(.crewlet-inline-ref, .crewlet-inline-ref > .crewlet-inline-ref__head) {
+  color: inherit;
+  text-decoration-line: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.crewlet-change-list :is(.crewlet-change-list__from, .crewlet-change-list__removed, .crewlet-change-list__deleted)
+  :is(.crewlet-inline-ref--link:hover, .crewlet-inline-ref--link:hover > .crewlet-inline-ref__head) {
+  text-decoration-line: line-through underline;
+}
+
 /* A word diff: one compact paragraph, removed words struck in the danger ink. */
 .crewlet-change-list__words {
   margin: 0;
