@@ -188,6 +188,17 @@
   overflow-wrap: anywhere;
 }
 
+/* WHAT THE ROW'S ACTION OPENED IN PLACE starts on the title's line, as the
+   body does, on the quiet ground, so the preview and its Confirm read as the
+   row's own and apart from the row under it. */
+.crewlet-attention-list__panel {
+  grid-column: text / end;
+  margin: 0 var(--spacing-4) var(--spacing-3) 0;
+  padding: var(--spacing-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
 /* The fold's control on a row of its own, its words on the card's text edge,
    where every glyph stands. */
 .crewlet-attention-list__foot {

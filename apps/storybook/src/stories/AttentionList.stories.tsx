@@ -164,6 +164,45 @@ export const Labels: Story = {
   },
 };
 
+/**
+ * A row whose fix confirms in place: its action opened a panel under it, the
+ * change's preview and Confirm, so the reader decides where they pressed
+ * rather than in a dialog over the list.
+ */
+export const ConfirmInPlace: Story = {
+  args: {
+    items: [
+      {
+        key: 'releases',
+        tone: 'warning',
+        subject: 'Releases',
+        title: '14 release batches waited 4 to 21 hours for one seat',
+        meta: 'Eight frontend batches in one day, one item each.',
+        action: (
+          <Button size="small" variant="primary">
+            Batch releases per window
+          </Button>
+        ),
+        panel: (
+          <div style={{ display: 'grid', gap: 8 }}>
+            <Text as="p">Release window: every 2 hours, one batch per window. Saves about 9 turns a day.</Text>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button size="small" variant="primary">
+                Confirm
+              </Button>
+              <Button size="small" variant="ghost">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ),
+        panelLabel: 'Apply: Batch releases per window',
+      },
+      ...ITEMS.slice(1, 3),
+    ],
+  },
+};
+
 /** Nothing needs attention: the list draws nothing at all, so the page shows only its own content. */
 export const Empty: Story = { args: { items: [] } };
 

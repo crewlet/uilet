@@ -29,6 +29,16 @@ export interface AttentionItem {
   action?: ReactNode;
   /** What else there is to read, behind Details: the recorded sentence, the remedy at length. */
   details?: ReactNode;
+  /**
+   * What the row's own action opened IN PLACE, drawn open under the row for as
+   * long as it is given: a change's preview and its Confirm, a choice to make
+   * before the fix is sent. Not behind Details, since the reader asked for it
+   * by pressing the action, and in the row's own place, so they confirm where
+   * they pressed rather than in a dialog over the list. Named by `panelLabel`.
+   */
+  panel?: ReactNode;
+  /** What the panel is, for a screen reader: "Apply: Move 6 items to app-engineer-2". */
+  panelLabel?: string | undefined;
 }
 
 export interface AttentionListLabels {
@@ -228,6 +238,11 @@ export function AttentionList({ items, collapseAfter = 3, labels: overrides, hea
                   <div id={panel} className="crewlet-attention-list__body">
                     {item.details}
                   </div>
+                ) : null}
+                {item.panel != null ? (
+                  <section className="crewlet-attention-list__panel" aria-label={item.panelLabel}>
+                    {item.panel}
+                  </section>
                 ) : null}
               </li>
             );
