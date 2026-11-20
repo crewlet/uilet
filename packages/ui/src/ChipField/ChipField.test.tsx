@@ -15,7 +15,7 @@ afterEach(cleanup);
 
 const PEOPLE: ChipFieldItem[] = [
   { id: 'ada', label: 'Ada', leading: <span data-testid="face" /> },
-  { id: 'miles', label: 'Miles' },
+  { id: 'mira', label: 'Mira' },
 ];
 
 function Picker({ onCommit, onKeyDown }: { onCommit?: () => void; onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void }) {
@@ -56,9 +56,9 @@ test('Backspace in an empty box removes the last chip, says so, and keeps focus 
   const box = screen.getByRole('textbox', { name: 'Find people and agents' });
   box.focus();
   fireEvent.keyDown(box, { key: 'Backspace' });
-  expect(screen.queryByRole('button', { name: 'Remove Miles' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Remove Mira' })).toBeNull();
   expect(screen.getByRole('button', { name: 'Remove Ada' })).toBeDefined();
-  expect(announced()).toBe('Removed Miles');
+  expect(announced()).toBe('Removed Mira');
   expect(document.activeElement).toBe(box);
 });
 

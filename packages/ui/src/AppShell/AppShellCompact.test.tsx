@@ -88,7 +88,7 @@ function FullRail() {
           Engine serving
         </AppShell.RailStatus>
       }
-      footer={<AppShell.AccountRow avatar={<svg />} name="Miles" detail="miles.crewlet" href="#/account" actions={<button type="button">Settings</button>} />}
+      footer={<AppShell.AccountRow avatar={<svg />} name="Mira" detail="mira.crewlet" href="#/account" actions={<button type="button">Settings</button>} />}
     >
       <Places />
     </AppShell.Rail>
@@ -321,7 +321,7 @@ describe("the rail's slots, compact", () => {
   test("the account is the reader's face, named by who they are, with no controls beside it", () => {
     narrowWindow(false);
     render(<AppShell rail="compact" sidebar={<FullRail />}>screen</AppShell>);
-    const me = screen.getByRole('link', { name: 'Miles, miles.crewlet, your account' });
+    const me = screen.getByRole('link', { name: 'Mira, mira.crewlet, your account' });
     expect(me.getAttribute('href')).toBe('#/account');
     expect(me.classList.contains('crewlet-account-row__who--compact')).toBe(true);
     expect(screen.queryByRole('button', { name: 'Settings' })).toBeNull();
@@ -355,13 +355,13 @@ describe("the rail's slots, compact", () => {
     render(
       <AppShell
         rail="compact"
-        sidebar={<AppShell.Rail footer={<AppShell.AccountRow avatar={<svg />} name="Miles" href="#/account" compact={false} />} />}
+        sidebar={<AppShell.Rail footer={<AppShell.AccountRow avatar={<svg />} name="Mira" href="#/account" compact={false} />} />}
       >
         screen
       </AppShell>,
     );
     expect(document.querySelector('.crewlet-account-row__who--compact')).toBeNull();
-    expect(screen.getByText('Miles')).toBeDefined();
+    expect(screen.getByText('Mira')).toBeDefined();
   });
 
   test('a compact account that opens a menu is the menu button', async () => {
@@ -375,7 +375,7 @@ describe("the rail's slots, compact", () => {
             footer={
               <AppShell.AccountRow
                 avatar={<svg />}
-                name="Miles"
+                name="Mira"
                 menu={{ items: [{ key: 'out', label: 'Sign out', onSelect: () => {} }] }}
               />
             }
@@ -385,7 +385,7 @@ describe("the rail's slots, compact", () => {
         screen
       </AppShell>,
     );
-    const me = screen.getByRole('button', { name: 'Miles, your account' });
+    const me = screen.getByRole('button', { name: 'Mira, your account' });
     expect(me.getAttribute('aria-haspopup')).toBe('menu');
     await user.click(me);
     expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeDefined();

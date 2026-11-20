@@ -76,7 +76,7 @@ const CASES = SIZES.flatMap((size) => KINDS.flatMap((kind) => [false, true].map(
 test.each(CASES)('$kind initials at $size (status $status) are centred on their ink', async ({ size, kind, status }) => {
   const at = await mount(
     <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45 }}>
-      Asked <Avatar name="Miles Ingram" kind={kind} size={size} status={status ? 'working' : undefined} /> about it
+      Asked <Avatar name="Mira Ingram" kind={kind} size={size} status={status ? 'working' : undefined} /> about it
     </p>,
   );
   const off = offCentre(at.querySelector('.crewlet-avatar')!);
@@ -87,8 +87,8 @@ test.each(CASES)('$kind initials at $size (status $status) are centred on their 
 test.each([13, 14, 16, 20])('a text-sized person beside a text-sized character, in a %ipx sentence, is the same box on the same line', async (fontSize) => {
   const at = await mount(
     <p style={{ margin: 0, fontSize, lineHeight: 1.45 }}>
-      <InlineRef markShape="face" mark={<Avatar name="Miles Ingram" kind="human" size="text" decorative />}>
-        Miles Ingram
+      <InlineRef markShape="face" mark={<Avatar name="Mira Ingram" kind="human" size="text" decorative />}>
+        Mira Ingram
       </InlineRef>{' '}
       and{' '}
       <InlineRef markShape="face" mark={<Avatar name="CTO" kind="agent" character="gemlet" hue="cyan" size="text" decorative />}>
@@ -110,10 +110,10 @@ test.each([13, 14, 16, 20])('a text-sized person beside a text-sized character, 
 test.each([13, 14, 20])('a text-sized face alone in a %ipx sentence stands where InlineRef stands one', async (fontSize) => {
   const at = await mount(
     <p style={{ margin: 0, fontSize, lineHeight: 1.45 }}>
-      <InlineRef markShape="face" mark={<Avatar name="Miles Ingram" kind="human" size="text" decorative />}>
-        Miles
+      <InlineRef markShape="face" mark={<Avatar name="Mira Ingram" kind="human" size="text" decorative />}>
+        Mira
       </InlineRef>{' '}
-      and <Avatar name="Miles Ingram" kind="human" size="text" /> and{' '}
+      and <Avatar name="Mira Ingram" kind="human" size="text" /> and{' '}
       <Avatar name="CTO" kind="agent" character="gemlet" hue="cyan" size="text" />
     </p>,
   );

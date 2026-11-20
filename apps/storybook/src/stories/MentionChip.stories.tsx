@@ -21,7 +21,7 @@ export const InWords: Story = {
     <p style={{ margin: 0 }}>
       <MentionChip onPress={() => {}}>@Senior Backend Engineer</MentionChip> can you pair with{' '}
       <MentionChip tone="self" onPress={() => {}}>
-        @Miles
+        @Mira
       </MentionChip>{' '}
       on the rotation in <MentionChip onPress={() => {}}>#engineering</MentionChip>?{' '}
       <MentionChip tone="everyone">@channel</MentionChip> standup moves to 9:45.

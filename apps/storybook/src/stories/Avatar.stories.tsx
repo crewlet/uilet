@@ -99,7 +99,7 @@ export const MixedRow: Story = {
         <span style={caption}>an agent at work</span>
       </div>
       <div style={{ ...row, gap: 12 }}>
-        <Avatar src={samplePortrait} name="Miles Okafor" kind="human" size={36} />
+        <Avatar src={samplePortrait} name="Mira Okafor" kind="human" size={36} />
         <span style={caption}>a person&apos;s picture</span>
       </div>
       <div style={{ ...row, gap: 12 }}>
@@ -169,8 +169,8 @@ export const GlyphFace: Story = {
 /**
  * A mark on the corner says HOW a principal is present, where a status says
  * what an agent is doing. A seat's badge acting through an API token keeps
- * its own face, its initials, and wears a key there, so "Miles" reads as
- * Miles and the credential is still shown. It is drawn quiet, in the neutral
+ * its own face, its initials, and wears a key there, so "Mira" reads as
+ * Mira and the credential is still shown. It is drawn quiet, in the neutral
  * badge's raised fill, and a status wins over it on the one corner.
  */
 export const Mark: Story = {
@@ -179,7 +179,7 @@ export const Mark: Story = {
       {(['lg', 'md', 'sm'] as const).map((size) => (
         <Avatar
           key={size}
-          name="Miles"
+          name="Mira"
           kind="human"
           size={size}
           mark={<KeyGlyph size="xs" />}
@@ -226,14 +226,14 @@ export const TextSizeInASentence: Story = {
       {[13, 14, 16, 20].map((fontSize) => (
         <p key={fontSize} style={{ margin: 0, fontSize, lineHeight: 1.45 }}>
           Asked{' '}
-          <InlineRef markShape="face" mark={<Avatar name="Miles Ingram" kind="human" size="text" decorative />}>
-            Miles Ingram
+          <InlineRef markShape="face" mark={<Avatar name="Mira Ingram" kind="human" size="text" decorative />}>
+            Mira Ingram
           </InlineRef>{' '}
           and{' '}
           <InlineRef markShape="face" mark={<Avatar name="CTO" kind="agent" character="gemlet" hue="cyan" size="text" decorative />}>
             CTO
           </InlineRef>{' '}
-          and <Avatar name="Miles Ingram" kind="human" size="text" /> about the release.
+          and <Avatar name="Mira Ingram" kind="human" size="text" /> about the release.
         </p>
       ))}
     </div>

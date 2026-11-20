@@ -157,7 +157,7 @@ export function LinkCard({
   }
 
   // Each part on its own, so a description never runs two of them together
-  // ("In progressMiles") where a reader's browser joins inline text as is.
+  // ("In progressMira") where a reader's browser joins inline text as is.
   const describedBy = [ids.source, meta ? ids.meta : null, status ? ids.status : null, owner ? ids.owner : null]
     .filter(Boolean)
     .join(' ');

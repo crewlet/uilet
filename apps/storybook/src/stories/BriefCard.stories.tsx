@@ -159,7 +159,7 @@ export const RoomCatchUp: Story = {
       },
     ],
     points: [
-      { key: 'p1', text: 'Miles cut the release branch at 09:40.', source: { label: "Open Miles's message", onSelect: () => {} } },
+      { key: 'p1', text: 'Mira cut the release branch at 09:40.', source: { label: "Open Mira's message", onSelect: () => {} } },
       { key: 'p2', text: 'The payments pull request passed CI and waits for review.', source: { label: 'Open the thread', onSelect: () => {} } },
       { key: 'p3', text: 'The deploy window moved to Friday morning.', source: { label: 'Open the message', onSelect: () => {} } },
     ],

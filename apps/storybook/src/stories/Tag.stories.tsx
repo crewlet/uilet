@@ -118,7 +118,7 @@ export const QuietLabel: Story = {
         <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-xs)' }}>10:42</span>
       </Row>
       <Row>
-        <span style={{ fontWeight: 'var(--font-weight-medium)' }}>Miles Okafor</span>
+        <span style={{ fontWeight: 'var(--font-weight-medium)' }}>Mira Okafor</span>
         <Tag appearance="quiet">Guest</Tag>
       </Row>
     </div>

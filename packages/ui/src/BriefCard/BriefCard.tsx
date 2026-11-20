@@ -48,7 +48,7 @@ export interface BriefCardNeed {
 /**
  * One point of what was said (a room's catch up), and the message it came
  * from. `source` is the citation: the host's own press that opens the message
- * (or its thread), named for it ("Open Miles's message"), so every point can
+ * (or its thread), named for it ("Open Mira's message"), so every point can
  * be checked against what was actually written.
  */
 export interface BriefCardPoint {

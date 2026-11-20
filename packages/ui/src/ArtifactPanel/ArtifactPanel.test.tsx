@@ -47,7 +47,7 @@ test('a section inside heads one level under the panel', () => {
   render(
     <ArtifactPanel title="Settings" onClose={() => {}}>
       <Section title="Owner">
-        <p>Miles</p>
+        <p>Mira</p>
       </Section>
     </ArtifactPanel>,
   );
@@ -140,7 +140,7 @@ test('carries no axe violation', async () => {
           <ArtifactPanel title="Details" onClose={() => {}} onExpandedChange={() => {}}>
             <dl>
               <dt>Owner</dt>
-              <dd>Miles</dd>
+              <dd>Mira</dd>
             </dl>
           </ArtifactPanel>
         }

@@ -28,7 +28,7 @@ test('the preview is one link named by its code and title, described by the rest
       meta="Due Friday"
       status="In progress"
       statusTone="info"
-      owner={{ face: <span data-testid="face" />, name: 'Miles' }}
+      owner={{ face: <span data-testid="face" />, name: 'Mira' }}
     />,
   );
   const link = screen.getByRole('link', { name: 'WRK-41 Fix the login redirect' });
@@ -37,7 +37,7 @@ test('the preview is one link named by its code and title, described by the rest
     .split(' ')
     .map((id) => document.getElementById(id)?.textContent)
     .join(' | ');
-  expect(description).toBe('Worklet | Due Friday | In progress | Miles');
+  expect(description).toBe('Worklet | Due Friday | In progress | Mira');
   // An in-app route opens in place.
   expect(link.getAttribute('target')).toBeNull();
   expect(link.closest('.crewlet-link-card')!.classList.contains('crewlet-link-card--info')).toBe(true);

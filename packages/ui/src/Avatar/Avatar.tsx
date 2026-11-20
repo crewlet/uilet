@@ -158,7 +158,7 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
   mark?: ReactNode;
   /**
    * What the mark means, said after the name by a badge that names itself
-   * ("Miles avatar, signed in with an API token"). A decorative badge says
+   * ("Mira avatar, signed in with an API token"). A decorative badge says
    * nothing, as it says nothing of a status.
    */
   markLabel?: string | undefined;
