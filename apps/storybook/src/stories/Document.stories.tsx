@@ -28,7 +28,7 @@ function Body() {
   return (
     <>
       <p>
-        How FairSplit turns a group&apos;s expenses into the fewest payments that settle everyone, and why the MVP uses a
+        How Acme turns a group&apos;s expenses into the fewest payments that settle everyone, and why the MVP uses a
         greedy pass rather than the <a href="#exact">exact minimum</a>.
       </p>
       <h2 id="net-balances">Net balances</h2>

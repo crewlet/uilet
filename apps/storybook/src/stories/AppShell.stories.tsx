@@ -534,7 +534,7 @@ export const EngineStatusInTheHead: Story = {
     <AppShell
       sidebar={
         <Rail
-          context="FairSplit"
+          context="Acme"
           status={<EngineStatus />}
           foot={
             <AccountRow
@@ -569,7 +569,7 @@ export const EngineStatusInTheHead: Story = {
 /** A healthy engine draws its dot alone, and the name keeps the same room. */
 export const EngineStatusHealthy: Story = {
   render: () => (
-    <AppShell sidebar={<Rail context="FairSplit" status={<EngineStatus alarms={[]} />} />} topbar={<Topbar />}>
+    <AppShell sidebar={<Rail context="Acme" status={<EngineStatus alarms={[]} />} />} topbar={<Topbar />}>
       <Screen />
     </AppShell>
   ),
@@ -758,7 +758,7 @@ function FoldingRail({ at }: { at: string }) {
     );
   return (
     <AppShell.Rail
-      header={<BrandLockup name="GoPhrase" mark={<CrewletIcon />} href="#/" />}
+      header={<BrandLockup name="Acme" mark={<CrewletIcon />} href="#/" />}
       search={
         <SearchTrigger variant="rail" label="Ask or jump to…" shortcut={<Kbd keys={['Mod', 'k']} subtle />} keyshortcuts="Control+K Meta+K" />
       }

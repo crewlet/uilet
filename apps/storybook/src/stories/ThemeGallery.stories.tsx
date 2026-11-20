@@ -102,7 +102,7 @@ export const CallerDrawnPreview: Story = {
 export const WithCompanyBrand: Story = {
   render: function Render() {
     const decks = [
-      { id: 'brand', name: 'FairSplit', tag: 'Your company brand', tagTone: 'brand' as const, group: 'deck', ground: '#0d1a14', ink: '#eaf6f0', accent: '#3ccb9c' },
+      { id: 'brand', name: 'Acme', tag: 'Your company brand', tagTone: 'brand' as const, group: 'deck', ground: '#0d1a14', ink: '#eaf6f0', accent: '#3ccb9c' },
       { id: 'nightshade', name: 'Nightshade', tag: 'Periwinkle on blue-black', tagTone: 'quiet' as const, group: 'deck', ground: '#0d0f16', ink: '#e8ebf4', accent: '#9584ff' },
       { id: 'paper', name: 'Paper', tag: 'White, quiet and exact', group: 'deck', ground: '#f2f2ee', ink: '#111111', accent: '#2450e6' },
     ];

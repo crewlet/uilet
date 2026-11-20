@@ -72,7 +72,7 @@ test('the first column wraps a long name between words rather than cutting it', 
       <ResultTableCard
         title="Tasks"
         headers={['Title', 'Status', 'Assignee', 'Due']}
-        rows={[['Write the MVP plan and the first sprint for FairSplit', 'To do', 'pm', 'Oct 31, 2026']]}
+        rows={[['Write the MVP plan and the first sprint for Acme', 'To do', 'pm', 'Oct 31, 2026']]}
         align={['start', 'start', 'start', 'end']}
       />,
     );

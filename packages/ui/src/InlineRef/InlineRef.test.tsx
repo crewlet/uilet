@@ -21,8 +21,8 @@ test("a link leaving the application opens a tab, withholds the opener and says 
   render(
     <p>
       Fixed in{" "}
-      <InlineRef href="https://github.com/gophrase/backend/pull/14" mark={<svg data-testid="mark" />} kind="GitHub" code>
-        gophrase/backend#14
+      <InlineRef href="https://github.com/acme/backend/pull/14" mark={<svg data-testid="mark" />} kind="GitHub" code>
+        acme/backend#14
       </InlineRef>
     </p>,
   );
@@ -30,7 +30,7 @@ test("a link leaving the application opens a tab, withholds the opener and says 
   // What a screen reader hears, in order: the app, the words, the tab. (A
   // browser keeps the space after "GitHub:", which the hidden text holds as
   // `pre`; jsdom's name computation trims it, so the order is read here.)
-  expect(link.textContent).toBe("GitHub: gophrase/backend#14 (opens in a new tab)");
+  expect(link.textContent).toBe("GitHub: acme/backend#14 (opens in a new tab)");
   expect(link.getAttribute("target")).toBe("_blank");
   expect(link.getAttribute("rel")).toBe("noopener noreferrer");
   expect(link.className).toContain("crewlet-inline-ref--code");
@@ -39,19 +39,19 @@ test("a link leaving the application opens a tab, withholds the opener and says 
 test("its name holds its visible words: nothing replaces them, and the mark is decoration", () => {
   render(
     <InlineRef
-      href="https://gophrase.slack.com/archives/C1/p1"
+      href="https://acme.slack.com/archives/C1/p1"
       kind="Slack"
-      title="https://gophrase.slack.com/archives/C1/p1"
+      title="https://acme.slack.com/archives/C1/p1"
       mark={<svg data-testid="mark" />}
     >
-      Message in gophrase
+      Message in acme
     </InlineRef>,
   );
   const link = screen.getByRole("link");
-  expect(link.textContent).toBe("Slack: Message in gophrase (opens in a new tab)");
+  expect(link.textContent).toBe("Slack: Message in acme (opens in a new tab)");
   // WCAG 2.5.3: an aria-label would replace the words a voice user says.
   expect(link.getAttribute("aria-label")).toBeNull();
-  expect(link.getAttribute("title")).toBe("https://gophrase.slack.com/archives/C1/p1");
+  expect(link.getAttribute("title")).toBe("https://acme.slack.com/archives/C1/p1");
   expect(screen.getByTestId("mark").parentElement?.getAttribute("aria-hidden")).toBe("true");
 });
 
@@ -88,8 +88,8 @@ test("an app route opens the application's own way on a plain press, and a new-t
 test("a link that leaves the application never opens the application's way", () => {
   const opened: string[] = [];
   render(
-    <InlineRef href="https://github.com/gophrase/backend/pull/14" kind="GitHub" onFollow={() => opened.push("pr")}>
-      gophrase/backend#14
+    <InlineRef href="https://github.com/acme/backend/pull/14" kind="GitHub" onFollow={() => opened.push("pr")}>
+      acme/backend#14
     </InlineRef>,
   );
   expect(fireEvent.click(screen.getByRole("link"))).toBe(true);
@@ -98,9 +98,9 @@ test("a link that leaves the application never opens the application's way", () 
 
 test("an address no browser should follow is drawn as words, never as a link", () => {
   for (const href of ["javascript:alert(1)", " java\tscript:alert(1)", "data:text/html,x", "vbscript:x"]) {
-    const { container, unmount } = render(<InlineRef href={href}>gophrase/backend#14</InlineRef>);
+    const { container, unmount } = render(<InlineRef href={href}>acme/backend#14</InlineRef>);
     expect(container.querySelector("a"), href).toBeNull();
-    expect(container.textContent).toBe("gophrase/backend#14");
+    expect(container.textContent).toBe("acme/backend#14");
     unmount();
   }
 });
@@ -116,9 +116,9 @@ test("the mark never parts from the first word, and a phrase wraps after it", ()
   expect(head.querySelector(".crewlet-inline-ref__text")?.textContent).toBe("the");
   expect(container.querySelector("a")?.className).toContain("crewlet-inline-ref--wrap");
   // A token that is not a phrase is one head, whole.
-  const token = render(<InlineRef mark={<svg />}>gophrase/backend#14</InlineRef>).container;
+  const token = render(<InlineRef mark={<svg />}>acme/backend#14</InlineRef>).container;
   expect(token.querySelector(".crewlet-inline-ref__head .crewlet-inline-ref__text")?.textContent).toBe(
-    "gophrase/backend#14",
+    "acme/backend#14",
   );
   // The rules that make it so: the head and a token are each one atomic box,
   // no wider than the line, that breaks inside only where no line holds it.

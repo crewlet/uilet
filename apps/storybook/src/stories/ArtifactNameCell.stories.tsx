@@ -15,7 +15,7 @@ type Story = StoryObj<typeof ArtifactNameCell>;
  * it is about. The row it sits in is the link.
  */
 export const Name: Story = {
-  args: { kind: 'html', title: 'Pipeline health', detail: 'FairSplit CI over the last 14 days: pass rate, run volume and build time, by branch.' },
+  args: { kind: 'html', title: 'Pipeline health', detail: 'Acme CI over the last 14 days: pass rate, run volume and build time, by branch.' },
   render: (args) => (
     <div style={{ width: 420 }}>
       <ArtifactNameCell {...args} />
@@ -30,7 +30,7 @@ const ROWS = [
   { kind: 'slides', title: 'Q4 roadmap', detail: 'The board review deck', access: 'company', owner: 'Maya Chen', at: '2026-10-19T16:00:00Z' },
   { kind: 'design', title: 'Launch landing page', detail: 'Hero, features, pricing and sign up', access: 'shared', owner: 'Miles', at: '2026-10-18T09:00:00Z' },
   { kind: 'dashboard', title: 'Delivery pulse', detail: '', access: 'company', owner: 'ops-lead', at: '2026-10-12T09:00:00Z' },
-  { kind: 'html', title: 'Pipeline health', detail: 'FairSplit CI over the last 14 days', access: 'shared', owner: 'Miles', at: '2026-10-18T20:41:00Z' },
+  { kind: 'html', title: 'Pipeline health', detail: 'Acme CI over the last 14 days', access: 'shared', owner: 'Miles', at: '2026-10-18T20:41:00Z' },
   { kind: 'sheet', title: 'Vendor scorecard with a long title that is cut at its column', detail: 'Every vendor against the five criteria', access: 'private', owner: 'You', at: '2026-09-30T09:00:00Z' },
 ] as const;
 

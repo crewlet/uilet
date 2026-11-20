@@ -651,7 +651,7 @@ test('a title is set to fit its box both ways, and its box clips the rest', () =
   const long = {
     w: 1200,
     h: 100,
-    text: 'FairSplit 1.0 launch landing page: hero, features, pricing and sign up, for review before copy freeze',
+    text: 'Acme 1.0 launch landing page: hero, features, pricing and sign up, for review before copy freeze',
   };
   const size = titleSize(long);
   expect(size).toBeLessThan(60);

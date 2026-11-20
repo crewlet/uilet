@@ -39,7 +39,7 @@ const GROUPS: DirectoryGroup[] = [
   },
 ];
 
-const ADDRESS = 'https://fairsplit.example.com';
+const ADDRESS = 'https://acme.example.com';
 
 const meta: Meta<typeof DirectoryList> = {
   title: 'UI/DirectoryList',

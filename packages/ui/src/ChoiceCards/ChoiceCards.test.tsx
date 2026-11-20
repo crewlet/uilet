@@ -495,7 +495,7 @@ describe('a chosen card’s detail', () => {
             label="Server"
             value={null}
             onChange={() => {}}
-            options={[{ value: 'gophrase', label: 'GoPhrase', tag: 'Not reviewed', tagTone: 'warning' }]}
+            options={[{ value: 'acme', label: 'Acme', tag: 'Not reviewed', tagTone: 'warning' }]}
           />,
         );
         const tag = container.querySelector('.crewlet-choice-cards__tag')!;

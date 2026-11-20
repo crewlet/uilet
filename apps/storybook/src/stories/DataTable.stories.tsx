@@ -1083,7 +1083,7 @@ interface CompanyRow {
 const companyRows: CompanyRow[] = [
   {
     id: 'deec12db-3c7f-4acd-939d-feb7917a3e16',
-    company: 'infrado',
+    company: 'acme',
     plan: 'Free',
     status: 'No subscription',
     agents: '5 / 2',

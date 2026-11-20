@@ -5,7 +5,7 @@ import { FolderGlyph } from '@crewlethq/icons/glyphs';
 const meta: Meta<typeof PinTile> = {
   title: 'UI/PinTile',
   component: PinTile,
-  args: { title: 'FairSplit MVP', href: '#/worklet/FAIR', kind: 'Project', meta: '1 done · 2 active · 4 to do', figure: '14%' },
+  args: { title: 'Acme MVP', href: '#/worklet/FAIR', kind: 'Project', meta: '1 done · 2 active · 4 to do', figure: '14%' },
 };
 
 export default meta;
@@ -37,7 +37,7 @@ export const InAShelf: Story = {
   render: () => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(17rem, 1fr))', gap: 8 }}>
       <PinTile title="Crewlet-PM" href="#" kind="Agent" meta="Product and Engineering" onUnpin={() => undefined} />
-      <PinTile title="FairSplit MVP" href="#" kind="Project" meta="1 done · 2 active" figure="14%" onUnpin={() => undefined} />
+      <PinTile title="Acme MVP" href="#" kind="Project" meta="1 done · 2 active" figure="14%" onUnpin={() => undefined} />
       <PinTile title="Decision log" href="#" kind="Page" onUnpin={() => undefined} />
     </div>
   ),
