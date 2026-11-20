@@ -17,7 +17,7 @@ afterEach(cleanup);
 const property = (name: string) => `--${name}`;
 
 const members: PresenceMember[] = [
-  { id: 's1', name: 'Sam Lee', kind: 'human', activity: 'idle', hue: 'blue' },
+  { id: 's1', name: 'Kai Lee', kind: 'human', activity: 'idle', hue: 'blue' },
   { id: 's2', name: 'PM', kind: 'agent', activity: 'viewing', hue: 'rose', character: 'gemlet', location: 'reading version 12 for ENG-412' },
   { id: 's3', name: 'Maya Ortiz', kind: 'human', activity: 'editing', hue: 'cyan', location: 'editing row Acme Corp' },
   { id: 's4', name: 'Jane Founder', kind: 'human', activity: 'viewing', hue: 'green' },
@@ -28,7 +28,7 @@ test('is one image named from the reader point of view, every member said with w
   render(<PresenceStack members={members} />);
   const image = screen.getByRole('img');
   expect(image.getAttribute('aria-label')).toBe(
-    'You and 5 others are here. Maya Ortiz, editing row Acme Corp. CTO, editing. Jane Founder, viewing. PM, reading version 12 for ENG-412. Sam Lee, idle',
+    'You and 5 others are here. Maya Ortiz, editing row Acme Corp. CTO, editing. Jane Founder, viewing. PM, reading version 12 for ENG-412. Kai Lee, idle',
   );
 });
 

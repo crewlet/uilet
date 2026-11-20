@@ -26,7 +26,7 @@ export const People: Story = {
     title: 'Who can approve spend',
     items: [
       { id: 'jane', name: 'Jane Founder', fact: 'Owner', avatar: <Avatar name="Jane Founder" size="sm" />, action: open('#/people/jane', 'Profile') },
-      { id: 'sam', name: 'Sam Rivera', fact: 'Admin', avatar: <Avatar name="Sam Rivera" size="sm" />, action: open('#/people/sam', 'Profile') },
+      { id: 'kai', name: 'Kai Rivera', fact: 'Admin', avatar: <Avatar name="Kai Rivera" size="sm" />, action: open('#/people/kai', 'Profile') },
     ],
   },
 };
@@ -59,7 +59,7 @@ export const Folded: Story = {
     summary: '2 people',
     items: [
       { id: 'jane', name: 'Jane Founder', fact: 'Owner', avatar: <Avatar name="Jane Founder" size="sm" />, action: open('#/people/jane', 'Profile') },
-      { id: 'sam', name: 'Sam Rivera', fact: 'Admin', avatar: <Avatar name="Sam Rivera" size="sm" />, action: open('#/people/sam', 'Profile') },
+      { id: 'kai', name: 'Kai Rivera', fact: 'Admin', avatar: <Avatar name="Kai Rivera" size="sm" />, action: open('#/people/kai', 'Profile') },
     ],
   },
 };

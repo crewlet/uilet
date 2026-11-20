@@ -38,7 +38,7 @@ interface Person {
 const people: Person[] = [
   { id: 1, name: 'Jane Cooper',  email: 'jane@example.com',  role: 'Owner',  joined: '2025-03-12' },
   { id: 2, name: 'Alex Park',    email: 'alex@example.com',  role: 'Admin',  joined: '2025-04-01' },
-  { id: 3, name: 'Sam Lin',      email: 'sam@example.com',   role: 'Member', joined: '2025-05-09' },
+  { id: 3, name: 'Kai Lin',      email: 'kai@example.com',   role: 'Member', joined: '2025-05-09' },
   { id: 4, name: 'Robin Vega',   email: 'robin@example.com', role: 'Member', joined: '2025-06-22' },
   { id: 5, name: 'Mika Patel',   email: 'mika@example.com',  role: 'Member', joined: '2025-07-15' },
 ];
@@ -53,11 +53,11 @@ const columns = {
 const projects = [
   { project_id: '00000000-0000-4000-8000-000000000001', name: 'Website refresh', owner: 'Jane Cooper', status: 'active',   tasks: '12 / 40', storage: '1.2 GB' },
   { project_id: '00000000-0000-4000-8000-000000000002', name: 'Mobile app',      owner: 'Alex Park',   status: 'planning', tasks: '0 / 8',   storage: '0 B' },
-  { project_id: '00000000-0000-4000-8000-000000000003', name: 'Annual report',   owner: 'Sam Lin',     status: 'archived', tasks: '25 / 25', storage: '340 MB' },
+  { project_id: '00000000-0000-4000-8000-000000000003', name: 'Annual report',   owner: 'Kai Lin',     status: 'archived', tasks: '25 / 25', storage: '340 MB' },
 ];
 
 const auditEvents = [
-  { id: 'e1', when: '4h ago', event: 'user.invited',    outcome: 'success', actor: 'jane@example.com', target: 'sam@example.com' },
+  { id: 'e1', when: '4h ago', event: 'user.invited',    outcome: 'success', actor: 'jane@example.com', target: 'kai@example.com' },
   { id: 'e2', when: '6h ago', event: 'project.updated', outcome: 'success', actor: 'jane@example.com', target: 'Website refresh' },
   { id: 'e3', when: '1d ago', event: 'role.changed',    outcome: 'denied',  actor: 'alex@example.com', target: 'robin@example.com' },
   { id: 'e4', when: '3d ago', event: 'api_key.created', outcome: 'success', actor: 'jane@example.com', target: 'CI runner' },

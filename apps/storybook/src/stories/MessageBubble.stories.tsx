@@ -19,7 +19,7 @@ type Story = StoryObj<typeof MessageBubble>;
 
 export const Self: Story = { args: { from: 'self', children: 'Which agents spent the most tokens this week?' } };
 
-export const Other: Story = { args: { from: 'other', label: 'Sam Rivera said', children: 'Can you check the on-call runbook?' } };
+export const Other: Story = { args: { from: 'other', label: 'Kai Rivera said', children: 'Can you check the on-call runbook?' } };
 
 /** Long unbroken text wraps anywhere rather than widening the thread. */
 export const LongUnbrokenText: Story = {

@@ -48,7 +48,7 @@ export const ReducedMotion: Story = {
     }, []);
     return (
       <div style={stage}>
-        <LiveCursor x={x} y={100} name="Sam Lee" hue="amber" interpolate={false} />
+        <LiveCursor x={x} y={100} name="Kai Lee" hue="amber" interpolate={false} />
       </div>
     );
   },

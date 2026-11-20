@@ -29,11 +29,11 @@ test('the reader’s own is named "You said" and carries the page it was sent wi
 
 test('anybody else’s takes the name it is given', () => {
   render(
-    <MessageBubble from="other" label="Sam Rivera said">
+    <MessageBubble from="other" label="Kai Rivera said">
       Can you check the runbook?
     </MessageBubble>,
   );
-  expect(screen.getByRole('article', { name: 'Sam Rivera said' }).className).toContain('crewlet-message--other');
+  expect(screen.getByRole('article', { name: 'Kai Rivera said' }).className).toContain('crewlet-message--other');
 });
 
 test('rises in only when asked, and never under reduced motion', () => {
@@ -51,7 +51,7 @@ test('carries no axe violation', async () => {
   const { container } = render(
     <main>
       <MessageBubble from="self">Which budget runs out first?</MessageBubble>
-      <MessageBubble from="other" label="Sam Rivera said">
+      <MessageBubble from="other" label="Kai Rivera said">
         The weekly one.
       </MessageBubble>
     </main>,

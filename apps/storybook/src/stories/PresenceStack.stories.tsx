@@ -14,7 +14,7 @@ const ROOM: PresenceMember[] = [
   { id: 's2', name: 'PM', kind: 'agent', activity: 'viewing', hue: 'rose', character: 'gemlet', location: 'reading version 12 for ENG-412' },
   { id: 's3', name: 'Jane Founder', kind: 'human', activity: 'viewing', hue: 'green' },
   { id: 's4', name: 'CTO', kind: 'agent', activity: 'editing', hue: 'amber', character: 'hexlet' },
-  { id: 's5', name: 'Sam Lee', kind: 'human', activity: 'idle', hue: 'blue' },
+  { id: 's5', name: 'Kai Lee', kind: 'human', activity: 'idle', hue: 'blue' },
   { id: 's6', name: 'Priya Shah', kind: 'human', activity: 'viewing', hue: 'purple' },
 ];
 

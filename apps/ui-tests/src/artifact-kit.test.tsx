@@ -540,11 +540,11 @@ describe('<crewlet-sheet>', () => {
     await waitFor(() => expect(cell(0, 0)).toBeDefined());
     fake.members([
       member('jane-1', 'jane', 'Jane Founder', 'viewing', { collection: 'vendors', doc: 'globex', field: 'score' }),
-      member('other', 'sam', 'Sam Lee', 'viewing', { collection: 'notes', doc: 'x', field: 'y' }),
+      member('other', 'kai', 'Kai Lee', 'viewing', { collection: 'notes', doc: 'x', field: 'y' }),
     ]);
     expect(cell(1, 1).className).toContain('crewlet-presence-ring');
     expect(cell(1, 1).querySelector('.crewlet-cursor-flag')?.textContent).toBe('Jane Founder');
-    // The sheet's stack is who is in it: Sam, on another collection, is in the
+    // The sheet's stack is who is in it: Kai, on another collection, is in the
     // page's room, which the dashboard's bar draws, and not in this sheet.
     expect(screen.getByRole('img', { name: /^1 other person is in this sheet\. Jane Founder/ })).toBeDefined();
     expect(screen.queryByRole('img', { name: /are here/ })).toBeNull();
@@ -559,7 +559,7 @@ describe('<crewlet-sheet>', () => {
     document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
     await waitFor(() => expect(cell(0, 0)).toBeDefined());
     fake.members([
-      member('sam-1', 'sam', 'Sam Lee', 'editing', { collection: 'notes', doc: 'x', field: 'y' }),
+      member('kai-1', 'kai', 'Kai Lee', 'editing', { collection: 'notes', doc: 'x', field: 'y' }),
       member('ada-1', 'ada', 'Ada', 'viewing', {}),
     ]);
     expect(document.querySelector('.crewlet-kit-sheet__presence')).toBeNull();
@@ -718,7 +718,7 @@ describe('bindings', () => {
   test('the members in a sheet are those whose focus is in its collection', () => {
     const members = [
       member('a', 'jane', 'Jane', 'viewing', { collection: 'vendors', doc: 'acme', field: 'score' }),
-      member('b', 'sam', 'Sam', 'viewing', { collection: 'notes', doc: 'x', field: 'y' }),
+      member('b', 'kai', 'Kai', 'viewing', { collection: 'notes', doc: 'x', field: 'y' }),
       member('c', 'ada', 'Ada', 'viewing', { region: 'chart' }),
     ];
     expect(membersIn(members, 'vendors').map((m) => m.session)).toEqual(['a']);
@@ -766,7 +766,7 @@ describe('bindings', () => {
       member('a', 'reader', 'Reader', 'viewing', {}),
       member('b', 'pm', 'PM', 'editing', { collection: 'vendors', doc: 'acme', field: 'score' }, { kind: 'agent', avatar: { character: 'otter', hue: 'rose' } }),
       member('d', 'jane', 'Jane', 'idle', { collection: 'vendors', doc: 'globex', field: 'vendor' }),
-      member('e', 'sam', 'Sam', 'viewing', { collection: 'notes', doc: 'x', field: 'y' }),
+      member('e', 'kai', 'Kai', 'viewing', { collection: 'notes', doc: 'x', field: 'y' }),
     ];
     const hues = memberHues(members, new Map());
     expect(hues.get('b')).toBe('rose');
@@ -777,7 +777,7 @@ describe('bindings', () => {
     expect(rosterFromMembers(members, 'reader', hues).map((entry) => [entry.name, entry.activity, entry.character])).toEqual([
       ['PM', 'editing', 'otter'],
       ['Jane', 'idle', undefined],
-      ['Sam', 'viewing', undefined],
+      ['Kai', 'viewing', undefined],
     ]);
   });
 });
