@@ -505,9 +505,11 @@
 
 /*
  * A NAME NEVER DRAWS UNDER A TILE'S SIZE: scaled with the map, a card's name
- * was smaller at half size than the tile's held name just under it.
+ * was smaller at half size than the tile's held name just under it. Two
+ * classes, so the inherited size of the Text it is drawn with gives way.
  */
-.crewlet-graph-canvas__name {
+.crewlet-graph-canvas__card .crewlet-graph-canvas__name,
+.crewlet-graph-canvas__names > .crewlet-graph-canvas__name {
   flex: 1;
   min-width: 0;
   font-size: max(
@@ -524,9 +526,13 @@
   line-height: var(--font-line-height-tight);
 }
 
+/* A closed group's count holds a tile's size, as its name does. */
 .crewlet-graph-canvas__card--group .crewlet-graph-canvas__group-count {
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-2xs);
+  font-size: max(
+    var(--font-size-2xs),
+    calc(var(--crewlet-graph-canvas-tile-name) * var(--crewlet-graph-canvas-hold))
+  );
 }
 
 /* ── empty lanes ────────────────────────────────────────────────────────── */

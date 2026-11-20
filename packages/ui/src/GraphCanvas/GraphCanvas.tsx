@@ -1258,7 +1258,6 @@ export function GraphCanvas({
           lead={group?.lead}
           count={members.length}
           attention={item.kind === 'summary' ? worstOf(members) : undefined}
-          tall={layout !== null && item.kind === 'summary' && item.height > layout.metrics.cardHeight + 0.5}
           dimmed={drawn?.itemDimmed(item.key) ?? false}
           selected={item.key === selectedKey}
           text={text}
@@ -1385,7 +1384,13 @@ export function GraphCanvas({
       <Probes measure={measure} />
       {bands.flatMap((band) =>
         band.lanes.map((lane) => (
-          <div key={lane.id} className="crewlet-graph-canvas__title-probe" data-lane={lane.id} aria-hidden="true" inert>
+          <div
+            key={lane.id}
+            className="crewlet-graph-canvas__probe crewlet-graph-canvas__title-probe"
+            data-lane={lane.id}
+            aria-hidden="true"
+            inert
+          >
             <LaneTitle label={lane.label} count={laneCounts.get(lane.id) ?? 0} tally={tallies.get(lane.id)} />
           </div>
         )),
@@ -1877,7 +1882,6 @@ const GraphGroupItem = memo(function GraphGroupItem({
   lead,
   count,
   attention,
-  tall,
   dimmed,
   selected,
   text,
@@ -1886,8 +1890,6 @@ const GraphGroupItem = memo(function GraphGroupItem({
   lead: ReactNode;
   count: number;
   attention: GraphAttention | undefined;
-  /** A closed group's name takes up to two lines. */
-  tall: boolean;
   dimmed: boolean;
   /** A closed group holding the selection is drawn selected. */
   selected: boolean;
@@ -1908,7 +1910,6 @@ const GraphGroupItem = memo(function GraphGroupItem({
       data-attention={attention?.tone}
       data-state={dimmed ? 'dim' : 'rest'}
       data-selected={selected ? '' : undefined}
-      data-tall={tall ? '' : undefined}
       className={open ? 'crewlet-graph-canvas__head' : 'crewlet-graph-canvas__card crewlet-graph-canvas__card--group'}
       style={cardStyle(item)}
       onClick={() => onPress(itemKey)}
@@ -1936,13 +1937,7 @@ const GraphGroupItem = memo(function GraphGroupItem({
           <span className="crewlet-graph-canvas__cell" aria-hidden="true">
             {lead ?? <ChevronRightGlyph size="sm" />}
           </span>
-          <Text
-            variant="inherit"
-            truncate={!tall}
-            clamp={tall ? 2 : undefined}
-            className="crewlet-graph-canvas__name"
-            aria-hidden="true"
-          >
+          <Text variant="inherit" truncate className="crewlet-graph-canvas__name" aria-hidden="true">
             {label}
           </Text>
           <span className="crewlet-graph-canvas__group-count" aria-hidden="true">

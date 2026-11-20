@@ -297,11 +297,11 @@ export const GRAPH_SPLIT_GAIN = 1.05;
 const TITLE_HOLD_FLOOR = 0.2;
 
 /**
- * HOW MANY TIMES THE PACK SIZES THE TITLES FOR THE FIT IT FOUND, each time
- * for the last fit, until the fit moves under a hundredth: wider titles lower
- * the fit a little, so it settles in a few.
+ * HOW MANY TIMES THE PACK SIZES THE TITLES FOR THE FIT IT FOUND, each time a
+ * little over the last fit, until the titles are as wide as that fit needs:
+ * wider titles lower the fit a little, so it settles in a few.
  */
-const TITLE_PASSES = 6;
+const TITLE_PASSES = 8;
 const TITLE_SLACK = 0.03;
 
 /**
@@ -583,10 +583,10 @@ export function packGraphLanes(
   let hold = 1;
   let chosen = attempt(hold);
   for (let pass = 1; pass < TITLE_PASSES; pass++) {
+    const needed = 1 / Math.min(1, Math.max(TITLE_HOLD_FLOOR, chosen.fit));
+    if (needed <= hold + 1e-9) break;
     // A little over the last fit, which the wider titles lower a little more.
-    const next = (1 + TITLE_SLACK) / Math.min(1, Math.max(TITLE_HOLD_FLOOR, chosen.fit));
-    if (Math.abs(next - hold) <= hold * 0.01) break;
-    hold = next;
+    hold = needed * (1 + TITLE_SLACK);
     chosen = attempt(hold);
   }
   const shelves: GraphPack['shelves'] = [];
@@ -718,10 +718,15 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
     for (const lane of allLanes) {
       const keys = laneKeys.get(lane)!;
       let widest = keys.length === 0 ? cardWidth : 0;
-      for (const key of keys) widest = Math.max(widest, widthOf(key));
+      // Only an entry's name takes a second line: a closed group's is a vendor's, one word.
+      let longest = 0;
+      for (const key of keys) {
+        widest = Math.max(widest, widthOf(key));
+        if (key.startsWith('node:')) longest = Math.max(longest, widthOf(key));
+      }
       out.set(lane, {
         width: Math.min(style.cap, Math.max(cardMin, widest)),
-        height: style.wrap && widest > style.cap + 0.5 ? tallHeight : cardHeight,
+        height: style.wrap && longest > style.cap + 0.5 ? tallHeight : cardHeight,
       });
     }
     return out;
@@ -744,7 +749,8 @@ export function layoutGraph(input: GraphLayoutInput, metrics: GraphMetrics): Gra
       const lines =
         tall && (k >= reading.cardsZoom || graphTileLines(k, card.height, reading.tileName) === 2) ? 2 * TWO_LINE_FILL : 1;
       for (const key of laneKeys.get(lane)!) {
-        if ((widthOf(key) - bare) * grown <= room * lines + 0.5) count += 1;
+        const most = key.startsWith('node:') ? lines : 1;
+        if ((widthOf(key) - bare) * grown <= room * most + 0.5) count += 1;
       }
     }
     return count;
