@@ -153,14 +153,14 @@ test('a caller-drawn preview takes the swatch\'s place, hidden as decoration, wi
 
 test('draws a tag only for a theme that sets its tone, and says every tag once in the name', () => {
   const themes: ThemeGalleryTheme[] = [
-    { id: 'brand', name: 'FairSplit', tag: 'Your company brand', tagTone: 'brand', group: 'deck' },
+    { id: 'brand', name: 'Acme', tag: 'Your company brand', tagTone: 'brand', group: 'deck' },
     { id: 'ink', name: 'Ink', tag: 'Navy and paper', tagTone: 'quiet', group: 'deck' },
     { id: 'grove', name: 'Grove', tag: 'Deep green', group: 'deck' },
     { id: 'paper', name: 'Paper', group: 'deck' },
   ];
   render(<ThemeGallery label="Deck theme" value="brand" onValueChange={() => {}} themes={themes} groups={[]} renderPreview={() => null} />);
   // `brand`: the accent's pill, visible.
-  const brand = card('FairSplit, Your company brand');
+  const brand = card('Acme, Your company brand');
   expect(brand.querySelector('.crewlet-theme-gallery__tag--brand .crewlet-tag')?.textContent).toBe('Your company brand');
   // `quiet`: a caption under the name, with the whole of it on hover.
   const ink = card('Ink, Navy and paper');

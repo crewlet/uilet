@@ -33,21 +33,21 @@ type Story = StoryObj<typeof InlineRef>;
 
 const pr = (
   <InlineRef
-    href="https://github.com/gophrase/backend/pull/14"
+    href="https://github.com/acme/backend/pull/14"
     kind="GitHub"
-    title="https://github.com/gophrase/backend/pull/14"
+    title="https://github.com/acme/backend/pull/14"
     mark={<VendorMark vendor="github" />}
     code
   >
-    gophrase/backend#14
+    acme/backend#14
   </InlineRef>
 );
 
 const commit = (
   <InlineRef
-    href="https://github.com/gophrase/backend/commit/b5362d2"
+    href="https://github.com/acme/backend/commit/b5362d2"
     kind="GitHub"
-    title="https://github.com/gophrase/backend/commit/b5362d2"
+    title="https://github.com/acme/backend/commit/b5362d2"
     mark={<VendorMark vendor="github" />}
     code
   >
@@ -78,12 +78,12 @@ export const InASentence: Story = {
       <p>
         Screenshots are on{' '}
         <InlineRef
-          href="https://github.com/gophrase/web/pull/31"
+          href="https://github.com/acme/web/pull/31"
           kind="GitHub"
           mark={<VendorMark vendor="github" />}
           code
         >
-          gophrase/web#31
+          acme/web#31
         </InlineRef>
         , and{' '}
         <InlineRef
@@ -96,15 +96,15 @@ export const InASentence: Story = {
         </InlineRef>{' '}
         posted the comparison in{' '}
         <InlineRef
-          href="https://gophrase.slack.com/archives/C07LQ2V4K/p1729950000123456"
+          href="https://acme.slack.com/archives/C07LQ2V4K/p1729950000123456"
           kind="Slack"
           mark={<VendorMark vendor="slack" />}
         >
-          Message in gophrase
+          Message in acme
         </InlineRef>{' '}
         and{' '}
         <InlineRef
-          href="https://chat.example.com/gophrase/channels/design-review"
+          href="https://chat.example.com/acme/channels/design-review"
           kind="Mattermost"
           mark={<VendorMark vendor="mattermost" />}
         >
@@ -112,7 +112,7 @@ export const InASentence: Story = {
         </InlineRef>
         . The spec is{' '}
         <InlineRef
-          href="https://gophrase.atlassian.net/wiki/spaces/DES/pages/131073/Brand+tokens"
+          href="https://acme.atlassian.net/wiki/spaces/DES/pages/131073/Brand+tokens"
           kind="Confluence"
           mark={<VendorMark vendor="atlassian" />}
           wrap
@@ -206,7 +206,7 @@ export const NotALink: Story = {
       </InlineRef>{' '}
       with no GitLab configured, and{' '}
       <InlineRef href="javascript:alert(1)" kind="GitHub" mark={<VendorMark vendor="github" />} code>
-        gophrase/backend#14
+        acme/backend#14
       </InlineRef>{' '}
       handed an unsafe address.
     </p>
@@ -226,7 +226,7 @@ export const ALabelledLinkAtNarrowWidths: Story = {
           <p>
             {`${width}px.`} The lesson player palette follows the spec in{' '}
             <InlineRef
-              href="https://gophrase.atlassian.net/wiki/spaces/DES/pages/131073/Brand+tokens"
+              href="https://acme.atlassian.net/wiki/spaces/DES/pages/131073/Brand+tokens"
               kind="Confluence"
               mark={<VendorMark vendor="atlassian" />}
               wrap
@@ -262,7 +262,7 @@ export const InAChoice: Story = {
             <>
               Leaves{' '}
               <InlineRef kind="GitHub" mark={<VendorMark vendor="github" />} code>
-                gophrase/backend#14
+                acme/backend#14
               </InlineRef>{' '}
               unmerged
             </>

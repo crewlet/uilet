@@ -35,7 +35,7 @@ function BrandSummary({ error }: { error?: string }) {
           status={{ label: 'Complete', tone: 'success' }}
           action={edit('Identity')}
         >
-          <strong>FairSplit</strong>
+          <strong>Acme</strong>
           <div style={{ color: 'var(--color-text-secondary)' }}>Split bills without the awkward part.</div>
         </ReviewList.Item>
         <ReviewList.Item
@@ -46,9 +46,9 @@ function BrandSummary({ error }: { error?: string }) {
           error={error}
         >
           <div style={THUMBS}>
-            <LogoSlot label="Primary" ground="light" src={error ? undefined : wordmark} alt="FairSplit logo" />
-            <LogoSlot label="For dark grounds" ground="dark" alt="FairSplit logo on dark grounds" />
-            <LogoSlot label="Mark" ground="light" shape="square" alt="FairSplit mark" />
+            <LogoSlot label="Primary" ground="light" src={error ? undefined : wordmark} alt="Acme logo" />
+            <LogoSlot label="For dark grounds" ground="dark" alt="Acme logo on dark grounds" />
+            <LogoSlot label="Mark" ground="light" shape="square" alt="Acme mark" />
           </div>
         </ReviewList.Item>
         <ReviewList.Item

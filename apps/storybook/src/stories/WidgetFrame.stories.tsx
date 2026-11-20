@@ -102,7 +102,7 @@ export const FlushTable: Story = {
         }}
         data={[
           { id: 1, key: 'FAIR-2', title: 'README and MVP acceptance run-through', status: 'In review' },
-          { id: 2, key: 'FAIR-1', title: 'Write the FairSplit product brief', status: 'In progress' },
+          { id: 2, key: 'FAIR-1', title: 'Write the Acme product brief', status: 'In progress' },
         ]}
         getRowKey={(row) => Number(row.id)}
       />

@@ -24,7 +24,7 @@ function Summary({ error }: { error?: string }) {
         status={{ label: 'Complete', tone: 'success' }}
         action={<button type="button">Edit Identity</button>}
       >
-        <p>FairSplit</p>
+        <p>Acme</p>
       </ReviewList.Item>
       <ReviewList.Item
         icon={<svg aria-hidden="true" />}
@@ -54,7 +54,7 @@ test('each part is a heading one level under where the list sits, with its state
   const [identity] = screen.getAllByRole('listitem');
   const heading = within(identity!).getByRole('heading', { name: 'Identity' });
   expect(heading.tagName).toBe('H4');
-  expect(identity!.textContent).toBe('IdentityCompleteEdit IdentityFairSplit');
+  expect(identity!.textContent).toBe('IdentityCompleteEdit IdentityAcme');
   expect(identity!.querySelector('.crewlet-tag--success')).not.toBeNull();
   expect(within(identity!).getByRole('button', { name: 'Edit Identity' })).toBeDefined();
 });

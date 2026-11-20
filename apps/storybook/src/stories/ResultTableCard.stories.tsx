@@ -97,10 +97,10 @@ export const LongWords: Story = {
 export const LongTitles: Story = {
   args: {
     title: 'Tasks',
-    window: 'Open in FairSplit',
+    window: 'Open in Acme',
     headers: ['Title', 'Status', 'Assignee'],
     rows: [
-      ['Write the MVP plan and the first sprint for FairSplit', 'To do', 'pm'],
+      ['Write the MVP plan and the first sprint for Acme', 'To do', 'pm'],
       ['Record an expense with an even split, exact to the cent', 'To do', 'engineer'],
       ['Support a second currency on a shared group', 'To do', 'engineer'],
       ['Settle-up algorithm for uneven splits', 'In progress', 'engineer'],

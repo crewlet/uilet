@@ -46,7 +46,7 @@ interface Project {
   open: number;
 }
 
-const FAIRSPLIT: Project[] = [
+const ACME: Project[] = [
   { key: 'FAIR', name: 'Product and Engineering', open: 2 },
   { key: 'SPLIT', name: 'Split engine', open: 4 },
   { key: 'APP', name: 'Mobile app', open: 3 },
@@ -57,7 +57,7 @@ const FAIRSPLIT: Project[] = [
 
 const WORDS = ['Billing', 'Ledger', 'Onboarding', 'Search', 'Insights', 'Payouts', 'Support', 'Security'];
 const MANY: Project[] = [
-  ...FAIRSPLIT,
+  ...ACME,
   ...Array.from({ length: 42 }, (_, i) => ({
     key: `P${String(i + 1).padStart(2, '0')}`,
     name: `${WORDS[i % WORDS.length]} ${Math.floor(i / WORDS.length) + 1}`,
@@ -90,7 +90,7 @@ interface DemoProps {
   startQuery?: string;
 }
 
-function Demo({ projects = FAIRSPLIT, state = 'ready', held = false, truncated = false, centred = false, startOpen = false, startQuery = '' }: DemoProps) {
+function Demo({ projects = ACME, state = 'ready', held = false, truncated = false, centred = false, startOpen = false, startQuery = '' }: DemoProps) {
   const [open, setOpen] = useState(startOpen);
   const [query, setQuery] = useState(startQuery);
   const [current, setCurrent] = useState('FAIR');

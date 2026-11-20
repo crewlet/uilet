@@ -20,12 +20,12 @@ export interface InlineRefProps {
   markShape?: InlineRefMarkShape | undefined;
   /**
    * What the mark says, read before the words by a screen reader and never
-   * drawn: "GitHub" for `gophrase/backend#14`, "Slack" for `Message in
-   * gophrase`, "Colour" for `#ffe100`. The visible words stay in the name, so
+   * drawn: "GitHub" for `acme/backend#14`, "Slack" for `Message in
+   * acme`, "Colour" for `#ffe100`. The visible words stay in the name, so
    * a voice user can say what they see.
    */
   kind?: string | undefined;
-  /** What the reference says: `gophrase/backend#14`, `~design-review`, `#ffe100`. */
+  /** What the reference says: `acme/backend#14`, `~design-review`, `#ffe100`. */
   children: ReactNode;
   /**
    * Where it goes. Only an `http:`, `https:` or `mailto:` address or an app
@@ -102,7 +102,7 @@ function splitHead(children: ReactNode): { head: ReactNode; rest: ReactNode[] } 
  * colour, drawn with the mark that says what it is before its words.
  *
  * WHY IT EXISTS. Operator-facing text is full of things a reader has to stop
- * and decode: `gophrase/backend#14` is a pull request on GitHub, `#ffe100` a
+ * and decode: `acme/backend#14` is a pull request on GitHub, `#ffe100` a
  * yellow, `~design-review` a Mattermost channel. A mark a little below the
  * text's size says which before the words are read, and costs the line no
  * height.

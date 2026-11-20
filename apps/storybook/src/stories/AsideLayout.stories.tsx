@@ -19,7 +19,7 @@ const ASIDE = (
         <Card.Title>Company</Card.Title>
       </Card.Header>
       <DescriptionList>
-        <DescriptionList.Item term="Name">Fairsplit</DescriptionList.Item>
+        <DescriptionList.Item term="Name">Acme</DescriptionList.Item>
         <DescriptionList.Item term="Clock">Europe/Berlin</DescriptionList.Item>
       </DescriptionList>
     </Card>

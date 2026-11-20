@@ -81,7 +81,7 @@ function Places() {
 function FullRail() {
   return (
     <AppShell.Rail
-      header={<BrandLockup name="GoPhrase" href="#/home" mark={<svg />} />}
+      header={<BrandLockup name="Acme" href="#/home" mark={<svg />} />}
       search={<button type="button">Ask or jump to</button>}
       status={
         <AppShell.RailStatus icon={<StatusDot tone="success" />} count={{ value: 2, label: 'alarms' }}>
@@ -253,10 +253,10 @@ describe("the rail's slots, compact", () => {
   test('the head holds the mark alone, named and titled by the brand', () => {
     narrowWindow(false);
     const { unmount } = render(<AppShell sidebar={<FullRail />}>screen</AppShell>);
-    expect(screen.getByRole('link', { name: 'GoPhrase' }).hasAttribute('title')).toBe(false);
+    expect(screen.getByRole('link', { name: 'Acme' }).hasAttribute('title')).toBe(false);
     unmount();
     render(<AppShell rail="compact" sidebar={<FullRail />}>screen</AppShell>);
-    expect(screen.getByRole('link', { name: 'GoPhrase' }).getAttribute('title')).toBe('GoPhrase');
+    expect(screen.getByRole('link', { name: 'Acme' }).getAttribute('title')).toBe('Acme');
   });
 
   test('the field is not drawn, and the status has a row of its own under the mark, before the places', () => {
@@ -279,7 +279,7 @@ describe("the rail's slots, compact", () => {
         rail="compact"
         sidebar={
           <AppShell.Rail
-            header={<BrandLockup name="GoPhrase" href="#/home" mark={<svg />} />}
+            header={<BrandLockup name="Acme" href="#/home" mark={<svg />} />}
             status={
               <AppShell.RailStatus
                 icon={<StatusDot tone="success" />}
@@ -702,7 +702,7 @@ describe("the rail's motion", () => {
     screen.getByRole('link', { name: 'Home' }).focus();
     rerender(<AppShell rail="compact" sidebar={<FullRail />}>screen</AppShell>);
     expect(motion()).toBe('fold');
-    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'GoPhrase' }));
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Acme' }));
   });
 
   test('with no live control at all, focus lands on the folded rail\'s first control once it is drawn', async () => {
