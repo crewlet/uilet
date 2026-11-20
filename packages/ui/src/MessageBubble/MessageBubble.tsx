@@ -8,7 +8,7 @@ export interface MessageBubbleProps extends Omit<HTMLAttributes<HTMLElement>, 'c
   from: MessageBubbleFrom;
   /** The message. Long unbroken text wraps anywhere rather than widening the thread. */
   children: ReactNode;
-  /** Names the message for a screen reader. "You said" for `self`; give one for `other` ("Sam Rivera said"). */
+  /** Names the message for a screen reader. "You said" for `self`; give one for `other` ("Kai Rivera said"). */
   label?: string | undefined;
   /**
    * What the message carried, under the bubble on its side: the page a

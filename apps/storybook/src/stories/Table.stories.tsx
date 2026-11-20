@@ -15,7 +15,7 @@ export const Basic: Story = {
     data: [
       ['Jane Cooper', 'jane@example.com', 'Owner'],
       ['Alex Park',  'alex@example.com', 'Admin'],
-      ['Sam Lin',    'sam@example.com',  'Member'],
+      ['Kai Lin',    'kai@example.com',  'Member'],
     ],
   },
 };

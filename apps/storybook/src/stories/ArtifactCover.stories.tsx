@@ -46,7 +46,7 @@ export const OnCards: Story = {
             rows={[
               ['Acme', 'Maya', 'Approved', '92'],
               ['Globex', 'Jane', 'In review', '78'],
-              ['Initech', 'Sam', 'Blocked', '41'],
+              ['Initech', 'Kai', 'Blocked', '41'],
             ]}
           />
         }

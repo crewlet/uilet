@@ -48,7 +48,7 @@ interface Operator {
 const OPERATORS: Operator[] = [
   { id: '1', email: 'jane@example.com', role: 'owner', lastSeen: '2026-09-13T08:15:00Z', grantedBy: 'bootstrap', revokedAt: null },
   { id: '2', email: 'alex@example.com', role: 'admin', lastSeen: '2026-09-12T17:40:00Z', grantedBy: 'jane@example.com', revokedAt: null },
-  { id: '3', email: 'sam@example.com', role: 'support', lastSeen: '2026-09-01T11:05:00Z', grantedBy: 'jane@example.com', revokedAt: null },
+  { id: '3', email: 'kai@example.com', role: 'support', lastSeen: '2026-09-01T11:05:00Z', grantedBy: 'jane@example.com', revokedAt: null },
   { id: '4', email: 'robin@example.com', role: 'viewer', lastSeen: '2026-08-20T09:30:00Z', grantedBy: 'alex@example.com', revokedAt: null },
   { id: '5', email: 'mika@example.com', role: 'viewer', lastSeen: '2026-07-04T14:00:00Z', grantedBy: 'alex@example.com', revokedAt: '2026-08-30T10:00:00Z' },
 ];

@@ -68,9 +68,9 @@ describe('assignPresenceHues', () => {
 
   test('a person keeps the hue they were given while they stay, whoever joins or leaves', () => {
     const first = assignPresenceHues([member('maya', 'human', 'viewing'), member('jane', 'human', 'viewing')]);
-    const second = assignPresenceHues([member('jane', 'human', 'viewing'), member('sam', 'human', 'viewing')], first);
+    const second = assignPresenceHues([member('jane', 'human', 'viewing'), member('kai', 'human', 'viewing')], first);
     expect(second.get('jane')).toBe(first.get('jane'));
-    expect(second.get('sam')).toBe(first.get('maya'));
+    expect(second.get('kai')).toBe(first.get('maya'));
   });
 
   test('past five, hues repeat as evenly as they can', () => {
@@ -92,7 +92,7 @@ describe('labels', () => {
     expect(PRESENCE_LABELS.member(member('PM', 'agent', 'viewing'))).toBe('PM, reading');
     expect(PRESENCE_LABELS.member(member('Maya Ortiz', 'human', 'editing', { location: 'editing row Acme Corp' }))).toBe('Maya Ortiz, editing row Acme Corp');
     expect(PRESENCE_LABELS.alsoHere(['Jane Founder'])).toBe('Jane Founder is also here.');
-    expect(PRESENCE_LABELS.alsoHere(['Maya', 'Jane', 'Sam'])).toBe('Maya, Jane and 1 other are also here.');
+    expect(PRESENCE_LABELS.alsoHere(['Maya', 'Jane', 'Kai'])).toBe('Maya, Jane and 1 other are also here.');
     expect(joinNames(['Maya', 'Jane'])).toBe('Maya and Jane');
   });
 });
