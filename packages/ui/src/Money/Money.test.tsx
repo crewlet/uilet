@@ -205,8 +205,8 @@ describe('Money', () => {
     expect(money.getAttribute('data-currency')).toBe('EUR');
   });
 
-  test('passes the sign and the notation on', () => {
-    const { container } = render(<Money micros="20000000" currency="EUR" locale="en-US" signDisplay="exceptZero" />);
+  test('draws as its format asks, as formatMoney does', () => {
+    const { container } = render(<Money micros="20000000" currency="EUR" locale="en-US" format={{ signDisplay: 'exceptZero' }} />);
     expect(container.textContent).toBe('+€20.00');
   });
 });
