@@ -208,6 +208,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.164.0
+
+### A map stays fitted when its cards are measured anew
+
+**`Canvas` takes `refitKey`**, the sizes its content is drawn at. When it changes, a view still at its last fit fits again, and a view the reader has moved stays; a data push alone still never refits. **`GraphCanvas` passes the sizes its probes measure**, so a card width set through `--crewlet-graph-canvas-card-width`, a density or a font size that changes under a map nobody has moved fits it again. A caller that set a new card width and a new `fitKey` in one render had the fit land on the old layout, since the card's probe measures the new width only after that render.
+
 ## Changes in 0.161.0
 
 ### Cards and lists that say what is true, once, to every reader

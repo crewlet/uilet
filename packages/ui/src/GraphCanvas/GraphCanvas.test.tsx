@@ -27,7 +27,8 @@ import {
 
 const WIDE = { width: 1200, height: 800 };
 /** Every card's size, as its probe measures it. */
-const CARD = { width: 216, height: 52 };
+const NARROW_CARD = { width: 216, height: 52 };
+let CARD = NARROW_CARD;
 let VIEWPORT = WIDE;
 
 function sizeOf(el: Element): { width: number; height: number } | null {
@@ -89,6 +90,7 @@ class LayoutObserver {
 const realResizeObserver = globalThis.ResizeObserver;
 beforeEach(() => {
   VIEWPORT = WIDE;
+  CARD = NARROW_CARD;
   LayoutObserver.instances = [];
   globalThis.ResizeObserver = LayoutObserver as unknown as typeof ResizeObserver;
 });
@@ -665,6 +667,32 @@ describe('the opening view', () => {
     VIEWPORT = WIDE;
     LayoutObserver.settle();
     expect(viewOf(container).k).toBe(theirs.k);
+  });
+
+  // A CARD MEASURED AT A NEW WIDTH REFITS AN UNTOUCHED MAP: a caller that sets
+  // the card width and a new fit key in one render had the fit land on the old
+  // layout, its probe measuring after. Mutation: drop the canvas's `refitKey`.
+  test('a card measured wider refits a map nobody moved, and keeps one a reader moved', () => {
+    // A tall canvas, so the fit is set by the map's width and a wider card moves it.
+    VIEWPORT = { width: 900, height: 2400 };
+    const { container, rerender } = render(
+      <GraphCanvas label="Atlas map" bands={BANDS} nodes={LARGE} edges={[]} fitKey="narrow" />,
+    );
+    LayoutObserver.settle();
+    const narrow = viewOf(container).k;
+    CARD = { width: 648, height: 52 };
+    rerender(<GraphCanvas label="Atlas map" bands={BANDS} nodes={LARGE} edges={[]} fitKey="wide" />);
+    LayoutObserver.settle();
+    expect(drawnIn(container)).toBe(true);
+    expect(viewOf(container).k).toBeLessThan(narrow);
+
+    const viewport = container.querySelector('.crewlet-canvas__viewport')!;
+    fireEvent.keyDown(viewport, { key: '+' });
+    LayoutObserver.settle();
+    const theirs = viewOf(container).k;
+    CARD = NARROW_CARD;
+    LayoutObserver.settle();
+    expect(viewOf(container).k).toBe(theirs);
   });
 
   // Mutation: drop `initialNode` from the opening, and a link to an entry opens on the whole map, the entry a mark in it.

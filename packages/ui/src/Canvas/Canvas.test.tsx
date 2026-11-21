@@ -179,6 +179,36 @@ test('a canvas that refits on resize refits a view nobody has moved since its fi
   expect(viewOf(container)).toEqual(fitView(WIDE, narrow));
 });
 
+// THE SAME CONTENT DRAWN AT NEW SIZES IS FITTED AGAIN while nobody has moved
+// the view, and a data push is not. Mutation: drop `refitKey` and the wider
+// content keeps the old zoom, cut off.
+test('new sizes refit a view nobody has moved since its fit, and keep one somebody has', () => {
+  const Sized = ({ content, sizes }: { content: CanvasRect; sizes: string }) => (
+    <Canvas label="Organization chart" content={content} refitKey={sizes}>
+      <div />
+    </Canvas>
+  );
+  const { container, rerender } = render(<Sized content={SMALL} sizes="narrow cards" />);
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
+  expect(viewOf(container)).toEqual(fitView(SMALL, SIZE));
+
+  // A data push that reshapes the content, at the same sizes, keeps the zoom.
+  const pushed = { x: 0, y: 0, width: 900, height: 300 };
+  rerender(<Sized content={pushed} sizes="narrow cards" />);
+  expect(viewOf(container).k).toBe(fitView(SMALL, SIZE).k);
+
+  // The same content measured at new sizes: the untouched fit follows it.
+  const wider = { x: 0, y: 0, width: 1600, height: 300 };
+  rerender(<Sized content={wider} sizes="wide cards" />);
+  expect(viewOf(container)).toEqual(fitView(wider, SIZE));
+
+  // Once the reader zooms, new sizes keep their zoom.
+  fireEvent.keyDown(viewport(), { key: '+' });
+  const zoomed = viewOf(container).k;
+  rerender(<Sized content={SMALL} sizes="narrow cards" />);
+  expect(viewOf(container).k).toBe(zoomed);
+});
+
 /*
  * The tab stop is an item inside the viewport, never the viewport, so the zoom
  * keys answer anywhere in the canvas, while the arrows belong to whatever holds

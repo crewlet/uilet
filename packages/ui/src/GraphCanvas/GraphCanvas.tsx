@@ -537,6 +537,9 @@ export function GraphCanvas({
     };
   }, [measured, sizes]);
 
+  // The sizes as values: any probe re-measuring makes a new object, an empty lane's on a data push too.
+  const drawnAt = useMemo(() => (metrics ? JSON.stringify(metrics) : null), [metrics]);
+
   const emptyLanes = useMemo(() => {
     const filled = new Set(nodes.map((node) => node.lane));
     return bands.flatMap((band) => band.lanes.filter((lane) => !filled.has(lane.id)));
@@ -1244,6 +1247,7 @@ export function GraphCanvas({
       labels={text}
       minZoom={minZoom}
       refitOnResize
+      refitKey={drawnAt}
       initialView={opening}
       onViewChange={viewChanged}
     >
