@@ -18,9 +18,13 @@ const stars = (container: HTMLElement) =>
     return on === null ? 0 : on.classList.contains('crewlet-rating__on--half') ? 0.5 : 1;
   });
 
-test('is one image named by its exact figure', () => {
+test('is one image named by its figure to a tenth, the same figure it draws', () => {
   render(<Rating value={4.6} />);
   expect(screen.getByRole('img', { name: 'Rated 4.6 out of 5' })).toBeTruthy();
+  cleanup();
+  const { container } = render(<Rating value={4.6667} showValue locale="de-DE" />);
+  expect(screen.getByRole('img', { name: 'Rated 4,7 out of 5' })).toBeTruthy();
+  expect(container.querySelector('.crewlet-rating__value')!.textContent).toBe('4,7');
 });
 
 test.each([

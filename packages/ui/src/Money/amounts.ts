@@ -57,9 +57,8 @@ const MINOR_UNITS_NOT_TWO: Readonly<Record<string, number>> = {
 };
 
 /**
- * Every ISO 4217 List One code with a minor unit, plus the codes withdrawn
- * since 2023 that a vendor's history still reports (ANG, CUC, HRK, SLL,
- * ZWL). Funds without a minor unit (XAU, XDR and the like) are not money a
+ * Every ISO 4217 List One code with a minor unit, plus recently withdrawn
+ * codes a vendor's history still reports (ANG, BGN, CUC, HRK, SLL, ZWL). Funds without a minor unit (XAU, XDR and the like) are not money a
  * vendor bills in, and are left out.
  */
 const ISO_4217 = new Set(
@@ -76,15 +75,23 @@ const ISO_4217 = new Set(
 
 const CODE = /^[A-Z]{3}$/;
 
+/** `currency` as ISO writes it, upper case: some vendors send `usd`. Throws for anything else. */
+function codeOf(currency: string): string {
+  const code = currency.trim().toUpperCase();
+  if (!CODE.test(code)) throw new RangeError(`"${currency}" is not an ISO 4217 currency code`);
+  return code;
+}
+
 /**
  * The digits after the decimal point ISO 4217 gives `currency` (2 for EUR,
  * 0 for JPY, 3 for KWD, 4 for CLF), or `undefined` for a code it does not
- * list. Throws a `RangeError` for anything that is not a three-letter code.
+ * list, in either case. Throws a `RangeError` for anything that is not a
+ * three-letter code.
  */
 export function minorUnits(currency: string): number | undefined {
-  if (!CODE.test(currency)) throw new RangeError(`"${currency}" is not an ISO 4217 currency code`);
-  if (!ISO_4217.has(currency)) return undefined;
-  return MINOR_UNITS_NOT_TWO[currency] ?? 2;
+  const code = codeOf(currency);
+  if (!ISO_4217.has(code)) return undefined;
+  return MINOR_UNITS_NOT_TWO[code] ?? 2;
 }
 
 /**
@@ -151,11 +158,12 @@ export function formatMoney(
   options: FormatMoneyOptions = {},
 ): string {
   const amount = toMicros(micros);
-  const digits = minorUnits(currency);
+  const code = codeOf(currency);
+  const digits = minorUnits(code);
   const compact = options.notation === 'compact';
   const format = new Intl.NumberFormat(locale as string | string[] | undefined, {
     style: 'currency',
-    currency,
+    currency: code,
     currencyDisplay: options.currencyDisplay ?? 'symbol',
     signDisplay: options.signDisplay ?? 'auto',
     ...(compact
@@ -165,26 +173,29 @@ export function formatMoney(
         : { minimumFractionDigits: digits, maximumFractionDigits: digits }),
   });
   // A decimal string is read exactly (ECMA-402's string-to-decimal rule), so
-  // the rounding above is the only one; compact notation rounds on purpose.
-  const text = digits === undefined || compact ? exactDecimal(amount) : decimalOf(amount, digits);
+  // the rounding above is the only one; compact notation rounds further on
+  // purpose, never into digits the currency does not have.
+  const text = digits === undefined ? exactDecimal(amount) : decimalOf(amount, digits);
   return format.format(text as unknown as number);
 }
 
 /**
  * What a person typed as an amount of `currency`, in micros, or the reason it
- * is not one. Digits with at most one decimal point (a comma is read as one,
- * as many keyboards type it), no more digits after it than the currency has,
- * and no sign, grouping or exponent: an amount a person types into a cap or a
- * budget is never negative, and "1.000" means a thousand to some readers and
- * one to others.
+ * is not one. Digits with at most one decimal point, no more digits after it
+ * than the currency has, and no sign, grouping or exponent: an amount typed
+ * into a cap or a budget is never negative. A full stop is the decimal point;
+ * a comma is read as one too, as many keyboards type it, except before
+ * exactly three digits, where "1,500" groups thousands for some readers and
+ * marks decimals for others, and is refused rather than guessed.
  */
 export function parseMoney(text: string, currency: string): { micros: bigint } | { problem: MoneyProblem } {
   const digits = minorUnits(currency) ?? MICROS_DIGITS;
   const trimmed = text.trim();
   if (trimmed === '') return { problem: { kind: 'empty' } };
-  const match = /^(\d+)(?:[.,](\d*))?$/.exec(trimmed);
+  const match = /^(\d+)(?:([.,])(\d*))?$/.exec(trimmed);
   if (!match) return { problem: { kind: 'not_an_amount' } };
-  const fraction = match[2] ?? '';
+  const fraction = match[3] ?? '';
+  if (match[2] === ',' && fraction.length === 3) return { problem: { kind: 'ambiguous_comma' } };
   if (fraction.length > digits) return { problem: { kind: 'too_many_digits', digits } };
   const micros = BigInt(match[1]!) * MICROS + BigInt(fraction.padEnd(MICROS_DIGITS, '0') || '0');
   return { micros };
@@ -194,6 +205,8 @@ export function parseMoney(text: string, currency: string): { micros: bigint } |
 export type MoneyProblem =
   | { kind: 'empty' }
   | { kind: 'not_an_amount' }
+  /** A comma before exactly three digits, which reads as grouping to some and as decimals to others. */
+  | { kind: 'ambiguous_comma' }
   /** More digits after the point than the currency has: `digits` is how many it takes. */
   | { kind: 'too_many_digits'; digits: number };
 
@@ -218,8 +231,8 @@ export interface MoneyAmount {
 export function sumByCurrency(amounts: Iterable<MoneyAmount>): { currency: string; micros: bigint }[] {
   const totals = new Map<string, bigint>();
   for (const { micros, currency } of amounts) {
-    if (!CODE.test(currency)) throw new RangeError(`"${currency}" is not an ISO 4217 currency code`);
-    totals.set(currency, (totals.get(currency) ?? 0n) + toMicros(micros));
+    const code = codeOf(currency);
+    totals.set(code, (totals.get(code) ?? 0n) + toMicros(micros));
   }
   return [...totals].map(([currency, micros]) => ({ currency, micros }));
 }

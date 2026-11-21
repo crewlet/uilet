@@ -1,4 +1,4 @@
-import { forwardRef, useId } from 'react';
+import { forwardRef, useId, type FocusEventHandler } from 'react';
 import { Input, type InputWidth } from '../Input/index.js';
 import { minorUnits, parseMoney } from '../Money/amounts.js';
 import { cx } from '../utils/cx.js';
@@ -9,6 +9,8 @@ export interface MoneyFieldLabels {
   empty: string;
   /** Why what was typed is not an amount at all. */
   notAnAmount: string;
+  /** Why a comma before three digits is refused: it groups thousands for some readers and marks decimals for others. */
+  ambiguousComma: string;
   /** Why an amount has more digits after the point than its currency: "EUR takes at most 2 decimal places." */
   tooManyDigits: (currency: string, digits: number) => string;
 }
@@ -16,6 +18,7 @@ export interface MoneyFieldLabels {
 export const MONEY_FIELD_LABELS: MoneyFieldLabels = {
   empty: 'Type an amount.',
   notAnAmount: 'Type an amount in digits, such as 50.00, with no sign or grouping.',
+  ambiguousComma: 'A comma before three digits could group thousands or mark decimals. Type 1500 or 1.500.',
   tooManyDigits: (currency, digits) =>
     digits === 0 ? `${currency} takes whole amounts only.` : `${currency} takes at most ${digits} decimal places.`,
 };
@@ -34,6 +37,8 @@ export function moneyFieldProblem(value: string, currency: string, labels: Parti
       return words.empty;
     case 'not_an_amount':
       return words.notAnAmount;
+    case 'ambiguous_comma':
+      return words.ambiguousComma;
     case 'too_many_digits':
       return words.tooManyDigits(currency, read.problem.digits);
   }
@@ -41,6 +46,7 @@ export function moneyFieldProblem(value: string, currency: string, labels: Parti
 
 export interface MoneyFieldProps {
   id?: string | undefined;
+  name?: string | undefined;
   /** What is typed, as typed: a plain decimal ("50.00"). Never a number, so nothing passes through a float. */
   value: string;
   onValueChange: (value: string) => void;
@@ -50,6 +56,10 @@ export interface MoneyFieldProps {
   /** Draws the field as refused. The sentence is the form's (`moneyFieldProblem`). */
   error?: boolean | undefined;
   disabled?: boolean | undefined;
+  readOnly?: boolean | undefined;
+  required?: boolean | undefined;
+  autoFocus?: boolean | undefined;
+  onBlur?: FocusEventHandler<HTMLInputElement> | undefined;
   width?: InputWidth | undefined;
   'aria-label'?: string | undefined;
   'aria-describedby'?: string | undefined;
@@ -69,25 +79,24 @@ export interface MoneyFieldProps {
  * The placeholder shows the currency's own digits ("0.00", "0", "0.000").
  */
 export const MoneyField = forwardRef<HTMLInputElement, MoneyFieldProps>(function MoneyField(
-  { id, value, onValueChange, currency, placeholder, error, disabled, width, className, ...aria },
+  { value, onValueChange, currency, placeholder, width, className, 'aria-label': label, 'aria-describedby': described, ...field },
   ref,
 ) {
   const currencyId = `${useId()}-currency`;
-  const digits = minorUnits(currency) ?? 2;
-  const describedBy = [aria['aria-describedby'], currencyId].filter(Boolean).join(' ');
+  // A code ISO does not list takes any digits `parseMoney` reads, so its placeholder claims none.
+  const digits = minorUnits(currency);
+  const describedBy = [described, currencyId].filter(Boolean).join(' ');
   return (
     <Input
+      {...field}
       ref={ref}
-      id={id}
       value={value}
       inputMode={digits === 0 ? 'numeric' : 'decimal'}
       autoComplete="off"
       spellCheck={false}
-      placeholder={placeholder ?? (digits === 0 ? '0' : `0.${'0'.repeat(digits)}`)}
-      error={error}
-      disabled={disabled}
+      placeholder={placeholder ?? (digits === undefined || digits === 0 ? '0' : `0.${'0'.repeat(digits)}`)}
       width={width}
-      aria-label={aria['aria-label']}
+      aria-label={label}
       aria-describedby={describedBy}
       containerClassName={cx('crewlet-money-field', className)}
       trailing={

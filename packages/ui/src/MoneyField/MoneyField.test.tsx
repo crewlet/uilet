@@ -50,3 +50,18 @@ test('says why an amount is refused, in the currency\'s own terms', () => {
   expect(moneyFieldProblem('-5', 'EUR')).toBe('Type an amount in digits, such as 50.00, with no sign or grouping.');
   expect(moneyFieldProblem('5.1234', 'KWD', { tooManyDigits: (c, d) => `${c}: ${d}` })).toBe('KWD: 3');
 });
+
+test('a code ISO does not list claims no digits in its placeholder, and the field passes a form\'s own attributes on', () => {
+  const onBlur = vi.fn();
+  render(<MoneyField aria-label="Cap" name="cap" required value="" onValueChange={() => {}} onBlur={onBlur} currency="XYZ" />);
+  const field = screen.getByRole('textbox', { name: 'Cap' });
+  expect(field.getAttribute('placeholder')).toBe('0');
+  expect(field.getAttribute('name')).toBe('cap');
+  expect(field.hasAttribute('required')).toBe(true);
+  fireEvent.blur(field);
+  expect(onBlur).toHaveBeenCalled();
+});
+
+test('refuses a comma before three digits rather than guess which it means', () => {
+  expect(moneyFieldProblem('1,000', 'KWD')).toBe('A comma before three digits could group thousands or mark decimals. Type 1500 or 1.500.');
+});

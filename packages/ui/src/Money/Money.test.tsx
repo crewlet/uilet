@@ -60,10 +60,12 @@ describe('ISO 4217 digits', () => {
     expect(minorUnits(currency)).toBe(digits);
   });
 
-  test('a code ISO does not list has no digits to guess, and a malformed one is refused', () => {
+  test('a code ISO does not list has no digits to guess, a lower-case one is read as ISO writes it, and a malformed one is refused', () => {
     expect(minorUnits('XYZ')).toBeUndefined();
-    expect(() => minorUnits('eur')).toThrow(RangeError);
+    expect(minorUnits('kwd')).toBe(3);
+    expect(formatMoney(1_250_000n, 'usd', 'en-US')).toBe('$1.25');
     expect(() => minorUnits('EURO')).toThrow(RangeError);
+    expect(() => minorUnits('E1R')).toThrow(RangeError);
   });
 });
 
@@ -132,8 +134,10 @@ describe('formatMoney', () => {
     expect(formatMoney(1_500_000n, 'XYZ', 'en-US')).toContain('1.5');
   });
 
-  test('rounds on purpose only in compact notation', () => {
+  test('rounds on purpose only in compact notation, and never into digits the currency does not have', () => {
     expect(formatMoney(1_234_000_000n, 'EUR', 'en-US', { notation: 'compact' })).toBe('€1.2K');
+    expect(formatMoney(1_500_000n, 'JPY', 'en-US', { notation: 'compact' })).toBe('¥2');
+    expect(formatMoney(4_000n, 'EUR', 'en-US', { notation: 'compact' })).toBe('€0');
   });
 });
 
@@ -142,6 +146,7 @@ describe('parseMoney', () => {
     expect(parseMoney('50', 'EUR')).toEqual({ micros: 50_000_000n });
     expect(parseMoney(' 50.25 ', 'EUR')).toEqual({ micros: 50_250_000n });
     expect(parseMoney('50,5', 'EUR')).toEqual({ micros: 50_500_000n });
+    expect(parseMoney('50,25', 'EUR')).toEqual({ micros: 50_250_000n });
     expect(parseMoney('1.250', 'KWD')).toEqual({ micros: 1_250_000n });
     expect(parseMoney('3400', 'JPY')).toEqual({ micros: 3_400_000_000n });
     expect(parseMoney('90071992547409931', 'EUR')).toEqual({ micros: 90_071_992_547_409_931_000_000n });
@@ -151,6 +156,10 @@ describe('parseMoney', () => {
     expect(parseMoney('', 'EUR')).toEqual({ problem: { kind: 'empty' } });
     expect(parseMoney('50.123', 'EUR')).toEqual({ problem: { kind: 'too_many_digits', digits: 2 } });
     expect(parseMoney('50.5', 'JPY')).toEqual({ problem: { kind: 'too_many_digits', digits: 0 } });
+    // A comma before three digits groups thousands for some readers and marks decimals for others.
+    for (const currency of ['EUR', 'KWD', 'CLF', 'XYZ']) {
+      expect(parseMoney('1,000', currency), currency).toEqual({ problem: { kind: 'ambiguous_comma' } });
+    }
     for (const typed of ['-5', '1e3', '1,000.00', '€5', '5 EUR', '.5', 'NaN', 'Infinity']) {
       expect(parseMoney(typed, 'EUR'), typed).toEqual({ problem: { kind: 'not_an_amount' } });
     }

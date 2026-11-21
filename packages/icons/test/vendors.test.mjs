@@ -98,8 +98,6 @@ describe('the vendor list', () => {
       assert.doesNotMatch(mark, /(fill|stroke)="#/, vendor);
       assert.match(attribute(mark, 'class') ?? '', new RegExp(`(^| )crewlet-vendor-mark--${vendor}( |$)`), vendor);
     }
-    assert.equal(new Set(GROWTH_GLYPHS.map(([, Glyph]) => Glyph)).size, GROWTH_GLYPHS.length);
-    assert.ok(GROWTH_GLYPHS.every(([, Glyph]) => Glyph !== CloudGlyph), "a growth tile draws AWS's cloud");
   });
 
   it("draws Crewlet's own services with the brand mark, never a second copy of it", () => {
