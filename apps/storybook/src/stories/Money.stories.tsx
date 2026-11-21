@@ -67,10 +67,10 @@ export const SignsAndNotation: Story = {
   render: () => (
     <div style={panel}>
       <p style={caption}>a change</p>
-      <Money micros={20_000_000n} currency="EUR" signDisplay="exceptZero" locale="en-US" />
-      <Money micros={-5_000_000n} currency="EUR" signDisplay="exceptZero" locale="en-US" />
+      <Money micros={20_000_000n} currency="EUR" format={{ signDisplay: 'exceptZero' }} locale="en-US" />
+      <Money micros={-5_000_000n} currency="EUR" format={{ signDisplay: 'exceptZero' }} locale="en-US" />
       <p style={caption}>compact, for a small tile</p>
-      <Money micros={1_234_000_000n} currency="EUR" notation="compact" locale="en-US" />
+      <Money micros={1_234_000_000n} currency="EUR" format={{ notation: 'compact' }} locale="en-US" />
       <p style={caption}>de-DE, ja-JP, ar-KW</p>
       <Money micros={1_250_000_000n} currency="EUR" locale="de-DE" />
       <Money micros={3_400_000_000n} currency="JPY" locale="ja-JP" />
