@@ -1,7 +1,7 @@
 /**
  * WHAT A MESSAGE CARRIED STAYS INSIDE ITS WIDTH: a tag under the reader's own
- * bubble whose label is longer than the bubble is wide cuts its label with an
- * ellipsis, rather than standing out past the message's start edge.
+ * bubble whose label is longer than the message can be wide cuts its label
+ * with an ellipsis, rather than standing out past the message's start edge.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';
@@ -44,7 +44,7 @@ async function draw(attachment: ReactNode) {
 
 // Mutation: drop the attachment row's max width, and the tag runs out of the
 // message's start edge at its full length.
-test('a tag longer than the bubble is wide stays inside the message, its label cut', async () => {
+test('a tag longer than the message can be wide stays inside it, its label cut', async () => {
   for (const attachment of [
     <Tag key="tag" size="xs" appearance="outline">{TITLE}</Tag>,
     <Inline key="inline" gap={1} wrap>

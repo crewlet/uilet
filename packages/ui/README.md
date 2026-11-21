@@ -216,7 +216,7 @@ places:
 
 ### What a message carried stays inside its width
 
-**`MessageBubble`'s attachment and footer rows are held to the message's width.** A tag under the reader's own bubble whose label was longer than the bubble is wide (a long page title on a phone) stood out past the message's start edge at its full length; it now cuts its label with an ellipsis, as a tag does in any box narrower than its label.
+**`MessageBubble`'s attachment and footer rows are held to the message's width.** A tag under the reader's own bubble whose label was longer than the message can be wide (a long page title on a phone) stood out past the message's start edge at its full length; it now cuts its label with an ellipsis, as a tag does in any box narrower than its label.
 
 ## Changes in 0.165.0
 

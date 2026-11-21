@@ -105,8 +105,9 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
    * thread, so a drawn scrollbar moves nothing and a composer under the thread
    * centred at the same width lines up with it. The scroller keeps the
    * thread's full width, and a thread narrower than the column keeps its
-   * ordinary inset. A flush log's rows hang their side inset out of the
-   * column, so their faces stand on its edges. The thread is the query
+   * ordinary inset. A flush log's rows (`ChatMessage`, `ChatDay`, inset by
+   * `--crewlet-chat-pad-x`) hang that inset out of the column, so their faces
+   * stand on its edges. The thread is the query
    * container the column is measured on, so it takes its width from what
    * holds it, never from its items.
    */

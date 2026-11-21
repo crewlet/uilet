@@ -55,9 +55,9 @@
 }
 
 /* HELD TO THE MESSAGE'S WIDTH: sized to its content, a row whose tag's label
-   is longer than the bubble is wide grew past it, out of the message's start
-   edge on the reader's side, and the tag never had a narrower box to cut its
-   label to. */
+   was longer than the message can be wide grew past it, out of its start edge
+   on the reader's side, and the tag never had a narrower box to cut its label
+   to. */
 .crewlet-message__attachment,
 .crewlet-message__footer {
   display: flex;
