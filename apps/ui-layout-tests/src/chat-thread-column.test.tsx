@@ -10,6 +10,7 @@ import { page } from 'vitest/browser';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import type { CSSProperties } from 'react';
+import { Avatar, ChatMessage, ChatThread } from '@crewlethq/ui';
 import { drawColumn, type Column } from './chatThreadColumn';
 
 let root: Root | null = null;
@@ -64,4 +65,33 @@ test('without the column the bubble and the answer stand at the thread\'s two ed
   const at = await draw(2000, undefined, false);
   expect(at.thread.right - at.bubble.right).toBeCloseTo(16, 0);
   expect(at.answer.left - at.thread.left).toBeCloseTo(16, 0);
+});
+
+// A FLUSH LOG IN A COLUMN hangs its rows' own side inset out of the column, so
+// a row's face stands on the column's start edge, where a composer centred at
+// the same width starts. Mutation: drop the inset from the flush rule and the
+// faces stand a row inset inside the column.
+test('a flush log in a column stands its rows\' faces on the column\'s edge', async () => {
+  await page.viewport(1440, 900);
+  host = document.createElement('div');
+  document.body.append(host);
+  root = createRoot(host);
+  flushSync(() =>
+    root!.render(
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <ChatThread label="Thread" flush column>
+          <ChatMessage id="m1" author="Designer" avatar={<Avatar name="Designer" kind="human" size={36} decorative />} label="Designer, 11:04" time="11:04" timeTitle="Thursday, October 30, 11:04 AM">
+            The booking screen still needs the narrow layout pass.
+          </ChatMessage>
+        </ChatThread>
+        <div data-measure style={{ width: 'var(--size-measure-wide)', height: 0 }} />
+      </div>,
+    ),
+  );
+  await document.fonts.ready;
+  await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
+  const thread = host.querySelector('.crewlet-chat-thread')!.getBoundingClientRect();
+  const column = host.querySelector('[data-measure]')!.getBoundingClientRect().width;
+  const face = host.querySelector('.crewlet-chat-message__gutter')!.getBoundingClientRect();
+  expect(face.left).toBeCloseTo(thread.left + (thread.width - column) / 2, 0);
 });

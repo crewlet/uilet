@@ -100,13 +100,15 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
    * Holds the items to one centred column, for a conversation in a pane much
    * wider than a line of it (a page of its own): the question and its answer
    * read in one column rather than at the pane's two edges. The column is
-   * `--crewlet-chat-thread-column` wide, set on the thread or any ancestor
-   * (`--size-measure-wide` by default), and centred on the thread, so a drawn
-   * scrollbar moves nothing and a composer under the thread centred at the
-   * same width lines up with it. The scroller keeps the thread's full width,
-   * and a thread narrower than the column keeps its ordinary inset. The thread
-   * is the query container the column is measured on, so it takes its width
-   * from what holds it, never from its items.
+   * `--crewlet-chat-thread-column` wide (`--size-measure-wide` by default),
+   * set on an ancestor the thread shares with its composer, and centred on the
+   * thread, so a drawn scrollbar moves nothing and a composer under the thread
+   * centred at the same width lines up with it. The scroller keeps the
+   * thread's full width, and a thread narrower than the column keeps its
+   * ordinary inset. A flush log's rows hang their side inset out of the
+   * column, so their faces stand on its edges. The thread is the query
+   * container the column is measured on, so it takes its width from what
+   * holds it, never from its items.
    */
   column?: boolean | undefined;
   /** The thread's blocks, one child per item, oldest first. */

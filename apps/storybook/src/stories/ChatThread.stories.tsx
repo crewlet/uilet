@@ -30,8 +30,18 @@ const meta: Meta<typeof ChatThread> = {
   title: 'UI/ChatThread',
   component: ChatThread,
   decorators: [
-    (Story) => (
-      <div style={{ height: 480, maxWidth: 420, display: 'flex', flexDirection: 'column', border: '1px solid var(--color-border-default)', borderRadius: 14 }}>
+    // A panel's box, or the whole canvas for a story that sets `wide`.
+    (Story, { parameters }) => (
+      <div
+        style={{
+          height: parameters.wide ? 560 : 480,
+          maxWidth: parameters.wide ? 'none' : 420,
+          display: 'flex',
+          flexDirection: 'column',
+          border: '1px solid var(--color-border-default)',
+          borderRadius: 14,
+        }}
+      >
         {Story()}
       </div>
     ),
@@ -129,14 +139,7 @@ const TABLE_ANSWER = (
  * and the thread keeps its ordinary inset.
  */
 export const Column: Story = {
-  decorators: [
-    (Story) => (
-      <div style={{ height: 560, display: 'flex', flexDirection: 'column', border: '1px solid var(--color-border-default)', borderRadius: 14 }}>
-        {Story()}
-      </div>
-    ),
-  ],
-  parameters: { layout: 'fullscreen' },
+  parameters: { layout: 'fullscreen', wide: true },
   render: () => (
     <>
       <ChatThread label="Conversation" column>

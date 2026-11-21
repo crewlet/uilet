@@ -95,7 +95,8 @@
  * composer centred under the thread. So the start margin is half of what the
  * column leaves of the thread, and the end margin is whatever remains of the
  * scroller's box, which the bar comes out of alone. Narrower than the column,
- * both are the ordinary inset again (none for a flush log).
+ * both are the ordinary inset again. A flush log's rows hang their own side
+ * inset out of the column, so their faces stand on its edges.
  */
 .crewlet-chat-thread--column {
   container-type: inline-size;
@@ -107,8 +108,14 @@
 }
 
 .crewlet-chat-thread--column.crewlet-chat-thread--flush .crewlet-chat-thread__items {
-  padding-inline-start: max(0px, (100cqi - var(--crewlet-chat-thread-column, var(--size-measure-wide))) / 2);
-  padding-inline-end: max(0px, 100% - (100cqi + var(--crewlet-chat-thread-column, var(--size-measure-wide))) / 2);
+  padding-inline-start: max(
+    0px,
+    (100cqi - var(--crewlet-chat-thread-column, var(--size-measure-wide))) / 2 - var(--crewlet-chat-pad-x, 0px)
+  );
+  padding-inline-end: max(
+    0px,
+    100% - (100cqi + var(--crewlet-chat-thread-column, var(--size-measure-wide))) / 2 - var(--crewlet-chat-pad-x, 0px)
+  );
 }
 
 /*
