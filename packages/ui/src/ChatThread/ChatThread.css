@@ -89,6 +89,36 @@
 }
 
 /*
+ * ONE CENTRED COLUMN (`column`), centred on the THREAD, which is the query
+ * container, not on the scroller, whose content box loses a drawn scrollbar's
+ * width on one side: centred there, the column stood half a bar off a
+ * composer centred under the thread. So the start margin is half of what the
+ * column leaves of the thread, and the end margin is whatever remains of the
+ * scroller's box, which the bar comes out of alone. Narrower than the column,
+ * both are the ordinary inset again. A flush log's rows hang their own side
+ * inset out of the column, so their faces stand on its edges.
+ */
+.crewlet-chat-thread--column {
+  container-type: inline-size;
+}
+
+.crewlet-chat-thread--column .crewlet-chat-thread__items {
+  padding-inline-start: max(var(--spacing-4), (100cqi - var(--crewlet-chat-thread-column, var(--size-measure-wide))) / 2);
+  padding-inline-end: max(var(--spacing-4), 100% - (100cqi + var(--crewlet-chat-thread-column, var(--size-measure-wide))) / 2);
+}
+
+.crewlet-chat-thread--column.crewlet-chat-thread--flush .crewlet-chat-thread__items {
+  padding-inline-start: max(
+    0px,
+    (100cqi - var(--crewlet-chat-thread-column, var(--size-measure-wide))) / 2 - var(--crewlet-chat-pad-x, 0px)
+  );
+  padding-inline-end: max(
+    0px,
+    100% - (100cqi + var(--crewlet-chat-thread-column, var(--size-measure-wide))) / 2 - var(--crewlet-chat-pad-x, 0px)
+  );
+}
+
+/*
  * The pill, centred in a row of its own under the log. IN FLOW, NOT FLOATING:
  * laid over the scroller it covered the last lines of whatever was being read,
  * a table's rows or an answer's text. Here the log gives up the row while the

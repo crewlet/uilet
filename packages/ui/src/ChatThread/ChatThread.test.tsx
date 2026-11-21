@@ -677,3 +677,30 @@ test('a flush log keeps no side inset or gap of its own, only a step above and b
     uninstall();
   }
 });
+
+// A COLUMN THREAD is the query container its column is measured on, and only
+// then: a thread without `column` stays an ordinary box, sized by its items.
+// The column's own geometry is measured in the browser suite
+// (chat-thread-column.test.tsx), which jsdom cannot lay out.
+test('a column thread is a query container and an ordinary one is not', () => {
+  const uninstall = installSheets('ChatThread/ChatThread.css');
+  try {
+    const { container, rerender } = render(
+      <ChatThread label="Thread">
+        <p>One</p>
+      </ChatThread>,
+    );
+    const thread = () => container.querySelector('.crewlet-chat-thread')!;
+    expect(thread().className).not.toContain('crewlet-chat-thread--column');
+    expect(getComputedStyle(thread()).getPropertyValue('container-type')).not.toBe('inline-size');
+    rerender(
+      <ChatThread label="Thread" column>
+        <p>One</p>
+      </ChatThread>,
+    );
+    expect(thread().className).toContain('crewlet-chat-thread--column');
+    expect(getComputedStyle(thread()).getPropertyValue('container-type')).toBe('inline-size');
+  } finally {
+    uninstall();
+  }
+});

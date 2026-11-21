@@ -96,6 +96,22 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
    * first item and under the last.
    */
   flush?: boolean | undefined;
+  /**
+   * Holds the items to one centred column, for a conversation in a pane much
+   * wider than a line of it (a page of its own): the question and its answer
+   * read in one column rather than at the pane's two edges. The column is
+   * `--crewlet-chat-thread-column` wide (`--size-measure-wide` by default),
+   * set on an ancestor the thread shares with its composer, and centred on the
+   * thread, so a drawn scrollbar moves nothing and a composer under the thread
+   * centred at the same width lines up with it. The scroller keeps the
+   * thread's full width, and a thread narrower than the column keeps its
+   * ordinary inset. A flush log's rows (`ChatMessage`, `ChatDay`, inset by
+   * `--crewlet-chat-pad-x`) hang that inset out of the column, so their faces
+   * stand on its edges. The thread is the query
+   * container the column is measured on, so it takes its width from what
+   * holds it, never from its items.
+   */
+  column?: boolean | undefined;
   /** The thread's blocks, one child per item, oldest first. */
   children?: ReactNode;
   labels?: Partial<ChatThreadLabels> | undefined;
@@ -149,6 +165,7 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
     jump = true,
     rest: restAt = 'start',
     flush = false,
+    column = false,
     children,
     labels: overrides,
     className,
@@ -355,6 +372,7 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
         'crewlet-chat-thread',
         restAt === 'end' && 'crewlet-chat-thread--rest-end',
         flush && 'crewlet-chat-thread--flush',
+        column && 'crewlet-chat-thread--column',
         className,
       )}
       onKeyDownCapture={(event) => {
