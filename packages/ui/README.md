@@ -214,6 +214,10 @@ places:
 
 **`ChatThread` takes `column`**, which holds its items to one centred column, `--crewlet-chat-thread-column` wide (`--size-measure-wide` by default), while the scroller keeps the thread's full width, so the wheel scrolls it anywhere and its bar stays at the edge. A conversation on a page of its own drew the reader's question at the pane's far edge and the answer at the other. The column is centred on the thread rather than on the scroller, so a scrollbar drawn in the layout moves nothing, and a composer under the thread lines up with it by centring the same width: `padding-inline: max(var(--spacing-4), (100% - var(--crewlet-chat-thread-column, var(--size-measure-wide))) / 2)`. Set a width of your own on an ancestor the thread and the composer share, so both read it. A thread narrower than the column keeps its ordinary inset, and a flush log's rows hang their side inset out of the column, so their faces stand on its edges. The thread is the query container the column is measured on, so it takes its width from what holds it.
 
+### What a message carried stays inside its width
+
+**`MessageBubble`'s attachment and footer rows are held to the message's width.** A tag under the reader's own bubble whose label was longer than the bubble is wide (a long page title on a phone) stood out past the message's start edge at its full length; it now cuts its label with an ellipsis, as a tag does in any box narrower than its label.
+
 ## Changes in 0.165.0
 
 ### Money, star ratings and a note sent back with a decision
