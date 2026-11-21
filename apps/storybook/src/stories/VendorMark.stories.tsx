@@ -230,3 +230,65 @@ export const Ssh: StoryObj = {
     </div>
   ),
 };
+
+/** The marketing, growth and app store products, each beside its own name. */
+const GROWTH = [
+  ['google-analytics', 'Google Analytics'],
+  ['google-search-console', 'Search Console'],
+  ['google-ads', 'Google Ads'],
+  ['apple-ads', 'Apple Ads'],
+  ['meta-ads', 'Meta Ads'],
+  ['google-adsense', 'AdSense'],
+  ['google-admob', 'AdMob'],
+  ['app-store-connect', 'App Store Connect'],
+  ['google-play', 'Google Play'],
+] as const satisfies readonly (readonly [Vendor, string])[];
+
+/**
+ * GENERIC GLYPHS, BESIDE THE MARKS THEY SIT AMONG. Google, Apple and Meta allow
+ * a third party none of these products' icons without leave, so each tile
+ * draws a Lucide glyph of its own in the text's ink, as AWS's draws the cloud.
+ * Shown in the 48px tile beside Expo and AWS, at 16 to 32px beside each name,
+ * and muted, on both themes.
+ */
+export const GrowthGlyphs: StoryObj = {
+  render: () => (
+    <div style={{ padding: 'var(--spacing-5)', display: 'grid', gap: 'var(--spacing-5)' }}>
+      {(['light', 'dark'] as const).map((theme) => (
+        <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
+          <p style={caption}>{theme}, 20px in a 48px box</p>
+          <div style={row}>
+            {[...GROWTH.map(([vendor]) => vendor), 'expo' as const, 'aws' as const].map((vendor) => (
+              <span key={vendor} style={{ display: 'grid', justifyItems: 'center', gap: 'var(--spacing-1)' }}>
+                <span style={tile}>
+                  <VendorMark vendor={vendor} size={20} />
+                </span>
+                <span style={caption}>{vendor}</span>
+              </span>
+            ))}
+          </div>
+          <p style={caption}>16, 20, 24, 32, beside its name</p>
+          {[16, 20, 24, 32].map((size) => (
+            <div key={size} style={row}>
+              {GROWTH.map(([vendor, name]) => (
+                <span key={vendor} style={label}>
+                  <VendorMark vendor={vendor} size={size} />
+                  {name}
+                </span>
+              ))}
+            </div>
+          ))}
+          <p style={caption}>muted</p>
+          <div style={row}>
+            {GROWTH.map(([vendor, name]) => (
+              <span key={vendor} style={label}>
+                <VendorMark vendor={vendor} size={20} muted />
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  ),
+};

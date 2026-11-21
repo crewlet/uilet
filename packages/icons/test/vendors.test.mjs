@@ -14,18 +14,51 @@ import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { CloudGlyph } from '../dist/glyphs.js';
+import {
+  ChartColumnGlyph,
+  CloudGlyph,
+  CoinsGlyph,
+  HandCoinsGlyph,
+  MegaphoneGlyph,
+  MousePointerClickGlyph,
+  SearchGlyph,
+  SmartphoneGlyph,
+  StoreGlyph,
+  TargetGlyph,
+} from '../dist/glyphs.js';
 import { CrewletIcon, VENDORS, VendorMark } from '../dist/index.js';
 import { extent, markPaths } from '../scripts/mark.mjs';
 import { PACKAGE, attribute, render } from './support.mjs';
 
+/**
+ * The marketing, growth and app store tiles, each drawn with a generic glyph
+ * because none of their owners allows its product icon without leave.
+ */
+const GROWTH_GLYPHS = [
+  ['google-ads', MousePointerClickGlyph],
+  ['google-adsense', CoinsGlyph],
+  ['google-admob', HandCoinsGlyph],
+  ['google-analytics', ChartColumnGlyph],
+  ['google-search-console', SearchGlyph],
+  ['google-play', SmartphoneGlyph],
+  ['app-store-connect', StoreGlyph],
+  ['apple-ads', MegaphoneGlyph],
+  ['meta-ads', TargetGlyph],
+];
+
+/** Every shape a drawing paints, with the attributes that place it, in order. */
+const shapes = (markup) =>
+  [...markup.matchAll(/<(path|circle|rect|line|polyline|polygon|ellipse)\b([^>]*)>/g)].map(([, tag, attrs]) =>
+    [tag, ...['d', 'cx', 'cy', 'r', 'x', 'y', 'width', 'height', 'points'].map((name) => attribute(`<${tag}${attrs}>`, name))].join(' '),
+  );
+
 describe('the vendor list', () => {
-  it('is exactly the drawings the package carries, Crewlet, AWS and Copilot', async () => {
+  it('is exactly the drawings the package carries, Crewlet, AWS, Copilot and the generic glyph tiles', async () => {
     const files = (await readdir(resolve(PACKAGE, 'svg/vendor')))
       .filter((file) => file.endsWith('.svg'))
       .map((file) => file.slice(0, -'.svg'.length))
       .sort();
-    const borrowed = ['aws', 'copilot', 'crewlet'];
+    const borrowed = ['aws', 'copilot', 'crewlet', ...GROWTH_GLYPHS.map(([vendor]) => vendor)];
     assert.deepEqual(VENDORS.filter((vendor) => !borrowed.includes(vendor)).sort(), files);
   });
 
@@ -49,6 +82,24 @@ describe('the vendor list', () => {
     assert.equal(attribute(mark, 'fill'), 'none');
     assert.doesNotMatch(mark, /(fill|stroke)="#/);
     assert.match(attribute(mark, 'class') ?? '', /(^| )crewlet-vendor-mark--aws( |$)/);
+  });
+
+  it('draws each marketing, growth and app store tile as a glyph of its own in the text colour, and nothing of the vendor', () => {
+    // Google, Apple and Meta allow a third party none of these products'
+    // icons without leave, so each tile draws a generic Lucide glyph beside
+    // the name: that glyph's own shapes, a currentColor stroke, no hue of
+    // the vendor's, and no glyph shared by two tiles.
+    for (const [vendor, Glyph] of GROWTH_GLYPHS) {
+      const mark = render(VendorMark, { vendor });
+      assert.ok(shapes(mark).length > 0, vendor);
+      assert.deepEqual(shapes(mark), shapes(render(Glyph, {})), vendor);
+      assert.equal(attribute(mark, 'stroke'), 'currentColor', vendor);
+      assert.equal(attribute(mark, 'fill'), 'none', vendor);
+      assert.doesNotMatch(mark, /(fill|stroke)="#/, vendor);
+      assert.match(attribute(mark, 'class') ?? '', new RegExp(`(^| )crewlet-vendor-mark--${vendor}( |$)`), vendor);
+    }
+    assert.equal(new Set(GROWTH_GLYPHS.map(([, Glyph]) => Glyph)).size, GROWTH_GLYPHS.length);
+    assert.ok(GROWTH_GLYPHS.every(([, Glyph]) => Glyph !== CloudGlyph), "a growth tile draws AWS's cloud");
   });
 
   it("draws Crewlet's own services with the brand mark, never a second copy of it", () => {
@@ -129,7 +180,7 @@ describe('a vendor mark', () => {
   it('draws every vendor, decorative and unfocusable by default', () => {
     for (const vendor of VENDORS) {
       const markup = render(VendorMark, { vendor });
-      assert.match(markup, /<path/, vendor);
+      assert.match(markup, /<(path|circle)\b/, vendor);
       assert.equal(attribute(markup, 'aria-hidden'), 'true', vendor);
       assert.equal(attribute(markup, 'focusable'), 'false', vendor);
       assert.equal(attribute(markup, 'role'), null, vendor);

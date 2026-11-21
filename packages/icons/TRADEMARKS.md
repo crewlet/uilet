@@ -34,6 +34,8 @@ The OpenAI, Meta and Kimi marks, which name the Codex, Muse Code and Kimi Code h
 
 Crewlet claims no rights in these marks. They are excluded from the Apache License's grant for the same reason the Crewlet marks are: that license covers copyright and patents, and a trademark is neither.
 
+Some products a Crewlet product integrates with have no mark in the package, because their owners allow a third party none without leave: AWS; Google Ads, AdSense, AdMob, Google Analytics, Search Console and Google Play (Google asks for a request through its Partner Marketing Hub); App Store Connect and Apple Ads (Apple allows no use of its logos or icons without a written licence); and Meta Ads (Meta requires approval for every use of its logo, and the Meta mark here was supplied for Muse Code alone). Each of those names is a trademark of its owner, used only to name the product, and its tile draws a generic glyph from the Lucide set below, which claims nothing about the product.
+
 One file there is not a third-party mark: `ssh.svg` is Crewlet's own drawing for its SSH connection (SSH is a protocol, and no vendor publishes a mark for it). It is licensed under the Apache License 2.0 like the rest of the package's artwork.
 
 ## The glyph set

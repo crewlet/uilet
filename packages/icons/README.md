@@ -73,7 +73,7 @@ import { VendorMark } from '@crewlethq/icons';
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `vendor` | `Vendor`: `'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'copilot' \| 'crewlet' \| 'cursor' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'gemini-cli' \| 'github' \| 'gitlab' \| 'google-cloud' \| 'grok' \| 'hermes' \| 'kimi' \| 'linear' \| 'mattermost' \| 'meta' \| 'microsoft-teams' \| 'notion' \| 'openai' \| 'opencode' \| 'pi' \| 'postgresql' \| 'qwen' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
+| `vendor` | `Vendor`: `'app-store-connect' \| 'apple-ads' \| 'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'copilot' \| 'crewlet' \| 'cursor' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'gemini-cli' \| 'github' \| 'gitlab' \| 'google-admob' \| 'google-ads' \| 'google-adsense' \| 'google-analytics' \| 'google-cloud' \| 'google-play' \| 'google-search-console' \| 'grok' \| 'hermes' \| 'kimi' \| 'linear' \| 'mattermost' \| 'meta' \| 'meta-ads' \| 'microsoft-teams' \| 'notion' \| 'openai' \| 'opencode' \| 'pi' \| 'postgresql' \| 'qwen' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `muted` | boolean | `false` | Drains the colour, for an application that is available but not connected. |
@@ -113,6 +113,22 @@ Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's viol
 
 **`aws` draws no AWS mark.** AWS's trademark guidelines allow a third party a plain-text reference only, with no logo, so the AWS tile draws the glyph set's own `cloud` (`CloudGlyph`, Lucide's, under ISC) in the current text colour, beside the name "AWS". It is the glyph component itself, not a file in `svg/vendor/`, and it claims nothing about AWS. Always draw it with "AWS" beside it.
 
+**Nine marketing, growth and app store products draw no mark either**, for the same reason as AWS. Google's brand terms ask a third party to request a product icon through its Partner Marketing Hub, Apple allows no third-party use of its logos or icons without a written licence, and Meta requires approval for every use of its logo (the `meta` mark was supplied for the Muse Code harness alone). So each tile draws a Lucide glyph of its own in the current text colour, none shared with another tile, beside the product's name:
+
+| Vendor | Product | Glyph |
+| ------ | ------- | ----- |
+| `google-ads` | Google Ads | `mouse-pointer-click` |
+| `google-adsense` | AdSense | `coins` |
+| `google-admob` | AdMob | `hand-coins` |
+| `google-analytics` | Google Analytics | `chart-column` |
+| `google-search-console` | Search Console | `search` |
+| `google-play` | Google Play | `smartphone` |
+| `app-store-connect` | App Store Connect | `store` |
+| `apple-ads` | Apple Ads | `megaphone` |
+| `meta-ads` | Meta Ads | `target` |
+
+Once an owner approves its icon, the same key draws the vendor's file instead, with no change for a consumer. Always draw these with the product's name beside them.
+
 **`crewlet` is Crewlet's own mark**, for the services built into it (Worklet, Doclet) where a catalogue lists them beside the third-party apps they stand in for. It is drawn from the brand mark the package already carries (`svg/crewlet-icon.svg`, `CrewletIcon`), not a second copy, and takes the same `size` and `muted` as any other vendor.
 
 **`ssh` is Crewlet's own drawing**, for the SSH Connection integration built into it. SSH is a protocol rather than an application, so no vendor publishes a mark for it, and the brand mark there would read as one more built-in service. The mark is a key whose bow is a rounded square holding a shell prompt, drawn on the glyph grid at the glyphs' weight (a 1.75 stroke with round caps and joins) and outlined into one filled path, as every other mark here is a fill. It draws in the brand mark's violet, `var(--color-brand-mark, #7c56ff)`, the same colour in every palette; the tokens' palette suite holds it to 3:1 on every theme's grounds, so it needs no reversed drawing for a dark one. Draw it with "SSH" beside it.
@@ -121,7 +137,7 @@ A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is draw
 
 The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRADEMARKS.md), which ships in the package. The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram, Microsoft Teams, Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are Simple Icons' renderings, whose path data is CC0 1.0. The Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are taken from simple-icons 16.35.0, each path unchanged and in the hex that release records for its brand (Scaleway's purple, #4F0599, sourced there to Scaleway's own design system, Ultraviolet).
 
-`VENDORS` lists every vendor the package draws, AWS's generic cloud and the SSH key among them.
+`VENDORS` lists every vendor the package draws, AWS's generic cloud, the nine growth glyphs and the SSH key among them.
 
 ## Product marks
 
