@@ -36,7 +36,7 @@ const box = (el: Element) => el.getBoundingClientRect();
 describe.each(['light', 'dark'] as const)('on a %s document', (theme) => {
   test('an amount stays on one line in a box narrower than it', async () => {
     // Named in words, the amount carries an ordinary space a line could break at.
-    const at = await mount(40, <Money micros={1_250_000_000n} currency="EUR" locale="en-US" currencyDisplay="name" />, theme);
+    const at = await mount(40, <Money micros={1_250_000_000n} currency="EUR" locale="en-US" format={{ currencyDisplay: 'name' }} />, theme);
     const money = at.querySelector('.crewlet-money')!;
     const line = parseFloat(getComputedStyle(money).lineHeight);
     expect(box(money).height).toBeLessThanOrEqual(line + 1);
