@@ -86,6 +86,80 @@ export const FlushRows: Story = {
   ),
 };
 
+const TABLE_ANSWER = (
+  <Prose as="div" measure="none">
+    <p style={{ maxWidth: 'var(--size-measure)' }}>
+      Agent SWE used the most this week: 2.96M tokens, 38% of the company’s 7.84M. The company has used 78% of its 10M
+      weekly ceiling, which resets on Monday at 00:00 Berlin time.
+    </p>
+    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <thead>
+        <tr>
+          <th align="left">Seat</th>
+          <th align="left">Tokens</th>
+          <th align="left">Share</th>
+          <th align="left">Busiest day</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Agent SWE</td>
+          <td>2.96M</td>
+          <td>38%</td>
+          <td>Tuesday</td>
+        </tr>
+        <tr>
+          <td>Agent QA</td>
+          <td>1.41M</td>
+          <td>18%</td>
+          <td>Thursday</td>
+        </tr>
+      </tbody>
+    </table>
+  </Prose>
+);
+
+/**
+ * `column`: a conversation on a page of its own, much wider than a line of
+ * it. The items keep to one centred column (`--crewlet-chat-thread-column`,
+ * the wide measure by default), the reader's bubble on its end edge and the
+ * answer on its start edge, while the scroller keeps the whole width. The
+ * composer stand-in under it is centred at the same width, as an application
+ * centres its own, and shares both edges. Narrow the canvas below the column
+ * and the thread keeps its ordinary inset.
+ */
+export const Column: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ height: 560, display: 'flex', flexDirection: 'column', border: '1px solid var(--color-border-default)', borderRadius: 14 }}>
+        {Story()}
+      </div>
+    ),
+  ],
+  parameters: { layout: 'fullscreen' },
+  render: () => (
+    <>
+      <ChatThread label="Conversation" column>
+        {[0, 1].flatMap(exchange)}
+        <MessageBubble from="self" attachment={sentWith}>
+          And how does that split by seat?
+        </MessageBubble>
+        {TABLE_ANSWER}
+      </ChatThread>
+      <div
+        style={{
+          paddingInline: 'max(var(--spacing-4), (100% - var(--crewlet-chat-thread-column, var(--size-measure-wide))) / 2)',
+          paddingBlock: 'var(--spacing-3)',
+        }}
+      >
+        <div style={{ border: '1px solid var(--color-border-default)', borderRadius: 12, padding: 12, color: 'var(--color-text-tertiary)' }}>
+          Ask a follow-up
+        </div>
+      </div>
+    </>
+  ),
+};
+
 export const ShortThread: Story = {
   render: () => <ChatThread label="Conversation">{[0, 1].flatMap(exchange)}</ChatThread>,
 };

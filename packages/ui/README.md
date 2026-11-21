@@ -208,6 +208,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.167.0
+
+### A conversation on a wide page reads in one column
+
+**`ChatThread` takes `column`**, which holds its items to one centred column, `--crewlet-chat-thread-column` wide (set it on the thread or any ancestor; `--size-measure-wide` by default), while the scroller keeps the thread's full width, so the wheel scrolls it anywhere and its bar stays at the edge. A conversation on a page of its own drew the reader's question at the pane's far edge and the answer at the other. The column is centred on the thread rather than on the scroller, so a scrollbar drawn in the layout moves nothing, and a composer under the thread lines up with it by centring the same width: `padding-inline: max(var(--spacing-4), (100% - var(--crewlet-chat-thread-column)) / 2)`. A thread narrower than the column keeps its ordinary inset. The thread is the query container the column is measured on, so it takes its width from what holds it.
+
 ## Changes in 0.165.0
 
 ### Money, star ratings and a note sent back with a decision
