@@ -1,7 +1,8 @@
 /**
  * A pannable, zoomable viewport over positioned content that wires pointers,
  * wheels and keys to `geometry.ts`. It fits once, on the first measured layout,
- * then only on request or on a resize of an untouched fit (`refitOnResize`).
+ * then only on request, on a resize of an untouched fit (`refitOnResize`), or
+ * when an untouched fit's content is drawn at new sizes (`refitKey`).
  */
 
 import {
@@ -269,6 +270,12 @@ export interface CanvasProps {
    */
   refitOnResize?: boolean | undefined;
   /**
+   * The sizes the content is drawn at, such as its items measured from the
+   * stylesheet. A new value refits a view still at its last fit, and keeps one
+   * the reader moved; a data push alone never refits.
+   */
+  refitKey?: unknown;
+  /**
    * Whether one finger can pan the canvas, after the tap that activates it.
    * Off, one finger always scrolls the page and only a pinch reaches it.
    */
@@ -311,6 +318,7 @@ export function Canvas({
   minZoom = CANVAS_MIN_ZOOM,
   cursor = 'hand',
   refitOnResize = false,
+  refitKey,
   touch = true,
   labels,
   onReady,
@@ -499,6 +507,17 @@ export function Canvas({
       if (untouched) fitted.current = viewNow.current;
     }
   }, [ready, size, content, apply, fitOf, refitOnResize]);
+
+  // THE SAME CONTENT DRAWN AT NEW SIZES REFITS AN UNTOUCHED FIT: a fit asked for
+  // in the render that changed the sizes lands before they are measured.
+  const refitSeen = useRef(refitKey);
+  useLayoutEffect(() => {
+    const changed = !Object.is(refitSeen.current, refitKey);
+    refitSeen.current = refitKey;
+    if (!ready || !changed || !content || !sameView(fitted.current, viewNow.current)) return;
+    apply(fitOf(content), false);
+    fitted.current = viewNow.current;
+  }, [ready, refitKey, content, apply, fitOf]);
 
   // ---- tell the caller where the view is -----------------------------------
   const reportView = useRef(onViewChange);
