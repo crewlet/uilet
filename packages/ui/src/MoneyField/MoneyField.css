@@ -1,0 +1,9 @@
+/* Amounts line up under each other, as a column of figures does. */
+.crewlet-money-field input {
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-money-field__currency {
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}

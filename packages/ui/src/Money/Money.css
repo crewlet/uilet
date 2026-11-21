@@ -1,0 +1,8 @@
+/*
+ * An amount's digits each take one width, so a column of amounts lines up,
+ * and the amount never breaks across two lines.
+ */
+.crewlet-money {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
