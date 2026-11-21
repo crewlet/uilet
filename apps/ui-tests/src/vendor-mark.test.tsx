@@ -77,3 +77,32 @@ describe('the SSH mark', () => {
     expect(failures).toEqual([]);
   });
 });
+
+describe('the marketing, growth and app store tiles', () => {
+  const GROWTH = [
+    ['google-analytics', 'Google Analytics'],
+    ['google-search-console', 'Search Console'],
+    ['google-ads', 'Google Ads'],
+    ['apple-ads', 'Apple Ads'],
+    ['meta-ads', 'Meta Ads'],
+    ['google-adsense', 'AdSense'],
+    ['google-admob', 'AdMob'],
+    ['app-store-connect', 'App Store Connect'],
+    ['google-play', 'Google Play'],
+  ] as const;
+
+  test.each(GROWTH)('%s is named %s once titled, and is decoration without a title', (vendor, name) => {
+    render(
+      <>
+        <VendorMark vendor={vendor} title={name} />
+        <VendorMark vendor={vendor} />
+      </>,
+    );
+    expect(screen.getAllByRole('img')).toHaveLength(1);
+    const mark = screen.getByRole('img', { name });
+    expect(mark.getAttribute('class')).toContain(`crewlet-vendor-mark--${vendor}`);
+    // A generic glyph in the text's ink: nothing of the vendor's own colour.
+    expect(mark.getAttribute('stroke')).toBe('currentColor');
+    expect(mark.outerHTML).not.toMatch(/(fill|stroke)="#/);
+  });
+});

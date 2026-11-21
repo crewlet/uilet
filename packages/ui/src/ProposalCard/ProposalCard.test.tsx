@@ -708,3 +708,25 @@ test('a caution and the terms carry no axe violation while the card waits', asyn
     unmount();
   }
 });
+
+test('a reply is an optional note under the change while the card can be decided, held while applying, gone once settled', () => {
+  const onValueChange = vi.fn();
+  const reply = { label: 'Note to the agent', value: 'Too much for one day.', onValueChange, help: 'Sent with your answer.' };
+  const { rerender } = render(card('pending', { reply }));
+  const field = screen.getByRole('textbox', { name: /Note to the agent/ });
+  expect((field as HTMLTextAreaElement).value).toBe('Too much for one day.');
+  expect(screen.getByText('Sent with your answer.')).toBeTruthy();
+  fireEvent.change(field, { target: { value: 'Lower it to €40.' } });
+  expect(onValueChange).toHaveBeenCalledWith('Lower it to €40.');
+
+  rerender(card('stepup', { reply }));
+  expect(screen.getByRole('textbox', { name: /Note to the agent/ })).toBeTruthy();
+
+  rerender(card('applying', { reply }));
+  expect((screen.getByRole('textbox', { name: /Note to the agent/ }) as HTMLTextAreaElement).disabled).toBe(true);
+
+  for (const settled of ['applied', 'declined', 'expired', 'stale', 'failed'] as const) {
+    rerender(card(settled, { reply }));
+    expect(screen.queryByRole('textbox', { name: /Note to the agent/ }), settled).toBeNull();
+  }
+});

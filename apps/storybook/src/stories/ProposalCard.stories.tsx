@@ -1,6 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { CodeBlock, ProposalCard, type ChangeListRow, type ProposalCardProps, type ProposalState } from '@crewlethq/ui';
+import {
+  CodeBlock,
+  Money,
+  ProposalCard,
+  Rating,
+  SegmentedMeter,
+  formatMoney,
+  type ChangeListRow,
+  type ProposalCardProps,
+  type ProposalState,
+} from '@crewlethq/ui';
 import { themeScope } from '../themeScope';
 
 /**
@@ -327,3 +337,109 @@ export const DangerCombinedBothThemes: Story = {
     </div>
   ),
 };
+
+const eur = (micros: bigint) => <Money micros={micros} currency="EUR" locale="en-US" />;
+
+/**
+ * A SPEND DECISION: an agent asks to raise a campaign's daily budget. The
+ * account and its zone are the subtitle, the budget is a before and after pair
+ * in the account's currency, and the account's daily budgets are drawn against
+ * the cap with this change as the part waiting on the person. The person can
+ * send a note back with Allow once or Deny.
+ */
+function SpendDecision({ state }: { state: ProposalState }) {
+  const [note, setNote] = useState('');
+  return (
+    <ProposalCard
+      title="Raise the daily budget of Spring sale"
+      subtitle="Nimbus Ads (123-456-7890) · EUR · Europe/Berlin"
+      state={state}
+      stepUp
+      expiresAt={new Date(Date.now() + 23 * 3_600_000).toISOString()}
+      summary="The campaign spent its whole budget by 14:00 on each of the last 5 days."
+      changes={[
+        { kind: 'changed', label: 'Daily budget', from: eur(40_000_000n), to: eur(60_000_000n) },
+        {
+          kind: 'fact',
+          label: 'Daily budgets on the account',
+          block: true,
+          value: (
+            <SegmentedMeter
+              segments={[
+                { id: 'set', value: 140, tone: 'info', label: 'already set' },
+                { id: 'change', value: 20, tone: 'warning', label: 'this change' },
+              ]}
+              total={200}
+              label={`${formatMoney(140_000_000n, 'EUR', 'en-US')} set, ${formatMoney(20_000_000n, 'EUR', 'en-US', { signDisplay: 'exceptZero' })} with this change, of the ${formatMoney(200_000_000n, 'EUR', 'en-US')} daily cap`}
+            />
+          ),
+          note: 'Adds €20.00 of the €50.00 a change may add. Google may spend up to twice a daily budget on a single day.',
+        },
+      ]}
+      note="Applies once. If the budget or the caps move before it runs, nothing runs and the agent asks again."
+      approveLabel="Allow once"
+      labels={{ decline: 'Deny' }}
+      reply={{ label: 'Note to the agent', value: note, onValueChange: setNote, help: 'Sent with your answer.' }}
+      onApprove={() => {}}
+      onDecline={() => {}}
+    />
+  );
+}
+
+export const AdSpendPending: Story = { render: () => <SpendDecision state="pending" /> };
+export const AdSpendStepUp: Story = { render: () => <SpendDecision state="stepup" /> };
+export const AdSpendApplying: Story = { render: () => <SpendDecision state="applying" /> };
+export const AdSpendStale: Story = { render: () => <SpendDecision state="stale" /> };
+
+const reviews = [
+  {
+    stars: 2,
+    author: 'A first reader',
+    excerpt: 'The app logs me out every time I switch to another app and back.',
+    reply: 'Thank you for telling us. Version 4.2, out this week, keeps you signed in when you switch apps. If it still happens, write to us from Settings and we will look at your account.',
+  },
+  {
+    stars: 5,
+    author: 'A reader whose display name runs on past the width of the card it is shown on',
+    excerpt: 'Exactly what I needed for my weekly plans.',
+    reply: 'Thank you! We are glad it fits your week.',
+  },
+];
+
+/**
+ * A PUBLIC DECISION: replies to store reviews, allowed or denied whole. Each
+ * reply is shown in full under the review it answers (its stars, author and an
+ * excerpt), with its length against the store's limit.
+ */
+export const PublicPostBatch: Story = {
+  render: () => (
+    <ProposalCard
+      title="Reply to 2 reviews of Nimbus Notes"
+      subtitle="Google Play · com.example.notes"
+      state="pending"
+      stepUp
+      summary="Published on Google Play under the developer's name, where anyone can read them."
+      changes={reviews.map((review, index) => ({
+        kind: 'added',
+        label: `Reply ${index + 1} of ${reviews.length}`,
+        block: true,
+        to: (
+          <div style={{ display: 'grid', gap: 'var(--spacing-2)' }}>
+            <span style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'center', minWidth: 0 }}>
+              <Rating value={review.stars} size="xs" />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{review.author}</span>
+            </span>
+            <q style={{ color: 'var(--color-text-secondary)' }}>{review.excerpt}</q>
+            <span>{review.reply}</span>
+          </div>
+        ),
+        note: `${review.reply.length} of 350 characters`,
+      }))}
+      approveLabel="Allow once"
+      labels={{ decline: 'Deny' }}
+      onApprove={() => {}}
+      onDecline={() => {}}
+    />
+  ),
+};
+

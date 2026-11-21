@@ -26,6 +26,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **A company's brand and the folders artifacts are filed in**: `swatch-book` for the `brand` artifact kind (`ArtifactKindGlyph`) and the Company › Brand page, `blend` for a brand's colours, `badge-check` for an artifact drawn in the company's current brand, and `folder-open` for a folder with nothing in it, or nothing the reader can open, beside the `folder` a folder is otherwise drawn with.
 - **The conversation surfaces** (`ChatMessage`, `MessageActions`, `ReactionBar` and the composer in `@crewlethq/ui`, and Chatlet's top bar and Rooms panel in the engine dashboard): `face-slightly-smiling-plus` for adding a reaction, `face-slightly-smiling` for the composer's emoji picker, `at-sign` for a mention, `bookmark` for saving a message for later, `bell-off` for a muted room, `messages-square` for the threads a reader follows, `reply` for replying in a thread, `panel-left` for the Rooms panel and `baseline` for the composer's formatting toggle. Lucide 1.47.0 names the two faces `face-slightly-smiling` and `face-slightly-smiling-plus` (`smile` and `smile-plus` are its retired aliases).
 - **`cloud`**, the AWS tile in an integrations catalogue (`VendorMark`'s `aws`). AWS's trademark guidelines allow a third party a plain-text reference only, with no logo, so the tile draws this generic cloud beside the name "AWS" rather than any mark of AWS's own.
+- **The marketing, growth and app store tiles in an integrations catalogue** (`VendorMark`'s `google-ads`, `google-admob`, `app-store-connect` and `apple-ads`): `mouse-pointer-click` for Google Ads, `hand-coins` for AdMob, `store` for App Store Connect and `megaphone` for Apple Ads. None of their owners allows its product icon on a third party's tile without leave: Google's brand terms ask for a request through its Partner Marketing Hub, Apple's trademark guidelines allow no third-party use of its logos or icons without a written licence, and Meta requires approval for every use of its logo. So each tile draws a generic glyph of its own beside the product's name, none shared with another tile. The other five take glyphs already here: `chart-column` for Google Analytics, `search` for Search Console, `coins` for AdSense, `smartphone` for Google Play and `target` for Meta Ads.
 - **A company's map of what it runs on** (`GraphCanvas` in `@crewlethq/ui`, and the Atlas screens in the engine dashboard): `map` for the map itself and its sidebar row, `git-branch` for a repository, `workflow` for a pipeline, `hard-drive` for a bucket or an object store, `container` for a container platform and `waypoints` for an endpoint. Every other kind of entry on the map takes a glyph already here (`server`, `database`, `globe`, `cloud`, `layers`, `activity`, `plug`, `brain`).
 - **The assistant drawer** in the engine dashboard: `square-pen` for New conversation in its head (the conversations themselves keep `rotate-ccw-clock`, already here, because Lucide retired `history` as an alias of it), `square` drawn filled for the Stop a running request turns the send button into, and `circle-stop` for a request or one of its steps that the person stopped.
 - **The code host's screens** in the engine dashboard (Gitlet: the repository's main page and files, commits, branches, pushes, changes, a change and its files, checks, the merge queue and the pickers): `git-commit-vertical`, `git-merge`, `git-pull-request`, `git-pull-request-closed`, `git-pull-request-draft`, `git-compare`, `tag`, `file`, `file-diff`, `circle-x`, `circle-dot`, `scale` for a licence, `unfold-vertical` for hidden diff lines, `rows-2` and `columns-2` for the unified and split diff, `train-front` for the queue, and `square-plus`, `square-dot`, `square-minus` and `square-arrow-right` for a file's status in a tree (added, modified or type changed, deleted, renamed). Lucide retired `git-commit` as an alias of `git-commit-vertical`.
@@ -151,6 +152,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `grip-vertical` | `GripVerticalGlyph` | `package/icons/grip-vertical.svg` |
 | `group` | `GroupGlyph` | `package/icons/group.svg` |
 | `hand` | `HandGlyph` | `package/icons/hand.svg` |
+| `hand-coins` | `HandCoinsGlyph` | `package/icons/hand-coins.svg` |
 | `hand-grab` | `HandGrabGlyph` | `package/icons/hand-grab.svg` |
 | `hard-drive` | `HardDriveGlyph` | `package/icons/hard-drive.svg` |
 | `hash` | `HashGlyph` | `package/icons/hash.svg` |
@@ -179,6 +181,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `map` | `MapGlyph` | `package/icons/map.svg` |
 | `maximize` | `MaximizeGlyph` | `package/icons/maximize.svg` |
 | `maximize-2` | `Maximize2Glyph` | `package/icons/maximize-2.svg` |
+| `megaphone` | `MegaphoneGlyph` | `package/icons/megaphone.svg` |
 | `menu` | `MenuGlyph` | `package/icons/menu.svg` |
 | `message-circle-question-mark` | `MessageCircleQuestionMarkGlyph` | `package/icons/message-circle-question-mark.svg` |
 | `message-square` | `MessageSquareGlyph` | `package/icons/message-square.svg` |
@@ -188,6 +191,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `monitor` | `MonitorGlyph` | `package/icons/monitor.svg` |
 | `moon` | `MoonGlyph` | `package/icons/moon.svg` |
 | `mouse-pointer-2` | `MousePointer2Glyph` | `package/icons/mouse-pointer-2.svg` |
+| `mouse-pointer-click` | `MousePointerClickGlyph` | `package/icons/mouse-pointer-click.svg` |
 | `move-diagonal-2` | `MoveDiagonal2Glyph` | `package/icons/move-diagonal-2.svg` |
 | `network` | `NetworkGlyph` | `package/icons/network.svg` |
 | `package` | `PackageGlyph` | `package/icons/package.svg` |
@@ -238,6 +242,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `square-terminal` | `SquareTerminalGlyph` | `package/icons/square-terminal.svg` |
 | `star` | `StarGlyph` | `package/icons/star.svg` |
 | `sticky-note` | `StickyNoteGlyph` | `package/icons/sticky-note.svg` |
+| `store` | `StoreGlyph` | `package/icons/store.svg` |
 | `strikethrough` | `StrikethroughGlyph` | `package/icons/strikethrough.svg` |
 | `sun` | `SunGlyph` | `package/icons/sun.svg` |
 | `swatch-book` | `SwatchBookGlyph` | `package/icons/swatch-book.svg` |

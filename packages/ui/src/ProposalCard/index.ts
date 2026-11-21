@@ -10,6 +10,7 @@ export type {
   ProposalDecisionRefusal,
   ProposalFailureOutcome,
   ProposalKind,
+  ProposalReply,
   ProposalScope,
   ProposalState,
   ProposalTone,

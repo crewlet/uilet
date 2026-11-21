@@ -100,6 +100,20 @@
  * itself rather than a copy in svg/vendor, so it draws as every glyph does,
  * a stroke in the current text colour on either theme.
  *
+ * NINE MARKETING, GROWTH AND APP STORE PRODUCTS HAVE NO MARK HERE EITHER, by
+ * the same rule. Google's brand terms ask a third party to request a product
+ * icon through its Partner Marketing Hub (Google Ads, AdSense, AdMob, Google
+ * Analytics, Search Console, Google Play). Apple allows no use of "the Apple
+ * Logo or any other Apple-owned graphic symbol, logo, or icon" without an
+ * express written licence (App Store Connect, Apple Ads). Meta says "All usage
+ * of the Meta logo requires approval", and the `meta` mark here was supplied
+ * for the Muse Code harness alone (Meta Ads). So each tile draws a Lucide
+ * glyph of its own beside the product's name, none shared with another tile:
+ * mouse-pointer-click, coins, hand-coins, chart-column, search, smartphone,
+ * store, megaphone and target, in the order the products are named above.
+ * Once an owner approves its icon, the same key draws the vendor's file
+ * instead, with no change for a consumer.
+ *
  * The coding harnesses' marks are their owners' own files, sourced in README.md;
  * Copilot draws GitHub's, as GitHub's brand toolkit does. Codex draws OpenAI's
  * blossom, Muse Code Meta's mark and Kimi Code Kimi's tile.
@@ -111,12 +125,23 @@ import './VendorMark.css';
 import type { GlyphSize } from './Glyph.js';
 import { cssLength } from './Glyph.js';
 import CrewletIcon from './generated/CrewletIcon.js';
+import ChartColumnGlyph from './generated/glyphs/ChartColumnGlyph.js';
 import CloudGlyph from './generated/glyphs/CloudGlyph.js';
+import CoinsGlyph from './generated/glyphs/CoinsGlyph.js';
+import HandCoinsGlyph from './generated/glyphs/HandCoinsGlyph.js';
+import MegaphoneGlyph from './generated/glyphs/MegaphoneGlyph.js';
+import MousePointerClickGlyph from './generated/glyphs/MousePointerClickGlyph.js';
+import SearchGlyph from './generated/glyphs/SearchGlyph.js';
+import SmartphoneGlyph from './generated/glyphs/SmartphoneGlyph.js';
+import StoreGlyph from './generated/glyphs/StoreGlyph.js';
+import TargetGlyph from './generated/glyphs/TargetGlyph.js';
 import * as darkMarks from './generated/vendors/dark/index.js';
 import * as marks from './generated/vendors/index.js';
 
 /** The apps this package draws on a catalogue tile, Crewlet's own services and SSH among them. */
 export const VENDORS = [
+  'app-store-connect',
+  'apple-ads',
   'atlassian',
   'aws',
   'claude',
@@ -133,13 +158,20 @@ export const VENDORS = [
   'gemini-cli',
   'github',
   'gitlab',
+  'google-admob',
+  'google-ads',
+  'google-adsense',
+  'google-analytics',
   'google-cloud',
+  'google-play',
+  'google-search-console',
   'grok',
   'hermes',
   'kimi',
   'linear',
   'mattermost',
   'meta',
+  'meta-ads',
   'microsoft-teams',
   'notion',
   'openai',
@@ -171,6 +203,8 @@ export interface VendorMarkProps extends Omit<SVGProps<SVGSVGElement>, 'title'> 
 }
 
 const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
+  'app-store-connect': StoreGlyph,
+  'apple-ads': MegaphoneGlyph,
   atlassian: marks.Atlassian,
   aws: CloudGlyph,
   claude: marks.Claude,
@@ -187,13 +221,20 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   'gemini-cli': marks.GeminiCli,
   github: marks.Github,
   gitlab: marks.Gitlab,
+  'google-admob': HandCoinsGlyph,
+  'google-ads': MousePointerClickGlyph,
+  'google-adsense': CoinsGlyph,
+  'google-analytics': ChartColumnGlyph,
   'google-cloud': marks.GoogleCloud,
+  'google-play': SmartphoneGlyph,
+  'google-search-console': SearchGlyph,
   grok: marks.Grok,
   hermes: marks.Hermes,
   kimi: marks.Kimi,
   linear: marks.Linear,
   mattermost: marks.Mattermost,
   meta: marks.Meta,
+  'meta-ads': TargetGlyph,
   'microsoft-teams': marks.MicrosoftTeams,
   notion: marks.Notion,
   openai: marks.Openai,
