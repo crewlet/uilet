@@ -16,6 +16,7 @@ import { Disclosure } from '../Disclosure/index.js';
 import { ReceiptStrip, RefusalStrip } from '../ReceiptStrip/index.js';
 import { currentNow, formatExact, formatUntil, toInstant, toISO, useNow, type TimeValue } from '../RelativeTime/index.js';
 import { Spinner } from '../Spinner/index.js';
+import { ValueField } from '../ValueField/index.js';
 import { StatusCard, type StatusCardStatus } from '../StatusCard/index.js';
 import { cx } from '../utils/cx.js';
 
@@ -80,6 +81,20 @@ export interface ProposalConfirmation {
    * Engineer seat and its history are removed."
    */
   label: ReactNode;
+}
+
+/**
+ * A note the person may send back with the decision, to whoever asked for it:
+ * why it was denied, or what to do next. Optional to write, and the host
+ * sends it with whichever answer is pressed.
+ */
+export interface ProposalReply {
+  /** The field's name: "Note to the agent". */
+  label: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  /** A line under the field: "Sent with your answer.". */
+  help?: ReactNode;
 }
 
 /**
@@ -301,6 +316,12 @@ export interface ProposalCardProps extends Omit<HTMLAttributes<HTMLElement>, 'ti
    */
   notice?: ReactNode;
   labels?: Partial<ProposalCardLabels> | undefined;
+  /**
+   * A note the person may write to send back with the decision (see
+   * `ProposalReply`): a field under the change while the card can be decided,
+   * held while the decision is carried out, and gone once it is settled.
+   */
+  reply?: ProposalReply | undefined;
   /** Words for the change list. */
   changeLabels?: Partial<ChangeListLabels> | undefined;
   /** Words for the `DiffList` behind "Show the whole change". */
@@ -482,6 +503,7 @@ export function ProposalCard({
   stepUp = false,
   expiresAt,
   notice: givenNotice,
+  reply,
   labels: overrides,
   changeLabels,
   diffLabels,
@@ -734,6 +756,19 @@ export function ProposalCard({
         </Disclosure>
       )}
       {note === undefined || note === null ? null : <p className="crewlet-proposal-card__note">{note}</p>}
+      {reply === undefined || settled ? null : (
+        <ValueField
+          className="crewlet-proposal-card__reply"
+          kind="multiline"
+          rows={2}
+          required={false}
+          label={reply.label}
+          value={reply.value}
+          onChange={reply.onValueChange}
+          help={reply.help}
+          disabled={state === 'applying'}
+        />
+      )}
     </StatusCard>
   );
 }
