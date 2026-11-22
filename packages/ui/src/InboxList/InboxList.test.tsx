@@ -771,8 +771,9 @@ test('quick actions stand outside the row’s control, beside the time, in room 
     // Hidden, not only clear: a row that does not hold focus keeps its tray out of the tab order.
     expect(style.visibility).toBe('hidden');
     expect(getComputedStyle(row).position).toBe('relative');
-    // The row measures its tray onto itself, the width the name's line keeps room for.
+    // The row measures its tray onto itself: the width the name's line keeps room for, and the height the head does.
     expect(row.style.getPropertyValue('--crewlet-inbox-row-tray')).toMatch(/^\d+px$/);
+    expect(row.style.getPropertyValue('--crewlet-inbox-row-tray-block')).toMatch(/^\d+px$/);
     // With no time to move aside, the place is still drawn, to hold the room.
     const place = row.querySelector('.crewlet-inbox-row__head-end--place')!;
     expect(place.getAttribute('aria-hidden')).toBe('true');
@@ -786,13 +787,18 @@ test('quick actions stand outside the row’s control, beside the time, in room 
   expect(css).toContain(
     '.crewlet-inbox-row:hover > .crewlet-inbox-row__actions, .crewlet-inbox-row:focus-within > .crewlet-inbox-row__actions, .crewlet-inbox-row__actions:has([aria-expanded=\'true\']) { opacity: 1; visibility: visible; pointer-events: auto; }',
   );
-  // The room is kept at the end of the float's place at all times, so the words never move.
-  expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place { padding-inline-end: var(--crewlet-inbox-row-room); }');
-  // And the time moves into it whenever the tray shows.
+  // The time moves into the room whenever the tray shows.
   expect(css).toContain(
     '.crewlet-inbox-row--actions:hover .crewlet-inbox-row__head-end--drawn, .crewlet-inbox-row--actions:focus-within .crewlet-inbox-row__head-end--drawn, .crewlet-inbox-row--actions:has(> .crewlet-inbox-row__actions [aria-expanded=\'true\']) .crewlet-inbox-row__head-end--drawn { inset-inline-end: var(--crewlet-inbox-row-room); }',
   );
   expect(css).toMatch(/\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-room: max\( 0px, var\(--crewlet-inbox-row-tray, 0px\) \+ var\(--crewlet-inbox-row-tray-end\) \+ var\(--spacing-2\) - var\(--crewlet-inbox-row-words-end\) \);/);
+  // The room is kept in the float's place at all times, so the words never move, and as tall as
+  // the tray reaches below the top pad, so the words under the name start below it.
+  expect(css).toMatch(/\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-reach: max\(0px, var\(--crewlet-inbox-row-tray-block, 0px\) - var\(--crewlet-inbox-row-pad\)\);/);
+  expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__head { min-height: var(--crewlet-inbox-row-reach); }');
+  expect(css).toContain(
+    '.crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place { min-height: var(--crewlet-inbox-row-reach); padding-inline-end: var(--crewlet-inbox-row-room); }',
+  );
 });
 
 test('chat density sets rows full bleed with a hairline between them, and a group as a day', () => {
@@ -817,8 +823,9 @@ test('chat density sets rows full bleed with a hairline between them, and a grou
     // jsdom resolves no custom property, and the chat scale's are not tokens:
     // the row's pads are read from the sheet, at 16px above and below.
     expect(control.classList.contains('crewlet-inbox-row__control--leading')).toBe(true);
+    expect(sheet).toMatch(/\.crewlet-inbox-list--chat \.crewlet-inbox-row \{[^}]*--crewlet-inbox-row-pad: var\(--spacing-4\);/);
     expect(sheet).toContain(
-      '.crewlet-inbox-list--chat .crewlet-inbox-row__control, .crewlet-inbox-list--chat .crewlet-inbox-row__control--leading, .crewlet-inbox-list--chat .crewlet-inbox-row__control:only-child { gap: var(--crewlet-chat-gap); padding: var(--spacing-4) var(--crewlet-chat-pad-x); }',
+      '.crewlet-inbox-list--chat .crewlet-inbox-row__control, .crewlet-inbox-list--chat .crewlet-inbox-row__control--leading, .crewlet-inbox-list--chat .crewlet-inbox-row__control:only-child { gap: var(--crewlet-chat-gap); padding: var(--crewlet-inbox-row-pad) var(--crewlet-chat-pad-x); }',
     );
     expect(px(container.querySelector('.crewlet-inbox-row__main')!, 'padding-top')).toBe(0);
   } finally {

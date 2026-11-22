@@ -136,8 +136,11 @@
  * a selected row takes no hover on top of it: both are a background on the
  * same element, and a composite of the two is a colour nothing has measured.
  */
-/* ONE TRACK, so a leaving row can close its height (below). */
+/* ONE TRACK, so a leaving row can close its height (below). The pad is the
+   control's top and bottom, where the name's line and the tray measure from. */
 .crewlet-inbox-row {
+  --crewlet-inbox-row-pad: calc(var(--spacing-2) + var(--spacing-1) / 2);
+
   display: grid;
   grid-template-rows: 1fr;
   min-width: 0;
@@ -216,7 +219,7 @@
   gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
   width: 100%;
   min-width: 0;
-  padding: calc(var(--spacing-2) + var(--spacing-1) / 2) var(--spacing-2) var(--spacing-1);
+  padding: var(--crewlet-inbox-row-pad) var(--spacing-2) var(--spacing-1);
   border: 0;
   border-radius: var(--radius-md);
   background: none;
@@ -229,7 +232,7 @@
 
 /* With no task under it, the control closes the row at the same padding it opened with. */
 .crewlet-inbox-row__control:only-child {
-  padding-bottom: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  padding-bottom: var(--crewlet-inbox-row-pad);
 }
 
 /*
@@ -257,7 +260,7 @@
  * mark hangs from the same top, beside the name's line and the one under it.
  */
 .crewlet-inbox-row__control--leading {
-  padding-top: calc(var(--spacing-2) + var(--spacing-1) / 2 - var(--crewlet-inbox-row-lift));
+  padding-top: calc(var(--crewlet-inbox-row-pad) - var(--crewlet-inbox-row-lift));
 }
 
 .crewlet-inbox-row__control--leading > .crewlet-inbox-row__main {
@@ -298,7 +301,7 @@
 
 .crewlet-inbox-row__leading--drawn {
   position: absolute;
-  inset-block-start: calc(var(--spacing-2) + var(--spacing-1) / 2 - var(--crewlet-inbox-row-lift));
+  inset-block-start: calc(var(--crewlet-inbox-row-pad) - var(--crewlet-inbox-row-lift));
   inset-inline-start: var(--spacing-2);
   pointer-events: none;
 }
@@ -530,14 +533,17 @@
 }
 
 /*
- * THE QUICK ACTIONS STAND BESIDE THE TIME, never over it, and never reflow.
- * The tray floats at the end of the first line while the row is hovered or
- * holds focus, and the time (with any status) moves aside to stand before
- * it. The room it moves into is kept at the end of the name's line all the
- * time, in the float's place (`--crewlet-inbox-row-room`: the tray's width,
+ * THE QUICK ACTIONS STAND BESIDE THE TIME, never over it or any words, and
+ * never reflow. The tray stands in the row's top end corner while the row is
+ * hovered or holds focus, and the time (with any status) moves aside to stand
+ * before it. The room it moves into is kept at the end of the name's line all
+ * the time, in the float's place (`--crewlet-inbox-row-room`: the tray's width,
  * which the row measures into `--crewlet-inbox-row-tray`, from where the
  * tray stands to where the words end, and a gap), so the name never wraps
  * differently under the pointer and the row keeps its height.
+ *
+ * THE ROOM IS AS TALL AS THE TRAY (`--crewlet-inbox-row-reach`, its measured
+ * height less the top pad), so the words under the name start below its foot.
  *
  * HIDDEN, NOT ONLY CLEAR, while the row is neither hovered nor focused: a
  * tray drawn at zero opacity was a Tab stop on every row, two stops a row in
@@ -551,13 +557,14 @@
     0px,
     var(--crewlet-inbox-row-tray, 0px) + var(--crewlet-inbox-row-tray-end) + var(--spacing-2) - var(--crewlet-inbox-row-words-end)
   );
+  --crewlet-inbox-row-reach: max(0px, var(--crewlet-inbox-row-tray-block, 0px) - var(--crewlet-inbox-row-pad));
 
   position: relative;
 }
 
 .crewlet-inbox-row__actions {
   position: absolute;
-  top: var(--crewlet-inbox-row-actions-top, 0px);
+  top: 0;
   inset-inline-end: var(--crewlet-inbox-row-tray-end, var(--spacing-2));
   z-index: 1;
   opacity: 0;
@@ -573,7 +580,12 @@
   pointer-events: auto;
 }
 
+.crewlet-inbox-row--actions .crewlet-inbox-row__head {
+  min-height: var(--crewlet-inbox-row-reach);
+}
+
 .crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place {
+  min-height: var(--crewlet-inbox-row-reach);
   padding-inline-end: var(--crewlet-inbox-row-room);
 }
 
@@ -627,16 +639,15 @@
 
 .crewlet-inbox-list--chat .crewlet-inbox-row {
   border-bottom: 1px solid var(--color-border-default);
-  /* The tray sits on the name's line: its middle on the line's middle. */
-  --crewlet-inbox-row-actions-top: calc(var(--spacing-4) + var(--crewlet-chat-line) * var(--crewlet-chat-text) / 2 - var(--crewlet-chat-toolbar) / 2);
-  /* It stands a step in from the row's end, where the words end at the side inset. */
+  --crewlet-inbox-row-pad: var(--spacing-4);
+  /* The tray stands a step in from the row's end, where the words end at the side inset. */
   --crewlet-inbox-row-tray-end: var(--spacing-3);
   --crewlet-inbox-row-words-end: var(--crewlet-chat-pad-x);
 }
 
 /* The mark at the chat row's own pads. */
 .crewlet-inbox-list--chat .crewlet-inbox-row__leading--drawn {
-  inset-block-start: var(--spacing-4);
+  inset-block-start: var(--crewlet-inbox-row-pad);
   inset-inline-start: var(--crewlet-chat-pad-x);
 }
 
@@ -646,7 +657,7 @@
 .crewlet-inbox-list--chat .crewlet-inbox-row__control--leading,
 .crewlet-inbox-list--chat .crewlet-inbox-row__control:only-child {
   gap: var(--crewlet-chat-gap);
-  padding: var(--spacing-4) var(--crewlet-chat-pad-x);
+  padding: var(--crewlet-inbox-row-pad) var(--crewlet-chat-pad-x);
 }
 
 .crewlet-inbox-list--chat .crewlet-inbox-row__control--leading > .crewlet-inbox-row__main {

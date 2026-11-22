@@ -505,7 +505,8 @@ function SaidScreen({ initial = '', width }: { initial?: string; width?: number 
 /**
  * CHAT DENSITY, NOTHING OPEN: a list of messages at the transcript's scale,
  * read at full width and in full, each with why it is here under it. Hover a
- * row for its quick actions, shown beside its time, which moves aside for them.
+ * row for its quick actions, shown beside its time, which moves aside for them,
+ * with the words under the name starting below the tray, at every width.
  */
 export const ChatDensity: Story = {
   render: () => <SaidScreen />,
