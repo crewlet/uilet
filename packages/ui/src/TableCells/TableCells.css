@@ -59,6 +59,15 @@
   gap: calc(var(--spacing-1) * 1.5);
 }
 
+/*
+ * A linked cell names a record and stands alone, so it is underlined on hover
+ * only, not at rest as a link set inside a sentence (its inherited size) is.
+ */
+.crewlet-link.crewlet-table-cell__key:not(:hover),
+.crewlet-link.crewlet-table-cell__entity:not(:hover) {
+  text-decoration: none;
+}
+
 .crewlet-table-cell__badge,
 .crewlet-table-cell__icon {
   display: inline-flex;
