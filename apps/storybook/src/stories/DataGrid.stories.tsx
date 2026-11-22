@@ -1,6 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState, type ReactNode } from 'react';
-import { AvatarStack, Button, Card, ChooserList, ColumnChooser, DataGrid, Menu, Tag, columnChoicesOf, type DataGridColumn } from '@crewlethq/ui';
+import {
+  AvatarStack,
+  Button,
+  Card,
+  ChooserList,
+  ColumnChooser,
+  DataGrid,
+  Menu,
+  TableTwoLineCell,
+  Tag,
+  columnChoicesOf,
+  type DataGridColumn,
+} from '@crewlethq/ui';
 import { VendorMark, type Vendor } from '@crewlethq/icons';
 import { BugGlyph, InboxGlyph } from '@crewlethq/icons/glyphs';
 
@@ -483,6 +495,36 @@ export const InACardWithNoInset: Story = {
       <Card padding="none">
         <DataGrid rows={TASKS} columns={COLUMNS} rowKey={(t: Task) => t.key} rowHref={(t: Task) => `#/worklet/${t.key}`} />
       </Card>
+    </div>
+  ),
+};
+
+/**
+ * A two-line cell is cut to its column on a desktop and wraps whole in a
+ * phone's card rows, as the grid's own cut values do.
+ */
+export const TwoLineCellsOnAPhone: Story = {
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
+  render: () => (
+    <div style={{ maxWidth: 360 }}>
+      <DataGrid
+        rows={[
+          { key: 'ENG', name: 'Core', purpose: 'Plan, design, build, test and ship the control plane across the backend, the web console and the mobile apps' },
+          { key: 'PROD', name: 'Product Management', purpose: 'Plan and document the product across the console, the CLI and the docs site' },
+        ]}
+        rowKey={(p: { key: string }) => p.key}
+        columns={[
+          { key: 'key', header: 'Key', shrink: true, phoneLead: true, cell: (p: { key: string }) => p.key },
+          {
+            key: 'name',
+            header: 'Project',
+            floor: '10rem',
+            phoneLead: true,
+            cell: (p: { name: string; purpose: string }) => <TableTwoLineCell value={p.name} detail={p.purpose} />,
+          },
+          { key: 'todo', header: 'To do', align: 'right', shrink: true, cell: () => '5' },
+        ]}
+      />
     </div>
   ),
 };

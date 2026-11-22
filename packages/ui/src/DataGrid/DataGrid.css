@@ -907,11 +907,20 @@ button.crewlet-data-grid__row-link {
   justify-content: flex-start;
 }
 
-:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell .crewlet-data-grid__truncate {
+/* A card's value owns its width, so a value cut to fit a column wraps here,
+   a two-line cell's lines too: on a touch screen no hover shows the rest. */
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell .crewlet-data-grid__truncate,
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell .crewlet-table-cell__lines > .crewlet-text--truncate {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
   overflow-wrap: anywhere;
+}
+
+/* And a two-line cell's mark stands at the top, beside its value, rather than
+   centred on lines that wrapped. */
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell .crewlet-table-cell__two-line {
+  align-items: flex-start;
 }
 
 /* A VALUE THAT LEADS WITH A PICTURE IS NAMED ON ITS WORDS' LINE. The name
@@ -969,6 +978,14 @@ button.crewlet-data-grid__row-link {
   grid-column: 2;
   grid-row: 1;
   align-self: center;
+}
+
+/* Beside a two-line cell, whose lines wrap here, at the top: centred, they
+   stood beside its third line. */
+:where(.crewlet-data-grid[data-stacked]:not([data-phone-rows='compact']))
+  .crewlet-data-grid__row:has(.crewlet-table-cell__lines)
+  > .crewlet-data-grid__cell--action {
+  align-self: start;
 }
 
 /* A row with a leading control (its expander) and its own actions puts them side by side on that line. */
