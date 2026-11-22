@@ -84,8 +84,9 @@ test.each([
   expect(who.height).toBeCloseTo(rest.who.height, 1);
   expect(who.width).toBeCloseTo(rest.who.width, 1);
   // The controls stay on the row's line, beside the name, which is cut rather than pushing them down.
+  // (The foot stands on the rail's bottom, so it rises by the line: positions are read from the row.)
   const actions = box(shown, '.crewlet-account-row__actions');
-  expect(actions.top).toBeCloseTo(rest.actions.top, 1);
+  expect(actions.top - who.top).toBeCloseTo(rest.actions.top - rest.who.top, 1);
   expect(actions.left).toBeCloseTo(rest.actions.left, 1);
   expect(actions.bottom).toBeLessThanOrEqual(line.top + 0.5);
   // From the badge's edge, one line, cut at the rail's edge rather than past it.

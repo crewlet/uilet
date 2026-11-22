@@ -148,6 +148,17 @@ describe.each([
   });
 });
 
+/** The part of a line box its clipping ancestors in the row let show, or null: a line a clamp cut is not drawn. */
+function drawn(box: DOMRect, from: Element, row: HTMLElement): DOMRect | null {
+  let [left, top, right, bottom] = [box.left, box.top, box.right, box.bottom];
+  for (let at: Element | null = from; at && at !== row; at = at.parentElement) {
+    if (getComputedStyle(at).overflow === 'visible') continue;
+    const clip = at.getBoundingClientRect();
+    [left, top, right, bottom] = [Math.max(left, clip.left), Math.max(top, clip.top), Math.min(right, clip.right), Math.min(bottom, clip.bottom)];
+  }
+  return right - left > 1 && bottom - top > 1 ? new DOMRect(left, top, right - left, bottom - top) : null;
+}
+
 /** Every drawn line box of the row's words: the name, the time, the message and the lines under it. */
 function wordBoxes(row: HTMLElement): { text: string; box: DOMRect }[] {
   const boxes: { text: string; box: DOMRect }[] = [];
@@ -159,7 +170,10 @@ function wordBoxes(row: HTMLElement): { text: string; box: DOMRect }[] {
     if (getComputedStyle(parent).visibility === 'hidden') continue;
     const range = document.createRange();
     range.selectNodeContents(node);
-    for (const box of range.getClientRects()) if (box.width > 1 && box.height > 1) boxes.push({ text, box });
+    for (const line of range.getClientRects()) {
+      const box = drawn(line, parent, row);
+      if (box) boxes.push({ text, box });
+    }
   }
   return boxes;
 }
