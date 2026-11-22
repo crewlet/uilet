@@ -208,6 +208,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.171.0
+
+### A short block beside a tall one leaves no hole
+
+**`ArrangeGrid` takes `pack`**, which lays a board's blocks as a masonry: each block starts under the nearest block above it in its columns, measured from its real height, rather than under the tallest block of the row before. A short card beside a tall one (a long list of decisions) left its columns empty down to the tall card's foot; packed, the cards after it fill them. Blocks keep the reader's order: placement is the grid's own sparse auto-placement, never dense, so no block lands above one before it, and the document order a screen reader follows is unchanged. Neighbours whose feet are less than three row gaps apart are levelled into one row, so the cards after them start level rather than a few pixels apart. A frame sized by its content then reaches down to the next block in its columns, or the board's foot, so columns end together as a row's cards did; a frame given a height keeps it. Widths, arranging (drag, resize, the arrow keys) and a one-column page work as before. The grid's rows become one pixel each and every block spans its height and the row gap under it; a change to a block's content is measured before the next frame is drawn, a size change with no change to the page (a narrower window) at the next frame, and the first frame is already packed; a grid with no box (in a hidden tab) stays in rows until it is shown. An `ArrangeGroup`'s body follows the grid it stands on, or its own `pack`. Off by default, so a board laid in rows is unchanged. Story: `ArrangeGrid` Packed, Rows, Packed While Arranging.
+
 ## Changes in 0.170.0
 
 ### Unmarked integrations draw as one designed family

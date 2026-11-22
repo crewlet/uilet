@@ -1,9 +1,16 @@
-import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
+import { useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
+import { ArrangePackContext, usePackedGrid } from './usePackedGrid.js';
 
 export interface ArrangeGridProps extends HTMLAttributes<HTMLDivElement> {
   /** Columns of the grid, which each block spans a number of. Twelve by default. */
   columns?: number | undefined;
+  /**
+   * Pack the blocks as a masonry: each starts under the nearest block above
+   * it in its columns, measured from its real height, rather than under the
+   * tallest block of the row before. Groups inside follow. Off by default.
+   */
+  pack?: boolean | undefined;
   children?: ReactNode;
 }
 
@@ -22,14 +29,19 @@ export interface ArrangeGridProps extends HTMLAttributes<HTMLDivElement> {
  * `--crewlet-arrange-board-gap`, and so is this, so a lane is exactly the
  * column a block snaps to.
  */
-export function ArrangeGrid({ columns = 12, className, style, children, ...rest }: ArrangeGridProps) {
+export function ArrangeGrid({ columns = 12, pack = false, className, style, children, ...rest }: ArrangeGridProps) {
+  const grid = useRef<HTMLDivElement>(null);
+  usePackedGrid(grid, pack);
   return (
-    <div
-      className={cx('crewlet-arrange-grid', className)}
-      style={{ ...style, '--crewlet-arrange-columns': columns } as CSSProperties}
-      {...rest}
-    >
-      {children}
-    </div>
+    <ArrangePackContext.Provider value={pack}>
+      <div
+        ref={grid}
+        className={cx('crewlet-arrange-grid', className)}
+        style={{ ...style, '--crewlet-arrange-columns': columns } as CSSProperties}
+        {...rest}
+      >
+        {children}
+      </div>
+    </ArrangePackContext.Provider>
   );
 }
