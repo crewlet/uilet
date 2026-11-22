@@ -231,34 +231,56 @@ export const Ssh: StoryObj = {
   ),
 };
 
-/** The marketing, growth and app store products, each beside its own name. */
-const GROWTH = [
+/** The products whose owners allow no mark here, each beside its own name. */
+const UNMARKED = [
+  ['aws', 'AWS'],
   ['google-analytics', 'Google Analytics'],
   ['google-search-console', 'Search Console'],
   ['google-ads', 'Google Ads'],
   ['apple-ads', 'Apple Ads'],
-  ['meta-ads', 'Meta Ads'],
+  ['meta-ads', 'Meta Ads Manager'],
   ['google-adsense', 'AdSense'],
   ['google-admob', 'AdMob'],
   ['app-store-connect', 'App Store Connect'],
   ['google-play', 'Google Play'],
 ] as const satisfies readonly (readonly [Vendor, string])[];
 
+/** Marks a catalogue lists beside them, so the plate is judged among real marks. */
+const NEIGHBOURS = [
+  ['datadog', 'Datadog'],
+  ['cloudflare', 'Cloudflare'],
+  ['expo', 'Expo'],
+  ['google-cloud', 'Google Cloud'],
+  ['ssh', 'SSH'],
+] as const satisfies readonly (readonly [Vendor, string])[];
+
+const list: CSSProperties = { display: 'grid', gap: 'var(--spacing-3)', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))' };
+
 /**
- * GENERIC GLYPHS, BESIDE THE MARKS THEY SIT AMONG. Google, Apple and Meta allow
- * a third party none of these products' icons without leave, so each tile
- * draws a Lucide glyph of its own in the text's ink, as AWS's draws the cloud.
- * Shown in the 48px tile beside Expo and AWS, at 16 to 32px beside each name,
- * and muted, on both themes.
+ * UNMARKED TILES, BESIDE THE MARKS THEY SIT AMONG. AWS, Google, Apple and Meta
+ * allow a third party none of these products' logos without leave, so each
+ * draws a Lucide glyph for what it does on a plate of the text colour: one
+ * family, no owner's hue, shape or lettering. Shown as a catalogue's list rows
+ * at 16px among real marks, in the 48px tile, at 12 to 36px (below 16px the
+ * glyph is drawn alone, as the plate would leave it too small), and muted.
  */
-export const GrowthGlyphs: StoryObj = {
+export const UnmarkedTiles: StoryObj = {
   render: () => (
     <div style={{ padding: 'var(--spacing-5)', display: 'grid', gap: 'var(--spacing-5)' }}>
       {(['light', 'dark'] as const).map((theme) => (
         <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
-          <p style={caption}>{theme}, 20px in a 48px box</p>
+          <p style={caption}>{theme}, 16px list rows among real marks</p>
+          <div style={list}>
+            {[...NEIGHBOURS, ...UNMARKED].map(([vendor, name]) => (
+              <span key={vendor} style={label}>
+                <VendorMark vendor={vendor} size={16} />
+                {name}
+              </span>
+            ))}
+          </div>
+          <p style={caption}>20px in a 48px box</p>
           <div style={row}>
-            {[...GROWTH.map(([vendor]) => vendor), 'expo' as const, 'aws' as const].map((vendor) => (
+            {UNMARKED.map(([vendor]) => (
               <span key={vendor} style={{ display: 'grid', justifyItems: 'center', gap: 'var(--spacing-1)' }}>
                 <span style={tile}>
                   <VendorMark vendor={vendor} size={20} />
@@ -267,10 +289,10 @@ export const GrowthGlyphs: StoryObj = {
               </span>
             ))}
           </div>
-          <p style={caption}>16, 20, 24, 32, beside its name</p>
-          {[16, 20, 24, 32].map((size) => (
+          <p style={caption}>12 and 14 draw the glyph alone; 16, 20, 24 and 36 on its plate</p>
+          {[12, 14, 16, 20, 24, 36].map((size) => (
             <div key={size} style={row}>
-              {GROWTH.map(([vendor, name]) => (
+              {UNMARKED.map(([vendor, name]) => (
                 <span key={vendor} style={label}>
                   <VendorMark vendor={vendor} size={size} />
                   {name}
@@ -280,7 +302,7 @@ export const GrowthGlyphs: StoryObj = {
           ))}
           <p style={caption}>muted</p>
           <div style={row}>
-            {GROWTH.map(([vendor, name]) => (
+            {UNMARKED.map(([vendor, name]) => (
               <span key={vendor} style={label}>
                 <VendorMark vendor={vendor} size={20} muted />
                 {name}

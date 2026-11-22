@@ -2,7 +2,7 @@ import type { ComponentType, SVGProps } from 'react';
 
 import './ProductMark.css';
 import type { GlyphSize } from './Glyph.js';
-import { cssLength } from './Glyph.js';
+import { cssLength, cssPixels } from './Glyph.js';
 import * as masters from './generated/products/index.js';
 import * as small from './generated/products/small/index.js';
 
@@ -59,20 +59,10 @@ const drawings: Record<Product, { small: Drawing; master: Drawing }> = {
   advisor: { small: small.Advisor, master: masters.Advisor },
 };
 
-/**
- * The size a `size` prop draws at, in px, or null when it is not in px. Read
- * from the length the mark is drawn at, so the drawing switch and the
- * rendered width can never disagree about what a step or a number means.
- */
-function pixels(size: GlyphSize | undefined): number | null {
-  const match = /^(\d*\.?\d+)px$/.exec(cssLength(size).trim());
-  return match === null ? null : Number(match[1]);
-}
-
 /** Whether a mark of this size and choice mounts the 16 pixel grid drawing. */
 function drawsSmall(size: GlyphSize | undefined, drawing: ProductMarkDrawing): boolean {
   if (drawing !== 'auto') return drawing === 'small';
-  const px = pixels(size);
+  const px = cssPixels(size);
   return px !== null && px < MASTER_FROM;
 }
 

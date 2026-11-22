@@ -93,26 +93,20 @@
  * Using a mark to name the app it belongs to is nominative use; TRADEMARKS.md
  * says what that does and does not allow.
  *
- * AWS HAS NO MARK HERE. AWS's trademark guidelines allow a third party a
- * plain-text reference only, with no logo (Section 13), so its tile draws the
- * glyph set's own cloud (CloudGlyph, Lucide's, under ISC) beside the name: a
- * generic drawing that claims nothing about AWS. It is the glyph component
- * itself rather than a copy in svg/vendor, so it draws as every glyph does,
- * a stroke in the current text colour on either theme.
- *
- * NINE MARKETING, GROWTH AND APP STORE PRODUCTS HAVE NO MARK HERE EITHER, by
- * the same rule. Google's brand terms ask a third party to request a product
- * icon through its Partner Marketing Hub (Google Ads, AdSense, AdMob, Google
- * Analytics, Search Console, Google Play). Apple allows no use of "the Apple
- * Logo or any other Apple-owned graphic symbol, logo, or icon" without an
- * express written licence (App Store Connect, Apple Ads). Meta says "All usage
- * of the Meta logo requires approval", and the `meta` mark here was supplied
- * for the Muse Code harness alone (Meta Ads). So each tile draws a Lucide
- * glyph of its own beside the product's name, none shared with another tile:
- * mouse-pointer-click, coins, hand-coins, chart-column, search, smartphone,
- * store, megaphone and target, in the order the products are named above.
- * Once an owner approves its icon, the same key draws the vendor's file
- * instead, with no change for a consumer.
+ * TEN PRODUCTS HAVE NO MARK HERE, because their owners allow a third party
+ * none without leave: AWS (a plain-text reference only), Google Ads, AdSense,
+ * AdMob, Google Analytics, Search Console and Google Play (Google asks for a
+ * request through its Partner Marketing Hub), App Store Connect and Apple Ads
+ * (Apple allows no use of its logos or icons without a written licence), and
+ * Meta Ads (Meta approves every use of its logo; the `meta` mark was supplied
+ * for the Muse Code harness alone). Each draws a Lucide glyph of its own for
+ * what the product does on a plate of the text colour at a tenth: one shape,
+ * no hue and no lettering of any owner's, so the ten read as one deliberate
+ * family beside the marks rather than as missing ones (README.md lists them).
+ * Below 16px, or at a size that cannot be measured (`1em` in a line of text or
+ * another tile's badge), the glyph is drawn alone at full size, since a plate
+ * there leaves it too small to read. Once an owner approves its icon, the
+ * same key draws the vendor's file instead.
  *
  * The coding harnesses' marks are their owners' own files, sourced in README.md;
  * Copilot draws GitHub's, as GitHub's brand toolkit does. Codex draws OpenAI's
@@ -123,15 +117,15 @@ import type { ComponentType, SVGProps } from 'react';
 
 import './VendorMark.css';
 import type { GlyphSize } from './Glyph.js';
-import { cssLength } from './Glyph.js';
+import { cssLength, cssPixels } from './Glyph.js';
 import CrewletIcon from './generated/CrewletIcon.js';
-import ChartColumnGlyph from './generated/glyphs/ChartColumnGlyph.js';
+import BanknoteGlyph from './generated/glyphs/BanknoteGlyph.js';
+import ChartLineGlyph from './generated/glyphs/ChartLineGlyph.js';
+import CircleDollarSignGlyph from './generated/glyphs/CircleDollarSignGlyph.js';
 import CloudGlyph from './generated/glyphs/CloudGlyph.js';
-import CoinsGlyph from './generated/glyphs/CoinsGlyph.js';
-import HandCoinsGlyph from './generated/glyphs/HandCoinsGlyph.js';
 import MegaphoneGlyph from './generated/glyphs/MegaphoneGlyph.js';
 import MousePointerClickGlyph from './generated/glyphs/MousePointerClickGlyph.js';
-import SearchGlyph from './generated/glyphs/SearchGlyph.js';
+import SearchCheckGlyph from './generated/glyphs/SearchCheckGlyph.js';
 import SmartphoneGlyph from './generated/glyphs/SmartphoneGlyph.js';
 import StoreGlyph from './generated/glyphs/StoreGlyph.js';
 import TargetGlyph from './generated/glyphs/TargetGlyph.js';
@@ -202,11 +196,29 @@ export interface VendorMarkProps extends Omit<SVGProps<SVGSVGElement>, 'title'> 
   muted?: boolean;
 }
 
-const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
+/** The products with no mark here, each with the glyph its plate holds, chosen for what it does. */
+const UNMARKED = {
   'app-store-connect': StoreGlyph,
   'apple-ads': MegaphoneGlyph,
-  atlassian: marks.Atlassian,
   aws: CloudGlyph,
+  'google-admob': CircleDollarSignGlyph,
+  'google-ads': MousePointerClickGlyph,
+  'google-adsense': BanknoteGlyph,
+  'google-analytics': ChartLineGlyph,
+  'google-play': SmartphoneGlyph,
+  'google-search-console': SearchCheckGlyph,
+  'meta-ads': TargetGlyph,
+} as const satisfies Partial<Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>>>;
+
+type Unmarked = keyof typeof UNMARKED;
+
+const isUnmarked = (vendor: Vendor): vendor is Unmarked => Object.hasOwn(UNMARKED, vendor);
+
+/** The smallest size, in px, an unmarked product's glyph is drawn on its plate. */
+const PLATE_FROM = 16;
+
+const drawings: Record<Exclude<Vendor, Unmarked>, ComponentType<SVGProps<SVGSVGElement>>> = {
+  atlassian: marks.Atlassian,
   claude: marks.Claude,
   clickup: marks.Clickup,
   cloudflare: marks.Cloudflare,
@@ -221,20 +233,13 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   'gemini-cli': marks.GeminiCli,
   github: marks.Github,
   gitlab: marks.Gitlab,
-  'google-admob': HandCoinsGlyph,
-  'google-ads': MousePointerClickGlyph,
-  'google-adsense': CoinsGlyph,
-  'google-analytics': ChartColumnGlyph,
   'google-cloud': marks.GoogleCloud,
-  'google-play': SmartphoneGlyph,
-  'google-search-console': SearchGlyph,
   grok: marks.Grok,
   hermes: marks.Hermes,
   kimi: marks.Kimi,
   linear: marks.Linear,
   mattermost: marks.Mattermost,
   meta: marks.Meta,
-  'meta-ads': TargetGlyph,
   'microsoft-teams': marks.MicrosoftTeams,
   notion: marks.Notion,
   openai: marks.Openai,
@@ -276,8 +281,6 @@ const DARK: Partial<Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>>> = {
 };
 
 export function VendorMark({ vendor, size, title, muted = false, className, ...rest }: VendorMarkProps) {
-  const Drawing = drawings[vendor];
-  const frame = FRAMES[vendor];
   const dimension = cssLength(size);
   /*
    * Named and exposed, or hidden and unfocusable. Never both: aria-hidden wins
@@ -290,6 +293,22 @@ export function VendorMark({ vendor, size, title, muted = false, className, ...r
   const classes = ['crewlet-vendor-mark', `crewlet-vendor-mark--${vendor}`];
   if (muted) classes.push('crewlet-vendor-mark--muted');
   if (className !== undefined) classes.push(className);
+  if (isUnmarked(vendor)) {
+    const Glyph = UNMARKED[vendor];
+    const px = cssPixels(size);
+    if (px === null || px < PLATE_FROM) {
+      return <Glyph width={dimension} height={dimension} {...semantics} className={classes.join(' ')} {...rest} />;
+    }
+    // The plate fills the square as a mark does; the glyph sits in its middle two thirds.
+    return (
+      <svg width={dimension} height={dimension} viewBox="0 0 24 24" {...semantics} className={classes.join(' ')} {...rest}>
+        <rect className="crewlet-vendor-mark__plate" width="24" height="24" rx="5" fill="currentColor" fillOpacity={0.1} />
+        <Glyph className="crewlet-vendor-mark__glyph" x="4" y="4" width="16" height="16" />
+      </svg>
+    );
+  }
+  const Drawing = drawings[vendor];
+  const frame = FRAMES[vendor];
   const Dark = DARK[vendor];
   if (Dark !== undefined) {
     // Both drawings in one frame; the dark one is hidden until a dark theme's rule shows it.

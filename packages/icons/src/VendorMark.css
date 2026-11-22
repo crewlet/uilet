@@ -79,6 +79,16 @@
 }
 
 /*
+ * An unmarked product's glyph is drawn at two thirds on its plate, so its line
+ * is set heavier to draw near the weight of a glyph the plate's own size. The
+ * plain width holds it where a strict style-src drops the glyph's own style.
+ */
+.crewlet-vendor-mark__glyph {
+  --crewlet-glyph-stroke: 2.5;
+  stroke-width: 2.5;
+}
+
+/*
  * Forced colours drop filters and repaint everything from the user's own
  * palette, so the muted mark would come back at full strength and read as
  * connected. Opacity survives, and carries the distinction on its own.

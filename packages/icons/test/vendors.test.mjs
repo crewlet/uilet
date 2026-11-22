@@ -15,13 +15,13 @@ import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
-  ChartColumnGlyph,
+  BanknoteGlyph,
+  ChartLineGlyph,
+  CircleDollarSignGlyph,
   CloudGlyph,
-  CoinsGlyph,
-  HandCoinsGlyph,
   MegaphoneGlyph,
   MousePointerClickGlyph,
-  SearchGlyph,
+  SearchCheckGlyph,
   SmartphoneGlyph,
   StoreGlyph,
   TargetGlyph,
@@ -30,21 +30,20 @@ import { CrewletIcon, VENDORS, VendorMark } from '../dist/index.js';
 import { extent, markPaths } from '../scripts/mark.mjs';
 import { PACKAGE, attribute, render } from './support.mjs';
 
-/**
- * The marketing, growth and app store tiles, each drawn with a generic glyph
- * because none of their owners allows its product icon without leave.
- */
-const GROWTH_GLYPHS = [
+/** The products whose owners allow no mark here, each drawn as a glyph of its own on a plate. */
+const UNMARKED = [
+  ['aws', CloudGlyph],
   ['google-ads', MousePointerClickGlyph],
-  ['google-adsense', CoinsGlyph],
-  ['google-admob', HandCoinsGlyph],
-  ['google-analytics', ChartColumnGlyph],
-  ['google-search-console', SearchGlyph],
+  ['google-adsense', BanknoteGlyph],
+  ['google-admob', CircleDollarSignGlyph],
+  ['google-analytics', ChartLineGlyph],
+  ['google-search-console', SearchCheckGlyph],
   ['google-play', SmartphoneGlyph],
   ['app-store-connect', StoreGlyph],
   ['apple-ads', MegaphoneGlyph],
   ['meta-ads', TargetGlyph],
 ];
+const UNMARKED_VENDORS = UNMARKED.map(([vendor]) => vendor);
 
 /** Every shape a drawing paints, with the attributes that place it, in order. */
 const shapes = (markup) =>
@@ -53,12 +52,12 @@ const shapes = (markup) =>
   );
 
 describe('the vendor list', () => {
-  it('is exactly the drawings the package carries, Crewlet, AWS, Copilot and the generic glyph tiles', async () => {
+  it('is exactly the drawings the package carries, Crewlet, Copilot and the unmarked tiles', async () => {
     const files = (await readdir(resolve(PACKAGE, 'svg/vendor')))
       .filter((file) => file.endsWith('.svg'))
       .map((file) => file.slice(0, -'.svg'.length))
       .sort();
-    const borrowed = ['aws', 'copilot', 'crewlet', ...GROWTH_GLYPHS.map(([vendor]) => vendor)];
+    const borrowed = ['copilot', 'crewlet', ...UNMARKED_VENDORS];
     assert.deepEqual(VENDORS.filter((vendor) => !borrowed.includes(vendor)).sort(), files);
   });
 
@@ -71,33 +70,63 @@ describe('the vendor list', () => {
     assert.match(attribute(mark, 'class') ?? '', /(^| )crewlet-vendor-mark--copilot( |$)/);
   });
 
-  it("draws AWS as the cloud glyph in the text colour, and nothing of AWS's own", () => {
-    // AWS allows a third party a plain-text reference only, so the tile draws
-    // the glyph set's generic cloud beside the name: the glyph's own paths, a
-    // stroke in currentColor, and no colour or file of AWS's.
-    const paths = (markup) => [...markup.matchAll(/\sd="([^"]+)"/g)].map((match) => match[1]);
-    const mark = render(VendorMark, { vendor: 'aws' });
-    assert.deepEqual(paths(mark), paths(render(CloudGlyph, {})));
-    assert.equal(attribute(mark, 'stroke'), 'currentColor');
-    assert.equal(attribute(mark, 'fill'), 'none');
-    assert.doesNotMatch(mark, /(fill|stroke)="#/);
-    assert.match(attribute(mark, 'class') ?? '', /(^| )crewlet-vendor-mark--aws( |$)/);
+  it("draws each unmarked product as its own glyph on a plate of the text colour, and nothing of its owner's", () => {
+    // None of these owners allows its icon without leave, so each tile is a
+    // generic glyph on a neutral plate: currentColor only, no hue, and no
+    // glyph shared by two tiles.
+    const drawn = new Set();
+    for (const [vendor, Glyph] of UNMARKED) {
+      const mark = render(VendorMark, { vendor, size: 'md' });
+      assert.equal(attribute(mark, 'viewBox'), '0 0 24 24', vendor);
+      assert.match(attribute(mark, 'class') ?? '', new RegExp(`(^| )crewlet-vendor-mark--${vendor}( |$)`), vendor);
+      const plate = /<rect\b[^>]*>/.exec(mark)?.[0] ?? '';
+      assert.equal(attribute(plate, 'class'), 'crewlet-vendor-mark__plate', vendor);
+      assert.deepEqual(['x', 'y', 'width', 'height'].map((name) => attribute(plate, name) ?? '0'), ['0', '0', '24', '24'], vendor);
+      assert.equal(attribute(plate, 'fill'), 'currentColor', vendor);
+      assert.equal(attribute(plate, 'fill-opacity'), '0.1', vendor);
+      // The glyph is the one svg inside the mark's own.
+      const inner = mark.slice(mark.indexOf('<svg', 1));
+      assert.equal(attribute(inner, 'class'), 'crewlet-glyph crewlet-vendor-mark__glyph', vendor);
+      assert.deepEqual(['x', 'y', 'width', 'height'].map((name) => attribute(inner, name)), ['4', '4', '16', '16'], vendor);
+      assert.equal(attribute(inner, 'stroke'), 'currentColor', vendor);
+      assert.ok(shapes(inner).length > 0, vendor);
+      assert.deepEqual(shapes(inner), shapes(render(Glyph, {})), vendor);
+      assert.doesNotMatch(mark, /(fill|stroke)="#/, vendor);
+      assert.ok(!drawn.has(Glyph), `${vendor} shares its glyph`);
+      drawn.add(Glyph);
+    }
   });
 
-  it('draws each marketing, growth and app store tile as a glyph of its own in the text colour, and nothing of the vendor', () => {
-    // Google, Apple and Meta allow a third party none of these products'
-    // icons without leave, so each tile draws a generic Lucide glyph beside
-    // the name: that glyph's own shapes, a currentColor stroke, no hue of
-    // the vendor's, and no glyph shared by two tiles.
-    for (const [vendor, Glyph] of GROWTH_GLYPHS) {
-      const mark = render(VendorMark, { vendor });
-      assert.ok(shapes(mark).length > 0, vendor);
-      assert.deepEqual(shapes(mark), shapes(render(Glyph, {})), vendor);
-      assert.equal(attribute(mark, 'stroke'), 'currentColor', vendor);
-      assert.equal(attribute(mark, 'fill'), 'none', vendor);
-      assert.doesNotMatch(mark, /(fill|stroke)="#/, vendor);
-      assert.match(attribute(mark, 'class') ?? '', new RegExp(`(^| )crewlet-vendor-mark--${vendor}( |$)`), vendor);
+  it('draws an unmarked glyph alone, at full size, below 16px and at a size it cannot measure', () => {
+    // A plate there would leave the glyph too small to read: in a line of
+    // text (1em), in another tile's badge, or at the atlas's 12 and 14px.
+    for (const [vendor, Glyph] of UNMARKED) {
+      for (const size of [undefined, '1em', 'xs', 'sm', 15, '14px']) {
+        const mark = render(VendorMark, { vendor, size });
+        assert.doesNotMatch(mark, /crewlet-vendor-mark__plate/, `${vendor} at ${size}`);
+        assert.equal(attribute(mark, 'viewBox'), '0 0 24 24', `${vendor} at ${size}`);
+        assert.equal(attribute(mark, 'stroke'), 'currentColor', `${vendor} at ${size}`);
+        assert.match(attribute(mark, 'class') ?? '', new RegExp(`^crewlet-glyph crewlet-vendor-mark crewlet-vendor-mark--${vendor}$`));
+        assert.deepEqual(shapes(mark), shapes(render(Glyph, {})), `${vendor} at ${size}`);
+      }
+      for (const size of ['md', 16, '16px', 'lg', 36]) {
+        assert.match(render(VendorMark, { vendor, size }), /crewlet-vendor-mark__plate/, `${vendor} at ${size}`);
+      }
+      const titled = render(VendorMark, { vendor, title: vendor });
+      assert.equal(attribute(titled, 'role'), 'img', vendor);
+      assert.equal(attribute(titled, 'aria-label'), vendor, vendor);
+      assert.equal(attribute(titled, 'aria-hidden'), null, vendor);
     }
+  });
+
+  it("sets the plate's glyph heavier, so it draws near the weight of a glyph the plate's size", async () => {
+    const sheet = await readFile(resolve(PACKAGE, 'src/VendorMark.css'), 'utf8');
+    const rule = /\.crewlet-vendor-mark__glyph\s*\{([^}]*)\}/.exec(sheet)?.[1] ?? '';
+    const weight = Number(/--crewlet-glyph-stroke:\s*([\d.]+);/.exec(rule)?.[1]);
+    // At two thirds, 1.75 x 3 / 2 = 2.625 would match exactly; within a tenth of a unit of it.
+    assert.ok(Math.abs((weight * 16) / 24 - 1.75) <= 0.1, `the plate's glyph draws at ${weight}`);
+    // The same width plainly, for a page whose style-src refuses the glyph's own style.
+    assert.equal(Number(/(?:^|[;\s])stroke-width:\s*([\d.]+);/.exec(rule)?.[1]), weight);
   });
 
   it("draws Crewlet's own services with the brand mark, never a second copy of it", () => {
@@ -220,8 +249,9 @@ describe('a vendor mark', () => {
     // illustration is, and paints its brand violet on the group inside. SSH's
     // drawing fills in the current colour too, and its stylesheet sets that
     // colour to the brand mark's violet, which the SSH suite below holds.
+    // The unmarked tiles are held above: a plate and a stroke, not a filled mark.
     const inherited = VENDORS.filter((vendor) => {
-      if (vendor === 'ssh') return false;
+      if (vendor === 'ssh' || UNMARKED_VENDORS.includes(vendor)) return false;
       const markup = render(VendorMark, { vendor });
       return attribute(markup, 'fill') === 'currentColor' && !/fill="#/.test(markup);
     });

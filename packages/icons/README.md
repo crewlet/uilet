@@ -111,21 +111,24 @@ Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's viol
 
 **`google-cloud` is Google Cloud's mark**, Simple Icons' rendering (CC0 1.0) from simple-icons 16.35.0 (`icons/googlecloud.svg`, path unchanged), in Google Blue, #4285F4, the hex that release records and sources to cloud.google.com. Google draws the same cloud in four colours; this is its silhouette in one. Google's brand terms allow a product icon only beside the product's name and never by itself, so draw it with "Google Cloud" beside it, as every mark here is drawn.
 
-**`aws` draws no AWS mark.** AWS's trademark guidelines allow a third party a plain-text reference only, with no logo, so the AWS tile draws the glyph set's own `cloud` (`CloudGlyph`, Lucide's, under ISC) in the current text colour, beside the name "AWS". It is the glyph component itself, not a file in `svg/vendor/`, and it claims nothing about AWS. Always draw it with "AWS" beside it.
+**Ten products draw no mark, because their owners allow a third party none without leave.** AWS's trademark guidelines allow a plain-text reference only; Google's brand terms ask for a request through its Partner Marketing Hub; Apple allows no third-party use of its logos or icons without a written licence; and Meta requires approval for every use of its logo (the `meta` mark was supplied for the Muse Code harness alone). Each of these tiles draws a Lucide glyph for what the product does, on a plate:
 
-**Nine marketing, growth and app store products draw no mark either**, for the same reason as AWS. Google's brand terms ask a third party to request a product icon through its Partner Marketing Hub, Apple allows no third-party use of its logos or icons without a written licence, and Meta requires approval for every use of its logo (the `meta` mark was supplied for the Muse Code harness alone). So each tile draws a Lucide glyph of its own in the current text colour, none shared with another tile, beside the product's name:
+| Vendor | Product | Glyph | Why this glyph |
+| ------ | ------- | ----- | -------------- |
+| `aws` | AWS | `cloud` | Cloud infrastructure. |
+| `google-analytics` | Google Analytics | `chart-line` | Traffic and conversion reports. A line rather than columns, which would echo the bars of Google's own logo. |
+| `google-search-console` | Search Console | `search-check` | How a site shows in search, and whether its pages are indexed. |
+| `google-ads` | Google Ads | `mouse-pointer-click` | Paid clicks. |
+| `apple-ads` | Apple Ads | `megaphone` | Promoting an app in the App Store. |
+| `meta-ads` | Meta Ads Manager | `target` | Audience targeting. |
+| `google-adsense` | AdSense | `banknote` | A site's ad earnings. |
+| `google-admob` | AdMob | `circle-dollar-sign` | An app's ad earnings. |
+| `app-store-connect` | App Store Connect | `store` | An app's store listings, sales and releases. |
+| `google-play` | Google Play | `smartphone` | An Android app's listings, releases and vitals. |
 
-| Vendor | Product | Glyph |
-| ------ | ------- | ----- |
-| `google-ads` | Google Ads | `mouse-pointer-click` |
-| `google-adsense` | AdSense | `coins` |
-| `google-admob` | AdMob | `hand-coins` |
-| `google-analytics` | Google Analytics | `chart-column` |
-| `google-search-console` | Search Console | `search` |
-| `google-play` | Google Play | `smartphone` |
-| `app-store-connect` | App Store Connect | `store` |
-| `apple-ads` | Apple Ads | `megaphone` |
-| `meta-ads` | Meta Ads | `target` |
+The plate is one family for all ten, so they read as designed beside the marks rather than as missing ones: a 24 unit square with 5 unit corners filling the mark's frame as every mark does, painted in the current text colour at a tenth (`fill-opacity="0.1"`), with the glyph centred in its middle two thirds and in the full text colour. The glyph's line is set to 2.5 (`.crewlet-vendor-mark__glyph` in `VendorMark.css`), so at two thirds it draws near the 1.75 weight of a glyph the plate's own size. The width is also set plainly, so it holds where a strict `style-src` drops the glyph's own style. No glyph is shared by two tiles, and none borrows an owner's colour, shape or lettering. `muted` drains the plate and glyph together, as it does a mark.
+
+**The plate needs room, so it draws from 16px up.** Below 16px, and at a size that cannot be measured while rendering (the default `1em`, a `rem`: a mark in a line of text or in another tile's badge), the glyph is drawn alone at full size, as a glyph beside a word is, because on a plate there it would be too small to read. Pass a size in px or a step from `md` up where a catalogue draws the tile.
 
 Once an owner approves its icon, the same key draws the vendor's file instead, with no change for a consumer. Always draw these with the product's name beside them.
 
@@ -137,7 +140,7 @@ A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is draw
 
 The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRADEMARKS.md), which ships in the package. The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram, Microsoft Teams, Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are Simple Icons' renderings, whose path data is CC0 1.0. The Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are taken from simple-icons 16.35.0, each path unchanged and in the hex that release records for its brand (Scaleway's purple, #4F0599, sourced there to Scaleway's own design system, Ultraviolet).
 
-`VENDORS` lists every vendor the package draws, AWS's generic cloud, the nine growth glyphs and the SSH key among them.
+`VENDORS` lists every vendor the package draws, the ten unmarked tiles and the SSH key among them.
 
 ## Product marks
 
