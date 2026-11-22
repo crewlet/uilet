@@ -32,10 +32,12 @@
   min-height: 0;
 }
 
-/* A height of the reader's: the content scrolls inside it. */
+/* A height of the reader's: the content scrolls inside it, and the wheel
+   passes to the page at its ends (vertical `contain` held it even over a block
+   whose content fits). Sideways it stays, so a swipe never turns the page back. */
 .crewlet-arrange-frame.is-fixed-height .crewlet-arrange-frame__content > * {
   overflow: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
 }
 
 /* ---- Editing ---------------------------------------------------------- */
