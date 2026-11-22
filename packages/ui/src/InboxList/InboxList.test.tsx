@@ -558,8 +558,12 @@ test('the time floats at the end of the first line of a clamped run of words, an
     expect(headStyle.minWidth).toBe('0px');
     expect(headStyle.overflow).toBe('hidden');
     expect(headStyle.getPropertyValue('overflow-wrap')).toBe('anywhere');
-    expect(headStyle.getPropertyValue('-webkit-line-clamp')).toBe('2');
-    expect(headStyle.getPropertyValue('line-clamp')).toBe('2');
+    // The clamp reads the head's own line count (jsdom resolves no custom property): two, one at chat density.
+    const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'InboxList.css'), 'utf8').replace(/\s+/g, ' ');
+    expect(sheet).toMatch(
+      /\.crewlet-inbox-row__head \{ --crewlet-inbox-row-head-lines: 2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var\(--crewlet-inbox-row-head-lines\); line-clamp: var\(--crewlet-inbox-row-head-lines\);/,
+    );
+    expect(sheet).toContain('.crewlet-inbox-list--chat .crewlet-inbox-row__head { --crewlet-inbox-row-head-lines: 1; }');
     // A float lays out in every engine inside a block of its own under the clamp.
     expect(getComputedStyle(text).display).toBe('block');
 
@@ -794,10 +798,13 @@ test('quick actions stand outside the row’s control, beside the time, in room 
   expect(css).toMatch(/\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-room: max\( 0px, var\(--crewlet-inbox-row-tray, 0px\) \+ var\(--crewlet-inbox-row-tray-end\) \+ var\(--spacing-2\) - var\(--crewlet-inbox-row-words-end\) \);/);
   // The room is kept in the float's place at all times, so the words never move, and as tall as
   // the tray reaches below the top pad, so the words under the name start below it.
-  expect(css).toMatch(/\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-reach: max\(0px, var\(--crewlet-inbox-row-tray-block, 0px\) - var\(--crewlet-inbox-row-pad\)\);/);
-  expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__head { min-height: var(--crewlet-inbox-row-reach); }');
+  expect(css).toMatch(
+    /\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-reach: max\( 0px, var\(--crewlet-inbox-row-tray-top\) \+ var\(--crewlet-inbox-row-tray-block, var\(--crewlet-chat-toolbar, 0px\)\) - var\(--crewlet-inbox-row-pad\) \);/,
+  );
+  expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__main { grid-template-rows: minmax(var(--crewlet-inbox-row-reach), auto); }');
+  expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__head { align-self: start; }');
   expect(css).toContain(
-    '.crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place { min-height: var(--crewlet-inbox-row-reach); padding-inline-end: var(--crewlet-inbox-row-room); }',
+    '.crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place { min-height: min(var(--crewlet-inbox-row-reach), var(--crewlet-inbox-row-head-lines) * 1lh); padding-inline-end: var(--crewlet-inbox-row-room); }',
   );
 });
 

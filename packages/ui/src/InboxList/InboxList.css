@@ -322,17 +322,21 @@
  * nothing and pushed the time past the row's edge.
  *
  * THE TIME FLOATS AT THE END OF THE FIRST LINE, so only that line gives up
- * room to it and the second runs the row's full width: "replied to a thread
+ * room to it (and any line a row's quick actions reach, below) and the second
+ * runs the row's full width: "replied to a thread
  * in #engineering" keeps the room's name, the part of the line most worth
  * reading, where a column of its own took the time's width from both lines.
  * The float sits in a block of its own inside the clamp, which is where every
  * engine lays a float out and still counts the clamped lines.
  */
+/* How many lines the head shows, read by the clamp and by the room a tray keeps. */
 .crewlet-inbox-row__head {
+  --crewlet-inbox-row-head-lines: 2;
+
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: var(--crewlet-inbox-row-head-lines);
+  line-clamp: var(--crewlet-inbox-row-head-lines);
   min-width: 0;
   overflow: hidden;
   overflow-wrap: anywhere;
@@ -542,8 +546,11 @@
  * tray stands to where the words end, and a gap), so the name never wraps
  * differently under the pointer and the row keeps its height.
  *
- * THE ROOM IS AS TALL AS THE TRAY (`--crewlet-inbox-row-reach`, its measured
- * height less the top pad), so the words under the name start below its foot.
+ * THE ROOM IS AS TALL AS THE TRAY (`--crewlet-inbox-row-reach`, how far its
+ * measured height reaches past the top pad): the head's track is at least that
+ * tall and its float keeps the room on the lines the head shows, so the words
+ * under the name start below the tray's foot. The tray stands clear of the
+ * control's inset focus ring.
  *
  * HIDDEN, NOT ONLY CLEAR, while the row is neither hovered nor focused: a
  * tray drawn at zero opacity was a Tab stop on every row, two stops a row in
@@ -557,14 +564,19 @@
     0px,
     var(--crewlet-inbox-row-tray, 0px) + var(--crewlet-inbox-row-tray-end) + var(--spacing-2) - var(--crewlet-inbox-row-words-end)
   );
-  --crewlet-inbox-row-reach: max(0px, var(--crewlet-inbox-row-tray-block, 0px) - var(--crewlet-inbox-row-pad));
+  --crewlet-inbox-row-tray-top: calc(-1 * var(--size-focus-ring-inset-offset));
+  /* Before the row has measured its tray, the kit's message tray's height. */
+  --crewlet-inbox-row-reach: max(
+    0px,
+    var(--crewlet-inbox-row-tray-top) + var(--crewlet-inbox-row-tray-block, var(--crewlet-chat-toolbar, 0px)) - var(--crewlet-inbox-row-pad)
+  );
 
   position: relative;
 }
 
 .crewlet-inbox-row__actions {
   position: absolute;
-  top: 0;
+  top: var(--crewlet-inbox-row-tray-top, 0px);
   inset-inline-end: var(--crewlet-inbox-row-tray-end, var(--spacing-2));
   z-index: 1;
   opacity: 0;
@@ -580,12 +592,17 @@
   pointer-events: auto;
 }
 
+.crewlet-inbox-row--actions .crewlet-inbox-row__main {
+  grid-template-rows: minmax(var(--crewlet-inbox-row-reach), auto);
+}
+
+/* At its own height, so the clamp still cuts at its last line. */
 .crewlet-inbox-row--actions .crewlet-inbox-row__head {
-  min-height: var(--crewlet-inbox-row-reach);
+  align-self: start;
 }
 
 .crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place {
-  min-height: var(--crewlet-inbox-row-reach);
+  min-height: min(var(--crewlet-inbox-row-reach), var(--crewlet-inbox-row-head-lines) * 1lh);
   padding-inline-end: var(--crewlet-inbox-row-room);
 }
 
@@ -675,8 +692,7 @@
 }
 
 .crewlet-inbox-list--chat .crewlet-inbox-row__head {
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
+  --crewlet-inbox-row-head-lines: 1;
 }
 
 .crewlet-inbox-list--chat .crewlet-inbox-row__meta {

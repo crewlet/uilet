@@ -91,7 +91,7 @@ describe.each([
       const control = row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!;
       const title = row.querySelector('.crewlet-inbox-row__title')!;
       const end = row.querySelector('.crewlet-inbox-row__head-end--drawn')!;
-      // The name's first line: a long name wraps, and its later lines run the row's full width under the time's line.
+      // The name's first line: a long name wraps onto a line under the time's.
       const line = () => title.getClientRects()[0]!;
       const rest = { title: line(), end: end.getBoundingClientRect() };
       // At rest the tray is neither seen nor reached.
@@ -167,54 +167,98 @@ function wordBoxes(row: HTMLElement): { text: string; box: DOMRect }[] {
 const MESSAGE =
   'Nothing was down during the restart, the deploy or the rollback. The only refusals came from one browser holding an old session cookie, which has since been cleared.';
 
+const LONG_NAME = 'Senior Product Manager of the mobile apps and the web dashboard';
+
+/** A row with a face and a context line, and one without a face, with a status, where and a task under it. */
 function Activity({ density, tools, title }: { density: InboxListDensity; tools: 1 | 2; title: string }) {
+  const tray = (
+    <MessageActions label={`Actions for ${title}`}>
+      {tools === 2 ? <MessageAction label="Mark as read" icon={<CheckGlyph />} /> : null}
+      <MessageAction label="Open the thread in its room" icon={<TrashGlyph />} />
+    </MessageActions>
+  );
   return (
     <InboxList label="Activity" density={density}>
       <InboxGroup label="Today">
-        {['one', 'two'].map((key) => (
-          <InboxRow
-            key={key}
-            title={title}
-            meta={<time>13:08</time>}
-            leading={<span style={{ display: 'block', width: 32, height: 32, borderRadius: 8, background: 'gray' }} />}
-            context="Reply in a thread in #engineering"
-            lines="all"
-            unread
-            actions={
-              <MessageActions label={`Actions for ${title}`}>
-                {tools === 2 ? <MessageAction label="Mark as read" icon={<CheckGlyph />} /> : null}
-                <MessageAction label="Open the thread in its room" icon={<TrashGlyph />} />
-              </MessageActions>
-            }
-          >
-            {MESSAGE}
-          </InboxRow>
-        ))}
+        <InboxRow
+          title={title}
+          meta={<time>13:08</time>}
+          leading={<span style={{ display: 'block', width: 32, height: 32, borderRadius: 8, background: 'gray' }} />}
+          context="Reply in a thread in #engineering"
+          lines="all"
+          unread
+          actions={tray}
+        >
+          {MESSAGE}
+        </InboxRow>
+        <InboxRow
+          title={title}
+          meta={<time>13:05</time>}
+          status={<Tag size="xs" variant="info">Answering</Tag>}
+          where="#engineering"
+          lines={2}
+          aside={<a href="#/work/NIM-12">NIM-12 Clear dead session cookies</a>}
+          actions={tray}
+        >
+          {MESSAGE}
+        </InboxRow>
       </InboxGroup>
     </InboxList>
   );
 }
 
+/** The tray's box, and the row it stands in, while the row holds focus. */
+async function shown(row: HTMLElement) {
+  row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!.focus();
+  await settle();
+  return row.querySelector('.crewlet-message-actions')!.getBoundingClientRect();
+}
+
 describe.each([
   ['chat', 1, 'Product Manager'],
   ['chat', 2, 'Product Manager'],
+  ['chat', 2, LONG_NAME],
   ['default', 2, 'Product Manager'],
-  ['default', 2, 'Senior Product Manager of the mobile apps and the web dashboard'],
+  ['default', 2, LONG_NAME],
 ] as const)('a %s row with %i action(s), named "%s"', (density, tools, title) => {
   test.each([320, 390, 720, 1200])('the tray covers none of its words at %ipx, and the row keeps its height', async (width) => {
-    const shown = await mount(<Activity density={density} tools={tools} title={title} />, width);
-    const row = shown.querySelector<HTMLElement>('.crewlet-inbox-row')!;
-    const rest = row.getBoundingClientRect();
-    row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!.focus();
-    await settle();
-    const tray = row.querySelector('.crewlet-message-actions')!.getBoundingClientRect();
-    const words = wordBoxes(row);
-    // The message reaches the row's end, so a tray over its first line would cover it.
-    expect(words.some((word) => word.text === MESSAGE && word.box.right > tray.left)).toBe(true);
-    for (const word of words) expect(overlap(tray, word.box), `the tray covers "${word.text}"`).toBe(false);
-    // Inside the row, so no scroller clips it, and nothing moves when it comes.
-    expect(tray.top).toBeGreaterThanOrEqual(rest.top - 0.5);
-    expect(tray.right).toBeLessThanOrEqual(rest.right + 0.5);
-    expect(row.getBoundingClientRect().height).toBeCloseTo(rest.height, 1);
+    const list = await mount(<Activity density={density} tools={tools} title={title} />, width);
+    for (const row of list.querySelectorAll<HTMLElement>('.crewlet-inbox-row')) {
+      const rest = row.getBoundingClientRect();
+      const tray = await shown(row);
+      const words = wordBoxes(row);
+      // The message reaches the row's end, so a tray over its first line would cover it.
+      expect(words.some((word) => word.text === MESSAGE && word.box.right > tray.left)).toBe(true);
+      for (const word of words) expect(overlap(tray, word.box), `the tray covers "${word.text}"`).toBe(false);
+      // Inside the row on every side, so no scroller clips it, and nothing moves when it comes.
+      const box = row.getBoundingClientRect();
+      expect(tray.top).toBeGreaterThanOrEqual(box.top);
+      expect(tray.bottom).toBeLessThanOrEqual(box.bottom);
+      expect(tray.left).toBeGreaterThanOrEqual(box.left);
+      expect(tray.right).toBeLessThanOrEqual(box.right);
+      expect(box.height).toBeCloseTo(rest.height, 1);
+      // Clear of the control's inset focus ring, drawn along its top edge.
+      expect(tray.top - box.top).toBeGreaterThanOrEqual(2);
+      // The head shows only the lines its clamp keeps: no sliver of the next one.
+      const head = row.querySelector<HTMLElement>('.crewlet-inbox-row__head')!;
+      const lines = density === 'chat' ? 1 : 2;
+      expect(head.getBoundingClientRect().height).toBeLessThanOrEqual(lines * parseFloat(getComputedStyle(head).lineHeight) + 0.5);
+      row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!.blur();
+    }
   });
+});
+
+test('right to left, the tray stands at the row\'s start corner and covers none of its words', async () => {
+  const list = await mount(
+    <div dir="rtl">
+      <Activity density="chat" tools={2} title="Product Manager" />
+    </div>,
+    390,
+  );
+  for (const row of list.querySelectorAll<HTMLElement>('.crewlet-inbox-row')) {
+    const tray = await shown(row);
+    expect(tray.left - row.getBoundingClientRect().left).toBeLessThan(24);
+    for (const word of wordBoxes(row)) expect(overlap(tray, word.box), `the tray covers "${word.text}"`).toBe(false);
+    row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!.blur();
+  }
 });

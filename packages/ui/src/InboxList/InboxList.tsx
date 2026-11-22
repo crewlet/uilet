@@ -567,8 +567,8 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
    * The row's quick actions (a `MessageActions` tray): shown in the row's
    * top end corner while the row is hovered or holds focus, with the time
    * and any status moved aside to stand beside it, never under it. Never a
-   * reflow: the room the tray takes is kept at the end of the name's line and
-   * below it, so the words never move and none is covered. Outside the row's control, so each action is a
+   * reflow: the room the tray takes is kept at the end of the name's line
+   * and below it, so the words never move and none is covered. Outside the row's control, so each action is a
    * control of its own, reached by Tab from the row; a row that does not
    * hold focus keeps its tray out of the tab order.
    */
