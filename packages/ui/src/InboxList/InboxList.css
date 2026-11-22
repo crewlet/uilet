@@ -319,10 +319,10 @@
  * nothing and pushed the time past the row's edge.
  *
  * THE TIME FLOATS AT THE END OF THE FIRST LINE, so only that line gives up
- * room to it (and any line a row's quick actions reach, below) and the second
- * runs the row's full width: "replied to a thread
- * in #engineering" keeps the room's name, the part of the line most worth
- * reading, where a column of its own took the time's width from both lines.
+ * room to it and the second runs the row's full width (unless a row's quick
+ * actions reach it, below): "replied to a thread in #engineering" keeps the
+ * room's name, the part of the line most worth reading, where a column of its
+ * own took the time's width from both lines.
  * The float sits in a block of its own inside the clamp, which is where every
  * engine lays a float out and still counts the clamped lines.
  */
@@ -543,11 +543,9 @@
  * tray stands to where the words end, and a gap), so the name never wraps
  * differently under the pointer and the row keeps its height.
  *
- * THE ROOM IS AS TALL AS THE TRAY (`--crewlet-inbox-row-reach`, how far its
- * measured height reaches past the top pad): the head's track is at least that
- * tall and its float keeps the room on the lines the head shows, so the words
- * under the name start below the tray's foot. The tray stands clear of the
- * control's inset focus ring.
+ * THE ROOM IS AS TALL AS THE TRAY (`--crewlet-inbox-row-reach`): the head's
+ * track and the lines its float keeps reach the tray's foot, so the words under
+ * the name start below it. The tray stands clear of the inset focus ring.
  *
  * HIDDEN, NOT ONLY CLEAR, while the row is neither hovered nor focused: a
  * tray drawn at zero opacity was a Tab stop on every row, two stops a row in
@@ -561,7 +559,7 @@
     0px,
     var(--crewlet-inbox-row-tray, 0px) + var(--crewlet-inbox-row-tray-end) + var(--spacing-2) - var(--crewlet-inbox-row-words-end)
   );
-  /* The control's top pad, where the name's line starts. */
+  /* The control's top pad (`.crewlet-inbox-row__control`, kept with it). */
   --crewlet-inbox-row-pad: calc(var(--spacing-2) + var(--spacing-1) / 2);
   --crewlet-inbox-row-tray-top: calc(-1 * var(--size-focus-ring-inset-offset));
   /* Before the row has measured its tray, the kit's message tray's height. */
@@ -655,8 +653,8 @@
 
 .crewlet-inbox-list--chat .crewlet-inbox-row {
   border-bottom: 1px solid var(--color-border-default);
-  /* Its control's top pad (below), and a tray a step in from the row's end,
-     where the words end at the side inset. */
+  /* Its control's top pad (below, kept with it), and a tray a step in from
+     the row's end, where the words end at the side inset. */
   --crewlet-inbox-row-pad: var(--spacing-4);
   --crewlet-inbox-row-tray-end: var(--spacing-3);
   --crewlet-inbox-row-words-end: var(--crewlet-chat-pad-x);

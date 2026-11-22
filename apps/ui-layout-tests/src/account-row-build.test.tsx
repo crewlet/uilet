@@ -20,7 +20,7 @@ afterEach(() => {
   host = null;
 });
 
-async function draw(build?: string, detail = 'lee.parklee · Operations'): Promise<HTMLElement> {
+async function draw(build?: string, detail = 'lee.parklee · Operations', opens: 'link' | 'menu' = 'link'): Promise<HTMLElement> {
   await page.viewport(1440, 900);
   host = document.createElement('div');
   document.body.append(host);
@@ -36,7 +36,8 @@ async function draw(build?: string, detail = 'lee.parklee · Operations'): Promi
                 avatar={<Avatar name="Lee Park" kind="human" size="md" ring="brand" decorative />}
                 name="Lee Park"
                 detail={detail}
-                href="#/account"
+                href={opens === 'link' ? '#/account' : undefined}
+                menu={opens === 'menu' ? { items: [{ key: 'out', label: 'Sign out', onSelect: () => {} }] } : undefined}
                 build={build}
                 actions={
                   <>
@@ -63,17 +64,18 @@ async function draw(build?: string, detail = 'lee.parklee · Operations'): Promi
 const box = (shown: HTMLElement, selector: string) => shown.querySelector(selector)!.getBoundingClientRect();
 
 test.each([
-  ['a release', 'Crewlet v1.4.0', 'lee.parklee · Operations'],
-  ['the image of main', 'Crewlet main-3fa94c1d02be', 'lee.parklee · Operations'],
-  ['a pseudo-version', 'Crewlet v0.0.0-20261121174512-3fa94c1d02be', 'lee.parklee · Operations'],
-  ['a release beside a long detail', 'Crewlet v1.4.0', 'lee.park@operations.example.com · Operations and finance'],
-])('%s is one quiet line under the row, from the badge, inside the rail', async (_, build, detail) => {
-  const without = await draw(undefined, detail);
+  ['a release', 'Crewlet v1.4.0', 'lee.parklee · Operations', 'link'],
+  ['the image of main', 'Crewlet main-3fa94c1d02be', 'lee.parklee · Operations', 'link'],
+  ['a pseudo-version', 'Crewlet v0.0.0-20261121174512-3fa94c1d02be', 'lee.parklee · Operations', 'link'],
+  ['a release beside a long detail', 'Crewlet v1.4.0', 'lee.park@operations.example.com · Operations and finance', 'link'],
+  ['a release beside a long detail, on a row that opens a menu', 'Crewlet v1.4.0', 'lee.park@operations.example.com · Operations and finance', 'menu'],
+] as const)('%s is one quiet line under the row, from the badge, inside the rail', async (_, build, detail, opens) => {
+  const without = await draw(undefined, detail, opens);
   const rest = { who: box(without, '.crewlet-account-row__who'), actions: box(without, '.crewlet-account-row__actions') };
   flushSync(() => root?.unmount());
   host?.remove();
 
-  const shown = await draw(build, detail);
+  const shown = await draw(build, detail, opens);
   const who = box(shown, '.crewlet-account-row__who');
   const avatar = box(shown, '.crewlet-account-row__avatar');
   const element = shown.querySelector<HTMLElement>('.crewlet-account-row__build')!;
