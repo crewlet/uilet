@@ -472,6 +472,21 @@ export const InACardAndEmpty: Story = {
   ),
 };
 
+/**
+ * A grid given to a card as its whole content (`padding="none"`, no header):
+ * it keeps the card's corners, so its raised head and its rows stop at the
+ * curve. Hover a corner cell or the last row; neither crosses it.
+ */
+export const InACardWithNoInset: Story = {
+  render: () => (
+    <div style={{ maxWidth: 960 }}>
+      <Card padding="none">
+        <DataGrid rows={TASKS} columns={COLUMNS} rowKey={(t: Task) => t.key} rowHref={(t: Task) => `#/worklet/${t.key}`} />
+      </Card>
+    </div>
+  ),
+};
+
 /** An empty grid that is one part of a full page is a gap, not a moment: inline, with no glyph. */
 export const EmptyInlineOnAFullPage: Story = {
   render: () => (

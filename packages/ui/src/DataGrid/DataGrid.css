@@ -60,6 +60,20 @@
   border-top: 0;
 }
 
+/* A card given the grid with `padding="none"` and no slots does not clip, so
+   the grid keeps the card's corners where it reaches them and its own clip
+   rounds the head and rows off there; on the card's top edge it adds no rule. */
+.crewlet-card--p-none:not(.crewlet-card--flush) > .crewlet-data-grid:first-child {
+  border-top: 0;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+.crewlet-card--p-none:not(.crewlet-card--flush) > .crewlet-data-grid:last-child {
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
 /* A full-width band by default: the head, the body, the foot, the reset and
    the empty state, which is the one child when the grid carries no tracks. */
 .crewlet-data-grid > * {
