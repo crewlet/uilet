@@ -208,7 +208,7 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.169.0
+## Changes in 0.170.0
 
 ### Unmarked integrations draw as one designed family
 
