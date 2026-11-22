@@ -1183,6 +1183,30 @@ button.crewlet-account-row__who:focus-visible {
   gap: var(--spacing-1);
 }
 
+/* The build: a line of its own under the row, from the badge's edge, in the
+   detail's quiet ink and step, cut rather than wrapped. */
+.crewlet-account-row--build {
+  flex-wrap: wrap;
+}
+
+/* The row's own line breaks as it did unwrapped: the name gives way to the controls. */
+.crewlet-account-row--build > :is(.crewlet-account-row__who, .crewlet-menu-anchor) {
+  flex-basis: 0;
+}
+
+.crewlet-account-row__build {
+  flex: 1 0 100%;
+  min-width: 0;
+  margin: 0;
+  padding-inline: calc(var(--spacing-1) + var(--spacing-1) / 2);
+  overflow: hidden;
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-tertiary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /*
  * The compact account: the reader's face alone, centred in the compact foot,
  * with the row's link and menu rules and no pad, so the box is the face.

@@ -564,13 +564,14 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
   /** A small glyph before the context, hidden from a screen reader: the kind of row. */
   contextIcon?: ReactNode;
   /**
-   * The row's quick actions (a `MessageActions` tray): shown at the end of
-   * its first line while the row is hovered or holds focus, with the time
+   * The row's quick actions (a `MessageActions` tray): shown in the row's
+   * top end corner while the row is hovered or holds focus, with the time
    * and any status moved aside to stand beside it, never under it. Never a
-   * reflow: the room the tray takes is kept at the end of the name's line, so
-   * the words never move. Outside the row's control, so each action is a
-   * control of its own, reached by Tab from the row; a row that does not
-   * hold focus keeps its tray out of the tab order.
+   * reflow: the room the tray takes is kept at the end of the name's line
+   * and below it, so the words never move and none is covered. Outside the
+   * row's control, so each action is a control of its own, reached by Tab
+   * from the row; a row that does not hold focus keeps its tray out of the
+   * tab order.
    */
   actions?: ReactNode;
   /** Drawn after the words in the quiet ink, inside the same three lines: a comment's own text. */
@@ -656,8 +657,9 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
  * nobody says: it is drawn over the control's leading slot from outside it,
  * while a copy nobody sees or reads holds the slot's place inside it.
  *
- * THE TIME IS NEVER COVERED. A row's quick actions show beside the time,
- * which moves aside into room the name's line always keeps for them.
+ * NO WORDS ARE COVERED. A row's quick actions show beside the time, which
+ * moves aside into room the name's line always keeps for them, and the words
+ * under the name start below the tray.
  *
  * NOTHING IS CUT AT THE EDGE. The name and its qualifier wrap to two lines
  * before they stop, the time keeps a column of its own and never wraps, and
@@ -764,13 +766,16 @@ export function InboxRow({
   const hasOutcome = outcome !== undefined && outcome !== null;
   const hasContext = context !== undefined && context !== null;
   const hasActions = actions !== undefined && actions !== null && actions !== false;
-  // THE TRAY'S WIDTH, kept on the row, so the name's line keeps that much room
-  // for it and the time moves aside into it (InboxList.css).
+  // THE TRAY'S SIZE, kept on the row, so the name's line keeps that much room
+  // for it and the words under it start below it (InboxList.css).
   useLayoutEffect(() => {
     const row = self.current;
     const box = tray.current;
     if (!hasActions || !row || !box) return;
-    const measure = () => row.style.setProperty('--crewlet-inbox-row-tray', `${box.offsetWidth}px`);
+    const measure = () => {
+      row.style.setProperty('--crewlet-inbox-row-tray', `${box.offsetWidth}px`);
+      row.style.setProperty('--crewlet-inbox-row-tray-block', `${box.offsetHeight}px`);
+    };
     measure();
     if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(measure);

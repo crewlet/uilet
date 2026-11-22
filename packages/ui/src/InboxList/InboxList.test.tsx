@@ -558,8 +558,12 @@ test('the time floats at the end of the first line of a clamped run of words, an
     expect(headStyle.minWidth).toBe('0px');
     expect(headStyle.overflow).toBe('hidden');
     expect(headStyle.getPropertyValue('overflow-wrap')).toBe('anywhere');
-    expect(headStyle.getPropertyValue('-webkit-line-clamp')).toBe('2');
-    expect(headStyle.getPropertyValue('line-clamp')).toBe('2');
+    // The clamp reads the head's own line count (jsdom resolves no custom property): two, one at chat density.
+    const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'InboxList.css'), 'utf8').replace(/\s+/g, ' ');
+    expect(sheet).toMatch(
+      /\.crewlet-inbox-row__head \{ --crewlet-inbox-row-head-lines: 2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var\(--crewlet-inbox-row-head-lines\); line-clamp: var\(--crewlet-inbox-row-head-lines\);/,
+    );
+    expect(sheet).toContain('.crewlet-inbox-list--chat .crewlet-inbox-row__head { --crewlet-inbox-row-head-lines: 1; }');
     // A float lays out in every engine inside a block of its own under the clamp.
     expect(getComputedStyle(text).display).toBe('block');
 
@@ -771,8 +775,9 @@ test('quick actions stand outside the row’s control, beside the time, in room 
     // Hidden, not only clear: a row that does not hold focus keeps its tray out of the tab order.
     expect(style.visibility).toBe('hidden');
     expect(getComputedStyle(row).position).toBe('relative');
-    // The row measures its tray onto itself, the width the name's line keeps room for.
+    // The row measures its tray onto itself: the width the name's line keeps room for, and the height the head does.
     expect(row.style.getPropertyValue('--crewlet-inbox-row-tray')).toMatch(/^\d+px$/);
+    expect(row.style.getPropertyValue('--crewlet-inbox-row-tray-block')).toMatch(/^\d+px$/);
     // With no time to move aside, the place is still drawn, to hold the room.
     const place = row.querySelector('.crewlet-inbox-row__head-end--place')!;
     expect(place.getAttribute('aria-hidden')).toBe('true');
@@ -786,13 +791,21 @@ test('quick actions stand outside the row’s control, beside the time, in room 
   expect(css).toContain(
     '.crewlet-inbox-row:hover > .crewlet-inbox-row__actions, .crewlet-inbox-row:focus-within > .crewlet-inbox-row__actions, .crewlet-inbox-row__actions:has([aria-expanded=\'true\']) { opacity: 1; visibility: visible; pointer-events: auto; }',
   );
-  // The room is kept at the end of the float's place at all times, so the words never move.
-  expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place { padding-inline-end: var(--crewlet-inbox-row-room); }');
-  // And the time moves into it whenever the tray shows.
+  // The time moves into the room whenever the tray shows.
   expect(css).toContain(
     '.crewlet-inbox-row--actions:hover .crewlet-inbox-row__head-end--drawn, .crewlet-inbox-row--actions:focus-within .crewlet-inbox-row__head-end--drawn, .crewlet-inbox-row--actions:has(> .crewlet-inbox-row__actions [aria-expanded=\'true\']) .crewlet-inbox-row__head-end--drawn { inset-inline-end: var(--crewlet-inbox-row-room); }',
   );
   expect(css).toMatch(/\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-room: max\( 0px, var\(--crewlet-inbox-row-tray, 0px\) \+ var\(--crewlet-inbox-row-tray-end\) \+ var\(--spacing-2\) - var\(--crewlet-inbox-row-words-end\) \);/);
+  // The room is kept in the float's place at all times, so the words never move, and as tall as
+  // the tray reaches below the top pad, so the words under the name start below it.
+  expect(css).toMatch(
+    /\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-reach: max\( 0px, var\(--crewlet-inbox-row-tray-top\) \+ var\(--crewlet-inbox-row-tray-block, var\(--crewlet-chat-toolbar, 0px\)\) - var\(--crewlet-inbox-row-pad\) \);/,
+  );
+  expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__main { grid-template-rows: minmax(var(--crewlet-inbox-row-reach), auto); }');
+  expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__head { align-self: start; }');
+  expect(css).toContain(
+    '.crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place { min-height: min(var(--crewlet-inbox-row-reach), var(--crewlet-inbox-row-head-lines) * 1lh); padding-inline-end: var(--crewlet-inbox-row-room); }',
+  );
 });
 
 test('chat density sets rows full bleed with a hairline between them, and a group as a day', () => {
@@ -817,6 +830,8 @@ test('chat density sets rows full bleed with a hairline between them, and a grou
     // jsdom resolves no custom property, and the chat scale's are not tokens:
     // the row's pads are read from the sheet, at 16px above and below.
     expect(control.classList.contains('crewlet-inbox-row__control--leading')).toBe(true);
+    // The tray's room measures from the same top pad.
+    expect(sheet).toMatch(/\.crewlet-inbox-list--chat \.crewlet-inbox-row \{[^}]*--crewlet-inbox-row-pad: var\(--spacing-4\);/);
     expect(sheet).toContain(
       '.crewlet-inbox-list--chat .crewlet-inbox-row__control, .crewlet-inbox-list--chat .crewlet-inbox-row__control--leading, .crewlet-inbox-list--chat .crewlet-inbox-row__control:only-child { gap: var(--crewlet-chat-gap); padding: var(--spacing-4) var(--crewlet-chat-pad-x); }',
     );

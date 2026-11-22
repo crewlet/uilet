@@ -50,6 +50,12 @@ export interface AccountRowProps {
   /** Controls at the row's end: a theme toggle, the trigger of a preferences panel. */
   actions?: ReactNode;
   /**
+   * The build the app runs ("Crewlet v1.4.0"), in words: a quiet line under
+   * the row, cut at its end rather than wrapped, a string its own title for
+   * the pointer. Compact, it is a line of the face's tooltip.
+   */
+  build?: ReactNode;
+  /**
    * The reader's face alone, for the compact rail's foot: the badge is the
    * link (or the menu's button), the name and the detail are its accessible
    * name and its tooltip, and `actions` are not drawn (the compact rail draws
@@ -82,6 +88,9 @@ export interface AccountRowProps {
  * account is one item of it. The menu says only what the row does not, in its
  * header (their access), above the actions.
  *
+ * THE BUILD IS THE FOOT'S LAST LINE (`build`): the version a reader names
+ * when they ask for help or an update, quiet and secondary, under the row.
+ *
  * IN THE COMPACT RAIL THE ROW IS THE READER'S FACE (`compact`): the same link
  * or menu button, holding the badge alone, named by the name and the detail
  * as the full row is, and showing them in a tooltip, since a face says who
@@ -99,6 +108,7 @@ export function AccountRow({
   title,
   linkSuffix = ', your account',
   actions,
+  build,
   compact: compactProp,
   className,
 }: AccountRowProps) {
@@ -122,9 +132,23 @@ export function AccountRow({
       </span>
     </>
   );
-  if (compact) return <CompactAccount avatar={avatar} name={name} detail={detail} href={href} menu={menu} current={current} linkSuffix={linkSuffix} className={className} />;
+  const hasBuild = build !== undefined && build !== null && build !== false && build !== '';
+  if (compact)
+    return (
+      <CompactAccount
+        avatar={avatar}
+        name={name}
+        detail={detail}
+        build={hasBuild ? build : undefined}
+        href={href}
+        menu={menu}
+        current={current}
+        linkSuffix={linkSuffix}
+        className={className}
+      />
+    );
   return (
-    <div className={cx('crewlet-account-row', className)}>
+    <div className={cx('crewlet-account-row', hasBuild && 'crewlet-account-row--build', className)}>
       {menu ? (
         <Menu
           label={menu.label ?? 'Your account'}
@@ -164,6 +188,12 @@ export function AccountRow({
         </a>
       )}
       {actions ? <div className="crewlet-account-row__actions">{actions}</div> : null}
+      {hasBuild ? (
+        // A string is its own title, so a pointer reads a cut version whole.
+        <p className="crewlet-account-row__build" title={typeof build === 'string' ? build : undefined}>
+          {build}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -173,12 +203,13 @@ function CompactAccount({
   avatar,
   name,
   detail,
+  build,
   href,
   menu,
   current,
   linkSuffix,
   className,
-}: Pick<AccountRowProps, 'avatar' | 'name' | 'detail' | 'href' | 'menu' | 'className'> & {
+}: Pick<AccountRowProps, 'avatar' | 'name' | 'detail' | 'build' | 'href' | 'menu' | 'className'> & {
   current: boolean;
   linkSuffix: string;
 }) {
@@ -192,11 +223,21 @@ function CompactAccount({
       {suffix}
     </VisuallyHidden>
   );
-  const tip = (
+  const who = (
     <>
       {name}
       {detail ? <> · {detail}</> : null}
     </>
+  );
+  // The build, where given, on a line of its own under who it is.
+  const lines = build !== undefined;
+  const tip = lines ? (
+    <>
+      <span>{who}</span>
+      <span>{build}</span>
+    </>
+  ) : (
+    who
   );
   const face = (
     <span className="crewlet-account-row__avatar" aria-hidden>
@@ -212,7 +253,7 @@ function CompactAccount({
         items={menu.items}
         header={menu.header}
         renderTrigger={(trigger) => (
-          <Tooltip content={tip}>
+          <Tooltip content={tip} lines={lines}>
             <button type="button" className={shape} data-current={current ? '' : undefined} {...trigger}>
               {face}
               {words(linkSuffix)}
@@ -223,7 +264,7 @@ function CompactAccount({
     );
   } else if (href === undefined) {
     control = (
-      <Tooltip content={tip}>
+      <Tooltip content={tip} lines={lines}>
         <span className="crewlet-account-row__who crewlet-account-row__who--compact">
           {face}
           {words('')}
@@ -232,7 +273,7 @@ function CompactAccount({
     );
   } else {
     control = (
-      <Tooltip content={tip}>
+      <Tooltip content={tip} lines={lines}>
         <a className={shape} href={href} aria-current={current ? 'page' : undefined}>
           {face}
           {words(linkSuffix)}

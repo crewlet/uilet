@@ -7,7 +7,8 @@
  * stops, the row and then its Delete: a hundred presses past fifty
  * conversations. Measured on the drawn page: the tray never covers the time
  * or the status, the name never moves when the tray comes, and Tab enters
- * the list once, reaches the row's own action, and leaves.
+ * the list once, reaches the row's own action, and leaves. And it covers
+ * none of a row's words at any width, the message under the name included.
  */
 import { afterEach, describe, expect, test } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
@@ -27,10 +28,10 @@ afterEach(() => {
   host = null;
 });
 
-async function mount(node: ReactNode): Promise<HTMLElement> {
+async function mount(node: ReactNode, width = 350): Promise<HTMLElement> {
   await page.viewport(1280, 800);
   host = document.createElement('div');
-  host.style.cssText = 'width: 350px;';
+  host.style.cssText = `width: ${width}px;`;
   document.body.append(host);
   root = createRoot(host);
   flushSync(() => root!.render(node));
@@ -90,7 +91,7 @@ describe.each([
       const control = row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!;
       const title = row.querySelector('.crewlet-inbox-row__title')!;
       const end = row.querySelector('.crewlet-inbox-row__head-end--drawn')!;
-      // The name's first line: a long name wraps, and its later lines run the row's full width under the time's line.
+      // The name's first line: a long name wraps onto a line under the time's.
       const line = () => title.getClientRects()[0]!;
       const rest = { title: line(), end: end.getBoundingClientRect() };
       // At rest the tray is neither seen nor reached.
@@ -145,4 +146,134 @@ describe.each([
     await userEvent.tab();
     expect(document.activeElement?.textContent).toBe('After');
   });
+});
+
+/** The part of a line box its clipping ancestors in the row let show, or null: a line a clamp cut is not drawn. */
+function drawn(box: DOMRect, from: Element, row: HTMLElement): DOMRect | null {
+  let [left, top, right, bottom] = [box.left, box.top, box.right, box.bottom];
+  for (let at: Element | null = from; at && at !== row; at = at.parentElement) {
+    if (getComputedStyle(at).overflow === 'visible') continue;
+    const clip = at.getBoundingClientRect();
+    [left, top, right, bottom] = [Math.max(left, clip.left), Math.max(top, clip.top), Math.min(right, clip.right), Math.min(bottom, clip.bottom)];
+  }
+  return right - left > 1 && bottom - top > 1 ? new DOMRect(left, top, right - left, bottom - top) : null;
+}
+
+/** Every drawn line box of the row's words: the name, the time, the message and the lines under it. */
+function wordBoxes(row: HTMLElement): { text: string; box: DOMRect }[] {
+  const boxes: { text: string; box: DOMRect }[] = [];
+  const walker = document.createTreeWalker(row.querySelector('.crewlet-inbox-row__body')!, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const parent = node.parentElement!;
+    const text = node.textContent ?? '';
+    if (!text.trim() || parent.closest('.crewlet-visually-hidden')) continue;
+    if (getComputedStyle(parent).visibility === 'hidden') continue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    for (const line of range.getClientRects()) {
+      const box = drawn(line, parent, row);
+      if (box) boxes.push({ text, box });
+    }
+  }
+  return boxes;
+}
+
+// Long enough to run past the tray's edge on its first line at every width tested.
+const MESSAGE =
+  'Nothing was down during the restart, the deploy or the rollback. The only refusals came from one browser holding an old session cookie, which has since been cleared. The fix that stops this for good is a small backend change: the API clears a dead session cookie the first time it refuses one, so nobody is asked to clear their own.';
+
+const LONG_NAME = 'Senior Product Manager of the mobile apps and the web dashboard';
+
+/** A row with a face and a context line, and one without a face, with a status, where and a task under it. */
+function Activity({ density, tools, title }: { density: InboxListDensity; tools: 1 | 2; title: string }) {
+  const tray = (
+    <MessageActions label={`Actions for ${title}`}>
+      {tools === 2 ? <MessageAction label="Mark as read" icon={<CheckGlyph />} /> : null}
+      <MessageAction label="Open the thread in its room" icon={<TrashGlyph />} />
+    </MessageActions>
+  );
+  return (
+    <InboxList label="Activity" density={density}>
+      <InboxGroup label="Today">
+        <InboxRow
+          title={title}
+          meta={<time>13:08</time>}
+          leading={<span style={{ display: 'block', width: 32, height: 32, borderRadius: 8, background: 'gray' }} />}
+          context="Reply in a thread in #engineering"
+          lines="all"
+          unread
+          actions={tray}
+        >
+          {MESSAGE}
+        </InboxRow>
+        <InboxRow
+          title={title}
+          meta={<time>13:05</time>}
+          status={<Tag size="xs" variant="info">Answering</Tag>}
+          where="#engineering"
+          lines={2}
+          aside={<a href="#/work/NIM-12">NIM-12 Clear dead session cookies</a>}
+          actions={tray}
+        >
+          {MESSAGE}
+        </InboxRow>
+      </InboxGroup>
+    </InboxList>
+  );
+}
+
+/** The tray's box, and the row it stands in, while the row holds focus. */
+async function shown(row: HTMLElement) {
+  row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!.focus();
+  await settle();
+  return row.querySelector('.crewlet-message-actions')!.getBoundingClientRect();
+}
+
+describe.each([
+  ['chat', 1, 'Product Manager'],
+  ['chat', 2, 'Product Manager'],
+  ['chat', 2, LONG_NAME],
+  ['default', 2, 'Product Manager'],
+  ['default', 2, LONG_NAME],
+] as const)('a %s row with %i action(s), named "%s"', (density, tools, title) => {
+  test.each([320, 390, 720, 1200])('the tray covers none of its words at %ipx, and the row keeps its height', async (width) => {
+    const list = await mount(<Activity density={density} tools={tools} title={title} />, width);
+    for (const row of list.querySelectorAll<HTMLElement>('.crewlet-inbox-row')) {
+      const rest = row.getBoundingClientRect();
+      const tray = await shown(row);
+      const words = wordBoxes(row);
+      // The message reaches the row's end, so a tray over its first line would cover it.
+      expect(words.some((word) => word.text === MESSAGE && word.box.right > tray.left)).toBe(true);
+      for (const word of words) expect(overlap(tray, word.box), `the tray covers "${word.text}"`).toBe(false);
+      // Inside the row on every side, so no scroller clips it, and nothing moves when it comes.
+      const box = row.getBoundingClientRect();
+      expect(tray.top).toBeGreaterThanOrEqual(box.top);
+      expect(tray.bottom).toBeLessThanOrEqual(box.bottom);
+      expect(tray.left).toBeGreaterThanOrEqual(box.left);
+      expect(tray.right).toBeLessThanOrEqual(box.right);
+      expect(box.height).toBeCloseTo(rest.height, 1);
+      // Clear of the control's inset focus ring, drawn along its top edge.
+      expect(tray.top - box.top).toBeGreaterThanOrEqual(2);
+      // The head shows only the lines its clamp keeps: no sliver of the next one.
+      const head = row.querySelector<HTMLElement>('.crewlet-inbox-row__head')!;
+      const lines = density === 'chat' ? 1 : 2;
+      expect(head.getBoundingClientRect().height).toBeLessThanOrEqual(lines * parseFloat(getComputedStyle(head).lineHeight) + 0.5);
+      row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!.blur();
+    }
+  });
+});
+
+test('right to left, the tray stands at the row\'s start corner and covers none of its words', async () => {
+  const list = await mount(
+    <div dir="rtl">
+      <Activity density="chat" tools={2} title="Product Manager" />
+    </div>,
+    390,
+  );
+  for (const row of list.querySelectorAll<HTMLElement>('.crewlet-inbox-row')) {
+    const tray = await shown(row);
+    expect(tray.left - row.getBoundingClientRect().left).toBeLessThan(24);
+    for (const word of wordBoxes(row)) expect(overlap(tray, word.box), `the tray covers "${word.text}"`).toBe(false);
+    row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!.blur();
+  }
 });
