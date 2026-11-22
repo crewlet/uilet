@@ -118,9 +118,12 @@
  * makes the header's hairline and a table's own corners follow the radius
  * instead of crossing it. A chosen card's edge and fill survive the clip
  * because they are its own border and background.
+ *
+ * `clip`, not `hidden`: no scroll container, so a sticky head inside sticks
+ * to the page and a card held shorter than its content never scrolls itself.
  */
 .crewlet-card--flush {
-  overflow: hidden;
+  overflow: clip;
 }
 
 /* ---- The inset scale ---------------------------------------------------- */

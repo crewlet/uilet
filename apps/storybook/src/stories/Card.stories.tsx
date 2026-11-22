@@ -1,6 +1,18 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, Card, DescriptionList, EmptyState, IconButton, List, ListItem, RelativeTime, Tag, Text } from '@crewlethq/ui';
+import {
+  Button,
+  Card,
+  DataGrid,
+  DescriptionList,
+  EmptyState,
+  IconButton,
+  List,
+  ListItem,
+  RelativeTime,
+  Tag,
+  Text,
+} from '@crewlethq/ui';
 import { density } from '@crewlethq/tokens';
 import {
   EllipsisVerticalGlyph,
@@ -510,6 +522,32 @@ export const Principles: Story = {
           <ListItem>Ask before deleting anything a customer wrote.</ListItem>
           <ListItem>Never move money without a second agent checking the amount and the recipient.</ListItem>
         </List>
+      </Card>
+    </div>
+  ),
+};
+
+/**
+ * A flush card clips its slots to its corners without becoming a scroll
+ * container: scroll the page and the grid's head sticks to the top of the
+ * window, and a wheel over the card always moves the page.
+ */
+export const FlushWithAStickyHead: Story = {
+  render: () => (
+    <div style={{ maxWidth: 720, paddingBottom: '100vh' }}>
+      <Card>
+        <Card.Header>
+          <Card.Title>Tasks</Card.Title>
+        </Card.Header>
+        <DataGrid
+          aria-label="Tasks"
+          rows={Array.from({ length: 60 }, (_, i) => ({ id: `task-${i + 1}` }))}
+          rowKey={(r) => r.id}
+          columns={[
+            { key: 'name', header: 'Task', cell: (r) => r.id },
+            { key: 'state', header: 'State', cell: () => 'Open' },
+          ]}
+        />
       </Card>
     </div>
   ),

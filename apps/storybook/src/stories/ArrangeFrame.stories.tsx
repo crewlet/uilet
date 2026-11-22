@@ -117,3 +117,34 @@ function Board() {
  * arrow keys; double click a corner to fit the height to the content again.
  */
 export const Basic: Story = { render: () => <Board /> };
+
+/**
+ * Blocks given a height, on a page taller than the window. Wheel over the
+ * short card: the page scrolls. Wheel over the long one: it scrolls its own
+ * list, then the page once the list reaches its end.
+ */
+export const FixedHeightOnAScrollingPage: Story = {
+  render: () => (
+    <div style={{ paddingBottom: '150vh' }}>
+      <ArrangeGrid>
+        {[
+          { name: 'Live now', lines: 2 },
+          { name: 'Recent activity', lines: 30 },
+        ].map(({ name, lines }) => (
+          <ArrangeFrame key={name} name={name} editing={false} columns={6} rows={14} rowHeight={ROW}>
+            <Card padding="none">
+              <Card.Header>
+                <Card.Title>{name}</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                {Array.from({ length: lines }, (_, i) => (
+                  <p key={i}>Line {i + 1}</p>
+                ))}
+              </Card.Body>
+            </Card>
+          </ArrangeFrame>
+        ))}
+      </ArrangeGrid>
+    </div>
+  ),
+};
