@@ -212,11 +212,11 @@ places:
 
 ### A row's quick actions cover none of its words
 
-**An `InboxRow`'s tray keeps clear of the words under the name.** The tray stood centred on the name's line but is taller than it, so its foot covered the end of the message's first line (and, in the default density, a wrapped name's second line). The row now measures the tray's height onto itself (`--crewlet-inbox-row-tray-block`, beside `--crewlet-inbox-row-tray`) and keeps that much room: the head is at least as tall as the tray reaches below the row's top pad, so the words under it start below the tray's foot at every width. The tray stands in the row's top end corner, inside the row. A row with actions is 4px taller in the chat density for it, and up to 13px in the default density when its name is one line. The chat density's internal `--crewlet-inbox-row-actions-top` is gone.
+**An `InboxRow`'s tray keeps clear of the words under the name.** The tray is taller than the name's line, so its foot covered the end of the message's first line at chat density, and a wrapped name's second line at the default density. The row now measures the tray's height onto itself (`--crewlet-inbox-row-tray-block`, beside `--crewlet-inbox-row-tray`) and keeps that much room: the head's track is at least as tall as the tray reaches past the row's top pad, and the room on the name's line extends to the lines the head shows beside the tray, so the words under the name start below the tray's foot at every width. The tray stands in the row's top end corner, inside the row and clear of the control's focus ring. A row with actions is MEASURE_CHAT taller at chat density for it, and up to MEASURE_DEFAULT at the default density when its name fits one line. The chat density's internal `--crewlet-inbox-row-actions-top` is gone.
 
 ### The app's build under the account row
 
-**`AccountRow` takes `build`**: the build the app runs, in words ("Crewlet v1.4.0"), drawn as the rail foot's last line, in the detail's quiet ink and step, from the badge's edge, cut at its end rather than wrapped; a string is its own title, so a cut version is read whole. In the compact rail it is a line of the face's tooltip. Story: `AccountRow` With Build, With Long Build.
+**`AccountRow` takes `build`**: the build the app runs, in words ("Crewlet v1.4.0"), drawn as the rail foot's last line, in the detail's quiet ink and step, from the badge's edge, cut at its end rather than wrapped, its controls staying on the row's line; a string is its own title, so a pointer reads a cut version whole. In the compact rail it is a line of the face's tooltip. Story: `AccountRow` With Build, With Long Build.
 
 ## Changes in 0.167.0
 

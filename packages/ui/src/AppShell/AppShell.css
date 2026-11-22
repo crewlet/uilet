@@ -1189,6 +1189,11 @@ button.crewlet-account-row__who:focus-visible {
   flex-wrap: wrap;
 }
 
+/* The row's own line breaks as it did unwrapped: the name gives way to the controls. */
+.crewlet-account-row--build > :is(.crewlet-account-row__who, .crewlet-menu-anchor) {
+  flex-basis: 0;
+}
+
 .crewlet-account-row__build {
   flex: 1 0 100%;
   min-width: 0;

@@ -51,8 +51,8 @@ export interface AccountRowProps {
   actions?: ReactNode;
   /**
    * The build the app runs ("Crewlet v1.4.0"), in words: a quiet line under
-   * the row, cut at its end rather than wrapped, a string its own title.
-   * Compact, it is a line of the face's tooltip.
+   * the row, cut at its end rather than wrapped, a string its own title for
+   * the pointer. Compact, it is a line of the face's tooltip.
    */
   build?: ReactNode;
   /**
@@ -189,7 +189,7 @@ export function AccountRow({
       )}
       {actions ? <div className="crewlet-account-row__actions">{actions}</div> : null}
       {hasBuild ? (
-        // Words given as a string are their own title, so a cut version is read whole.
+        // A string is its own title, so a pointer reads a cut version whole.
         <p className="crewlet-account-row__build" title={typeof build === 'string' ? build : undefined}>
           {build}
         </p>
@@ -230,7 +230,8 @@ function CompactAccount({
     </>
   );
   // The build, where given, on a line of its own under who it is.
-  const tip = build ? (
+  const lines = build !== undefined;
+  const tip = lines ? (
     <>
       <span>{who}</span>
       <span>{build}</span>
@@ -238,7 +239,6 @@ function CompactAccount({
   ) : (
     who
   );
-  const lines = Boolean(build);
   const face = (
     <span className="crewlet-account-row__avatar" aria-hidden>
       {avatar}

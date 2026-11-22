@@ -20,7 +20,7 @@ afterEach(() => {
   host = null;
 });
 
-async function draw(build?: string): Promise<HTMLElement> {
+async function draw(build?: string, detail = 'lee.parklee · Operations'): Promise<HTMLElement> {
   await page.viewport(1440, 900);
   host = document.createElement('div');
   document.body.append(host);
@@ -35,7 +35,7 @@ async function draw(build?: string): Promise<HTMLElement> {
               <AppShell.AccountRow
                 avatar={<Avatar name="Lee Park" kind="human" size="md" ring="brand" decorative />}
                 name="Lee Park"
-                detail="lee.parklee · Operations"
+                detail={detail}
                 href="#/account"
                 build={build}
                 actions={
@@ -63,16 +63,17 @@ async function draw(build?: string): Promise<HTMLElement> {
 const box = (shown: HTMLElement, selector: string) => shown.querySelector(selector)!.getBoundingClientRect();
 
 test.each([
-  ['a release', 'Crewlet v1.4.0'],
-  ['the image of main', 'Crewlet main-3fa94c1d02be'],
-  ['a pseudo-version', 'Crewlet v0.0.0-20261121174512-3fa94c1d02be'],
-])('%s is one quiet line under the row, from the badge, inside the rail', async (_, build) => {
-  const without = await draw();
+  ['a release', 'Crewlet v1.4.0', 'lee.parklee · Operations'],
+  ['the image of main', 'Crewlet main-3fa94c1d02be', 'lee.parklee · Operations'],
+  ['a pseudo-version', 'Crewlet v0.0.0-20261121174512-3fa94c1d02be', 'lee.parklee · Operations'],
+  ['a release beside a long detail', 'Crewlet v1.4.0', 'lee.park@operations.example.com · Operations and finance'],
+])('%s is one quiet line under the row, from the badge, inside the rail', async (_, build, detail) => {
+  const without = await draw(undefined, detail);
   const rest = { who: box(without, '.crewlet-account-row__who'), actions: box(without, '.crewlet-account-row__actions') };
   flushSync(() => root?.unmount());
   host?.remove();
 
-  const shown = await draw(build);
+  const shown = await draw(build, detail);
   const who = box(shown, '.crewlet-account-row__who');
   const avatar = box(shown, '.crewlet-account-row__avatar');
   const element = shown.querySelector<HTMLElement>('.crewlet-account-row__build')!;
@@ -82,7 +83,11 @@ test.each([
   expect(line.top).toBeGreaterThanOrEqual(who.bottom - 0.5);
   expect(who.height).toBeCloseTo(rest.who.height, 1);
   expect(who.width).toBeCloseTo(rest.who.width, 1);
-  expect(box(shown, '.crewlet-account-row__actions').top).toBeCloseTo(rest.actions.top, 1);
+  // The controls stay on the row's line, beside the name, which is cut rather than pushing them down.
+  const actions = box(shown, '.crewlet-account-row__actions');
+  expect(actions.top).toBeCloseTo(rest.actions.top, 1);
+  expect(actions.left).toBeCloseTo(rest.actions.left, 1);
+  expect(actions.bottom).toBeLessThanOrEqual(line.top + 0.5);
   // From the badge's edge, one line, cut at the rail's edge rather than past it.
   expect(element.getBoundingClientRect().left + parseFloat(getComputedStyle(element).paddingInlineStart)).toBeCloseTo(avatar.left, 0);
   expect(line.height).toBeCloseTo(parseFloat(getComputedStyle(element).lineHeight), 0);
