@@ -1,9 +1,11 @@
-import { useId, useRef, useState, type ReactNode } from 'react';
+import { useId, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { Button } from '../Button/index.js';
 import { Combobox } from '../Combobox/index.js';
 import { FormField } from '../Input/FormField.js';
 import { InputAffix } from '../Input/Input.js';
 import { Textarea } from '../Input/Textarea.js';
 import { Select } from '../Select/index.js';
+import { cx } from '../utils/cx.js';
 import {
   completeReference,
   isWholeReference,
@@ -20,11 +22,22 @@ import {
  * - `text`: free text, spaces kept.
  * - `multiline`: prose in a textarea, every space and newline kept, spell check on.
  * - `secret`: a credential, masked unless the value is a whole reference.
+ * - `secret-multiline`: a credential that spans lines, such as a PEM private
+ *   key: a masked box that keeps every line break, and a file picker.
  * - `url`: an address, wearing an `https://` affix, whitespace dropped.
  * - `id` and `email`: one token, whitespace dropped.
  * - `choice` and `handle`: one of `choices`, picked from a listbox.
  */
-export type ValueFieldKind = 'text' | 'multiline' | 'secret' | 'url' | 'id' | 'choice' | 'handle' | 'email';
+export type ValueFieldKind =
+  | 'text'
+  | 'multiline'
+  | 'secret'
+  | 'secret-multiline'
+  | 'url'
+  | 'id'
+  | 'choice'
+  | 'handle'
+  | 'email';
 
 /** One option of a `choice` or `handle` field. */
 export interface ValueFieldChoice {
@@ -42,12 +55,28 @@ export interface ValueFieldLabels {
   references: string;
   /** The choice placeholder while nothing is chosen. "Choose one" by default. */
   choose: string;
+  /** A `secret-multiline` field's file picker. "Choose file" by default. */
+  chooseFile: string;
+  /** Said when a picked file is larger than `maxFileBytes`. */
+  fileTooLarge: string;
+  /** Said when a picked file could not be read. */
+  fileUnreadable: string;
 }
 
 const DEFAULT_LABELS: ValueFieldLabels = {
   references: 'Secrets',
   choose: 'Choose one',
+  chooseFile: 'Choose file',
+  fileTooLarge: 'That file is too large to be a key. Choose the key file itself.',
+  fileUnreadable: 'That file could not be read. Choose it again, or paste its contents.',
 };
+
+/**
+ * The largest file a `secret-multiline` picker reads: 64 KiB. A PEM private
+ * key or certificate chain is a few KiB; anything larger is the wrong file,
+ * and reading it whole into a form's state would only make that slower to say.
+ */
+const MAX_FILE_BYTES = 64 * 1024;
 
 export interface ValueFieldProps {
   label: string;
@@ -96,8 +125,15 @@ export interface ValueFieldProps {
    * by default; a product with its own reference grammar passes it here.
    */
   isReference?: ((value: string) => boolean) | undefined;
-  /** How many lines a `multiline` field shows before it scrolls. Three by default. */
+  /** How many lines a `multiline` or `secret-multiline` field shows before it scrolls. Three by default. */
   rows?: number | undefined;
+  /**
+   * The file types a `secret-multiline` field's picker offers, as the file
+   * input's `accept` takes them (`.p8,.pem`). Every file by default.
+   */
+  accept?: string | undefined;
+  /** The largest file a `secret-multiline` picker reads, in bytes. 64 KiB by default. */
+  maxFileBytes?: number | undefined;
   /** Show the help line only while the field has focus. See [FormField]. */
   helperOnFocus?: boolean | undefined;
   labels?: Partial<ValueFieldLabels> | undefined;
@@ -111,6 +147,13 @@ export interface ValueFieldProps {
  * A SECRET FIELD IS A PASSWORD FIELD, and that is not decoration: `type` is
  * what keeps the value out of an autofill store, out of a screenshot and out
  * of the accessibility tree as text.
+ *
+ * A KEY THAT SPANS LINES KEEPS THEM. A one-line box (a password input
+ * included) strips every line break from what is pasted into it, so a PEM
+ * key pasted into a `secret` field arrives as one line no parser takes.
+ * `secret-multiline` is a textarea masked with `-webkit-text-security`, which
+ * every current engine draws, with a file picker that reads the file in the
+ * browser: nothing is uploaded until the form is submitted.
  *
  * A REFERENCE IS NOT A CREDENTIAL, so it is not masked. A secret whose value
  * is wholly a `${NAME}` holds the NAME of a stored entry, and the reader has
@@ -157,6 +200,8 @@ export function ValueField({
   onReferencesNeeded,
   isReference = isWholeReference,
   rows = 3,
+  accept,
+  maxFileBytes = MAX_FILE_BYTES,
   helperOnFocus,
   labels,
   className,
@@ -167,7 +212,28 @@ export function ValueField({
   const picker = kind === 'choice' || kind === 'handle';
 
   const reference = isReference(value);
-  const masked = kind === 'secret' && !reference;
+  const masked = (kind === 'secret' || kind === 'secret-multiline') && !reference;
+  const [fileProblem, setFileProblem] = useState('');
+  const filePicker = useRef<HTMLInputElement>(null);
+
+  /** Reads a picked file's text into the value, in the browser. */
+  async function picked(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    // CLEARED, so picking the same file again after editing still reads it.
+    event.currentTarget.value = '';
+    if (!file) return;
+    if (file.size > maxFileBytes) {
+      setFileProblem(words.fileTooLarge);
+      return;
+    }
+    try {
+      const text = await file.text();
+      setFileProblem('');
+      onChange(text);
+    } catch {
+      setFileProblem(words.fileUnreadable);
+    }
+  }
   const tight = kind === 'url' || kind === 'id' || kind === 'email';
   const own = kind === 'url' ? urlSchemeOf(value) : '';
   // ANY LEADING `$`, not only a whole reference: a person types one character
@@ -262,7 +328,7 @@ export function ValueField({
       requiredNews={required === true && markRequired === true}
       helper={helper}
       helperOnFocus={helperOnFocus}
-      error={error}
+      error={error ?? (fileProblem || undefined)}
       // The affix is part of the value, so the reader hears it ahead of the help.
       describedBy={affix ? affixId : undefined}
     >
@@ -281,6 +347,59 @@ export function ValueField({
             required={required === true}
             aria-describedby={field.describedBy}
           />
+        ) : kind === 'secret-multiline' ? (
+          <span className="crewlet-value-field__key">
+            <Textarea
+              id={field.id}
+              rows={rows}
+              value={value}
+              placeholder={placeholder}
+              disabled={disabled}
+              autoComplete="off"
+              spellCheck={false}
+              autoCapitalize="off"
+              autoCorrect="off"
+              // NO PASSWORD MANAGER FILLS OR SAVES IT, as Input keeps one off a masked secret.
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore
+              // MASKED WHILE IT HOLDS A CREDENTIAL, readable while it holds a name.
+              className={cx(
+                'crewlet-value-field__key-box',
+                masked && 'crewlet-value-field__key-box--masked',
+                reference && 'crewlet-value-field__key-box--reference',
+              )}
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- the caller opens its form at this field
+              autoFocus={autoFocus}
+              aria-describedby={field.describedBy}
+              aria-required={required === true || undefined}
+              error={field.invalid}
+              onChange={(event) => {
+                setFileProblem('');
+                onChange(event.target.value);
+              }}
+            />
+            <span className="crewlet-value-field__key-actions">
+              <Button
+                size="small"
+                variant="secondary"
+                disabled={disabled === true}
+                onClick={() => filePicker.current?.click()}
+                aria-label={`${words.chooseFile}: ${label}`}
+              >
+                {words.chooseFile}
+              </Button>
+              <input
+                ref={filePicker}
+                type="file"
+                accept={accept}
+                hidden
+                tabIndex={-1}
+                aria-hidden="true"
+                onChange={(event) => void picked(event)}
+              />
+            </span>
+          </span>
         ) : kind === 'multiline' ? (
           <Textarea
             id={field.id}

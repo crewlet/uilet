@@ -45,6 +45,23 @@ export const Secret: Story = {
   ),
 };
 
+/**
+ * A credential that spans lines, such as a PEM private key: a masked box that
+ * keeps every line break, and a file picker that reads the file in the browser.
+ */
+export const SecretMultiline: Story = {
+  render: () => (
+    <Controlled
+      label="Private key (.p8)"
+      kind="secret-multiline"
+      rows={4}
+      accept=".p8,.pem"
+      placeholder="-----BEGIN PRIVATE KEY-----"
+      help="Paste the whole file, or choose it."
+    />
+  ),
+};
+
 /** The affix supplies the scheme the value is refused without, and steps aside for `http://` or a reference. */
 export const Url: Story = {
   render: () => <Controlled label="Jira site" kind="url" placeholder="acme.atlassian.net" references={SECRETS} />,
