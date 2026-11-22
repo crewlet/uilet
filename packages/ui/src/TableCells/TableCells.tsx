@@ -378,10 +378,12 @@ export type TableTwoLineCellProps = {
  * grid's size and ink), the line under it a caption in the secondary ink. A
  * row of them is as tall as two lines whatever they hold, because each line
  * is cut with an ellipsis rather than wrapped, and its whole words are on its
- * title while it is cut (`Text`'s `truncate`).
+ * title while it is cut (`Text`'s `truncate`). In a grid's stacked rows on a
+ * phone, where no hover shows the rest, both lines wrap whole instead.
  *
  * A MARK STANDS CENTRED AGAINST BOTH LINES, the way a vendor's mark stands
- * beside a service's name and host. In a grid's stacked rows the lines, not
+ * beside a service's name and host. In a grid's stacked rows, where the lines
+ * wrap, it stands at their top beside the value instead, and the lines, not
  * the mark, give the row its baseline, so a column's label stands on the
  * value's line (DataGrid.css).
  */
