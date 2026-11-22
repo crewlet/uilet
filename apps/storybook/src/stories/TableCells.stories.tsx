@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   DataGrid,
+  Link,
   PrincipalAvatar,
   Table,
   TableDateCell,
@@ -186,6 +187,39 @@ export const TwoLineCellsBothThemes: Story = {
       {(['light', 'dark'] as const).map((theme) => (
         <div key={theme} style={{ ...themeScope(theme), padding: 'var(--spacing-4)', background: 'var(--color-surface-background)' }}>
           <Connections />
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * A linked key and a linked name stand alone in their cells, so neither is
+ * underlined until a pointer reaches it; the same name set inside a sentence
+ * under the table is underlined at rest, in both themes.
+ */
+export const LinkedCellsBothThemes: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-5)', maxWidth: 560 }}>
+      {(['light', 'dark'] as const).map((theme) => (
+        <div key={theme} style={{ ...themeScope(theme), padding: 'var(--spacing-4)', background: 'var(--color-surface-background)' }}>
+          <Table
+            caption="Runs"
+            headers={['Key', 'Owner']}
+            data={[
+              [
+                <TableKeyCell key="key" value="work:task:0b4c6f0e-29a1-4c55-9a7e" text="work:task:0b4c" href="#" />,
+                <TableEntityCell key="owner" name={PM.name} badge={<PrincipalAvatar principal={PM} size="xs" />} href="#" />,
+              ],
+            ]}
+          />
+          <p style={{ color: 'var(--color-text-secondary)' }}>
+            Owned by{' '}
+            <Link href="#" size="inherit" variant="subtle">
+              {PM.name}
+            </Link>
+            .
+          </p>
         </div>
       ))}
     </div>
