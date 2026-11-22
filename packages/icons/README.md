@@ -2,7 +2,7 @@
 
 Everything a Crewlet surface draws that is not text: the Lucide glyph set, the marks of the applications the platform integrates with, and the Crewlet signature illustrations.
 
-All three are React components compiled from SVG files that ship in the package. Nothing here fetches a font, a sprite or an image from another host, so a closed network draws exactly what an open one does.
+All three are React components compiled from SVG files that ship in the package; the Google Analytics logo, the one raster here, ships as files. Nothing here fetches a font, a sprite or an image from another host, so a closed network draws exactly what an open one does.
 
 | What | Import from | Looks like |
 | ---- | ----------- | ---------- |
@@ -13,6 +13,7 @@ All three are React components compiled from SVG files that ship in the package.
 | The Crewlet character | `@crewlethq/icons` | `<CrewletFigure motion="wave" />` |
 | The thirty agent characters | `@crewlethq/icons/characters` | `<CrewletCharacter character="hexlet" />` |
 | Product marks | `@crewlethq/icons/product-mark` (also the root) | `<ProductMark product="assistant" />` |
+| The Google Analytics logo, as files | `@crewlethq/icons/attribution/google-analytics/*` | `<img src={onLight} alt="" />` in a link |
 
 ## Glyphs
 
@@ -111,21 +112,24 @@ Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's viol
 
 **`google-cloud` is Google Cloud's mark**, Simple Icons' rendering (CC0 1.0) from simple-icons 16.35.0 (`icons/googlecloud.svg`, path unchanged), in Google Blue, #4285F4, the hex that release records and sources to cloud.google.com. Google draws the same cloud in four colours; this is its silhouette in one. Google's brand terms allow a product icon only beside the product's name and never by itself, so draw it with "Google Cloud" beside it, as every mark here is drawn.
 
-**`aws` draws no AWS mark.** AWS's trademark guidelines allow a third party a plain-text reference only, with no logo, so the AWS tile draws the glyph set's own `cloud` (`CloudGlyph`, Lucide's, under ISC) in the current text colour, beside the name "AWS". It is the glyph component itself, not a file in `svg/vendor/`, and it claims nothing about AWS. Always draw it with "AWS" beside it.
+**Ten products draw no mark, because their owners allow a third party none without leave.** AWS's trademark guidelines allow a plain-text reference only; Google's brand terms ask for a request through its Partner Marketing Hub; Apple allows no third-party use of its logos or icons without a written licence; and Meta requires approval for every use of its logo (the `meta` mark was supplied for the Muse Code harness alone). Each of these tiles draws a Lucide glyph for what the product does, on a plate (Google Analytics' own logo ships apart, only as attribution beside its data; see [The Google Analytics logo](#the-google-analytics-logo)):
 
-**Nine marketing, growth and app store products draw no mark either**, for the same reason as AWS. Google's brand terms ask a third party to request a product icon through its Partner Marketing Hub, Apple allows no third-party use of its logos or icons without a written licence, and Meta requires approval for every use of its logo (the `meta` mark was supplied for the Muse Code harness alone). So each tile draws a Lucide glyph of its own in the current text colour, none shared with another tile, beside the product's name:
+| Vendor | Product | Glyph | Why this glyph |
+| ------ | ------- | ----- | -------------- |
+| `aws` | AWS | `cloud` | Cloud infrastructure. |
+| `google-analytics` | Google Analytics | `chart-line` | Traffic and conversion reports. A line rather than columns, which would echo the bars of Google's own logo. |
+| `google-search-console` | Search Console | `search-check` | How a site shows in search, and whether its pages are indexed. |
+| `google-ads` | Google Ads | `mouse-pointer-click` | Paid clicks. |
+| `apple-ads` | Apple Ads | `megaphone` | Promoting an app in the App Store. |
+| `meta-ads` | Meta Ads Manager | `target` | Audience targeting. |
+| `google-adsense` | AdSense | `banknote` | A site's ad earnings. |
+| `google-admob` | AdMob | `circle-dollar-sign` | An app's ad earnings. |
+| `app-store-connect` | App Store Connect | `store` | An app's store listings, sales and releases. |
+| `google-play` | Google Play | `smartphone` | An Android app's listings, releases and vitals. |
 
-| Vendor | Product | Glyph |
-| ------ | ------- | ----- |
-| `google-ads` | Google Ads | `mouse-pointer-click` |
-| `google-adsense` | AdSense | `coins` |
-| `google-admob` | AdMob | `hand-coins` |
-| `google-analytics` | Google Analytics | `chart-column` |
-| `google-search-console` | Search Console | `search` |
-| `google-play` | Google Play | `smartphone` |
-| `app-store-connect` | App Store Connect | `store` |
-| `apple-ads` | Apple Ads | `megaphone` |
-| `meta-ads` | Meta Ads | `target` |
+The plate is one family for all ten, so they read as designed beside the marks rather than as missing ones: a 24 unit square with 5 unit corners filling the mark's frame as every mark does, painted in the current text colour at a tenth (`fill-opacity="0.1"`), with the glyph centred in its middle two thirds and in the full text colour. The glyph's line is set to 2.5 (`.crewlet-vendor-mark__glyph` in `VendorMark.css`), so at two thirds it draws near the 1.75 weight of a glyph the plate's own size. The width is also set plainly, so it holds where a strict `style-src` drops the glyph's own style. No glyph is shared by two tiles, and none borrows an owner's colour, shape or lettering. `muted` drains the plate and glyph together, as it does a mark.
+
+**The plate needs room, so it draws from 16px up.** Below 16px, and at a size that cannot be measured while rendering (the default `1em`, a `rem`: a mark in a line of text or in another tile's badge), the glyph is drawn alone at full size, as a glyph beside a word is, because on a plate there it would be too small to read. Pass a size in px or a step from `md` up where a catalogue draws the tile.
 
 Once an owner approves its icon, the same key draws the vendor's file instead, with no change for a consumer. Always draw these with the product's name beside them.
 
@@ -137,7 +141,22 @@ A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is draw
 
 The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRADEMARKS.md), which ships in the package. The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram, Microsoft Teams, Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are Simple Icons' renderings, whose path data is CC0 1.0. The Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are taken from simple-icons 16.35.0, each path unchanged and in the hex that release records for its brand (Scaleway's purple, #4F0599, sourced there to Scaleway's own design system, Ultraviolet).
 
-`VENDORS` lists every vendor the package draws, AWS's generic cloud, the nine growth glyphs and the SSH key among them.
+`VENDORS` lists every vendor the package draws, the ten unmarked tiles and the SSH key among them.
+
+## The Google Analytics logo
+
+```tsx
+import onLight from '@crewlethq/icons/attribution/google-analytics/lockup_ic_Analytics_horiz_272px_clr.png';
+import onDark from '@crewlethq/icons/attribution/google-analytics/lockup_ic_Analytics_horiz_272px_wht.png';
+
+<a href="https://analytics.google.com/" aria-label="Google Analytics">
+  <img src={onLight} alt="" width={189} height={50} />
+</a>
+```
+
+Google's [developer branding policy](https://developers.google.com/analytics/terms/branding-policy) asks an application that shows Google Analytics data to show the official Google Analytics logo beside it. These are the two files that page offers for the horizontal logo (1519 by 402), byte for byte as Google serves them, checksummed in `SHA256SUMS` and held to it by `test/attribution.test.mjs`. They are raw files rather than components, so a bundler serves them as assets. They are Google's, outside the package's licence, and only for an application that uses the Google Analytics API and shows its data.
+
+Follow the policy where one is shown: the white-text file on a dark ground and the other on a light one; at least 154 by 50 px, which at this aspect is a 50 px height (189 px wide); on one solid ground; unaltered and uncovered; linked to Google Analytics, either its product page (`https://www.google.com/analytics`) or into the product (`https://analytics.google.com/`); never beside your own product's name or description; never the most prominent element on the page; never as the integration's icon. [`TRADEMARKS.md`](./TRADEMARKS.md) records where Crewlet shows it.
 
 ## Product marks
 
@@ -498,4 +517,4 @@ Apache-2.0 AND ISC AND MIT.
 
 The package's own code and artwork are open source under the Apache License 2.0; the license text is in [`LICENSE`](./LICENSE), which ships in the package with the [`NOTICE`](./NOTICE) file. The vendored Lucide drawings in `glyphs/` are under the ISC License, and those Lucide derives from Feather are under Feather's MIT License as well; upstream's own [`glyphs/LICENSE`](./glyphs/LICENSE) carries both texts and ships beside them.
 
-None of these licenses grants a right to use a trademark. The Crewlet name, logo and character are trademarks, and so are the third-party marks in `svg/vendor/`. [`TRADEMARKS.md`](./TRADEMARKS.md), which also ships in the package, says how each may be used.
+None of these licenses grants a right to use a trademark. The Crewlet name, logo and character are trademarks, and so are the third-party marks in `svg/vendor/`. The Google Analytics logo files in `attribution/` are Google's artwork and trademark, under none of these licenses. [`TRADEMARKS.md`](./TRADEMARKS.md), which also ships in the package, says how each may be used.

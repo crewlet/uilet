@@ -91,6 +91,16 @@ export function cssLength(size: GlyphSize | undefined): string {
 }
 
 /**
+ * The size a `size` prop draws at, in px, or null when it is not in px (the
+ * default `1em`, a `rem`), which cannot be measured while rendering. Internal:
+ * the marks that pick a drawing by size read it, so they agree with `cssLength`.
+ */
+export function cssPixels(size: GlyphSize | undefined): number | null {
+  const match = /^(\d*\.?\d+)px$/.exec(cssLength(size).trim());
+  return match === null ? null : Number(match[1]);
+}
+
+/**
  * The frame itself. Not exported from the package: a glyph is one of the
  * generated components, each of which hands this its own geometry and says
  * whether its drawing may be filled.

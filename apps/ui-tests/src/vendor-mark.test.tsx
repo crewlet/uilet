@@ -78,31 +78,37 @@ describe('the SSH mark', () => {
   });
 });
 
-describe('the marketing, growth and app store tiles', () => {
-  const GROWTH = [
+describe('the unmarked tiles', () => {
+  const UNMARKED = [
+    ['aws', 'AWS'],
     ['google-analytics', 'Google Analytics'],
     ['google-search-console', 'Search Console'],
     ['google-ads', 'Google Ads'],
     ['apple-ads', 'Apple Ads'],
-    ['meta-ads', 'Meta Ads'],
+    ['meta-ads', 'Meta Ads Manager'],
     ['google-adsense', 'AdSense'],
     ['google-admob', 'AdMob'],
     ['app-store-connect', 'App Store Connect'],
     ['google-play', 'Google Play'],
   ] as const;
 
-  test.each(GROWTH)('%s is named %s once titled, and is decoration without a title', (vendor, name) => {
-    render(
+  test.each(UNMARKED)('%s is named %s once titled, and is decoration without a title', (vendor, name) => {
+    const { container } = render(
       <>
-        <VendorMark vendor={vendor} title={name} />
-        <VendorMark vendor={vendor} />
+        <VendorMark vendor={vendor} size={24} title={name} />
+        <VendorMark vendor={vendor} size={24} />
       </>,
     );
     expect(screen.getAllByRole('img')).toHaveLength(1);
     const mark = screen.getByRole('img', { name });
+    // The untitled mark and every plate's glyph are hidden, so only the titled mark is read.
+    const untitled = container.querySelectorAll(':scope > svg')[1]!;
+    expect(untitled.getAttribute('aria-hidden')).toBe('true');
+    for (const glyph of container.querySelectorAll('.crewlet-vendor-mark__glyph')) expect(glyph.getAttribute('aria-hidden')).toBe('true');
     expect(mark.getAttribute('class')).toContain(`crewlet-vendor-mark--${vendor}`);
-    // A generic glyph in the text's ink: nothing of the vendor's own colour.
-    expect(mark.getAttribute('stroke')).toBe('currentColor');
+    // A plate and a glyph in the text's ink: nothing of the owner's own colour.
+    expect(mark.querySelector('.crewlet-vendor-mark__plate')?.getAttribute('fill')).toBe('currentColor');
+    expect(mark.querySelector('.crewlet-vendor-mark__glyph')?.getAttribute('stroke')).toBe('currentColor');
     expect(mark.outerHTML).not.toMatch(/(fill|stroke)="#/);
   });
 });

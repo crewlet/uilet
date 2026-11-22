@@ -1,14 +1,17 @@
 /**
  * The coding harnesses' marks at 24px on a light and a dark document: one
  * drawing shown for Grok, Hermes and Kimi, Qwen reversed on dark, OpenAI in the
- * text's ink, every square filled. The growth tiles' generic glyphs likewise
- * fill their square and stroke in the text's ink.
+ * text's ink, every square filled. The unmarked tiles' plates fill their
+ * square in the text's ink at a tenth, their glyphs centred in the middle.
  */
 import { afterEach, describe, expect, test } from 'vitest';
 import { page } from 'vitest/browser';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import { VendorMark, type Vendor } from '@crewlethq/icons';
+// Their stylesheets paint every drawing in an icon zone with the text's ink.
+import '@crewlethq/ui/OrgLabel';
+import '@crewlethq/ui/AddPill';
 
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
@@ -21,7 +24,8 @@ afterEach(() => {
   document.documentElement.removeAttribute('data-theme');
 });
 
-const GROWTH: Vendor[] = [
+const UNMARKED: Vendor[] = [
+  'aws',
   'google-analytics',
   'google-search-console',
   'google-ads',
@@ -90,18 +94,44 @@ describe.each(['light', 'dark'] as const)('on a %s document', (theme) => {
     expect(Math.max(right - left, bottom - top)).toBeGreaterThanOrEqual(24 * 0.8);
   });
 
-  test.each(GROWTH)("%s's generic glyph strokes in the text's ink and spans its 24px square", async (vendor) => {
+  test.each(UNMARKED)("%s's plate fills its 24px square and its glyph strokes in the text's ink, centred", async (vendor) => {
     const mark = await mount(theme, vendor);
     const frame = mark.getBoundingClientRect();
     expect([frame.width, frame.height]).toEqual([24, 24]);
-    expect(getComputedStyle(mark).stroke).toBe(theme === 'dark' ? 'rgb(240, 240, 240)' : 'rgb(20, 20, 20)');
-    expect(getComputedStyle(mark).fill).toBe('none');
-    const boxes = [...mark.querySelectorAll('path, circle, rect, line')].map((shape) => shape.getBoundingClientRect()).filter((box) => box.width > 0);
+    const ink = theme === 'dark' ? 'rgb(240, 240, 240)' : 'rgb(20, 20, 20)';
+    const plate = mark.querySelector('.crewlet-vendor-mark__plate')!;
+    const box = plate.getBoundingClientRect();
+    expect([box.left - frame.left, box.top - frame.top, box.width, box.height]).toEqual([0, 0, 24, 24]);
+    expect(getComputedStyle(plate).fill).toBe(ink);
+    expect(getComputedStyle(plate).fillOpacity).toBe('0.1');
+    const glyph = mark.querySelector('.crewlet-vendor-mark__glyph')!;
+    expect(getComputedStyle(glyph).stroke).toBe(ink);
+    expect(getComputedStyle(glyph).fill).toBe('none');
+    expect(parseFloat(getComputedStyle(glyph).strokeWidth)).toBe(2.5);
+    const boxes = [...glyph.querySelectorAll('path, circle, rect, line')].map((shape) => shape.getBoundingClientRect()).filter((b) => b.width > 0);
     expect(boxes.length).toBeGreaterThan(0);
-    const width = Math.max(...boxes.map((box) => box.right)) - Math.min(...boxes.map((box) => box.left));
-    const height = Math.max(...boxes.map((box) => box.bottom)) - Math.min(...boxes.map((box) => box.top));
-    // Lucide draws within 3 to 21 of its 24 unit grid at most, so 18 of 24.
-    expect(Math.max(width, height)).toBeGreaterThanOrEqual(24 * 0.7);
+    const [left, right] = [Math.min(...boxes.map((b) => b.left)), Math.max(...boxes.map((b) => b.right))];
+    const [top, bottom] = [Math.min(...boxes.map((b) => b.top)), Math.max(...boxes.map((b) => b.bottom))];
+    // Lucide draws within 2 to 22 of its grid; at two thirds the glyph spans at most 16 of 24, and never touches the plate's edge.
+    expect(Math.max(right - left, bottom - top)).toBeGreaterThanOrEqual(16 * 0.7);
+    expect([left - frame.left, top - frame.top, frame.right - right, frame.bottom - bottom].every((gap) => gap >= 4)).toBe(true);
+    expect(Math.abs((left + right) / 2 - (frame.left + 12))).toBeLessThanOrEqual(1.5);
+    expect(Math.abs((top + bottom) / 2 - (frame.top + 12))).toBeLessThanOrEqual(1.5);
   });
 });
 
+describe('a plate in an icon zone that paints its drawings', () => {
+  test.each(['crewlet-org-label__icon', 'crewlet-add-pill__section'])("%s leaves the plate's glyph a stroke", async (zone) => {
+    await page.viewport(800, 600);
+    host = document.createElement('div');
+    host.className = zone;
+    host.style.color = 'rgb(20, 20, 20)';
+    document.body.append(host);
+    root = createRoot(host);
+    flushSync(() => root!.render(<VendorMark vendor="google-analytics" size={20} />));
+    const glyph = host.querySelector('.crewlet-vendor-mark__glyph')!;
+    const shapes = [...glyph.querySelectorAll('path')];
+    expect(shapes.length).toBeGreaterThan(0);
+    for (const shape of shapes) expect(getComputedStyle(shape).fill).toBe('none');
+  });
+});

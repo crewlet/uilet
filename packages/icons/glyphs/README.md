@@ -25,8 +25,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **A company's principles**, each statement's card heading with its own glyph: `telescope` for the vision (where the company is looking), and `scroll-text` for the standing policies (the written rules every agent is given), beside `target`, already here, for the mission.
 - **A company's brand and the folders artifacts are filed in**: `swatch-book` for the `brand` artifact kind (`ArtifactKindGlyph`) and the Company › Brand page, `blend` for a brand's colours, `badge-check` for an artifact drawn in the company's current brand, and `folder-open` for a folder with nothing in it, or nothing the reader can open, beside the `folder` a folder is otherwise drawn with.
 - **The conversation surfaces** (`ChatMessage`, `MessageActions`, `ReactionBar` and the composer in `@crewlethq/ui`, and Chatlet's top bar and Rooms panel in the engine dashboard): `face-slightly-smiling-plus` for adding a reaction, `face-slightly-smiling` for the composer's emoji picker, `at-sign` for a mention, `bookmark` for saving a message for later, `bell-off` for a muted room, `messages-square` for the threads a reader follows, `reply` for replying in a thread, `panel-left` for the Rooms panel and `baseline` for the composer's formatting toggle. Lucide 1.47.0 names the two faces `face-slightly-smiling` and `face-slightly-smiling-plus` (`smile` and `smile-plus` are its retired aliases).
-- **`cloud`**, the AWS tile in an integrations catalogue (`VendorMark`'s `aws`). AWS's trademark guidelines allow a third party a plain-text reference only, with no logo, so the tile draws this generic cloud beside the name "AWS" rather than any mark of AWS's own.
-- **The marketing, growth and app store tiles in an integrations catalogue** (`VendorMark`'s `google-ads`, `google-admob`, `app-store-connect` and `apple-ads`): `mouse-pointer-click` for Google Ads, `hand-coins` for AdMob, `store` for App Store Connect and `megaphone` for Apple Ads. None of their owners allows its product icon on a third party's tile without leave: Google's brand terms ask for a request through its Partner Marketing Hub, Apple's trademark guidelines allow no third-party use of its logos or icons without a written licence, and Meta requires approval for every use of its logo. So each tile draws a generic glyph of its own beside the product's name, none shared with another tile. The other five take glyphs already here: `chart-column` for Google Analytics, `search` for Search Console, `coins` for AdSense, `smartphone` for Google Play and `target` for Meta Ads.
+- **The unmarked tiles in an integrations catalogue** (`VendorMark`'s `aws`, `google-analytics`, `google-search-console`, `google-ads`, `apple-ads`, `meta-ads`, `google-adsense`, `google-admob`, `app-store-connect` and `google-play`), each drawn on a plate because its owner allows a third party no logo without leave (the package [README](../README.md#vendor-marks) has why each): `cloud` for AWS, `chart-line` for Google Analytics, `search-check` for Search Console, `mouse-pointer-click` for Google Ads, `megaphone` for Apple Ads, `banknote` for AdSense, `circle-dollar-sign` for AdMob and `store` for App Store Connect. The other two take glyphs already here: `target` for Meta Ads and `smartphone` for Google Play.
 - **A company's map of what it runs on** (`GraphCanvas` in `@crewlethq/ui`, and the Atlas screens in the engine dashboard): `map` for the map itself and its sidebar row, `git-branch` for a repository, `workflow` for a pipeline, `hard-drive` for a bucket or an object store, `container` for a container platform and `waypoints` for an endpoint. Every other kind of entry on the map takes a glyph already here (`server`, `database`, `globe`, `cloud`, `layers`, `activity`, `plug`, `brain`).
 - **The assistant drawer** in the engine dashboard: `square-pen` for New conversation in its head (the conversations themselves keep `rotate-ccw-clock`, already here, because Lucide retired `history` as an alias of it), `square` drawn filled for the Stop a running request turns the send button into, and `circle-stop` for a request or one of its steps that the person stopped.
 - **The code host's screens** in the engine dashboard (Gitlet: the repository's main page and files, commits, branches, pushes, changes, a change and its files, checks, the merge queue and the pickers): `git-commit-vertical`, `git-merge`, `git-pull-request`, `git-pull-request-closed`, `git-pull-request-draft`, `git-compare`, `tag`, `file`, `file-diff`, `circle-x`, `circle-dot`, `scale` for a licence, `unfold-vertical` for hidden diff lines, `rows-2` and `columns-2` for the unified and split diff, `train-front` for the queue, and `square-plus`, `square-dot`, `square-minus` and `square-arrow-right` for a file's status in a tree (added, modified or type changed, deleted, renamed). Lucide retired `git-commit` as an alias of `git-commit-vertical`.
@@ -71,6 +70,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `badge-check` | `BadgeCheckGlyph` | `package/icons/badge-check.svg` |
 | `badge-percent` | `BadgePercentGlyph` | `package/icons/badge-percent.svg` |
 | `ban` | `BanGlyph` | `package/icons/ban.svg` |
+| `banknote` | `BanknoteGlyph` | `package/icons/banknote.svg` |
 | `baseline` | `BaselineGlyph` | `package/icons/baseline.svg` |
 | `bell` | `BellGlyph` | `package/icons/bell.svg` |
 | `bell-off` | `BellOffGlyph` | `package/icons/bell-off.svg` |
@@ -86,6 +86,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `calendar-clock` | `CalendarClockGlyph` | `package/icons/calendar-clock.svg` |
 | `camera` | `CameraGlyph` | `package/icons/camera.svg` |
 | `chart-column` | `ChartColumnGlyph` | `package/icons/chart-column.svg` |
+| `chart-line` | `ChartLineGlyph` | `package/icons/chart-line.svg` |
 | `chart-no-axes-gantt` | `ChartNoAxesGanttGlyph` | `package/icons/chart-no-axes-gantt.svg` |
 | `chart-pie` | `ChartPieGlyph` | `package/icons/chart-pie.svg` |
 | `check` | `CheckGlyph` | `package/icons/check.svg` |
@@ -100,6 +101,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `circle-alert` | `CircleAlertGlyph` | `package/icons/circle-alert.svg` |
 | `circle-check` | `CircleCheckGlyph` | `package/icons/circle-check.svg` |
 | `circle-dashed` | `CircleDashedGlyph` | `package/icons/circle-dashed.svg` |
+| `circle-dollar-sign` | `CircleDollarSignGlyph` | `package/icons/circle-dollar-sign.svg` |
 | `circle-dot` | `CircleDotGlyph` | `package/icons/circle-dot.svg` |
 | `circle-question-mark` | `CircleQuestionMarkGlyph` | `package/icons/circle-question-mark.svg` |
 | `circle-stop` | `CircleStopGlyph` | `package/icons/circle-stop.svg` |
@@ -152,7 +154,6 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `grip-vertical` | `GripVerticalGlyph` | `package/icons/grip-vertical.svg` |
 | `group` | `GroupGlyph` | `package/icons/group.svg` |
 | `hand` | `HandGlyph` | `package/icons/hand.svg` |
-| `hand-coins` | `HandCoinsGlyph` | `package/icons/hand-coins.svg` |
 | `hand-grab` | `HandGrabGlyph` | `package/icons/hand-grab.svg` |
 | `hard-drive` | `HardDriveGlyph` | `package/icons/hard-drive.svg` |
 | `hash` | `HashGlyph` | `package/icons/hash.svg` |
@@ -219,6 +220,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `scale` | `ScaleGlyph` | `package/icons/scale.svg` |
 | `scroll-text` | `ScrollTextGlyph` | `package/icons/scroll-text.svg` |
 | `search` | `SearchGlyph` | `package/icons/search.svg` |
+| `search-check` | `SearchCheckGlyph` | `package/icons/search-check.svg` |
 | `send` | `SendGlyph` | `package/icons/send.svg` |
 | `separator-horizontal` | `SeparatorHorizontalGlyph` | `package/icons/separator-horizontal.svg` |
 | `server` | `ServerGlyph` | `package/icons/server.svg` |

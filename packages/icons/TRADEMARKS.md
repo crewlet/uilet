@@ -34,9 +34,18 @@ The OpenAI, Meta and Kimi marks, which name the Codex, Muse Code and Kimi Code h
 
 Crewlet claims no rights in these marks. They are excluded from the Apache License's grant for the same reason the Crewlet marks are: that license covers copyright and patents, and a trademark is neither.
 
-Some products a Crewlet product integrates with have no mark in the package, because their owners allow a third party none without leave: AWS; Google Ads, AdSense, AdMob, Google Analytics, Search Console and Google Play (Google asks for a request through its Partner Marketing Hub); App Store Connect and Apple Ads (Apple allows no use of its logos or icons without a written licence); and Meta Ads (Meta requires approval for every use of its logo, and the Meta mark here was supplied for Muse Code alone). Each of those names is a trademark of its owner, used only to name the product, and its tile draws a generic glyph from the Lucide set below, which claims nothing about the product.
+Some products a Crewlet product integrates with have no mark for their catalogue tile in the package, because their owners allow a third party none without leave: AWS; Google Ads, AdSense, AdMob, Google Analytics, Search Console and Google Play (Google asks for a request through its Partner Marketing Hub); App Store Connect and Apple Ads (Apple allows no use of its logos or icons without a written licence); and Meta Ads Manager (Meta requires approval for every use of its logo, and the Meta mark here was supplied for Muse Code alone). Each of those names is a trademark of its owner, used only to name the product, and its tile draws a generic glyph from the Lucide set below, on a neutral plate in the text colour from 16 pixels up, with no colour, shape or lettering of the owner's, which claims nothing about the product. Google Analytics' own logo ships apart, only as attribution beside its data (below).
 
 One file there is not a third-party mark: `ssh.svg` is Crewlet's own drawing for its SSH connection (SSH is a protocol, and no vendor publishes a mark for it). It is licensed under the Apache License 2.0 like the rest of the package's artwork.
+
+## The Google Analytics logo
+
+Google's [Google Analytics Developer Branding Guidelines & Policies](https://developers.google.com/analytics/terms/branding-policy) ask an application that shows Google Analytics data to show the official Google Analytics logo next to that data, and need no request for it. `packages/icons/attribution/google-analytics/` carries the two files that page offers for the horizontal logo, byte for byte as Google serves them, with their checksums in `SHA256SUMS` beside them:
+
+- `lockup_ic_Analytics_horiz_272px_clr.png`, for a light ground;
+- `lockup_ic_Analytics_horiz_272px_wht.png`, the white-text logo the page asks for on a dark ground.
+
+They are Google's, and Google Analytics is Google's trademark. Neither file is licensed under the Apache License, and neither may be altered. They are for an application that uses the Google Analytics API and shows its data, under Google's API terms, and for nothing else. A Crewlet product shows one wherever it shows data read from Google Analytics, and never as the integration's icon or in a list of integrations; in the engine dashboard that is the Google Analytics integration's own page, beside the properties read from it. The logo is drawn at no less than the policy's 154 by 50 pixels, on one solid ground, linked to Google Analytics, never beside Crewlet's own name or description, and never as the most prominent element on the page.
 
 ## The glyph set
 
