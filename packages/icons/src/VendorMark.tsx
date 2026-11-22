@@ -105,8 +105,9 @@
  * family beside the marks rather than as missing ones (README.md lists them).
  * Below 16px, or at a size that cannot be measured (`1em` in a line of text or
  * another tile's badge), the glyph is drawn alone at full size, since a plate
- * there leaves it too small to read. Once an owner approves its icon, the
- * same key draws the vendor's file instead.
+ * there leaves it too small to read. Google Analytics' own logo ships apart,
+ * only as attribution beside its data (TRADEMARKS.md). Once an owner approves
+ * its icon, the same key draws the vendor's file instead.
  *
  * The coding harnesses' marks are their owners' own files, sourced in README.md;
  * Copilot draws GitHub's, as GitHub's brand toolkit does. Codex draws OpenAI's

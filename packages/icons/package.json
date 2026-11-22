@@ -40,11 +40,13 @@
       "types": "./dist/product-mark.d.ts",
       "import": "./dist/product-mark.js"
     },
+    "./attribution/*": "./attribution/*",
     "./favicon/*": "./favicon/*",
     "./glyphs/*": "./glyphs/*",
     "./svg/*": "./svg/*"
   },
   "files": [
+    "attribution",
     "dist",
     "favicon",
     "glyphs",

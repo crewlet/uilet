@@ -2,7 +2,7 @@
 
 Everything a Crewlet surface draws that is not text: the Lucide glyph set, the marks of the applications the platform integrates with, and the Crewlet signature illustrations.
 
-All three are React components compiled from SVG files that ship in the package. Nothing here fetches a font, a sprite or an image from another host, so a closed network draws exactly what an open one does.
+All three are React components compiled from SVG files that ship in the package; the Google Analytics logo, the one raster here, ships as files. Nothing here fetches a font, a sprite or an image from another host, so a closed network draws exactly what an open one does.
 
 | What | Import from | Looks like |
 | ---- | ----------- | ---------- |
@@ -13,6 +13,7 @@ All three are React components compiled from SVG files that ship in the package.
 | The Crewlet character | `@crewlethq/icons` | `<CrewletFigure motion="wave" />` |
 | The thirty agent characters | `@crewlethq/icons/characters` | `<CrewletCharacter character="hexlet" />` |
 | Product marks | `@crewlethq/icons/product-mark` (also the root) | `<ProductMark product="assistant" />` |
+| The Google Analytics logo, as files | `@crewlethq/icons/attribution/google-analytics/*` | `<img src={onLight} alt="" />` in a link |
 
 ## Glyphs
 
@@ -111,7 +112,7 @@ Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's viol
 
 **`google-cloud` is Google Cloud's mark**, Simple Icons' rendering (CC0 1.0) from simple-icons 16.35.0 (`icons/googlecloud.svg`, path unchanged), in Google Blue, #4285F4, the hex that release records and sources to cloud.google.com. Google draws the same cloud in four colours; this is its silhouette in one. Google's brand terms allow a product icon only beside the product's name and never by itself, so draw it with "Google Cloud" beside it, as every mark here is drawn.
 
-**Ten products draw no mark, because their owners allow a third party none without leave.** AWS's trademark guidelines allow a plain-text reference only; Google's brand terms ask for a request through its Partner Marketing Hub; Apple allows no third-party use of its logos or icons without a written licence; and Meta requires approval for every use of its logo (the `meta` mark was supplied for the Muse Code harness alone). Each of these tiles draws a Lucide glyph for what the product does, on a plate:
+**Ten products draw no mark, because their owners allow a third party none without leave.** AWS's trademark guidelines allow a plain-text reference only; Google's brand terms ask for a request through its Partner Marketing Hub; Apple allows no third-party use of its logos or icons without a written licence; and Meta requires approval for every use of its logo (the `meta` mark was supplied for the Muse Code harness alone). Each of these tiles draws a Lucide glyph for what the product does, on a plate (Google Analytics' own logo ships apart, only as attribution beside its data; see [The Google Analytics logo](#the-google-analytics-logo)):
 
 | Vendor | Product | Glyph | Why this glyph |
 | ------ | ------- | ----- | -------------- |
@@ -141,6 +142,21 @@ A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is draw
 The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRADEMARKS.md), which ships in the package. The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram, Microsoft Teams, Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are Simple Icons' renderings, whose path data is CC0 1.0. The Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are taken from simple-icons 16.35.0, each path unchanged and in the hex that release records for its brand (Scaleway's purple, #4F0599, sourced there to Scaleway's own design system, Ultraviolet).
 
 `VENDORS` lists every vendor the package draws, the ten unmarked tiles and the SSH key among them.
+
+## The Google Analytics logo
+
+```tsx
+import onLight from '@crewlethq/icons/attribution/google-analytics/lockup_ic_Analytics_horiz_272px_clr.png';
+import onDark from '@crewlethq/icons/attribution/google-analytics/lockup_ic_Analytics_horiz_272px_wht.png';
+
+<a href="https://analytics.google.com/" aria-label="Google Analytics">
+  <img src={onLight} alt="" width={189} height={50} />
+</a>
+```
+
+Google's [developer branding policy](https://developers.google.com/analytics/terms/branding-policy) asks an application that shows Google Analytics data to show the official Google Analytics logo beside it. These are the two files that page offers for the horizontal logo (1519 by 402), byte for byte as Google serves them, checksummed in `SHA256SUMS` and held to it by `test/attribution.test.mjs`. They are raw files rather than components, so a bundler serves them as assets. They are Google's, outside the package's licence, and only for an application that uses the Google Analytics API and shows its data.
+
+Follow the policy where one is shown: the white-text file on a dark ground and the other on a light one; at least 154 by 50 px, which at this aspect is a 50 px height (189 px wide); on one solid ground; unaltered and uncovered; linked to Google Analytics, either its product page (`https://www.google.com/analytics`) or into the product (`https://analytics.google.com/`); never beside your own product's name or description; never the most prominent element on the page; never as the integration's icon. [`TRADEMARKS.md`](./TRADEMARKS.md) records where Crewlet shows it.
 
 ## Product marks
 
@@ -501,4 +517,4 @@ Apache-2.0 AND ISC AND MIT.
 
 The package's own code and artwork are open source under the Apache License 2.0; the license text is in [`LICENSE`](./LICENSE), which ships in the package with the [`NOTICE`](./NOTICE) file. The vendored Lucide drawings in `glyphs/` are under the ISC License, and those Lucide derives from Feather are under Feather's MIT License as well; upstream's own [`glyphs/LICENSE`](./glyphs/LICENSE) carries both texts and ships beside them.
 
-None of these licenses grants a right to use a trademark. The Crewlet name, logo and character are trademarks, and so are the third-party marks in `svg/vendor/`. [`TRADEMARKS.md`](./TRADEMARKS.md), which also ships in the package, says how each may be used.
+None of these licenses grants a right to use a trademark. The Crewlet name, logo and character are trademarks, and so are the third-party marks in `svg/vendor/`. The Google Analytics logo files in `attribution/` are Google's artwork and trademark, under none of these licenses. [`TRADEMARKS.md`](./TRADEMARKS.md), which also ships in the package, says how each may be used.

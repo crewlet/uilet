@@ -214,6 +214,8 @@ places:
 
 **The ten tiles whose owners allow no logo here draw a glyph on a plate** (`@crewlethq/icons` `VendorMark`'s `aws`, `google-analytics`, `google-search-console`, `google-ads`, `apple-ads`, `meta-ads`, `google-adsense`, `google-admob`, `app-store-connect` and `google-play`): a rounded square of the text colour at a tenth that fills the mark's frame as a logo does, with the glyph in its middle two thirds, so they read as designed among the marks rather than as missing ones. The plate draws from 16px up; smaller, or at a size it cannot measure (`1em`), the glyph is drawn alone at full size. Google Analytics now draws `chart-line`, Search Console `search-check`, AdSense `banknote` and AdMob `circle-dollar-sign`, each clearer at 16px than before. `HandCoinsGlyph` is gone from `@crewlethq/icons/glyphs`, which drew only AdMob's tile. Story: `VendorMark` Unmarked Tiles. `OrgLabel`'s icon zone and `AddPill`'s sections, which paint every drawing in the text's ink, leave a glyph nested in another drawing a stroke.
 
+**`@crewlethq/icons/attribution/google-analytics/` carries the Google Analytics logo**, Google's two horizontal files unaltered, for a surface that shows Google Analytics data: Google's developer branding policy asks for the logo beside that data (see the icons README).
+
 What to change: import another glyph where you drew `HandCoinsGlyph`.
 
 ## Changes in 0.168.0
