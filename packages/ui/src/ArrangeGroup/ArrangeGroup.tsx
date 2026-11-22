@@ -1,5 +1,6 @@
-import { useId, type HTMLAttributes, type ReactNode } from 'react';
+import { useContext, useId, useRef, type HTMLAttributes, type ReactNode } from 'react';
 import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
+import { ArrangePackContext, usePackedGrid } from '../ArrangeGrid/usePackedGrid.js';
 import { Count } from '../Count/index.js';
 import { cx } from '../utils/cx.js';
 import type { NodeHue } from '../utils/nodeHue.js';
@@ -41,6 +42,8 @@ export interface ArrangeGroupProps extends Omit<HTMLAttributes<HTMLElement>, 'ti
   empty?: ReactNode;
   /** Columns of the body's grid. */
   columns?: number | undefined;
+  /** Pack the body's blocks as a masonry (see `ArrangeGrid`); left out, as the grid it stands on does. */
+  pack?: boolean | undefined;
   /** Controls at the end of the header. */
   actions?: ReactNode;
   children?: ReactNode;
@@ -72,13 +75,17 @@ export function ArrangeGroup({
   bodyProps,
   empty,
   columns = 12,
+  pack,
   actions,
   className,
   children,
   ...rest
 }: ArrangeGroupProps) {
   const bodyId = `${useId()}-body`;
-  const { className: bodyClass, style: bodyStyle, ...body } = bodyProps ?? {};
+  const body = useRef<HTMLDivElement>(null);
+  const inherited = useContext(ArrangePackContext);
+  usePackedGrid(body, pack ?? inherited);
+  const { className: bodyClass, style: bodyStyle, ...bodyRest } = bodyProps ?? {};
   const hasChildren = Array.isArray(children) ? children.some(Boolean) : Boolean(children);
   return (
     <section
@@ -120,11 +127,12 @@ export function ArrangeGroup({
         {actions ? <span className="crewlet-arrange-group__actions">{actions}</span> : null}
       </header>
       <div
+        ref={body}
         id={bodyId}
         className={cx('crewlet-arrange-grid', 'crewlet-arrange-group__body', bodyClass)}
         style={{ ...bodyStyle, ['--crewlet-arrange-columns' as string]: columns }}
         hidden={collapsed}
-        {...body}
+        {...bodyRest}
       >
         {hasChildren ? children : empty ? <div className="crewlet-arrange-group__empty">{empty}</div> : null}
       </div>
