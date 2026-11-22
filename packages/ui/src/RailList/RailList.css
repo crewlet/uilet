@@ -77,6 +77,17 @@
   border-top: 0;
 }
 
+/* The list's grid takes the card's inner curve where it meets the card: its
+   bottom end corner, and its top end one while no bar stands over it. The
+   grid clips itself, so its head and rows stop at the curve. */
+.crewlet-rail-list__list > .crewlet-data-grid:last-child {
+  border-end-end-radius: calc(var(--radius-lg) - 1px);
+}
+
+.crewlet-rail-list__bar--picker-only + .crewlet-rail-list__body > .crewlet-rail-list__list > .crewlet-data-grid:first-child {
+  border-start-end-radius: calc(var(--radius-lg) - 1px);
+}
+
 /* Under the rail's room the list takes the card, and the picker takes the rail's place in the bar. */
 @container crewlet-rail-list (width < 44rem) {
   .crewlet-rail-list__body {
@@ -85,6 +96,15 @@
 
   .crewlet-rail-list__rail {
     display: none;
+  }
+
+  /* Folded, the list spans the card's bottom, and the picker's bar stands over it. */
+  .crewlet-rail-list__list > .crewlet-data-grid:last-child {
+    border-end-start-radius: calc(var(--radius-lg) - 1px);
+  }
+
+  .crewlet-rail-list__bar--picker-only + .crewlet-rail-list__body > .crewlet-rail-list__list > .crewlet-data-grid:first-child {
+    border-start-end-radius: 0;
   }
 
   .crewlet-rail-list__picker {
