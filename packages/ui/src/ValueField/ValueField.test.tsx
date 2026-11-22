@@ -735,6 +735,7 @@ test('every kind passes an accessibility audit', async () => {
       <ValueField label="Token" kind="secret" value="" onChange={() => {}} error="Required." />
       <ValueField label="Site" kind="url" value="https://acme.example" onChange={() => {}} />
       <ValueField label="Goal" kind="multiline" value="" onChange={() => {}} />
+      <ValueField label="Signing key" kind="secret-multiline" value="" onChange={() => {}} accept=".p8" />
       <ValueField
         label="Mode"
         kind="choice"
@@ -775,4 +776,65 @@ test('a masked field is a combobox only while it offers names', () => {
   // A whole reference reads as a name, so the box is a text combobox again.
   expect(input.type).toBe('text');
   expect(input.getAttribute('role')).toBe('combobox');
+});
+
+// A KEY THAT SPANS LINES KEEPS THEM. A password input strips every line break
+// from a paste, so a PEM key pasted into a `secret` field reached the engine as
+// one line its parser refuses. Mutation: draw `secret-multiline` through the
+// Combobox like `secret`, and the line breaks are gone.
+const PEM = '-----BEGIN PRIVATE KEY-----\nMIGTAgEAMBMGByqGSM49\nAgEGCCqGSM49AwEHBHkw\n-----END PRIVATE KEY-----\n';
+
+test('a multi-line secret keeps every line break of what is pasted into it', () => {
+  const changes: string[] = [];
+  render(<ValueField label="Signing key" kind="secret-multiline" value="" onChange={(v) => changes.push(v)} />);
+  const box = screen.getByLabelText('Signing key');
+  expect(box.tagName).toBe('TEXTAREA');
+  fireEvent.change(box, { target: { value: PEM } });
+  expect(changes).toEqual([PEM]);
+});
+
+// MASKED WHILE IT HOLDS A CREDENTIAL, readable while it holds a name.
+test('a multi-line secret is masked unless it holds a whole reference', () => {
+  render(<ValueField label="Signing key" kind="secret-multiline" value={PEM} onChange={() => {}} />);
+  let box = screen.getByLabelText('Signing key');
+  expect(box.classList.contains('crewlet-value-field__key-box--masked')).toBe(true);
+  expect(box.getAttribute('spellcheck')).toBe('false');
+  expect(box.hasAttribute('data-1p-ignore')).toBe(true);
+  cleanup();
+  render(<ValueField label="Signing key" kind="secret-multiline" value="${SIGNING_KEY}" onChange={() => {}} />);
+  box = screen.getByLabelText('Signing key');
+  expect(box.classList.contains('crewlet-value-field__key-box--masked')).toBe(false);
+  expect(box.classList.contains('crewlet-value-field__key-box--reference')).toBe(true);
+});
+
+/** Picks `file` through the field's own file input. */
+function pick(container: HTMLElement, file: File) {
+  const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+  Object.defineProperty(input, 'files', { value: [file], configurable: true });
+  fireEvent.change(input);
+  return input;
+}
+
+// A KEY FILE IS READ IN THE BROWSER, whole, line breaks included: the
+// picker is how a person who has the file avoids a paste at all.
+test("a multi-line secret's file picker reads the file's text into the value", async () => {
+  const onChange = vi.fn();
+  const { container } = render(
+    <ValueField label="Signing key" kind="secret-multiline" value="" onChange={onChange} accept=".p8,.pem" />,
+  );
+  expect(screen.getByRole('button', { name: 'Choose file: Signing key' })).not.toBeNull();
+  const input = pick(container, new File([PEM], 'AuthKey_ABC123DEFG.p8'));
+  expect(input.getAttribute('accept')).toBe('.p8,.pem');
+  await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(PEM));
+});
+
+// THE WRONG FILE IS SAID, not read: a picked file past the cap is never one key.
+test('a multi-line secret refuses a file larger than a key and says so', async () => {
+  const onChange = vi.fn();
+  const { container } = render(
+    <ValueField label="Signing key" kind="secret-multiline" value="" onChange={onChange} maxFileBytes={16} />,
+  );
+  pick(container, new File([PEM], 'big.p8'));
+  await vi.waitFor(() => expect(screen.getByText(/too large to be a key/)).not.toBeNull());
+  expect(onChange).not.toHaveBeenCalled();
 });

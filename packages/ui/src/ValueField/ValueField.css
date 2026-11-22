@@ -11,3 +11,37 @@
   align-items: center;
   gap: var(--spacing-1);
 }
+
+/*
+ * A credential that spans lines (`secret-multiline`): its box, then the file
+ * picker under it. Masked with text-security, which keeps the lines the key
+ * is made of visible as rows of discs, so a reader can see that a whole key
+ * is there without seeing any of it.
+ */
+.crewlet-value-field__key {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.crewlet-value-field__key-box {
+  font-family: var(--font-family-mono);
+  font-variant-ligatures: none;
+  font-size: var(--font-size-compact);
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.crewlet-value-field__key-box--masked {
+  -webkit-text-security: disc;
+}
+
+.crewlet-value-field__key-box--reference {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-value-field__key-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
