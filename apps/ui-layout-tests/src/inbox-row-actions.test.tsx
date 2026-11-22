@@ -164,8 +164,9 @@ function wordBoxes(row: HTMLElement): { text: string; box: DOMRect }[] {
   return boxes;
 }
 
+// Long enough to run past the tray's edge on its first line at every width tested.
 const MESSAGE =
-  'Nothing was down during the restart, the deploy or the rollback. The only refusals came from one browser holding an old session cookie, which has since been cleared.';
+  'Nothing was down during the restart, the deploy or the rollback. The only refusals came from one browser holding an old session cookie, which has since been cleared. The fix that stops this for good is a small backend change: the API clears a dead session cookie the first time it refuses one, so nobody is asked to clear their own.';
 
 const LONG_NAME = 'Senior Product Manager of the mobile apps and the web dashboard';
 

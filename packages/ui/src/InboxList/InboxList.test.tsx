@@ -830,9 +830,10 @@ test('chat density sets rows full bleed with a hairline between them, and a grou
     // jsdom resolves no custom property, and the chat scale's are not tokens:
     // the row's pads are read from the sheet, at 16px above and below.
     expect(control.classList.contains('crewlet-inbox-row__control--leading')).toBe(true);
+    // The tray's room measures from the same top pad.
     expect(sheet).toMatch(/\.crewlet-inbox-list--chat \.crewlet-inbox-row \{[^}]*--crewlet-inbox-row-pad: var\(--spacing-4\);/);
     expect(sheet).toContain(
-      '.crewlet-inbox-list--chat .crewlet-inbox-row__control, .crewlet-inbox-list--chat .crewlet-inbox-row__control--leading, .crewlet-inbox-list--chat .crewlet-inbox-row__control:only-child { gap: var(--crewlet-chat-gap); padding: var(--crewlet-inbox-row-pad) var(--crewlet-chat-pad-x); }',
+      '.crewlet-inbox-list--chat .crewlet-inbox-row__control, .crewlet-inbox-list--chat .crewlet-inbox-row__control--leading, .crewlet-inbox-list--chat .crewlet-inbox-row__control:only-child { gap: var(--crewlet-chat-gap); padding: var(--spacing-4) var(--crewlet-chat-pad-x); }',
     );
     expect(px(container.querySelector('.crewlet-inbox-row__main')!, 'padding-top')).toBe(0);
   } finally {
