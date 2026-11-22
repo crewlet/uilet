@@ -121,6 +121,7 @@
  *
  * `clip`, not `hidden`: no scroll container, so a sticky head inside sticks
  * to the page and a card held shorter than its content never scrolls itself.
+ * To cap a flush card's height, scroll a Body inside it, never the card.
  */
 .crewlet-card--flush {
   overflow: clip;

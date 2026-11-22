@@ -1,14 +1,12 @@
 /**
- * A block on a scrolling page never keeps the page's wheel: a block the
- * reader gave a height scrolls its own content and hands the wheel back at its
- * ends, and a flush card clips without becoming a scroll container, so what
- * sticks inside it sticks to the page.
+ * A block on a scrolling page never keeps its wheel: a resized block hands it
+ * back at its ends, and a flush card clips without becoming a scroll container.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { ArrangeFrame, ArrangeGrid, Card, DataGrid, Toolbar } from '@crewlethq/ui';
 
 let root: Root | null = null;
@@ -41,8 +39,8 @@ async function mount(ui: ReactNode): Promise<HTMLElement> {
 }
 
 /** A flush card of `rows` lines, the shape every Home card takes. */
-const card = (rows: number) => (
-  <Card padding="none">
+const card = (rows: number, style?: CSSProperties) => (
+  <Card padding="none" style={style}>
     <Card.Header>
       <Card.Title>Live now</Card.Title>
     </Card.Header>
@@ -92,13 +90,23 @@ test('a resized block scrolls its own content, then hands the wheel to the page 
 
 test('a flush card held shorter than its content is not a scroll container', async () => {
   await page.viewport(1200, 700);
-  const at = await mount(<div style={{ display: 'flex', flexDirection: 'column', height: 120 }}>{card(20)}</div>);
+  const column = (ui: ReactNode) => <div style={{ display: 'flex', flexDirection: 'column', height: 120 }}>{ui}</div>;
+  const at = await mount(column(card(20, { minHeight: 0 })));
   const box = at.querySelector<HTMLElement>('.crewlet-card')!;
-  expect(getComputedStyle(box).overflowY).toBe('clip');
+  expect(box.getBoundingClientRect().height).toBeCloseTo(120, 0);
+  expect(box.scrollHeight).toBeGreaterThan(box.clientHeight);
   box.scrollTop = 80;
   expect(box.scrollTop).toBe(0);
   await wheelOver(box, 200);
   expect(window.scrollY).toBeGreaterThan(0);
+});
+
+test('a flush card in a column of a set height keeps its content height, never cut short', async () => {
+  await page.viewport(1200, 700);
+  const at = await mount(<div style={{ display: 'flex', flexDirection: 'column', height: 120 }}>{card(20)}</div>);
+  const box = at.querySelector<HTMLElement>('.crewlet-card')!;
+  expect(box.getBoundingClientRect().height).toBeGreaterThan(120);
+  expect(box.scrollHeight).toBeLessThanOrEqual(box.clientHeight);
 });
 
 const STICKY: [string, ReactNode, string][] = [
