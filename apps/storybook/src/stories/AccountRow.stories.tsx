@@ -35,6 +35,17 @@ const preferences = (
  */
 export const Basic: Story = { args: { actions: preferences } };
 
+/**
+ * The build the app runs, as the foot's last line: quiet, under the row, cut at
+ * its end where a long version would not fit.
+ */
+export const WithBuild: Story = { args: { actions: preferences, build: 'Crewlet v1.4.0' } };
+
+/** A long build, such as a pseudo-version, is cut at the rail's edge rather than wrapped, and read whole in its title. */
+export const WithLongBuild: Story = {
+  args: { actions: preferences, build: 'Crewlet v0.0.0-20261121174512-3fa94c1d02be' },
+};
+
 /** On the account page the row wears the rail's current-row lift and hairline. */
 export const Current: Story = { args: { current: true, actions: preferences } };
 

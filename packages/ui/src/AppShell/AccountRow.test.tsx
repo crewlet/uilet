@@ -8,8 +8,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { Avatar } from '../Avatar/index.js';
 import { AccountRow, AppShell } from './index.js';
 
@@ -208,6 +209,46 @@ describe('AccountRow', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
     expect(css).toMatch(/button\.crewlet-account-row__who\[data-current\]/);
     expect(css).toMatch(/button\.crewlet-account-row__who\[aria-expanded='true'\]/);
+  });
+
+  test('says the build on a quiet line of its own under the row, outside the link and its name', () => {
+    const { container, rerender } = render(<AccountRow avatar={badge} name="Lee Park" href="#/account" build="Crewlet v1.4.0" />);
+    const line = container.querySelector('.crewlet-account-row__build')!;
+    expect(line.tagName).toBe('P');
+    expect(line.textContent).toBe('Crewlet v1.4.0');
+    // A string is its own title, so a version cut at the rail's edge is read whole.
+    expect(line.getAttribute('title')).toBe('Crewlet v1.4.0');
+    const link = screen.getByRole('link', { name: 'Lee Park, your account' });
+    expect(link.contains(line)).toBe(false);
+    expect(line.parentElement?.classList.contains('crewlet-account-row--build')).toBe(true);
+    // The detail's quiet ink and step, on a line of its own, cut rather than wrapped.
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
+    const rule = /\.crewlet-account-row__build \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toContain('flex: 1 0 100%;');
+    expect(rule).toContain('color: var(--color-text-tertiary);');
+    expect(rule).toContain('font-size: var(--font-size-2xs);');
+    expect(rule).toContain('white-space: nowrap;');
+    expect(rule).toContain('text-overflow: ellipsis;');
+    expect(css).toMatch(/\.crewlet-account-row--build \{\s*flex-wrap: wrap;\s*\}/);
+    // No build, no line, and the row does not wrap.
+    rerender(<AccountRow avatar={badge} name="Lee Park" href="#/account" />);
+    expect(container.querySelector('.crewlet-account-row__build')).toBeNull();
+    expect(container.querySelector('.crewlet-account-row--build')).toBeNull();
+  });
+
+  test('compact, the build is a line of the face’s tooltip, and the face keeps its name', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      render(<AccountRow avatar={badge} name="Lee Park" detail="lee" href="#/account" build="Crewlet v1.4.0" compact />);
+      expect(document.querySelector('.crewlet-account-row__build')).toBeNull();
+      const face = screen.getByRole('link', { name: 'Lee Park, lee, your account' });
+      tabTo(face);
+      const tip = await screen.findByRole('tooltip');
+      expect(tip.classList.contains('crewlet-tooltip--lines')).toBe(true);
+      expect([...tip.querySelectorAll(':scope > span')].map((line) => line.textContent)).toEqual(['Lee Park · lee', 'Crewlet v1.4.0']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test('a row that opens a menu carries no axe violation', async () => {
