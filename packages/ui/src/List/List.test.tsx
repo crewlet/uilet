@@ -298,3 +298,37 @@ test('a bulleted list draws discs whatever list it stands in, and circles only i
     uninstall();
   }
 });
+
+/** Lays `list` out as a box `height` tall holding rows `row` tall, top to bottom. */
+function layOut(list: HTMLElement, height: number, row: number) {
+  const rect = (top: number, h: number) => ({ top, bottom: top + h, height: h }) as DOMRect;
+  Object.defineProperty(list, 'clientHeight', { configurable: true, value: height });
+  list.getBoundingClientRect = () => rect(0, height);
+  Array.from(list.children).forEach((li, i) => {
+    li.getBoundingClientRect = () => rect(i * row, row);
+  });
+}
+
+test('a fitting list shows the rows that fit whole, hides the rest and says how many show', () => {
+  const onFit = vi.fn();
+  const rows = (n: number) => Array.from({ length: n }, (_, i) => <ListItem key={i}>{`Row ${i + 1}`}</ListItem>);
+  const { container, rerender } = render(<List>{rows(5)}</List>);
+  const list = container.querySelector('ul')!;
+  layOut(list, 100, 40);
+  // Two rows end at 80px; the third would be cut at 100px, so it and every row after it hide.
+  rerender(
+    <List fit onFit={onFit}>
+      {rows(5)}
+    </List>,
+  );
+  expect(list.classList.contains('crewlet-list--fit')).toBe(true);
+  expect(onFit).toHaveBeenLastCalledWith(2);
+  const hidden = Array.from(list.children).map((li) => li.hasAttribute('data-fit-hidden'));
+  expect(hidden).toEqual([false, false, true, true, true]);
+  expect((list.children[2] as HTMLElement).style.visibility).toBe('hidden');
+
+  // Without `fit`, nothing is measured and every row shows.
+  rerender(<List>{rows(5)}</List>);
+  expect(list.querySelectorAll('[data-fit-hidden]')).toHaveLength(0);
+  expect((list.children[2] as HTMLElement).style.visibility).toBe('');
+});

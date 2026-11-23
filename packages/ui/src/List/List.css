@@ -84,13 +84,24 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/*
+ * A list that fits its box takes the room its column leaves it and clips,
+ * without becoming a scroll container; the rows past its edge are hidden.
+ */
+.crewlet-list--fit {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: clip;
+}
+
 /* ---- Framings ---------------------------------------------------------- */
 
 .crewlet-list--divided .crewlet-list__item {
   border-bottom: 1px solid var(--color-border-default);
 }
 
-.crewlet-list--divided .crewlet-list__item:last-child {
+.crewlet-list--divided .crewlet-list__item:last-child,
+.crewlet-list--divided .crewlet-list__item:has(+ [data-fit-hidden]) {
   border-bottom: none;
 }
 

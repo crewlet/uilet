@@ -1,6 +1,7 @@
 /**
- * A block on a scrolling page never keeps its wheel: a resized block hands it
- * back at its ends, and a flush card clips without becoming a scroll container.
+ * A block on a scrolling page never keeps its wheel: a resized block clips
+ * rather than scrolling, and a flush card clips without becoming a scroll
+ * container.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
@@ -75,16 +76,14 @@ test('a resized block whose content fits passes the wheel to the page', async ()
   expect(window.scrollY).toBeGreaterThan(0);
 });
 
-test('a resized block scrolls its own content, then hands the wheel to the page at its end', async () => {
+test('a resized block never scrolls its own content: it clips, and the wheel moves the page', async () => {
   await page.viewport(1200, 700);
   const at = await mount(block(12, card(40)));
   const box = at.querySelector<HTMLElement>('.crewlet-card')!;
+  expect(box.scrollHeight).toBeGreaterThan(box.clientHeight);
+  expect(getComputedStyle(box).overflowY).toBe('clip');
   await wheelOver(box, 100);
-  expect(box.scrollTop).toBeGreaterThan(0);
-  expect(window.scrollY).toBe(0);
-  box.scrollTop = box.scrollHeight;
-  await frames();
-  await wheelOver(box, 200);
+  expect(box.scrollTop).toBe(0);
   expect(window.scrollY).toBeGreaterThan(0);
 });
 
