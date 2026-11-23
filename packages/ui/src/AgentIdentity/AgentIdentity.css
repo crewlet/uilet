@@ -1,0 +1,52 @@
+/*
+ * An agent's identity at a vendor, heading its box: the label and chip on the
+ * left, the one action held at the top right however narrow the box, and a
+ * rule under it all, which sets it off from the box's details.
+ */
+.crewlet-agent-identity {
+  /* The box's whole first row, in a wrapping flex box or a grid. */
+  flex: 1 1 100%;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-inline-size: 0;
+  padding-block-end: var(--spacing-3);
+  border-block-end: 1px solid var(--color-border-default);
+}
+
+/*
+ * TWO COLUMNS, NOT A WRAPPING ROW: in a narrow box the label and chip wrap
+ * inside the first column, and the action keeps its place at the top right
+ * rather than dropping under them to the next line.
+ */
+.crewlet-agent-identity__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--spacing-2) var(--spacing-3);
+}
+
+.crewlet-agent-identity__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
+  min-inline-size: 0;
+  /* The label's line centred on the action's, which is a little taller. */
+  min-block-size: var(--size-control-sm);
+}
+
+.crewlet-agent-identity__actions {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+}
+
+.crewlet-agent-identity__summary {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
