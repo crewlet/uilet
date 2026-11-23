@@ -610,7 +610,8 @@
 }
 
 /* A row that is only its name keeps no room under it: its track holds the
-   tray clear of the ring at both edges, with the name centred in it. */
+   tray clear of the ring at both edges, with the name centred in it where
+   its head is one line (chat); a two-line head keeps its float's room. */
 .crewlet-inbox-row--actions.crewlet-inbox-row--name-only .crewlet-inbox-row__main {
   grid-template-rows: minmax(
     max(
@@ -685,9 +686,20 @@
   color: var(--color-text-tertiary);
 }
 
-/* The rule that opens a group closes the one before it, so no second line. */
-.crewlet-inbox-list--chat .crewlet-inbox-list__group:has(+ .crewlet-inbox-list__group > .crewlet-inbox-list__label) .crewlet-inbox-row:last-child {
-  border-bottom-color: transparent;
+/* The rule that opens a group closes the one before it, so no second line;
+   a row leaving keeps its own until it has gone. */
+.crewlet-inbox-list--chat
+  .crewlet-inbox-list__group:has(+ .crewlet-inbox-list__group > .crewlet-inbox-list__label)
+  .crewlet-inbox-row:nth-last-child(1 of :not(.crewlet-inbox-row--leaving)) {
+  border-bottom: 0;
+}
+
+/* Forced colours repaint a background to Canvas: the rule is a border there. */
+@media (forced-colors: active) {
+  .crewlet-inbox-list--chat .crewlet-inbox-list__label:not(:has(> .crewlet-inbox-list__disclosure))::after,
+  .crewlet-inbox-list--chat .crewlet-inbox-list__disclosure::after {
+    border-top: 1px solid CanvasText;
+  }
 }
 
 .crewlet-inbox-list--chat .crewlet-inbox-row,

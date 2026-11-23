@@ -7,7 +7,7 @@
  * before a day gives its own hairline up to that rule.
  */
 import { afterEach, expect, test } from 'vitest';
-import { page } from 'vitest/browser';
+import { cdp, page } from 'vitest/browser';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import { InboxGroup, InboxList, InboxRow, MessageAction, MessageActions } from '@crewlethq/ui';
@@ -89,13 +89,38 @@ test('a day draws a rule after its words, in the time’s ink a step under a row
 test('the row before a day gives its hairline up to the day’s rule, and the list’s last row keeps its own', async () => {
   const list = await mount();
   const [today, earlier] = [...list.querySelectorAll<HTMLElement>('.crewlet-inbox-list__group')];
-  const alpha = (row: Element) => {
-    const colour = getComputedStyle(row).borderBottomColor;
-    const parts = colour.match(/[\d.]+/g)!.map(Number);
-    return colour.startsWith('rgba') ? parts[3]! : 1;
-  };
+  const hairline = (row: Element) => parseFloat(getComputedStyle(row).borderBottomWidth);
   const rows = (group: HTMLElement) => [...group.querySelectorAll<HTMLElement>('.crewlet-inbox-row')];
-  expect(alpha(rows(today!)[0]!)).toBe(1);
-  expect(alpha(rows(today!).at(-1)!), 'two lines between the days').toBe(0);
-  expect(alpha(rows(earlier!).at(-1)!)).toBe(1);
+  expect(hairline(rows(today!)[0]!)).toBe(1);
+  expect(hairline(rows(today!).at(-1)!), 'two lines between the days').toBe(0);
+  expect(hairline(rows(earlier!).at(-1)!)).toBe(1);
+});
+
+// Mutation: match the last row by :last-child and, while it leaves, the row
+// above it keeps its hairline over the next day's rule.
+test('while the last row of a day leaves, the row above it gives its hairline up and the leaving row keeps its own', async () => {
+  const list = await mount();
+  const today = list.querySelector<HTMLElement>('.crewlet-inbox-list__group')!;
+  const [first, last] = [...today.querySelectorAll<HTMLElement>('.crewlet-inbox-row')];
+  last!.classList.add('crewlet-inbox-row--leaving');
+  expect(parseFloat(getComputedStyle(first!).borderBottomWidth)).toBe(0);
+  expect(parseFloat(getComputedStyle(last!).borderBottomWidth)).toBe(1);
+});
+
+// Mutation: drop the forced-colours border and the rule, a background, is
+// repainted to the page's own Canvas.
+test('in forced colours a day’s rule is a border in the system’s text colour', async () => {
+  const list = await mount();
+  const media = (features: { name: string; value: string }[]) => cdp().send('Emulation.setEmulatedMedia', { features });
+  await media([{ name: 'forced-colors', value: 'active' }]);
+  try {
+    expect(matchMedia('(forced-colors: active)').matches).toBe(true);
+    for (const label of list.querySelectorAll('.crewlet-inbox-list__label')) {
+      const rule = getComputedStyle(label, '::after');
+      expect(rule.borderTopStyle).toBe('solid');
+      expect(parseFloat(rule.borderTopWidth)).toBe(1);
+    }
+  } finally {
+    await media([]);
+  }
 });
