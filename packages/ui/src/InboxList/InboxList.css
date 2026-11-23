@@ -660,17 +660,34 @@
   line-height: var(--crewlet-chat-line);
 }
 
-/* A group's label is a day: the words' own case, a step down, on the page's
-   ground, set on the row's inset so it starts over the faces. */
+/* A group's label is a rule, not a row: the day in its own case on the faces'
+   edge and a hairline running on, as a transcript's dividers (ChatDivider.css),
+   with more air above it than under it. */
 .crewlet-inbox-list--chat .crewlet-inbox-list__label {
-  padding: var(--spacing-4) var(--crewlet-chat-pad-x) var(--spacing-2);
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-3) var(--crewlet-chat-pad-x) var(--spacing-1);
   font-size: var(--crewlet-chat-meta);
   line-height: var(--font-line-height-snug);
 }
 
+.crewlet-inbox-list--chat .crewlet-inbox-list__label:not(:has(> .crewlet-inbox-list__disclosure))::after,
+.crewlet-inbox-list--chat .crewlet-inbox-list__disclosure::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  margin-inline-start: var(--spacing-3);
+  background: var(--color-edge-hairline);
+}
+
 .crewlet-inbox-list__day {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+}
+
+/* The rule that opens a group closes the one before it, so no second line. */
+.crewlet-inbox-list--chat .crewlet-inbox-list__group:has(+ .crewlet-inbox-list__group > .crewlet-inbox-list__label) .crewlet-inbox-row:last-child {
+  border-bottom-color: transparent;
 }
 
 .crewlet-inbox-list--chat .crewlet-inbox-row,

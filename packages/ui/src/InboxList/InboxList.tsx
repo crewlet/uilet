@@ -38,7 +38,8 @@ export interface InboxListProps extends HTMLAttributes<HTMLElement> {
    * face, the name and the words on the chat step, the conversation's side
    * inset, 16px above and below each row and a hairline between rows. Rows
    * run full bleed, the open one a flat wash, and a group's label reads as a
-   * day ("Monday, November 17") rather than an eyebrow. For a list of messages,
+   * day ("Monday, November 17") with a rule after it rather than an eyebrow,
+   * so it reads as a break between rows rather than a row. For a list of messages,
    * such as a person's activity or their direct conversations.
    */
   density?: InboxListDensity | undefined;
@@ -397,7 +398,7 @@ function useLeavingRows(children: ReactNode): ReactNode[] {
  * A labelled run of rows. The label is a heading set in the micro-label
  * register, so a reader navigating by heading lands on each group and a
  * reader scanning sees where one ends. In a `chat` list it is set as a day,
- * in the words' own case.
+ * in the words' own case, with a hairline running on after it.
  *
  * THE GROUP IS WHERE ROWS LIVE: it draws the list element (`ul`) an
  * `InboxRow` is an item of. A row placed straight in the `InboxList` is an
