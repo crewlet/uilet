@@ -29,7 +29,46 @@ function hide(box: HTMLElement, shown: number) {
   });
 }
 
-const idle = () => {};
+interface Fitting {
+  box: HTMLElement;
+  run: () => void;
+  stop: () => void;
+}
+
+/** Fits `box` now, and again whenever it, a row or the set of rows changes. */
+function fit(box: HTMLElement, heard: RefObject<FitRowsOptions['onFit']>): Fitting {
+  let last: number | null = null;
+  const run = () => {
+    const shown = fitRows(box);
+    hide(box, shown);
+    if (last === shown) return;
+    last = shown;
+    heard.current?.(shown);
+  };
+  const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(run);
+  const watch = () => {
+    if (!resized) return;
+    resized.disconnect();
+    resized.observe(box);
+    for (const row of Array.from(box.children)) resized.observe(row);
+  };
+  const changed = new MutationObserver(() => {
+    watch();
+    run();
+  });
+  watch();
+  changed.observe(box, { childList: true });
+  run();
+  return {
+    box,
+    run,
+    stop: () => {
+      resized?.disconnect();
+      changed.disconnect();
+      hide(box, box.children.length);
+    },
+  };
+}
 
 /**
  * Shows the rows of `ref`'s box that fit it whole and hides the rest, so no
@@ -39,47 +78,26 @@ const idle = () => {};
  */
 export function useFitRows(ref: RefObject<HTMLElement | null>, { enabled = true, onFit }: FitRowsOptions = {}) {
   const heard = useRef(onFit);
-  const measure = useRef(idle);
-  const last = useRef<number | null>(null);
+  const fitting = useRef<Fitting | null>(null);
 
-  // Every render may have changed the rows.
+  // Every render: the rows may have changed, and so may the box (a list drawn
+  // after its owner, or drawn anew), which a ref only shows by holding it.
   useLayoutEffect(() => {
     heard.current = onFit;
-    measure.current();
+    const box = enabled ? ref.current : null;
+    if (fitting.current?.box === box) {
+      fitting.current?.run();
+      return;
+    }
+    fitting.current?.stop();
+    fitting.current = box ? fit(box, heard) : null;
   });
 
-  useLayoutEffect(() => {
-    const box = ref.current;
-    // Off, nothing is measured and no row is touched.
-    if (!box || !enabled) return;
-    const run = () => {
-      const shown = fitRows(box);
-      hide(box, shown);
-      if (last.current === shown) return;
-      last.current = shown;
-      heard.current?.(shown);
-    };
-    measure.current = run;
-    run();
-    const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(run);
-    const watch = () => {
-      if (!resized) return;
-      resized.disconnect();
-      resized.observe(box);
-      for (const row of Array.from(box.children)) resized.observe(row);
-    };
-    watch();
-    const changed = new MutationObserver(() => {
-      watch();
-      run();
-    });
-    changed.observe(box, { childList: true });
-    return () => {
-      measure.current = idle;
-      resized?.disconnect();
-      changed.disconnect();
-      hide(box, box.children.length);
-      last.current = null;
-    };
-  }, [enabled, ref]);
+  useLayoutEffect(
+    () => () => {
+      fitting.current?.stop();
+      fitting.current = null;
+    },
+    [],
+  );
 }

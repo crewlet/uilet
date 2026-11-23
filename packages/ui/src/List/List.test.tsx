@@ -5,7 +5,8 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { List, ListItem } from './index.js';
+import { useRef } from 'react';
+import { List, ListItem, useFitRows } from './index.js';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(cleanup);
@@ -347,4 +348,35 @@ test('a list that does not fit leaves its rows alone', () => {
   const row = container.querySelector('li')!;
   expect(row.style.visibility).toBe('hidden');
   expect(row.hasAttribute('data-fit-hidden')).toBe(false);
+});
+
+test('rows drawn after their owner are fitted once they arrive', () => {
+  const onFit = vi.fn();
+  // A list behind a placeholder: the box the ref names arrives on a later render.
+  function Late({ ready }: { ready: boolean }) {
+    const box = useRef<HTMLUListElement>(null);
+    useFitRows(box, { onFit });
+    return ready ? (
+      <ul ref={box}>
+        {Array.from({ length: 5 }, (_, i) => (
+          <li key={i}>{`Row ${i + 1}`}</li>
+        ))}
+      </ul>
+    ) : (
+      <p>Loading</p>
+    );
+  }
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    const i = this.matches('li') ? Array.from(this.parentElement!.children).indexOf(this) : -1;
+    return (i < 0 ? { top: 0, bottom: 100 } : { top: i * 40, bottom: i * 40 + 40 }) as DOMRect;
+  });
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (this: HTMLElement) {
+    return this.matches('ul') ? 100 : 0;
+  });
+  const { container, rerender } = render(<Late ready={false} />);
+  expect(onFit).not.toHaveBeenCalled();
+  rerender(<Late ready />);
+  expect(onFit).toHaveBeenLastCalledWith(2);
+  expect(container.querySelectorAll('[data-fit-hidden]')).toHaveLength(3);
+  vi.restoreAllMocks();
 });
