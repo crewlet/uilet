@@ -253,9 +253,9 @@ many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 
 ## Changes in 0.182.0
 
-### An assignment row links its name and splits its value
+### An assignment row links its name and splits its value, and a consequence list rules itself off
 
-**`AssignmentList` rows take `href`** (the name becomes a link, for a subject with a page of its own) and **`nameTitle`** (its hover text), and **`lines`**: a value split into parts, each a labelled picker under the name, for a seat whose jobs run on different models. `value` is optional on a split row. Story: `AssignmentList` Split Row.
+**`AssignmentList` rows take `href`** (the name becomes a link, for a subject with a page of its own) and **`nameTitle`** (its hover text), and **`lines`**: a value split into parts, each a labelled picker under the name, for a seat whose jobs run on different models. `value` is optional on a split row. Story: `AssignmentList` Split Row. **`ConsequenceList` takes `divided`**: a rule above it, as `ConfirmModal` draws one, for a dialog with a layout of its own that puts the list under its summary and controls.
 
 ## Changes in 0.181.0
 
