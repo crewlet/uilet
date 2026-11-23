@@ -1,0 +1,14 @@
+/*
+ * A confirmation's parts, in the stacked body: the summary, a destination,
+ * the changes and then the consequences, set apart from what is above them by
+ * a rule, so what will happen reads as one group under what is asked.
+ */
+.crewlet-modal__body--stacked:has(> .crewlet-confirm-modal__changes, > .crewlet-confirm-modal__consequences) {
+  gap: var(--spacing-4);
+}
+
+/* A prompt's own title is not something to rule off from. */
+.crewlet-modal__body--stacked > :not(.crewlet-modal__prompt-title) + .crewlet-confirm-modal__consequences {
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border-default);
+}

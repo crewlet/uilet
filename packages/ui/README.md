@@ -44,11 +44,11 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Content and text | `Text` (the eight registers and `inherit`; a line cut by `truncate` or `clamp` shows its whole words on hover), `Prose`, `Statement`, `Document`, `DocumentTitle` and `DocumentTitleField`, the Markdown grammar (`parseMarkdown`, `parseMarkdownSpans`, `markdownInline`, `safeHref` and the line readers, with no React in it), `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `StepTimeline` (a process's steps, one plain line each with its state, with `STEP_TIMELINE_LABELS`), `RelativeTime`, `Note`, `Divider` |
 
 | Content and text | `Text` (the eight registers and `inherit`; a line cut by `truncate` or `clamp` shows its whole words on hover), `Prose`, `Statement`, `Document`, `DocumentTitle` and `DocumentTitleField`, the Markdown grammar (`parseMarkdown`, `parseMarkdownSpans`, `markdownInline`, `safeHref` and the line readers, with no React in it), `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime`, `Note`, `Divider`, `VendorUI` (a name on a vendor's screen, a menu path with its levels), `StepLink` (the words of a step that name a vendor's page, linked) and `VendorText` (a vendor instruction drawn from its parts, with `VendorTextPart` and `vendorTextString`) |
-| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `TimeRangePicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `ChoiceCards`, `MemberPicker` (groups granted whole, with members left out or chosen on their own, and `chosenMembers`), `KeyValueRows` (keys and their values as rows under one column head, with `keyValueRowsLabels`), `ChipField` (chosen items as chips inside the field), `PersonRow` (a person or an agent as one row of a list), `Composer`, `MarkdownEditor`, `RichEditor` (with `preloadRichEditor`, and the round trip `roundTripMarkdown` and `canonicalMarkdown` from `@crewlethq/ui/RichEditorMarkdown`), `MoneyField` (an amount typed as text, never a number, with `moneyFieldProblem`), `ScopeList` (what an agent may reach at a vendor, a row to tick each: the name first, its IDs quiet, with `SCOPE_LIST_LABELS`) |
+| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `TimeRangePicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `ChoiceCards`, `MemberPicker` (groups granted whole, with members left out or chosen on their own, and `chosenMembers`), `KeyValueRows` (keys and their values as rows under one column head, with `keyValueRowsLabels`), `ChipField` (chosen items as chips inside the field), `PersonRow` (a person or an agent as one row of a list), `Composer`, `MarkdownEditor`, `RichEditor` (with `preloadRichEditor`, and the round trip `roundTripMarkdown` and `canonicalMarkdown` from `@crewlethq/ui/RichEditorMarkdown`), `MoneyField` (an amount typed as text, never a number, with `moneyFieldProblem`), `ScopeList` (what an agent may reach at a vendor, a row to tick each: the name first, its IDs quiet, with `SCOPE_LIST_LABELS`), `AssignmentList` and `AssignmentPicker` (who is assigned what, the value right after the name, with `ASSIGNMENT_LIST_LABELS`) |
 | Data display | `DataGrid` (with `useDataGridDriving`, `useAnyDataGridDriving` and `countDataGridRows`), `DataTable`, `CopyableCell`, `Table`, the read-only table cells (`TableKeyCell`, `TableNumberCell`, `TableDateCell`, `TableEntityCell`, `TableStatusCell`, `TableTagsCell`, `TableTextCell`, `TableTwoLineCell`), `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine` (set, seen, observed or confirmed by, with `SET_BY_VERBS`), `GraphCanvas` (a layered map of clusters, groups and three families of line, with its legend, the card beside an entry, the selection dock and fullscreen, its pure layout `layoutGraph`, the trunks `graphTrunks`, the reach `graphReach` and the keyboard walk `graphStep`), `Skeleton`, `Eyebrow`, `StatGroup`, `PinTile`, `IconTile`, `SettingsTable` (with `SettingsTable.Row`), `CatalogTile`, `Money` (an amount drawn from integer micros, with `formatMoney`, `parseMoney`, `moneyDecimal`, `minorUnits`, `sumByCurrency`, `toMicros` and `decimalOf`), `Rating` (stars, read only) |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, `FilterPill`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Agents at vendors | `AgentIdentity` (an agent's identity at a vendor, heading its box, with `AGENT_IDENTITY_CHIPS`, `AGENT_IDENTITY_WORDS`, `AGENT_IDENTITY_NEEDS_YOU`, `agentIdentityNeedsSetUp` and `agentIdentityNeedsYou`), `AgentIdentitySheet` (the one three-step sheet every vendor's identity is set up in) |
-| Feedback and overlays | `Callout`, `NoticeList` and `groupNotices` (several notices from one source, each said once), `AttentionList` (what needs a person, as rows in one card), `ConflictNote`, `EditingStatus`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
+| Feedback and overlays | `Callout`, `NoticeList` and `groupNotices` (several notices from one source, each said once), `AttentionList` (what needs a person, as rows in one card), `ConflictNote`, `EditingStatus`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal` (with `moveTo`, `changes`, `consequences` and `alternative`: see [Confirmation dialogs](#confirmation-dialogs)), `ConsequenceList` (with `ResourceName` and `consequencesAnswered`), `ChangeGroups`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Documents and review | `DiffView` and `DiffSummary` with the line diff they draw (`compareLines`, `compareSequences`, `changedRuns`, `diffStat`, `collapseDiff`, `firstChangedLines`, `splitLines`, with no React in it), `DiffList`, `VersionCompare`, `CommentThread` |
 | Conversations and the assistant | `ChatThread` (with `ChatThreadHandle`), `ChatMessage` and `ChatMessageFailure`, `MessageActions` (with `MessageAction`, `QuickReaction` and `ActionDivider`), `ReactionBar` and `AddReaction` (with `reactionWho`), `EmojiPicker` (with `EMOJI_GROUPS`, `emojiName` and `searchEmoji`), `ThreadSummary`, `ActivityLine`, `WorkingLine` (every agent at work on one line, with `workingSentence`, `workingAnnouncement` and `BouncingDots`), `MentionChip`, `MessageBubble`, `RunChip`, `StepList` and `StepStateMark`, `ProposalCard`, `ChangeList` (with `shortenUnchanged`), `StatusCard`, `ReceiptStrip`, `RefusalStrip`, `ResultTableCard`, `OpenInAppCard`, `BriefCard` (with `points`, what was said, each citing its message), `EntityList`, `RecordChip` and `RecordChipList` (a record named in a sentence, opening a peek, and the Also read line), `RefusalCard`, `SuggestionRow` and `SuggestionList`, `SendButton`, a transcript's timeline (`ChatDay` with `ChatDayPill`, `ChatDivider`), `LinkCard` (a link unfurled under its message), `MentionMenu` (with `mentionQuery`), `ActionCard` and `ActionCardRow` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `StackedRing`, `ActivityStrip`, `TimeSeries`, `Sparkline` (with its `fine` weight), the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
@@ -210,6 +210,52 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Confirmation dialogs
+
+Every dialog that confirms consequences or changes is a `ConfirmModal`, and
+its parts are props, so the layout, spacing, rules and tones come with them:
+
+| Prop | What goes in it | Drawn by |
+| ---- | --------------- | -------- |
+| `message` | The summary: who or what is affected, one sentence | the prompt's message |
+| `moveTo` | A destination control, a "Move them to" `FormField` | as given |
+| `changes` | Before and after, a subject at a time (`ChangeGroup[]`) | `ChangeGroups` |
+| `consequences` | What else happens (`ConsequenceItem[]`), with `consequencesHeading` | `ConsequenceList`, under a rule |
+| `alternative` | A quieter way out on the footer start, "Disable instead" | a ghost button |
+
+- **A consequence is typed.** A `choice` is a checkbox with a short label and
+  what it does under it; a `fact` is a muted line that simply happens or stays
+  (`kept`, `follows`, `info`, `warning`, `danger` or `plain`), its glyph where a
+  box would be so every line starts on the labels' edge. A named resource or
+  secret goes in a choice's `name`, or in `ResourceName` inside a description
+  or fact: a code chip that ends in an ellipsis with its whole name on hover.
+  `tone: 'danger'` is for a choice that destroys something, and nothing else.
+  A choice marked `required` holds the confirm button until it is ticked.
+- **A change is grouped by subject.** The subject (a seat, a record) is said
+  once as a heading and its fields or jobs are the rows: the old value struck
+  and muted, the new one tinted, each on one line with its words on hover, the
+  arrow and the new value dropping under the old one as a unit on a narrow
+  dialog. Past three subjects the rest fold behind "Show N more", named beside
+  it; `ChangeList` with `subject`, `truncate` and `collapseAfter` is one subject
+  on its own.
+- **A screen that produces such changes** (who runs on which model, who owns
+  what) is an `AssignmentList`: the value right after the name, names and
+  values cut with their words on hover, and a row with an unsaved change
+  saying what it was.
+- **A dialog with a layout of its own** puts `ChangeGroups` and
+  `ConsequenceList` inside a `Modal`. Never hand-build checkbox lists, `code`
+  chips or before and after sentences in a dialog.
+
+Stories: Patterns / Confirmation dialogs (remove a model, remove an MCP server,
+disconnect an integration, move a seat's model, review and save, long names,
+many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
+
+## Changes in 0.181.0
+
+### One pattern for every confirmation dialog
+
+**`ConfirmModal` takes the parts of a confirmation as props**: `moveTo`, `changes` (with `changesHeading` and `changesCollapseAfter`), `consequences` (with `consequencesHeading`) and `alternative`, and holds its confirm button until every `required` choice is ticked. **`ConsequenceList`** draws typed consequences, a checkbox `choice` or a muted `fact`, on one text edge, with **`ResourceName`** for a named resource and **`consequencesAnswered`** for a custom footer. **`ChangeGroups`** draws changes a subject at a time and folds the rest behind "Show N more". **`ChangeList` takes `subject`** (said once over the rows), **`truncate`** (one line a value, with its words on hover) and **`collapseAfter`**, and its labels take `more` and `less`. **`AssignmentList` and `AssignmentPicker`** draw who is assigned what, with a pending row's old value. See [Confirmation dialogs](#confirmation-dialogs). Stories: Patterns / Confirmation dialogs, `ConsequenceList`, `ChangeGroups`, `AssignmentList`.
 
 ## Changes in 0.179.0
 
