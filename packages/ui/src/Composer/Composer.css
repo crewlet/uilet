@@ -52,7 +52,9 @@
   outline-color: var(--color-border-selected);
 }
 
-.crewlet-composer .crewlet-composer__field {
+/* On the textarea's own class, so the auto-resize inset (Input.css) cannot
+   outrank the box's in either stylesheet order. */
+.crewlet-composer .crewlet-composer__field.crewlet-textarea {
   flex: 1;
   min-width: 0;
   min-height: 68px;
@@ -78,7 +80,7 @@
  * line sits centred beside it), grows to six lines and then scrolls, and the
  * button stays on the last line.
  */
-.crewlet-composer--inline .crewlet-composer__field {
+.crewlet-composer--inline .crewlet-composer__field.crewlet-textarea {
   --crewlet-composer-line: calc(var(--font-line-height-normal) * var(--font-size-compact));
   --crewlet-composer-row: calc(var(--size-control-md) + var(--spacing-2));
 
