@@ -178,6 +178,8 @@ function Walk({
   const [made, setMade] = useState(false);
   const [running, setRunning] = useState(false);
   const [verdict, setVerdict] = useState<AgentIdentityVerdict | null>(null);
+  // A CHECK THAT THREW answered nothing about any read, so none is drawn done or failed.
+  const [unfinished, setUnfinished] = useState(false);
   // THE LATEST CHECK ONLY: an answer to one the person has since left behind
   // (the sheet closed, or Try again) is dropped, never drawn over the next.
   const run = useRef(0);
@@ -187,6 +189,18 @@ function Walk({
     },
     [],
   );
+
+  // FOCUS FOLLOWS THE STEP, as SetupWizard's does: the control pressed
+  // (Back, Make it for me) often belongs to the step it leaves, and focus left
+  // on it would fall to the page behind the sheet. The step's region takes it,
+  // which also says which step this is; the first render takes no focus.
+  const region = useRef<HTMLElement>(null);
+  const shown = useRef(step);
+  useEffect(() => {
+    if (shown.current === step) return;
+    shown.current = step;
+    region.current?.focus({ preventScroll: true });
+  }, [step]);
 
   const makeable = make !== undefined && !make.disabledReason;
   const go = (id: AgentIdentitySheetStep) => {
@@ -199,6 +213,7 @@ function Walk({
     const mine = ++run.current;
     setMade(byMaking);
     setVerdict(null);
+    setUnfinished(false);
     setRunning(true);
     go('check');
     const brought: AgentIdentityBrought = byMaking
@@ -209,9 +224,10 @@ function Walk({
           ...(handIn.kind === 'file' && handIn.field && field.trim() ? { field: field.trim() } : {}),
           ...(handIn.kind === 'token' && token.trim() ? { token: token.trim() } : {}),
         };
-    const settle = (answer: AgentIdentityVerdict) => {
+    const settle = (answer: AgentIdentityVerdict, threw = false) => {
       if (run.current !== mine) return;
       setVerdict(answer);
+      setUnfinished(threw);
       setRunning(false);
       // THE VALUE IS SENT ONCE: kept nowhere once Crewlet has it, and cleared for a retry.
       if (answer.ok) setToken('');
@@ -222,41 +238,56 @@ function Walk({
     } catch (error) {
       answer = Promise.reject(error);
     }
-    answer.then(settle, (error: unknown) =>
-      settle({
-        ok: false,
-        view: (
-          <Callout variant="danger" title="The check did not finish">
-            {messageOf(error) ?? 'Crewlet kept nothing. Try again.'}
-          </Callout>
+    answer.then(
+      (verdict) => settle(verdict),
+      (error: unknown) =>
+        settle(
+          {
+            ok: false,
+            view: (
+              <Callout variant="danger" title="The check did not finish">
+                {messageOf(error) ?? 'Crewlet kept nothing. Try again.'}
+              </Callout>
+            ),
+          },
+          true,
         ),
-      }),
     );
   };
 
   const again = () => {
     run.current += 1;
     setVerdict(null);
+    setUnfinished(false);
     setRunning(false);
     setFile(null);
     setFileError(null);
     setField('');
     setToken('');
     const back: AgentIdentitySheetStep = made || handIn.kind === 'nothing' ? 'vendor' : 'back';
+    // A FAILED MAKE IS FORGOTTEN: the person may now go by hand, and Back here
+    // asks for what they bring rather than saying there is nothing to bring.
+    setMade(false);
     setStep(back);
+    // THE CHECK IS REACHED ONLY BY RUNNING IT: left reached, the stepper would
+    // offer a Check step with nothing under it but a button that never ends.
+    setReached(back);
   };
 
   const pick = (files: PickedFile[]) => {
     const picked = files[0];
     if (!picked || handIn.kind !== 'file') return;
+    // A REFUSED OR NEW FILE TAKES THE OLD ONE'S PLACE WHOLE: neither the old
+    // file nor the value read from its name is sent under the new one's error.
     if (!accepted(picked.file.name, handIn.accept)) {
       setFileError(`Choose the ${handIn.accept} file ${vendor} gave you.`);
+      setFile(null);
+      setField('');
       return;
     }
     setFileError(null);
     setFile(picked);
-    const read = handIn.field?.fromName?.exec(picked.file.name)?.[1];
-    if (read) setField(read);
+    setField(handIn.field?.fromName?.exec(picked.file.name)?.[1] ?? '');
   };
 
   const listed = made ? [...(make?.reads ?? []), ...reads] : reads;
@@ -270,10 +301,12 @@ function Walk({
   // NOTHING IS SAID DONE BEFORE THE ANSWER: while the check runs, its first
   // read is the one under way and the rest wait; once it answers, every read
   // before a refusal is done, the refused one failed, and any after it unmade.
+  // A check that threw says nothing of any read: each is stopped.
   const readSteps: StepListStep[] = listed.map((r, i) => {
     let state: StepState;
     if (running) state = i === 0 ? 'running' : 'pending';
     else if (!verdict) state = 'pending';
+    else if (unfinished) state = 'stopped';
     else if (verdict.ok) state = 'done';
     else state = i < failedIndex ? 'done' : i === failedIndex ? 'failed' : 'pending';
     return { id: r.id, label: r.label, state };
@@ -320,7 +353,7 @@ function Walk({
               hint={file ? 'Chosen. Crewlet reads it once, then seals it.' : handIn.hint}
               onFiles={pick}
               actions={
-                <FilePickButton size="small" variant="secondary" accept={handIn.accept} onFiles={pick}>
+                <FilePickButton size="small" variant="secondary" accept={handIn.accept} multiple={false} onFiles={pick}>
                   {file ? 'Choose another file' : 'Choose file'}
                 </FilePickButton>
               }
@@ -395,47 +428,51 @@ function Walk({
         : `Fill in the ${handIn.field?.label ?? 'value'} first.`
       : 'Paste it first.';
   const index = STEPS.indexOf(step);
-  const footer =
-    verdict?.ok === true ? (
-      <Button size="small" variant="primary" onClick={onClose}>
-        Done
-      </Button>
-    ) : (
-      <>
-        {failed || step === 'vendor' ? (
-          <Button size="small" variant="ghost" onClick={onClose}>
-            Close
-          </Button>
-        ) : null}
-        {index > 0 && !running && !failed ? (
-          <Button size="small" variant="ghost" onClick={() => setStep(STEPS[index - 1]!)}>
-            Back
-          </Button>
-        ) : null}
-        {failed ? (
-          <Button size="small" variant="primary" onClick={again}>
-            Try again
-          </Button>
-        ) : step === 'vendor' ? (
-          <Button size="small" variant="primary" onClick={() => go('back')}>
-            {makeable ? 'I made it by hand' : 'Next'}
-          </Button>
-        ) : step === 'back' ? (
-          <Button
-            size="small"
-            variant="primary"
-            disabledReason={ready ? undefined : notReady}
-            onClick={() => check(false)}
-          >
-            Check
-          </Button>
-        ) : (
-          <Button size="small" variant="primary" loading>
-            Check
-          </Button>
-        )}
-      </>
-    );
+  const done = verdict?.ok === true;
+  // ONE ROW OF THREE PLACES, the primary always the last: the button pressed
+  // (Next, Check) becomes the next one (Check, Done, Try again) in place, so
+  // focus stays on it rather than falling to the page behind the sheet.
+  const footer = (
+    <>
+      {!done && (failed || step === 'vendor') ? (
+        <Button size="small" variant="ghost" onClick={onClose}>
+          Close
+        </Button>
+      ) : null}
+      {!done && index > 0 && !running && !failed ? (
+        <Button size="small" variant="ghost" onClick={() => setStep(STEPS[index - 1]!)}>
+          Back
+        </Button>
+      ) : null}
+      {done ? (
+        <Button size="small" variant="primary" onClick={onClose}>
+          Done
+        </Button>
+      ) : failed ? (
+        <Button size="small" variant="primary" onClick={again}>
+          Try again
+        </Button>
+      ) : step === 'vendor' ? (
+        // ONE PRIMARY PER VIEW: beside Make it for me, going by hand is the quiet choice.
+        <Button size="small" variant={makeable ? 'secondary' : 'primary'} onClick={() => go('back')}>
+          {makeable ? 'I made it by hand' : 'Next'}
+        </Button>
+      ) : step === 'back' ? (
+        <Button
+          size="small"
+          variant="primary"
+          disabledReason={ready ? undefined : notReady}
+          onClick={() => check(false)}
+        >
+          Check
+        </Button>
+      ) : (
+        <Button size="small" variant="primary" loading>
+          Check
+        </Button>
+      )}
+    </>
+  );
 
   return (
     <Dialog
@@ -453,11 +490,17 @@ function Walk({
         orientation="vertical"
         label={`Setting up ${agent}'s identity at ${vendor}`}
         steps={STEPS.map((id) => ({ id, ...labels[id] }))}
-        current={verdict?.ok === true ? null : step}
+        current={done ? null : step}
+        tone={failed ? 'danger' : 'info'}
         reached={reached}
         onSelect={running || verdict ? undefined : (id) => setStep(id as AgentIdentitySheetStep)}
       />
-      <section className="crewlet-agent-identity-sheet__step" aria-label={labels[step].label}>
+      <section
+        ref={region}
+        tabIndex={-1}
+        className="crewlet-agent-identity-sheet__step"
+        aria-label={labels[step].label}
+      >
         {content[step]}
       </section>
     </Dialog>

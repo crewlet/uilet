@@ -19,10 +19,15 @@
  * TWO COLUMNS, NOT A WRAPPING ROW: in a narrow box the label and chip wrap
  * inside the first column, and the action keeps its place at the top right
  * rather than dropping under them to the next line.
+ *
+ * THE LABEL'S COLUMN HAS A FLOOR. An auto column grows to its whole content
+ * before a 1fr column gets anything, so two actions side by side on a phone
+ * left the label 27px and clipped the chip; held to at least 8rem (or 40% of
+ * a box narrower than 20rem), the actions stack instead.
  */
 .crewlet-agent-identity__head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(min(8rem, 40%), 1fr) auto;
   align-items: start;
   gap: var(--spacing-2) var(--spacing-3);
 }
@@ -37,10 +42,14 @@
   min-block-size: var(--size-control-sm);
 }
 
+/*
+ * WRAP-REVERSE: side by side the primary is the last at the right, and
+ * stacked it is the line on top, so Set up identity stays at the top right.
+ */
 .crewlet-agent-identity__actions {
   grid-column: 2;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: wrap-reverse;
   align-items: center;
   justify-content: flex-end;
   gap: var(--spacing-2);

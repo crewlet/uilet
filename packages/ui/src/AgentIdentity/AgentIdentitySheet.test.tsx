@@ -69,6 +69,16 @@ const dialog = () => screen.getByRole('dialog', { name: 'Set up identity: Growth
 const button = (name: string | RegExp) => within(dialog()).getByRole('button', { name });
 const steps = () => within(dialog()).getByRole('list', { name: "Setting up Growth Marketer's identity at Apple" });
 
+/** Every WCAG A and AA rule axe checks, over the whole page (the sheet is portalled to the body). */
+async function axeClean() {
+  const result = await axe.run(document.body, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(result.violations).toEqual([]);
+}
+
 /** Each read's state, as the list draws it. */
 const readStates = (list: HTMLElement) =>
   within(list)
@@ -132,6 +142,38 @@ test('refuses a file of another kind and says which one to choose', () => {
   expect(button('Check').getAttribute('aria-disabled')).toBe('true');
 });
 
+test('a refused or renamed second file takes the first one\'s place whole', () => {
+  const { onCheck } = sheet();
+  fireEvent.click(button('Next'));
+  chooseFile('AuthKey_7KQ4M2ZX9P.p8');
+  chooseFile('notes.txt');
+  // THE OLD FILE AND ITS KEY ID ARE GONE under the error, and nothing can be checked.
+  expect(within(dialog()).getByText('Drop the file here')).toBeTruthy();
+  expect((within(dialog()).getByRole('textbox', { name: 'Key ID' }) as HTMLInputElement).value).toBe('');
+  expect(button('Check').getAttribute('aria-disabled')).toBe('true');
+  // A .p8 FILE NAMED ANOTHER WAY keeps no ID read from the one before it.
+  chooseFile('AuthKey_7KQ4M2ZX9P.p8');
+  const renamed = chooseFile('team-key.p8');
+  expect((within(dialog()).getByRole('textbox', { name: 'Key ID' }) as HTMLInputElement).value).toBe('');
+  fireEvent.change(within(dialog()).getByRole('textbox', { name: 'Key ID' }), { target: { value: '3HN8RT6YQ1' } });
+  fireEvent.click(button('Check'));
+  expect(onCheck).toHaveBeenCalledWith({ made: false, file: renamed, field: '3HN8RT6YQ1' });
+});
+
+test('the picker takes one file', () => {
+  sheet();
+  fireEvent.click(button('Next'));
+  expect(dialog().querySelector<HTMLInputElement>('input[type="file"]')!.multiple).toBe(false);
+});
+
+test('focus follows the step, so a control that leaves with its step never drops it behind the sheet', () => {
+  sheet();
+  fireEvent.click(button('Next'));
+  expect(document.activeElement).toBe(within(dialog()).getByRole('region', { name: 'Back here' }));
+  fireEvent.click(button('Back'));
+  expect(document.activeElement).toBe(within(dialog()).getByRole('region', { name: 'At Apple' }));
+});
+
 test('says nothing is done while the check runs, then every read done when it works', async () => {
   const { pending, onClose } = sheet();
   fireEvent.click(button('Next'));
@@ -141,9 +183,12 @@ test('says nothing is done while the check runs, then every read done when it wo
   const states = () => readStates(reads);
   expect(states()).toEqual(['running', 'pending', 'pending']);
   expect(button('Check').getAttribute('aria-busy')).toBe('true');
+  await axeClean();
   await act(async () => pending.answer({ ok: true, view: <p>Works. Crewlet keeps it.</p> }));
   expect(states()).toEqual(['done', 'done', 'done']);
-  expect(within(dialog()).getByText('Works. Crewlet keeps it.')).toBeTruthy();
+  expect(within(dialog()).getByText('Works. Crewlet keeps it.').closest('[aria-live="polite"]')).toBeTruthy();
+  expect(within(dialog()).queryByRole('button', { name: 'Back' })).toBeNull();
+  await axeClean();
   fireEvent.click(button('Done'));
   expect(onClose).toHaveBeenCalled();
 });
@@ -165,6 +210,8 @@ test('marks the read a refusal stopped at, leaves the rest unmade, and Try again
   fireEvent.click(button('Try again'));
   expect(within(dialog()).getByRole('region', { name: 'Back here' })).toBeTruthy();
   expect(within(dialog()).getByText('Drop the file here')).toBeTruthy();
+  // THE CHECK IS NOT A STEP TO JUMP BACK TO: it is reached again only by running it.
+  expect(within(steps()).queryByRole('button', { name: /Check/ })).toBeNull();
 });
 
 test('a check that throws is drawn as one that did not finish', async () => {
@@ -174,6 +221,12 @@ test('a check that throws is drawn as one that did not finish', async () => {
   fireEvent.click(button('Check'));
   await act(async () => pending.refuse(new Error('The engine did not answer.')));
   expect(within(dialog()).getByText('The check did not finish')).toBeTruthy();
+  // IT ANSWERED NOTHING ABOUT ANY READ, so none is said done.
+  expect(readStates(within(dialog()).getByRole('list', { name: "Checking Growth Marketer's identity at Apple" }))).toEqual([
+    'stopped',
+    'stopped',
+    'stopped',
+  ]);
   expect(within(dialog()).getByText('The engine did not answer.')).toBeTruthy();
   expect(button('Try again')).toBeTruthy();
 });
@@ -202,12 +255,27 @@ test('Make it for me runs the check at once, listing what Crewlet does before th
   expect(within(dialog()).getByRole('button', { name: 'Or make it by hand at Apple' }).getAttribute('aria-expanded')).toBe(
     'false',
   );
-  expect(button('I made it by hand')).toBeTruthy();
+  // ONE PRIMARY PER VIEW: going by hand is the quiet choice beside Make it for me.
+  expect(button('I made it by hand').className).not.toContain('crewlet-btn--primary');
   fireEvent.click(button('Make it for me'));
   expect(onCheck).toHaveBeenCalledWith({ made: true });
+  expect(document.activeElement).toBe(within(dialog()).getByRole('region', { name: 'Check' }));
   const reads = within(dialog()).getByRole('list', { name: "Checking Growth Marketer's identity at Apple" });
   expect(within(reads).getByText('Make the system user')).toBeTruthy();
   expect(within(steps()).getByText('Nothing to bring')).toBeTruthy();
+});
+
+test('after a failed make, Try again offers both ways and asks the hand-made one for its token', async () => {
+  const { pending } = sheet({
+    handIn: { kind: 'token', label: 'System user token' },
+    make: { title: 'Crewlet can make it for you', body: '3 of 10 used.' },
+  });
+  fireEvent.click(button('Make it for me'));
+  await act(async () => pending.answer({ ok: false, view: <p>Meta refused the admin token.</p> }));
+  expect(steps().className).toContain('crewlet-stepper--danger');
+  fireEvent.click(button('Try again'));
+  expect(within(dialog()).getByRole('region', { name: 'At Apple' })).toBeTruthy();
+  expect(within(steps()).getByText('Paste it')).toBeTruthy();
 });
 
 test('a make that cannot run now says why and leaves the steps by hand open', () => {
@@ -225,13 +293,15 @@ test('a make that cannot run now says why and leaves the steps by hand open', ()
 });
 
 test('an answer to a check the person left is dropped', async () => {
-  const { pending } = sheet();
+  const { pending, rerender, onCheck, onClose } = sheet();
   fireEvent.click(button('Next'));
   chooseFile('AuthKey_7KQ4M2ZX9P.p8');
   fireEvent.click(button('Check'));
-  cleanup();
+  rerender(<AgentIdentitySheet {...APPLE} open={false} onCheck={onCheck} onClose={onClose} />);
+  rerender(<AgentIdentitySheet {...APPLE} onCheck={onCheck} onClose={onClose} />);
   await act(async () => pending.answer({ ok: true, view: <p>Late</p> }));
   expect(screen.queryByText('Late')).toBeNull();
+  expect(within(steps()).getByText('At Apple').closest('[aria-current="step"]')).toBeTruthy();
 });
 
 test('opens in the dialog the application passes', () => {
@@ -250,6 +320,9 @@ test('a closed sheet draws nothing and keeps nothing', () => {
   expect(screen.queryByRole('dialog')).toBeNull();
   rerender(<AgentIdentitySheet {...APPLE} onCheck={onCheck} onClose={onClose} />);
   expect(within(steps()).getByText('At Apple').closest('[aria-current="step"]')).toBeTruthy();
+  fireEvent.click(button('Next'));
+  expect(within(dialog()).getByText('Drop the file here')).toBeTruthy();
+  expect((within(dialog()).getByRole('textbox', { name: 'Key ID' }) as HTMLInputElement).value).toBe('');
 });
 
 test('carries no axe violation on each step', async () => {

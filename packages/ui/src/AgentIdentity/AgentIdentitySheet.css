@@ -24,7 +24,9 @@
   margin: 0;
 }
 
-/* Nothing to draw until the check answers, and no gap held open for it. */
-.crewlet-agent-identity-sheet__verdict:empty {
-  display: none;
-}
+/*
+ * The step takes focus when it changes, and keeps the browser's own focus
+ * treatment: after a press nothing is drawn, after a key the ring shows where
+ * the reader now is. The verdict's live region stays in the tree while empty,
+ * so a screen reader hears what fills it.
+ */

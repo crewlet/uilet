@@ -82,8 +82,21 @@ test('on a phone with two actions, they keep the top right and nothing leaves th
   const action = box(primary(at));
   expect(Math.abs(r.right - action.right)).toBeLessThan(1);
   const company = [...at.querySelectorAll('button')].find((b) => b.textContent === "Use the company's for now")!;
-  // THE FIRST ACTION STARTS ON THE FIRST LINE, the label's, not under it.
-  expect(Math.min(action.top, box(company).top) - r.top).toBeLessThan(2);
+  // SET UP IDENTITY IS THE TOP RIGHT, the label's line, with the other action under it.
+  expect(action.top - r.top).toBeLessThan(2);
+  expect(box(company).top).toBeGreaterThanOrEqual(action.bottom);
+  // THE LABEL KEEPS A COLUMN OF ITS OWN: no word under a button, and the chip whole.
+  const title = s.querySelector<HTMLElement>('.crewlet-agent-identity__title')!;
+  expect(box(title).width).toBeGreaterThanOrEqual(120);
+  for (const word of [title.querySelector('span')!, title.querySelector<HTMLElement>('.crewlet-tag')!]) {
+    const w = box(word);
+    for (const b of [action, box(company)]) {
+      expect(w.right <= b.left || b.right <= w.left || w.bottom <= b.top || b.bottom <= w.top).toBe(true);
+    }
+  }
+  const chip = title.querySelector<HTMLElement>('.crewlet-tag')!;
+  expect(chip.scrollWidth).toBeLessThanOrEqual(chip.clientWidth);
+  expect(chip.textContent).toBe('Refused');
   for (const el of s.querySelectorAll('*')) {
     const b = box(el);
     if (b.width === 0) continue;

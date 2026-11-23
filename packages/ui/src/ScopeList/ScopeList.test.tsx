@@ -85,6 +85,16 @@ test('a long list is searched by name, detail or ID, and Choose all takes only t
   expect(screen.getByText('Nothing matches “nothing here”.')).toBeTruthy();
 });
 
+test('a search left behind when the list shrinks below searchFrom filters nothing', () => {
+  const many: ScopeListOption[] = Array.from({ length: 9 }, (_, i) => ({ value: `a${i}`, label: `App ${i}` }));
+  const { rerender } = render(<ScopeList label="Apps" options={many} value={[]} onChange={() => {}} />);
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'App 8' } });
+  expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+  rerender(<ScopeList label="Apps" options={many.slice(0, 3)} value={[]} onChange={() => {}} />);
+  expect(screen.queryByRole('searchbox')).toBeNull();
+  expect(screen.getAllByRole('checkbox')).toHaveLength(3);
+});
+
 test('a short list has no search', () => {
   render(<Harness />);
   expect(screen.queryByRole('searchbox')).toBeNull();

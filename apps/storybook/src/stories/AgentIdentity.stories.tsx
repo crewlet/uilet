@@ -73,11 +73,11 @@ const APPLE: Record<AgentIdentityState, { summary: string; problem?: AgentIdenti
 /** Before set-up: Needs you, and the one primary action at the top right. */
 export const NotSetUp: Story = {};
 
-/** Every state, as an App Store Connect agent's box heads with it. */
+/** Every state, as an App Store Connect agent's box heads with it; on this per-agent vendor the company's identity asks for set-up too. */
 export const EveryState: Story = {
   render: (args) => (
     <div style={{ display: 'grid', gap: 'var(--spacing-6)', maxWidth: '52rem' }}>
-      {AGENT_IDENTITY_STATES.filter((s) => s !== 'company').map((state) => (
+      {AGENT_IDENTITY_STATES.map((state) => (
         <AgentIdentity key={state} {...args} state={state} {...APPLE[state]} onUseCompany={() => {}} />
       ))}
     </div>

@@ -84,7 +84,11 @@ export function ScopeList({
   const base = useId();
   const [term, setTerm] = useState('');
   const chosen = new Set(value);
-  const find = term.trim().toLowerCase();
+  const searchable = options.length >= searchFrom;
+  // A SEARCH APPLIES ONLY WHILE ITS FIELD IS DRAWN: a list that shrinks below
+  // `searchFrom` loses the field, and a term left behind would filter it with
+  // nothing on the screen to clear it.
+  const find = searchable ? term.trim().toLowerCase() : '';
   const shown = find
     ? options.filter((o) => `${o.label} ${o.detail ?? ''} ${o.id ?? ''} ${o.value}`.toLowerCase().includes(find))
     : options;
@@ -114,7 +118,7 @@ export function ScopeList({
           </Button>
         </div>
       ) : null}
-      {options.length >= searchFrom ? (
+      {searchable ? (
         <Input
           type="search"
           aria-label={labels.find}
