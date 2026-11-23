@@ -40,10 +40,10 @@ const GROWTH = [
   'meta-ads',
 ];
 
-/** The owners' PNGs embedded where they publish no vector, by the SHA-256 of their bytes. */
+/** The owners' PNGs embedded where they publish no vector, by the SHA-256 of the embedded bytes. */
 const RASTERS = {
-  'app-store-connect.svg': 'd670ff551a23ada8e5e9db2fbf337697ca28343bcb309c0006bcded12d80ce83',
-  'dark/app-store-connect.svg': '3b42a3f2b8510bcd5215bc47176d0587ce4e4109d4fd17e5c06a9c7334fec0ee',
+  'app-store-connect.svg': 'a9318edad15c7797dda912c3b015a355222b53ddab10e77f06afb3311bbea0d8',
+  'dark/app-store-connect.svg': '2aef6ad79239e4e2511be3d72bdbcdd0d022588274028f4e66efd7274c9c8325',
   'meta-ads.svg': 'f10dd0c7ae1dd1317e552d18cebd474785ddc2f25955f345ef0d301d50d9ce82',
 };
 
@@ -198,6 +198,8 @@ describe('the store, ads and analytics marks', () => {
       assert.ok(data, `${file} embeds something other than one PNG`);
       const bytes = Buffer.from(data, 'base64');
       assert.equal(bytes.subarray(1, 4).toString('latin1'), 'PNG', file);
+      // Eight bits per channel: every mark shares one module, so a 16-bit file weighs on every screen that draws one.
+      assert.equal(bytes[24], 8, `${file} embeds a ${bytes[24]}-bit PNG`);
       assert.equal(createHash('sha256').update(bytes).digest('hex'), RASTERS[file], file);
     }
     const readme = await readFile(resolve(PACKAGE, 'README.md'), 'utf8');
