@@ -115,23 +115,28 @@ describe('FactLine', () => {
     ]);
     const body = fact.querySelector('.crewlet-fact-line__body')!;
     expect([...body.children].map((child) => child.className.split(' ')[0])).toEqual([
-      'crewlet-fact-line__value',
+      'crewlet-fact-line__phrase',
       'crewlet-set-by',
     ]);
   });
 
-  test('a note runs on after its value, the dot held to the value, and wraps with it', () => {
+  test("a phrase's note follows its value, said after a comma, and the value keeps its own two-line clamp", () => {
     const { container } = render(<FactLine facts={[{ label: 'Last check', value: '41s ago', note: 'next in 9m' }]} />);
-    const value = container.querySelector('.crewlet-fact-line__value')!;
-    // One phrase in the value's own clamp, which gives it a line more for the note.
-    const clamp = value.querySelector('.crewlet-text')!;
-    expect(clamp.classList.contains('crewlet-text--clamp-3')).toBe(true);
-    expect(clamp.textContent).toBe('41s ago\u00a0· next in 9m');
-    // The dot is drawn, not read; a no-break space keeps it off the start of a line.
-    const [dot, note] = [...clamp.querySelectorAll('.crewlet-fact-line__note')];
-    expect(dot!.getAttribute('aria-hidden')).toBe('true');
-    expect(note!.textContent).toBe('next in 9m');
-    expect(container.querySelector('.crewlet-fact-line__body > .crewlet-fact-line__note')).toBeNull();
+    const phrase = container.querySelector('.crewlet-fact-line__phrase')!;
+    expect([...phrase.children].map((child) => child.className.split(' ')[0])).toEqual([
+      'crewlet-fact-line__value',
+      'crewlet-visually-hidden',
+      'crewlet-fact-line__note',
+    ]);
+    expect(phrase.textContent).toBe('41s ago, next in 9m');
+    expect(phrase.querySelector('.crewlet-text')!.classList.contains('crewlet-text--clamp-2')).toBe(true);
+    expect(phrase.querySelector('.crewlet-fact-line__note')!.textContent).toBe('next in 9m');
+    // Beside the value where both fit, under it where not; the dot is drawn in the gap, and not read.
+    const sheet = css().replace(/\/\*[\s\S]*?\*\//g, ' ');
+    const rule = /\.crewlet-fact-line__phrase\s*\{([^}]*)\}/.exec(sheet)?.[1] ?? '';
+    expect(rule).toMatch(/flex-wrap:\s*wrap/);
+    expect(rule).toMatch(/overflow:\s*clip/);
+    expect(sheet).toMatch(/\.crewlet-fact-line__note::before\s*\{[^}]*content:\s*'·'\s*\/\s*'';/);
   });
 
   test('a token, a set or a whole reading keeps its note on a line of its own', () => {

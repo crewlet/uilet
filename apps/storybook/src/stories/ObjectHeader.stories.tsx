@@ -114,8 +114,8 @@ export const WithMark: Story = {
 };
 
 /**
- * A note runs on after its value, smaller and quieter, and wraps with it as
- * one phrase: here beside a short value, a long one, and a long note.
+ * A note follows its value, smaller and quieter: beside a short value, on a
+ * line of its own under a long value, and wrapped whole when it is long.
  */
 export const FactNotes: Story = {
   args: {
