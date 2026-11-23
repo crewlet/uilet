@@ -1,10 +1,8 @@
 /**
- * A CHAT LIST'S DAY IS A RULE BETWEEN ITS ROWS, NOT A ROW. The label was set on
- * the rows' own terms (their inset, a band nearly a row tall, the secondary
- * ink, between the rows' own hairlines), so "Today" read as a conversation
- * with no time. Measured on the drawn page: the label draws a hairline after
- * its words, in the time's quiet ink a step under a row's name, and the row
- * before a day gives its own hairline up to that rule.
+ * A CHAT LIST'S DAY IS A THIN BAND ACROSS THE LIST. Measured on the drawn
+ * page, in both palettes: the label runs the list's full width on the sunk-well
+ * fill, draws no rule, centres its words on equal padding and stands well
+ * under a row's height; the row before a day gives its own hairline up to it.
  */
 import { afterEach, expect, test } from 'vitest';
 import { cdp, page } from 'vitest/browser';
@@ -21,9 +19,11 @@ afterEach(() => {
   host?.remove();
   root = null;
   host = null;
+  delete document.documentElement.dataset.theme;
 });
 
-async function mount(): Promise<HTMLElement> {
+async function mount(theme: 'light' | 'dark' = 'light'): Promise<HTMLElement> {
+  document.documentElement.dataset.theme = theme;
   await page.viewport(1280, 800);
   host = document.createElement('div');
   host.style.cssText = 'width: 380px;';
@@ -60,33 +60,48 @@ async function mount(): Promise<HTMLElement> {
   return host;
 }
 
-// Mutation: drop the label's ::after and it draws no rule; set it back in the
-// secondary ink and it reads as a row's words.
-test('a day draws a rule after its words, in the time’s ink a step under a row’s name', async () => {
-  const list = await mount();
-  const time = getComputedStyle(list.querySelector('.crewlet-inbox-row__meta')!);
-  const name = getComputedStyle(list.querySelector('.crewlet-inbox-row__title')!);
-  for (const label of list.querySelectorAll<HTMLElement>('.crewlet-inbox-list__label')) {
-    const words = label.querySelector<HTMLElement>('.crewlet-inbox-list__day')!;
-    const rule = getComputedStyle(label, '::after');
-    expect(rule.content, `${words.textContent} draws no rule`).not.toBe('none');
-    expect(parseFloat(rule.height)).toBe(1);
-    // It runs from after the words to the rows' end inset.
-    const box = label.getBoundingClientRect();
-    const end = box.right - parseFloat(getComputedStyle(label).paddingRight);
-    expect(words.getBoundingClientRect().right + parseFloat(rule.marginInlineStart) + parseFloat(rule.width)).toBeCloseTo(end, 0);
-    const ink = getComputedStyle(words);
-    expect(ink.color).toBe(time.color);
-    expect(parseFloat(ink.fontSize)).toBeLessThan(parseFloat(name.fontSize));
-    // Read with the rows it introduces: more air above its words than under them.
-    const drawn = words.getBoundingClientRect();
-    expect(drawn.top - box.top).toBeGreaterThan(box.bottom - drawn.bottom);
-  }
-});
+/** What the sunk-well token paints in the palette set now, read off a probe. */
+function insetFill(): string {
+  const probe = document.createElement('div');
+  probe.style.background = 'var(--color-surface-inset)';
+  document.body.append(probe);
+  const fill = getComputedStyle(probe).backgroundColor;
+  probe.remove();
+  return fill;
+}
+
+// Mutation: put the ::after rule back, the 12px over 4px padding, or the band
+// on the list's own ground, and this goes red.
+for (const theme of ['light', 'dark'] as const) {
+  test(`a day is a thin full-width band on the sunk-well fill, its words centred and no rule (${theme})`, async () => {
+    const host = await mount(theme);
+    const list = host.querySelector<HTMLElement>('.crewlet-inbox-list')!.getBoundingClientRect();
+    const row = host.querySelector<HTMLElement>('.crewlet-inbox-row')!.getBoundingClientRect();
+    const time = getComputedStyle(host.querySelector('.crewlet-inbox-row__meta')!);
+    const name = getComputedStyle(host.querySelector('.crewlet-inbox-row__title')!);
+    const fill = insetFill();
+    expect(fill).not.toBe('rgba(0, 0, 0, 0)');
+    for (const label of host.querySelectorAll<HTMLElement>('.crewlet-inbox-list__label')) {
+      const words = label.querySelector<HTMLElement>('.crewlet-inbox-list__day')!;
+      const day = words.textContent;
+      expect(getComputedStyle(label, '::after').content, `${day} draws a rule`).toBe('none');
+      expect(getComputedStyle(label).backgroundColor, `${day} is not on the band's fill`).toBe(fill);
+      const band = label.getBoundingClientRect();
+      expect(band.left).toBeCloseTo(list.left, 0);
+      expect(band.width).toBeCloseTo(list.width, 0);
+      expect(band.height, `${day} is not thin`).toBeLessThan(row.height / 2);
+      const drawn = words.getBoundingClientRect();
+      expect(drawn.top - band.top, `${day} is not centred`).toBeCloseTo(band.bottom - drawn.bottom, 0);
+      const ink = getComputedStyle(words);
+      expect(ink.color).toBe(time.color);
+      expect(parseFloat(ink.fontSize)).toBeLessThan(parseFloat(name.fontSize));
+    }
+  });
+}
 
 // Mutation: keep the hairline under the last row of a day and two lines run
-// a few pixels apart over the next day's words.
-test('the row before a day gives its hairline up to the day’s rule, and the list’s last row keeps its own', async () => {
+// over the band's top edge.
+test('the row before a day gives its hairline up to the day’s band, and the list’s last row keeps its own', async () => {
   const list = await mount();
   const [today, earlier] = [...list.querySelectorAll<HTMLElement>('.crewlet-inbox-list__group')];
   const hairline = (row: Element) => parseFloat(getComputedStyle(row).borderBottomWidth);
@@ -97,7 +112,7 @@ test('the row before a day gives its hairline up to the day’s rule, and the li
 });
 
 // Mutation: match the last row by :last-child and, while it leaves, the row
-// above it keeps its hairline over the next day's rule.
+// above it keeps its hairline over the next day's band.
 test('while the last row of a day leaves, the row above it gives its hairline up and the leaving row keeps its own', async () => {
   const list = await mount();
   const today = list.querySelector<HTMLElement>('.crewlet-inbox-list__group')!;
@@ -107,18 +122,19 @@ test('while the last row of a day leaves, the row above it gives its hairline up
   expect(parseFloat(getComputedStyle(last!).borderBottomWidth)).toBe(1);
 });
 
-// Mutation: drop the forced-colours border and the rule, a background, is
-// repainted to the page's own Canvas.
-test('in forced colours a day’s rule is a border in the system’s text colour', async () => {
+// Mutation: drop the forced-colours border and the band, a background, is
+// repainted to the page's own Canvas with nothing marking it.
+test('in forced colours a day’s band is bordered in the system’s text colour', async () => {
   const list = await mount();
   const media = (features: { name: string; value: string }[]) => cdp().send('Emulation.setEmulatedMedia', { features });
   await media([{ name: 'forced-colors', value: 'active' }]);
   try {
     expect(matchMedia('(forced-colors: active)').matches).toBe(true);
     for (const label of list.querySelectorAll('.crewlet-inbox-list__label')) {
-      const rule = getComputedStyle(label, '::after');
-      expect(rule.borderTopStyle).toBe('solid');
-      expect(parseFloat(rule.borderTopWidth)).toBe(1);
+      const band = getComputedStyle(label);
+      expect(band.borderTopStyle).toBe('solid');
+      expect(parseFloat(band.borderTopWidth)).toBe(1);
+      expect(band.borderBottomStyle).toBe('solid');
     }
   } finally {
     await media([]);

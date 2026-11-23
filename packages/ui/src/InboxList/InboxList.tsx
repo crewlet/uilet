@@ -398,7 +398,7 @@ function useLeavingRows(children: ReactNode): ReactNode[] {
  * A labelled run of rows. The label is a heading set in the micro-label
  * register, so a reader navigating by heading lands on each group and a
  * reader scanning sees where one ends. In a `chat` list it is set as a day,
- * in the words' own case, with a hairline running on after it.
+ * in the words' own case, on a thin band across the list.
  *
  * THE GROUP IS WHERE ROWS LIVE: it draws the list element (`ul`) an
  * `InboxRow` is an item of. A row placed straight in the `InboxList` is an
