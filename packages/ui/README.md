@@ -252,6 +252,12 @@ Stories: Patterns / Confirmation dialogs (remove a model, remove an MCP server,
 disconnect an integration, move a seat's model, review and save, long names,
 many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 
+## Changes in 0.184.0
+
+### A value to copy sits in its sentence, vendor names stand out, and a fact's note follows its value
+
+**`Copyable` takes `variant="compact"`**: a value set in a sentence ("Name: crewlet-sre"), framed and sized to itself, its copy control always drawn at the target floor with its focus ring on the frame's edge. It is drawn whole and as copied unless `truncate` asks otherwise: a value too long for the line wraps inside its frame, after a `/`, or anywhere for one opaque run. **`AgentIdentitySheet` draws each value to copy as a compact `Copyable` after its step's words**, on the same line, where it drew a full-width panel under them with the vendor's naming rule under that. `copy.rule` is no longer drawn, since the value is copied as it is, and is deprecated. **`VendorUI` is filled with the pressed overlay and framed with the strong border**, where its fill was the subtle surface, the very surface of the card or sheet it sits on, and its frame the default hairline: it now stands off every opaque surface in both modes (its fill at least 1.2:1 on each, its frame at least 1.4:1 on the page and card surfaces, its words over 7:1 on it). **A `FactLine` note follows a phrase's value** ("41s ago · next in 9m"), at the 11px step in the tertiary ink: beside the value where both fit, on a line of its own where they do not, so the value keeps its two-line clamp and the note is never cut. The dot is drawn, not read; a screen reader hears "41s ago, next in 9m". A token, a set or a whole reading keeps its note on a line of its own, at the same size. Nothing to change. Stories: `Copyable` Compact, Compact In A Sentence; `ObjectHeader` With Mark, Fact Notes.
+
 ## Changes in 0.183.0
 
 ### A dialog's first focus is never its quieter way out

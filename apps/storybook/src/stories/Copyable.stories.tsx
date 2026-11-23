@@ -10,7 +10,7 @@ const meta: Meta<typeof Copyable> = {
     variant: 'chip',
   },
   argTypes: {
-    variant: { control: 'inline-radio', options: ['chip', 'inline', 'block'] },
+    variant: { control: 'inline-radio', options: ['chip', 'inline', 'compact', 'block'] },
     monospace: { control: 'boolean' },
     truncate: { control: 'boolean' },
     truncateLength: { control: 'number' },
@@ -50,6 +50,28 @@ export const WordsInAnIdentifiersPlace: Story = {
         ['Commit', <Copyable key="commit" value="5f2fb65cc4a1" display="5f2fb65" variant="inline" />],
       ]}
     />
+  ),
+};
+
+/** Compact: a value set in a sentence, framed and sized to itself, its control always drawn. */
+export const Compact: Story = { args: { variant: 'compact', value: 'crewlet-sre' } };
+
+/** In a step of instructions, on the line of the words that ask for it; a long value wraps inside its frame. */
+export const CompactInASentence: Story = {
+  render: () => (
+    <ol style={{ maxWidth: 360, display: 'grid', gap: 'var(--spacing-3)' }}>
+      <li>
+        Name: <Copyable value="crewlet-sre" variant="compact" ariaLabel="Copy the key's name" />
+      </li>
+      <li>
+        Email address:{' '}
+        <Copyable
+          value="crewlet-growth-3fa91c@example-identity.iam.gserviceaccount.com"
+          variant="compact"
+          ariaLabel="Copy the email address"
+        />
+      </li>
+    </ol>
   ),
 };
 

@@ -242,14 +242,44 @@
   overflow-wrap: normal;
 }
 
-/* A footnote may not set its column's width: the track does, and the note
-   wraps inside it, balanced so the wrap reads as deliberate. It is set as
-   the label is, so a fact line holds two sizes, the labels' and the values'. */
-.crewlet-fact-line__note,
+/* A footnote may not set its column's width: the track does, and a by-line
+   wraps inside it, balanced so the wrap reads as deliberate. */
 .crewlet-fact-line__set-by {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
   text-wrap: balance;
+}
+
+/* A note is an aside to its value, a step under the label in the quiet ink;
+   it wraps inside the track, balanced, as a by-line does. */
+.crewlet-fact-line__note {
+  min-width: 0;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
+  text-wrap: balance;
+}
+
+/* A phrase's note sits beside its value where both fit and wraps under it
+   where they do not; the value keeps its own two-line clamp either way. */
+.crewlet-fact-line__phrase {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--spacing-3);
+  min-width: 0;
+  overflow: clip;
+}
+
+/* The dot hangs in the gap before the note, so a note wrapped to a line of
+   its own puts it past the phrase's edge, where the clip takes it. */
+.crewlet-fact-line__phrase > .crewlet-fact-line__note::before {
+  content: '·';
+  content: '·' / '';
+  display: inline-block;
+  width: var(--spacing-3);
+  margin-inline-start: calc(-1 * var(--spacing-3));
+  text-align: center;
 }
 
 /* ── the by-line ───────────────────────────────────────────────────────── */

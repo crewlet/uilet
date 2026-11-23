@@ -1,12 +1,13 @@
 /*
- * A name on a vendor's screen inside a sentence: medium-weight primary ink in
- * a hairline frame on the subtle surface, set apart by shape, not ink alone.
+ * A name on a vendor's screen inside a sentence: semibold primary ink in a
+ * framed chip, set apart by shape, not ink alone. The fill is a translucent
+ * step, so the chip stands off whatever surface it is set on.
  */
 .crewlet-vendor-ui {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  background: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-pressed);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-xs);
   padding: 0 var(--spacing-1);
   /* Inline, so a link's underline reaches the name; sliced where it wraps, as InlineCode is. */
