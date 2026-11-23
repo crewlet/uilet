@@ -72,6 +72,17 @@ export const Compact: Story = {
   },
 };
 
+/** No mark: the title, the sentence and the action alone (`icon={false}`). */
+export const NoMark: Story = {
+  args: {
+    size: 'compact',
+    icon: false,
+    title: 'No model yet',
+    description: 'A model is a coding harness, such as Claude Code or Codex, signed in to its vendor.',
+    action: <Button size="small" variant="primary">Add model</Button>,
+  },
+};
+
 /** Where the surrounding section already carries the heading. */
 export const NoHeading: Story = {
   args: { headingLevel: 'none' },

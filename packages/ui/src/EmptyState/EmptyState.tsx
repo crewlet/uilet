@@ -4,7 +4,8 @@ import { cx } from '../utils/cx.js';
 import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/headingLevel.js';
 
 /**
- * `default` is a screen's, `compact` a panel's, both centred under a glyph.
+ * `default` is a screen's, `compact` a panel's, both centred under a glyph
+ * (or none, with `icon={false}`).
  * `inline` is a field's or a section's: one left-aligned row on a dashed
  * hairline, the sentence beside its one action and no glyph, for a part of a
  * page that is empty while the rest of it is not (a mission nobody has
@@ -13,7 +14,10 @@ import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/heading
 export type EmptyStateSize = 'default' | 'compact' | 'inline';
 
 export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
-  /** A glyph, drawn large and quiet. Replaced by `illustration` when both are given. */
+  /**
+   * A glyph, drawn large and quiet. Replaced by `illustration` when both are
+   * given. `false` draws no mark: the title, the sentence and the action alone.
+   */
   icon?: ReactNode;
   /** A full drawing, where a glyph is too small to carry the moment: a first run. */
   illustration?: ReactNode;
@@ -76,11 +80,14 @@ export function EmptyState({
       </div>
     );
   }
+  const mark = illustration ?? (icon === false ? null : (icon ?? <InboxGlyph size={size === 'compact' ? 'xl' : 32} />));
   return (
     <div {...rest} className={cx('crewlet-empty-state', `crewlet-empty-state--${size}`, className)}>
-      <span className="crewlet-empty-state__mark" aria-hidden>
-        {illustration ?? icon ?? <InboxGlyph size={size === 'compact' ? 'xl' : 32} />}
-      </span>
+      {mark === null || mark === false ? null : (
+        <span className="crewlet-empty-state__mark" aria-hidden>
+          {mark}
+        </span>
+      )}
       <Heading className="crewlet-empty-state__title">{title}</Heading>
       <p className="crewlet-empty-state__description">{description}</p>
       {action ? <div className="crewlet-empty-state__action">{action}</div> : null}
