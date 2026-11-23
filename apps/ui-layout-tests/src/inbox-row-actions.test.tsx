@@ -277,3 +277,32 @@ test('right to left, the tray stands at the row\'s start corner and covers none 
     row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!.blur();
   }
 });
+
+/** A box's middle, in px from the viewport's top. */
+const middle = (box: DOMRect) => box.top + box.height / 2;
+
+// Mutation: pin the tray to the row's top corner again and it stands 8px over
+// the row's middle; keep the tray's reach under a row with nothing under its
+// name and the name sits 4px over it.
+test('a chat row that is only its name stands its tray and its name on the row’s middle', async () => {
+  const list = await mount(<History density="chat" tools={1} />);
+  for (const row of list.querySelectorAll<HTMLElement>('.crewlet-inbox-row')) {
+    const tray = await shown(row);
+    // The row's own box, short of the hairline under it.
+    const rowMiddle = row.getBoundingClientRect().top + row.clientHeight / 2;
+    const name = row.querySelector('.crewlet-inbox-row__title')!.getClientRects()[0]!;
+    expect(Math.abs(middle(tray) - rowMiddle), 'the tray is off the row’s middle').toBeLessThanOrEqual(1);
+    expect(Math.abs(middle(name) - rowMiddle), 'the name is off the row’s middle').toBeLessThanOrEqual(1);
+    row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!.blur();
+  }
+});
+
+test.each([1, 2] as const)('a chat row with words under its name stands its tray on the name’s line (%i action(s))', async (tools) => {
+  const list = await mount(<Activity density="chat" tools={tools} title="Product Manager" />, 720);
+  for (const row of list.querySelectorAll<HTMLElement>('.crewlet-inbox-row')) {
+    const tray = await shown(row);
+    const name = row.querySelector('.crewlet-inbox-row__title')!.getClientRects()[0]!;
+    expect(Math.abs(middle(tray) - middle(name)), 'the tray is off the name’s line').toBeLessThanOrEqual(1);
+    row.querySelector<HTMLElement>('.crewlet-inbox-row__control')!.blur();
+  }
+});

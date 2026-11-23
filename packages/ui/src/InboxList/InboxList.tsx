@@ -633,6 +633,11 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
   arrived?: boolean | undefined;
 }
 
+/** Whether React draws nothing for a node: no words under a row's name. */
+function drawsNothing(node: ReactNode): boolean {
+  return node === undefined || node === null || typeof node === 'boolean' || node === '';
+}
+
 /**
  * One row: WHO, then WHAT in up to three lines, then the task it is about.
  *
@@ -766,6 +771,10 @@ export function InboxRow({
   const hasOutcome = outcome !== undefined && outcome !== null;
   const hasContext = context !== undefined && context !== null;
   const hasActions = actions !== undefined && actions !== null && actions !== false;
+  const hasAside = aside !== undefined && aside !== null && aside !== false;
+  // ONLY ITS NAME: nothing is drawn under it, so its tray keeps nothing clear (InboxList.css).
+  const nameOnly =
+    drawsNothing(children) && excerpt === undefined && where === undefined && !hasContext && !hasOutcome && !hasAside;
   // THE TRAY'S SIZE, kept on the row, so the name's line keeps that much room
   // for it and the words under it start below it (InboxList.css).
   useLayoutEffect(() => {
@@ -955,6 +964,7 @@ export function InboxRow({
         selected && 'crewlet-inbox-row--selected',
         hasLeading && 'crewlet-inbox-row--leading',
         hasActions && 'crewlet-inbox-row--actions',
+        nameOnly && 'crewlet-inbox-row--name-only',
         arrived && 'crewlet-inbox-row--arrived',
         presence.leaving && 'crewlet-inbox-row--leaving',
         className,
@@ -963,7 +973,7 @@ export function InboxRow({
       {/* One box in the row's one track, so the track can close over it. */}
       <div className="crewlet-inbox-row__body">
         {control}
-        {aside === undefined || aside === null || aside === false ? null : (
+        {!hasAside ? null : (
           <div className="crewlet-inbox-row__aside">{aside}</div>
         )}
       </div>
