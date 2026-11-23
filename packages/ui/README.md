@@ -223,6 +223,7 @@ its parts are props, so the layout, spacing, rules and tones come with them:
 | `changes` | Before and after, a subject at a time (`ChangeGroup[]`) | `ChangeGroups` |
 | `consequences` | What else happens (`ConsequenceItem[]`), with `consequencesHeading` | `ConsequenceList`, under a rule |
 | `alternative` | A quieter way out on the footer start, "Disable instead" | a ghost button |
+| `icon` | A glyph beside the title, in the framed shape's head | the head |
 
 - **A consequence is typed.** A `choice` is a checkbox with a short label and
   what it does under it; a `fact` is a muted line that simply happens or stays
@@ -250,6 +251,12 @@ its parts are props, so the layout, spacing, rules and tones come with them:
 Stories: Patterns / Confirmation dialogs (remove a model, remove an MCP server,
 disconnect an integration, move a seat's model, review and save, long names,
 many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
+
+## Changes in 0.183.0
+
+### A dialog's first focus is never its quieter way out
+
+**`Modal` starts focus on the footer's own actions before its start** when the body has nothing to focus, so a dialog with a footer start ("Disable instead", a ConfirmModal's `alternative`) opens on Cancel rather than on that action. **`ConfirmModal` takes `icon`**, the glyph its framed head draws beside the title, as `Modal`'s does. Story: Patterns / Confirmation dialogs, Disconnect Integration.
 
 ## Changes in 0.181.0
 
