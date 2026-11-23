@@ -153,7 +153,7 @@
 .crewlet-step-timeline__fold:focus-visible,
 .crewlet-step-timeline__fewer:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: 0;
   border-radius: var(--radius-sm);
 }
 

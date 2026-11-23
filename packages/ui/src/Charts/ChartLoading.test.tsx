@@ -49,7 +49,15 @@ test('a loading bar list holds a row for each row it will show', () => {
 
 test('a loading histogram holds its plot and its tick row', () => {
   const { container } = render(
-    <Histogram bars={[]} label="Events" formatTitle={() => ''} formatTick={() => ''} height={96} loading />,
+    <Histogram
+      bars={[]}
+      label="Events"
+      summary="No events yet"
+      formatTitle={() => ''}
+      formatTick={() => ''}
+      height={96}
+      loading
+    />,
   );
   expect(plotHeight(container)).toBe('96px');
   expect(container.querySelector('.crewlet-histogram__axis')).not.toBeNull();
