@@ -410,6 +410,11 @@
   color: var(--color-text-tertiary);
 }
 
+/* No words, no track: its gap would pad the row under the name alone. */
+.crewlet-inbox-row--name-only .crewlet-inbox-row__text {
+  display: none;
+}
+
 /* Unread: a heavier name, and the words in the primary ink. */
 .crewlet-inbox-row__control--unread .crewlet-inbox-row__title {
   font-weight: var(--font-weight-semibold);
@@ -535,9 +540,9 @@
 
 /*
  * THE QUICK ACTIONS STAND BESIDE THE TIME, never over it or any words, and
- * never reflow. The tray stands in the row's top end corner while the row is
- * hovered or holds focus, and the time (with any status) moves aside to stand
- * before it. The room it moves into is kept at the end of the name's line all
+ * never reflow. The tray stands at the row's end, centred on the name's first
+ * line, while the row is hovered or holds focus, and the time (with any
+ * status) moves aside to stand before it. The room it moves into is kept at the end of the name's line all
  * the time, in the float's place (`--crewlet-inbox-row-room`: the tray's width,
  * which the row measures into `--crewlet-inbox-row-tray`, from where the
  * tray stands to where the words end, and a gap), so the name never wraps
@@ -561,11 +566,17 @@
   );
   /* The control's top pad (`.crewlet-inbox-row__control`, kept with it). */
   --crewlet-inbox-row-pad: calc(var(--spacing-2) + var(--spacing-1) / 2);
-  --crewlet-inbox-row-tray-top: calc(-1 * var(--size-focus-ring-inset-offset));
   /* Before the row has measured its tray, the kit's message tray's height. */
+  --crewlet-inbox-row-tray-height: var(--crewlet-inbox-row-tray-block, var(--crewlet-chat-toolbar, 0px));
+  --crewlet-inbox-row-clear: calc(-1 * var(--size-focus-ring-inset-offset));
+  /* Centred on the name's first line, unless that would put it over the ring. */
+  --crewlet-inbox-row-tray-top: max(
+    var(--crewlet-inbox-row-clear),
+    var(--crewlet-inbox-row-pad) + (1lh - var(--crewlet-inbox-row-tray-height)) / 2
+  );
   --crewlet-inbox-row-reach: max(
     0px,
-    var(--crewlet-inbox-row-tray-top) + var(--crewlet-inbox-row-tray-block, var(--crewlet-chat-toolbar, 0px)) - var(--crewlet-inbox-row-pad)
+    var(--crewlet-inbox-row-tray-top) + var(--crewlet-inbox-row-tray-height) - var(--crewlet-inbox-row-pad)
   );
 
   position: relative;
@@ -596,6 +607,23 @@
 /* At its own height, so the clamp still cuts at its last line. */
 .crewlet-inbox-row--actions .crewlet-inbox-row__head {
   align-self: start;
+}
+
+/* A row that is only its name keeps no room under it: its track holds the
+   tray clear of the ring at both edges, with the name centred in it where
+   its head is one line (chat); a two-line head keeps its float's room. */
+.crewlet-inbox-row--actions.crewlet-inbox-row--name-only .crewlet-inbox-row__main {
+  grid-template-rows: minmax(
+    max(
+      0px,
+      var(--crewlet-inbox-row-tray-top) + var(--crewlet-inbox-row-tray-height) + var(--crewlet-inbox-row-clear) - 2 * var(--crewlet-inbox-row-pad)
+    ),
+    auto
+  );
+}
+
+.crewlet-inbox-row--actions.crewlet-inbox-row--name-only .crewlet-inbox-row__head {
+  align-self: center;
 }
 
 .crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place {
@@ -633,17 +661,45 @@
   line-height: var(--crewlet-chat-line);
 }
 
-/* A group's label is a day: the words' own case, a step down, on the page's
-   ground, set on the row's inset so it starts over the faces. */
+/* A group's label is a rule, not a row: the day in its own case on the faces'
+   edge and a hairline running on, as a transcript's dividers (ChatDivider.css),
+   with more air above it than under it. */
 .crewlet-inbox-list--chat .crewlet-inbox-list__label {
-  padding: var(--spacing-4) var(--crewlet-chat-pad-x) var(--spacing-2);
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-3) var(--crewlet-chat-pad-x) var(--spacing-1);
   font-size: var(--crewlet-chat-meta);
   line-height: var(--font-line-height-snug);
 }
 
+.crewlet-inbox-list--chat .crewlet-inbox-list__label:not(:has(> .crewlet-inbox-list__disclosure))::after,
+.crewlet-inbox-list--chat .crewlet-inbox-list__disclosure::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  margin-inline-start: var(--spacing-3);
+  background: var(--color-edge-hairline);
+}
+
 .crewlet-inbox-list__day {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+}
+
+/* The rule that opens a group closes the one before it, so no second line;
+   a row leaving keeps its own until it has gone. */
+.crewlet-inbox-list--chat
+  .crewlet-inbox-list__group:has(+ .crewlet-inbox-list__group > .crewlet-inbox-list__label)
+  .crewlet-inbox-row:nth-last-child(1 of :not(.crewlet-inbox-row--leaving)) {
+  border-bottom: 0;
+}
+
+/* Forced colours repaint a background to Canvas: the rule is a border there. */
+@media (forced-colors: active) {
+  .crewlet-inbox-list--chat .crewlet-inbox-list__label:not(:has(> .crewlet-inbox-list__disclosure))::after,
+  .crewlet-inbox-list--chat .crewlet-inbox-list__disclosure::after {
+    border-top: 1px solid CanvasText;
+  }
 }
 
 .crewlet-inbox-list--chat .crewlet-inbox-row,

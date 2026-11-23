@@ -796,13 +796,19 @@ test('quick actions stand outside the row’s control, beside the time, in room 
     '.crewlet-inbox-row--actions:hover .crewlet-inbox-row__head-end--drawn, .crewlet-inbox-row--actions:focus-within .crewlet-inbox-row__head-end--drawn, .crewlet-inbox-row--actions:has(> .crewlet-inbox-row__actions [aria-expanded=\'true\']) .crewlet-inbox-row__head-end--drawn { inset-inline-end: var(--crewlet-inbox-row-room); }',
   );
   expect(css).toMatch(/\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-room: max\( 0px, var\(--crewlet-inbox-row-tray, 0px\) \+ var\(--crewlet-inbox-row-tray-end\) \+ var\(--spacing-2\) - var\(--crewlet-inbox-row-words-end\) \);/);
+  // The tray is centred on the name's first line, unless that would put it over the inset ring.
+  expect(css).toMatch(
+    /\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-tray-top: max\( var\(--crewlet-inbox-row-clear\), var\(--crewlet-inbox-row-pad\) \+ \(1lh - var\(--crewlet-inbox-row-tray-height\)\) \/ 2 \);/,
+  );
   // The room is kept in the float's place at all times, so the words never move, and as tall as
   // the tray reaches below the top pad, so the words under the name start below it.
   expect(css).toMatch(
-    /\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-reach: max\( 0px, var\(--crewlet-inbox-row-tray-top\) \+ var\(--crewlet-inbox-row-tray-block, var\(--crewlet-chat-toolbar, 0px\)\) - var\(--crewlet-inbox-row-pad\) \);/,
+    /\.crewlet-inbox-row--actions \{[^}]*--crewlet-inbox-row-reach: max\( 0px, var\(--crewlet-inbox-row-tray-top\) \+ var\(--crewlet-inbox-row-tray-height\) - var\(--crewlet-inbox-row-pad\) \);/,
   );
   expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__main { grid-template-rows: minmax(var(--crewlet-inbox-row-reach), auto); }');
   expect(css).toContain('.crewlet-inbox-row--actions .crewlet-inbox-row__head { align-self: start; }');
+  // A row that is only its name keeps no room under it, and its name stands in the middle of its track.
+  expect(css).toContain('.crewlet-inbox-row--actions.crewlet-inbox-row--name-only .crewlet-inbox-row__head { align-self: center; }');
   expect(css).toContain(
     '.crewlet-inbox-row--actions .crewlet-inbox-row__head-end--place { min-height: min(var(--crewlet-inbox-row-reach), var(--crewlet-inbox-row-head-lines) * 1lh); padding-inline-end: var(--crewlet-inbox-row-room); }',
   );
@@ -1186,4 +1192,36 @@ describe('a tag on a hovered or selected row', () => {
     }
     expect(failures).toEqual([]);
   });
+});
+
+// Mutation: count the empty words, or the task under the control, as nothing
+// under the name, and a row that has them loses the room its tray keeps clear.
+test('a row with nothing under its name is marked as only its name, and one with anything under it is not', () => {
+  const tray = (
+    <MessageActions label="Actions">
+      <MessageAction label="Delete" icon={<span />} />
+    </MessageActions>
+  );
+  render(
+    <InboxList label="Your conversations" density="chat">
+      <InboxGroup label="Today">
+        <InboxRow title="Name" meta="9h" actions={tray} />
+        <InboxRow title="Nothing drawn" actions={tray}>
+          {false}
+        </InboxRow>
+        <InboxRow title="Words" actions={tray}>
+          The words under it
+        </InboxRow>
+        <InboxRow title="Excerpt" excerpt="A quoted line" />
+        <InboxRow title="Where" where="#engineering" />
+        <InboxRow title="Context" context="Reply in a thread" />
+        <InboxRow title="Outcome" outcome="Approved" />
+        <InboxRow title="Task" aside={<a href="#/work/NIM-1">NIM-1</a>} />
+      </InboxGroup>
+    </InboxList>,
+  );
+  const only = [...document.querySelectorAll('.crewlet-inbox-row')].map((row) =>
+    row.classList.contains('crewlet-inbox-row--name-only'),
+  );
+  expect(only).toEqual([true, true, false, false, false, false, false, false]);
 });

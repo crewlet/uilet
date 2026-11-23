@@ -529,10 +529,12 @@ export const ChatDensityPhone: Story = {
 };
 
 const CONVERSATIONS = [
-  { key: 'c1', title: 'Summarise every open item in every unit', when: '16s ago', answering: true },
-  { key: 'c2', title: 'Summarise every item in the company', when: '12s ago' },
-  { key: 'c3', title: 'Follow-ups on the release', when: '2m ago' },
-  { key: 'c4', title: 'Held work and paused seats', when: '9m ago', waiting: true },
+  { key: 'c1', day: 'Today', title: 'Summarise every open item in every unit', when: '16s ago', answering: true },
+  { key: 'c2', day: 'Today', title: 'Summarise every item in the company', when: '12s ago' },
+  { key: 'c3', day: 'Today', title: 'Follow-ups on the release', when: '2m ago' },
+  { key: 'c4', day: 'Today', title: 'Held work and paused seats', when: '9m ago', waiting: true },
+  { key: 'c5', day: 'Previous 7 days', title: 'Web restyle confirmed live', when: '2d ago' },
+  { key: 'c6', day: 'Previous 7 days', title: 'Why agents are idle with no work', when: '3d ago' },
 ];
 
 function Conversations() {
@@ -540,35 +542,37 @@ function Conversations() {
   return (
     <div style={{ width: 340 }}>
       <InboxList label="Your conversations" density="chat">
-        <InboxGroup label="Today">
-          {CONVERSATIONS.map((each) => (
-            <InboxRow
-              key={each.key}
-              title={each.title}
-              meta={<time>{each.when}</time>}
-              status={
-                each.answering ? (
-                  <Tag size="xs" variant="info">
-                    Answering
-                  </Tag>
-                ) : each.waiting ? (
-                  <Tag size="xs" variant="warning">
-                    Needs approval
-                  </Tag>
-                ) : undefined
-              }
-              selected={open === each.key}
-              onClick={() => setOpen(each.key)}
-              actions={
-                <MessageActions label={`Actions for ${each.title}`}>
-                  <MessageAction label="Delete" icon={<TrashGlyph />} />
-                </MessageActions>
-              }
-            >
-              {null}
-            </InboxRow>
-          ))}
-        </InboxGroup>
+        {['Today', 'Previous 7 days'].map((day) => (
+          <InboxGroup key={day} label={day}>
+            {CONVERSATIONS.filter((each) => each.day === day).map((each) => (
+              <InboxRow
+                key={each.key}
+                title={each.title}
+                meta={<time>{each.when}</time>}
+                status={
+                  each.answering ? (
+                    <Tag size="xs" variant="info">
+                      Answering
+                    </Tag>
+                  ) : each.waiting ? (
+                    <Tag size="xs" variant="warning">
+                      Needs approval
+                    </Tag>
+                  ) : undefined
+                }
+                selected={open === each.key}
+                onClick={() => setOpen(each.key)}
+                actions={
+                  <MessageActions label={`Actions for ${each.title}`}>
+                    <MessageAction label="Delete" icon={<TrashGlyph />} />
+                  </MessageActions>
+                }
+              >
+                {null}
+              </InboxRow>
+            ))}
+          </InboxGroup>
+        ))}
       </InboxList>
     </div>
   );
@@ -581,7 +585,9 @@ function Conversations() {
  * beside the time, which moves aside into room the title's line always keeps
  * for it, so the time is never covered and the title never moves. A status
  * tag on the open, washed row keeps 4.5:1: its tint is painted over the
- * sheet rather than over the row's wash. In both themes.
+ * sheet rather than over the row's wash. The tray stands on the middle of a
+ * row that is only its title, and each day is a rule between the rows. In
+ * both themes.
  */
 export const ConversationHistory: Story = {
   render: () => (
@@ -591,6 +597,6 @@ export const ConversationHistory: Story = {
   ),
   play: async ({ canvasElement }) => {
     const rows = [...canvasElement.querySelectorAll<HTMLElement>('[data-theme-panel="light"] .crewlet-inbox-row__control')];
-    await expect(rows.map((row) => row.getAttribute('tabindex'))).toEqual(['0', '-1', '-1', '-1']);
+    await expect(rows.map((row) => row.getAttribute('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1', '-1']);
   },
 };

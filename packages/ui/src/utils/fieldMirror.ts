@@ -33,6 +33,8 @@ export const MIRRORED_TEXT_STYLES = [
   'wordBreak',
   'wordSpacing',
   'overflowWrap',
+  // A field that keeps its bar's gutter wraps inside it, scrolling or not.
+  'scrollbarGutter',
 ] as const;
 
 /** Copies a field's wrapping styles onto its mirror. */
