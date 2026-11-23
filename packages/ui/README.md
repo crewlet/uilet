@@ -219,7 +219,7 @@ places:
 
 **`ScopeList` is new**: the apps, ad accounts, properties or sites an agent may reach, a checkbox row each, the name first, a detail quiet under it in monospace (a bundle ID) and its ID quiet at the row's end, level with the name, both read with the box. A chosen row takes the selected fill; a count and Choose all or Clear stand over the rows, acting on the rows shown; from 8 options on, a search filters by name, detail or ID. Story: `ScopeList` Apps, Searched, In A Dialog.
 
-## Changes in 0.172.1
+## Changes in 0.172.2
 
 ### A grid row that only reads keeps the arrow
 
