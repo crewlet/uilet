@@ -14,36 +14,38 @@ import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import {
-  BanknoteGlyph,
-  ChartLineGlyph,
-  CircleDollarSignGlyph,
-  CloudGlyph,
-  MegaphoneGlyph,
-  MousePointerClickGlyph,
-  SearchCheckGlyph,
-  SmartphoneGlyph,
-  StoreGlyph,
-  TargetGlyph,
-} from '../dist/glyphs.js';
+import { createHash } from 'node:crypto';
+
+import { CloudGlyph } from '../dist/glyphs.js';
 import { CrewletIcon, VENDORS, VendorMark } from '../dist/index.js';
 import { extent, markPaths } from '../scripts/mark.mjs';
 import { PACKAGE, attribute, render } from './support.mjs';
 
 /** The products whose owners allow no mark here, each drawn as a glyph of its own on a plate. */
-const UNMARKED = [
-  ['aws', CloudGlyph],
-  ['google-ads', MousePointerClickGlyph],
-  ['google-adsense', BanknoteGlyph],
-  ['google-admob', CircleDollarSignGlyph],
-  ['google-analytics', ChartLineGlyph],
-  ['google-search-console', SearchCheckGlyph],
-  ['google-play', SmartphoneGlyph],
-  ['app-store-connect', StoreGlyph],
-  ['apple-ads', MegaphoneGlyph],
-  ['meta-ads', TargetGlyph],
-];
+const UNMARKED = [['aws', CloudGlyph]];
 const UNMARKED_VENDORS = UNMARKED.map(([vendor]) => vendor);
+
+/** The store, ads and analytics products and their companies, each drawn with its owner's own logo. */
+const GROWTH = [
+  'app-store-connect',
+  'apple',
+  'apple-ads',
+  'google',
+  'google-admob',
+  'google-ads',
+  'google-adsense',
+  'google-analytics',
+  'google-play',
+  'google-search-console',
+  'meta-ads',
+];
+
+/** The owners' PNGs embedded where they publish no vector, by the SHA-256 of their bytes. */
+const RASTERS = {
+  'app-store-connect.svg': 'd670ff551a23ada8e5e9db2fbf337697ca28343bcb309c0006bcded12d80ce83',
+  'dark/app-store-connect.svg': '3b42a3f2b8510bcd5215bc47176d0587ce4e4109d4fd17e5c06a9c7334fec0ee',
+  'meta-ads.svg': 'f10dd0c7ae1dd1317e552d18cebd474785ddc2f25955f345ef0d301d50d9ce82',
+};
 
 /** Every shape a drawing paints, with the attributes that place it, in order. */
 const shapes = (markup) =>
@@ -52,12 +54,12 @@ const shapes = (markup) =>
   );
 
 describe('the vendor list', () => {
-  it('is exactly the drawings the package carries, Crewlet, Copilot and the unmarked tiles', async () => {
+  it('is exactly the drawings the package carries, Crewlet, Copilot, Apple Ads and the unmarked tile', async () => {
     const files = (await readdir(resolve(PACKAGE, 'svg/vendor')))
       .filter((file) => file.endsWith('.svg'))
       .map((file) => file.slice(0, -'.svg'.length))
       .sort();
-    const borrowed = ['copilot', 'crewlet', ...UNMARKED_VENDORS];
+    const borrowed = ['apple-ads', 'copilot', 'crewlet', ...UNMARKED_VENDORS];
     assert.deepEqual(VENDORS.filter((vendor) => !borrowed.includes(vendor)).sort(), files);
   });
 
@@ -71,9 +73,8 @@ describe('the vendor list', () => {
   });
 
   it("draws each unmarked product as its own glyph on a plate of the text colour, and nothing of its owner's", () => {
-    // None of these owners allows its icon without leave, so each tile is a
-    // generic glyph on a neutral plate: currentColor only, no hue, and no
-    // glyph shared by two tiles.
+    // AWS allows no icon without leave, so its tile is a generic glyph on a
+    // neutral plate: currentColor only, no hue, and no glyph shared by two tiles.
     const drawn = new Set();
     for (const [vendor, Glyph] of UNMARKED) {
       const mark = render(VendorMark, { vendor, size: 'md' });
@@ -129,6 +130,13 @@ describe('the vendor list', () => {
     assert.equal(Number(/(?:^|[;\s])stroke-width:\s*([\d.]+);/.exec(rule)?.[1]), weight);
   });
 
+  it("draws Apple Ads with Apple's logo, as ads.apple.com draws it before the word", () => {
+    const paths = (markup) => [...markup.matchAll(/\sd="([^"]+)"/g)].map((match) => match[1]);
+    const mark = render(VendorMark, { vendor: 'apple-ads' });
+    assert.deepEqual(paths(mark), paths(render(VendorMark, { vendor: 'apple' })));
+    assert.match(attribute(mark, 'class') ?? '', /(^| )crewlet-vendor-mark--apple-ads( |$)/);
+  });
+
   it("draws Crewlet's own services with the brand mark, never a second copy of it", () => {
     // The built-in services stand beside the apps they replace, and their
     // mark is the one the product is known by: the same paths as CrewletIcon,
@@ -144,16 +152,68 @@ describe('the vendor list', () => {
     // A typo in the map from a vendor to its component draws the wrong
     // company's mark beside the right company's name, and every other rule
     // here would still pass. The vendor's own class is left out, since it
-    // names the vendor whatever is drawn; Copilot is GitHub's mark by design.
+    // names the vendor whatever is drawn; Copilot is GitHub's mark by design,
+    // and Apple Ads Apple's.
     const drawn = new Map(
       VENDORS.map((vendor) => [vendor, render(VendorMark, { vendor }).replace(` crewlet-vendor-mark--${vendor}`, '')]),
     );
-    const meant = new Set(['copilot github', 'github copilot']);
+    const meant = new Set(['copilot github', 'github copilot', 'apple-ads apple', 'apple apple-ads']);
     for (const [vendor, markup] of drawn) {
       const twins = [...drawn]
         .filter(([other, theirs]) => other !== vendor && theirs === markup && !meant.has(`${vendor} ${other}`))
         .map(([other]) => other);
       assert.deepEqual(twins, [], `${vendor} draws the same mark as ${twins.join(', ')}`);
+    }
+  });
+});
+
+describe('the store, ads and analytics marks', () => {
+  it("draw their owners' own logos at every size, never a plate or a glyph", () => {
+    for (const vendor of GROWTH) {
+      const drawn = new Set();
+      for (const size of [undefined, '1em', 12, 'sm', 16, 'md', 24, 36, 48]) {
+        const mark = render(VendorMark, { vendor, size });
+        assert.doesNotMatch(mark, /crewlet-vendor-mark__plate|crewlet-glyph/, `${vendor} at ${size}`);
+        assert.match(attribute(mark, 'class') ?? '', new RegExp(`(^| )crewlet-vendor-mark--${vendor}( |$)`), `${vendor} at ${size}`);
+        drawn.add(mark.replace(/\s(width|height)="[^"]*"/g, ''));
+      }
+      assert.equal(drawn.size, 1, `${vendor} draws a different picture at another size`);
+      const titled = render(VendorMark, { vendor, size: 24, title: vendor });
+      assert.equal(attribute(titled, 'role'), 'img', vendor);
+      assert.equal(attribute(titled, 'aria-label'), vendor, vendor);
+    }
+  });
+
+  it("embed the owner's PNG byte for byte only where the owner publishes no vector", async () => {
+    // App Store Connect's icon and Meta Ads Manager's app icon ship only as PNG.
+    for (const file of await vendorFiles()) {
+      const source = await readFile(resolve(PACKAGE, 'svg/vendor', file), 'utf8');
+      const images = [...source.matchAll(/<image\b[^>]*>/g)].map(([tag]) => tag);
+      if (!(file in RASTERS)) {
+        assert.deepEqual(images, [], `${file} embeds a raster`);
+        continue;
+      }
+      assert.equal(images.length, 1, file);
+      const data = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(attribute(images[0], 'href') ?? '')?.[1];
+      assert.ok(data, `${file} embeds something other than one PNG`);
+      const bytes = Buffer.from(data, 'base64');
+      assert.equal(bytes.subarray(1, 4).toString('latin1'), 'PNG', file);
+      assert.equal(createHash('sha256').update(bytes).digest('hex'), RASTERS[file], file);
+    }
+    const readme = await readFile(resolve(PACKAGE, 'README.md'), 'utf8');
+    for (const sum of Object.values(RASTERS)) assert.ok(readme.includes(sum), `README.md does not record ${sum}`);
+  });
+
+  it('carry nothing but drawing: no script, no handler, no style and no reference outside the file', async () => {
+    for (const file of await vendorFiles()) {
+      const source = await readFile(resolve(PACKAGE, 'svg/vendor', file), 'utf8');
+      assert.doesNotMatch(source, /<(script|style|foreignObject|iframe|object|embed|use)\b/i, file);
+      assert.doesNotMatch(source, /\son[a-z]+\s*=/i, file);
+      assert.doesNotMatch(source, /@import|javascript:/i, file);
+      for (const [, url] of source.matchAll(/url\(([^)]*)\)/g)) assert.match(url, /^#[\w-]+$/, `${file} paints from ${url}`);
+      for (const [, href] of source.matchAll(/\s(?:xlink:)?href="([^"]*)"/g)) {
+        assert.match(href, /^(#[\w-]+|data:image\/png;base64,[A-Za-z0-9+/=]+)$/, `${file} links to ${href.slice(0, 40)}`);
+      }
     }
   });
 });
@@ -207,7 +267,7 @@ describe('a vendor mark', () => {
   it('draws every vendor, decorative and unfocusable by default', () => {
     for (const vendor of VENDORS) {
       const markup = render(VendorMark, { vendor });
-      assert.match(markup, /<(path|circle)\b/, vendor);
+      assert.match(markup, /<(path|circle|image)\b/, vendor);
       assert.equal(attribute(markup, 'aria-hidden'), 'true', vendor);
       assert.equal(attribute(markup, 'focusable'), 'false', vendor);
       assert.equal(attribute(markup, 'role'), null, vendor);
@@ -236,14 +296,14 @@ describe('a vendor mark', () => {
 
   it('draws the monochrome marks in the current text colour and nobody else in it', () => {
     /*
-     * GitHub, Notion, OpenCode, Expo, DigitalOcean, Cursor and OpenAI each publish one mark,
+     * GitHub, Notion, OpenCode, Expo, DigitalOcean, Cursor, OpenAI and Apple each publish one mark,
      * dark on a light ground and light on a dark one, so the current text
      * colour is the vendor's own instruction and a fixed hex would be wrong in
      * one theme whichever was picked. Every other mark is the vendor's own colours, which is the one
      * sanctioned exception to colour carrying state rather than identity, and
      * a mark quietly joining this list is a mark that has lost them.
      */
-    const monochrome = ['copilot', 'cursor', 'digitalocean', 'expo', 'github', 'notion', 'openai', 'opencode'];
+    const monochrome = ['apple', 'apple-ads', 'copilot', 'cursor', 'digitalocean', 'expo', 'github', 'notion', 'openai', 'opencode'];
     // Monochrome is the current text colour AND no colour of the mark's own
     // beneath it: Crewlet's drawing is rooted in currentColor, as every
     // illustration is, and paints its brand violet on the group inside. SSH's
@@ -322,7 +382,7 @@ describe('a vendor mark', () => {
 });
 
 describe('a vendor mark with a drawing of its own for a dark ground', () => {
-  const twoDrawings = ['grok', 'hermes', 'kimi'];
+  const twoDrawings = ['app-store-connect', 'grok', 'hermes', 'kimi'];
 
   it('is a vendor that publishes one, and every dark drawing has its light one', async () => {
     const dark = (await readdir(resolve(PACKAGE, 'svg/vendor/dark'))).filter((name) => name.endsWith('.svg')).map((name) => name.slice(0, -4));
@@ -404,6 +464,16 @@ async function vendorFiles() {
  * and arc solved. A curve or an arc bulging past its end points is not seen,
  * so the extent read here is never larger than the drawing.
  */
+/** The box a clip path's one rectangle or circle encloses, as x, y, width and height. */
+function clipBox(clip) {
+  const rect = /^\s*<rect\b[^>]*\/>\s*$/.exec(clip)?.[0];
+  if (rect) return ['x', 'y', 'width', 'height'].map((name) => Number(attribute(rect, name) ?? 0));
+  const circle = /^\s*<circle\b[^>]*\/>\s*$/.exec(clip)?.[0];
+  if (!circle) return null;
+  const [cx, cy, r] = ['cx', 'cy', 'r'].map((name) => Number(attribute(circle, name) ?? 0));
+  return [cx - r, cy - r, 2 * r, 2 * r];
+}
+
 function anchors(d) {
   const arity = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0 };
   const points = [];
@@ -471,17 +541,26 @@ describe('a vendor mark in its square', () => {
     for (const file of await vendorFiles()) {
       const source = await readFile(resolve(PACKAGE, 'svg/vendor', file), 'utf8');
       const [x, y, width, height] = attribute(/<svg\b[^>]*>/.exec(source)[0], 'viewBox').split(/\s+/).map(Number);
-      for (const [, clip] of source.matchAll(/<clipPath\b[^>]*>([\s\S]*?)<\/clipPath>/g)) {
-        const box = /^\s*<rect\b[^>]*\/>\s*$/.exec(clip)?.[0];
-        assert.ok(box, `${file} clips to a shape other than a rectangle, which this test cannot measure`);
-        const [cx, cy, cw, ch] = ['x', 'y', 'width', 'height'].map((name) => Number(attribute(box, name) ?? 0));
+      const clips = new Map();
+      for (const [tag, clip] of source.matchAll(/<clipPath\b[^>]*>([\s\S]*?)<\/clipPath>/g)) {
+        const box = clipBox(clip);
+        assert.ok(box, `${file} clips to a shape other than a rectangle or a circle, which this test cannot measure`);
+        const [cx, cy, cw, ch] = box;
         assert.ok(cx >= x && cy >= y && cx + cw <= x + width && cy + ch <= y + height, `${file} clips to a box outside its frame`);
+        clips.set(attribute(tag, 'id'), box);
       }
       const clipped = new Set([...source.matchAll(/<g\b[^>]*\sclip-path="[^"]*"[^>]*>([\s\S]*?)<\/g>/g)].flatMap(([, group]) => markPaths(group)));
       const clamp = (value, low, size) => Math.min(Math.max(value, low), low + size);
       const points = markPaths(source).flatMap((d) =>
         clipped.has(d) ? anchors(d).map(([px, py]) => [clamp(px, x, width), clamp(py, y, height)]) : anchors(d),
       );
+      // An embedded image paints its own box, or the box of the clip it is drawn through.
+      for (const [tag] of source.matchAll(/<image\b[^>]*>/g)) {
+        let [ix, iy, iw, ih] = ['x', 'y', 'width', 'height'].map((name) => Number(attribute(tag, name) ?? 0));
+        const clip = clips.get(/url\(#([^)]+)\)/.exec(attribute(tag, 'clip-path') ?? '')?.[1]);
+        if (clip) [ix, iy, iw, ih] = clip;
+        points.push([ix, iy], [ix + iw, iy + ih]);
+      }
       // A tile drawn as a rect is part of the drawing (Kimi's); a clip's rect is not.
       for (const [tag] of source.replace(/<clipPath\b[\s\S]*?<\/clipPath>/g, '').matchAll(/<rect\b[^>]*>/g)) {
         const [rx, ry, rw, rh] = ['x', 'y', 'width', 'height'].map((name) => Number(attribute(tag, name) ?? 0));

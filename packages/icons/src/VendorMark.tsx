@@ -9,12 +9,12 @@
  * from a mark, and a mark appears only beside the app's own name, so the rule
  * holds everywhere else.
  *
- * GitHub's, Notion's, OpenCode's, Expo's and DigitalOcean's marks are
- * monochrome by design, so they take the current text colour and read on
- * either theme. That is each
- * vendor's own instruction rather than an exemption from the rule above: each
- * publishes one mark, dark on a light ground and light on a dark one, and a
- * fixed hex would be wrong in one theme whichever one was picked.
+ * GitHub's, Notion's, OpenCode's, Expo's, DigitalOcean's and Apple's marks are
+ * monochrome by design, so they take the current text colour
+ * and read on either theme. That is each vendor's own instruction rather than
+ * an exemption from the rule above: each publishes one mark, dark on a light
+ * ground and light on a dark one, and a fixed hex would be wrong in one theme
+ * whichever one was picked.
  *
  * Mattermost's blue is its mark on a light ground, and Mattermost publishes
  * the same drawing reversed (white) for a dark one, which is what the dark
@@ -93,21 +93,14 @@
  * Using a mark to name the app it belongs to is nominative use; TRADEMARKS.md
  * says what that does and does not allow.
  *
- * TEN PRODUCTS HAVE NO MARK HERE, because their owners allow a third party
- * none without leave: AWS (a plain-text reference only), Google Ads, AdSense,
- * AdMob, Google Analytics, Search Console and Google Play (Google asks for a
- * request through its Partner Marketing Hub), App Store Connect and Apple Ads
- * (Apple allows no use of its logos or icons without a written licence), and
- * Meta Ads (Meta approves every use of its logo; the `meta` mark was supplied
- * for the Muse Code harness alone). Each draws a Lucide glyph of its own for
- * what the product does on a plate of the text colour at a tenth: one shape,
- * no hue and no lettering of any owner's, so the ten read as one deliberate
- * family beside the marks rather than as missing ones (README.md lists them).
- * Below 16px, or at a size that cannot be measured (`1em` in a line of text or
- * another tile's badge), the glyph is drawn alone at full size, since a plate
- * there leaves it too small to read. Google Analytics' own logo ships apart,
- * only as attribution beside its data (TRADEMARKS.md). Once an owner approves
- * its icon, the same key draws the vendor's file instead.
+ * THE STORE, ADS AND ANALYTICS PRODUCTS draw their owners' own logos, sourced
+ * in README.md and TRADEMARKS.md; `apple` and `google` are the companies' own,
+ * and Apple Ads draws Apple's, as ads.apple.com does. App Store Connect and Meta Ads Manager ship
+ * only as PNG, so their marks embed the owner's file and need `img-src data:`.
+ *
+ * AWS HAS NO MARK HERE (its guidelines allow a plain-text reference only), so
+ * it draws a Lucide glyph on a plate of the text colour at a tenth. Below 16px,
+ * or at a size that cannot be measured, the glyph is drawn alone at full size.
  *
  * The coding harnesses' marks are their owners' own files, sourced in README.md;
  * Copilot draws GitHub's, as GitHub's brand toolkit does. Codex draws OpenAI's
@@ -120,22 +113,14 @@ import './VendorMark.css';
 import type { GlyphSize } from './Glyph.js';
 import { cssLength, cssPixels } from './Glyph.js';
 import CrewletIcon from './generated/CrewletIcon.js';
-import BanknoteGlyph from './generated/glyphs/BanknoteGlyph.js';
-import ChartLineGlyph from './generated/glyphs/ChartLineGlyph.js';
-import CircleDollarSignGlyph from './generated/glyphs/CircleDollarSignGlyph.js';
 import CloudGlyph from './generated/glyphs/CloudGlyph.js';
-import MegaphoneGlyph from './generated/glyphs/MegaphoneGlyph.js';
-import MousePointerClickGlyph from './generated/glyphs/MousePointerClickGlyph.js';
-import SearchCheckGlyph from './generated/glyphs/SearchCheckGlyph.js';
-import SmartphoneGlyph from './generated/glyphs/SmartphoneGlyph.js';
-import StoreGlyph from './generated/glyphs/StoreGlyph.js';
-import TargetGlyph from './generated/glyphs/TargetGlyph.js';
 import * as darkMarks from './generated/vendors/dark/index.js';
 import * as marks from './generated/vendors/index.js';
 
 /** The apps this package draws on a catalogue tile, Crewlet's own services and SSH among them. */
 export const VENDORS = [
   'app-store-connect',
+  'apple',
   'apple-ads',
   'atlassian',
   'aws',
@@ -153,6 +138,7 @@ export const VENDORS = [
   'gemini-cli',
   'github',
   'gitlab',
+  'google',
   'google-admob',
   'google-ads',
   'google-adsense',
@@ -199,16 +185,7 @@ export interface VendorMarkProps extends Omit<SVGProps<SVGSVGElement>, 'title'> 
 
 /** The products with no mark here, each with the glyph its plate holds, chosen for what it does. */
 const UNMARKED = {
-  'app-store-connect': StoreGlyph,
-  'apple-ads': MegaphoneGlyph,
   aws: CloudGlyph,
-  'google-admob': CircleDollarSignGlyph,
-  'google-ads': MousePointerClickGlyph,
-  'google-adsense': BanknoteGlyph,
-  'google-analytics': ChartLineGlyph,
-  'google-play': SmartphoneGlyph,
-  'google-search-console': SearchCheckGlyph,
-  'meta-ads': TargetGlyph,
 } as const satisfies Partial<Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>>>;
 
 type Unmarked = keyof typeof UNMARKED;
@@ -219,6 +196,9 @@ const isUnmarked = (vendor: Vendor): vendor is Unmarked => Object.hasOwn(UNMARKE
 const PLATE_FROM = 16;
 
 const drawings: Record<Exclude<Vendor, Unmarked>, ComponentType<SVGProps<SVGSVGElement>>> = {
+  'app-store-connect': marks.AppStoreConnect,
+  apple: marks.Apple,
+  'apple-ads': marks.Apple,
   atlassian: marks.Atlassian,
   claude: marks.Claude,
   clickup: marks.Clickup,
@@ -234,13 +214,21 @@ const drawings: Record<Exclude<Vendor, Unmarked>, ComponentType<SVGProps<SVGSVGE
   'gemini-cli': marks.GeminiCli,
   github: marks.Github,
   gitlab: marks.Gitlab,
+  google: marks.Google,
+  'google-admob': marks.GoogleAdmob,
+  'google-ads': marks.GoogleAds,
+  'google-adsense': marks.GoogleAdsense,
+  'google-analytics': marks.GoogleAnalytics,
   'google-cloud': marks.GoogleCloud,
+  'google-play': marks.GooglePlay,
+  'google-search-console': marks.GoogleSearchConsole,
   grok: marks.Grok,
   hermes: marks.Hermes,
   kimi: marks.Kimi,
   linear: marks.Linear,
   mattermost: marks.Mattermost,
   meta: marks.Meta,
+  'meta-ads': marks.MetaAds,
   'microsoft-teams': marks.MicrosoftTeams,
   notion: marks.Notion,
   openai: marks.Openai,
@@ -276,6 +264,7 @@ const FRAMES: Partial<Record<Vendor, string>> = {
 
 /** The vendor's own drawing for a dark ground, where it is a second file rather than a colour. */
 const DARK: Partial<Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>>> = {
+  'app-store-connect': darkMarks.AppStoreConnect,
   grok: darkMarks.Grok,
   hermes: darkMarks.Hermes,
   kimi: darkMarks.Kimi,

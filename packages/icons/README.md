@@ -2,7 +2,7 @@
 
 Everything a Crewlet surface draws that is not text: the Lucide glyph set, the marks of the applications the platform integrates with, and the Crewlet signature illustrations.
 
-All three are React components compiled from SVG files that ship in the package; the Google Analytics logo, the one raster here, ships as files. Nothing here fetches a font, a sprite or an image from another host, so a closed network draws exactly what an open one does.
+All three are React components compiled from SVG files that ship in the package; the Google Analytics lockup ships as files, and the App Store Connect and Meta Ads Manager marks embed their owners' PNGs. Nothing here fetches a font, a sprite or an image from another host, so a closed network draws exactly what an open one does.
 
 | What | Import from | Looks like |
 | ---- | ----------- | ---------- |
@@ -74,18 +74,18 @@ import { VendorMark } from '@crewlethq/icons';
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `vendor` | `Vendor`: `'app-store-connect' \| 'apple-ads' \| 'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'copilot' \| 'crewlet' \| 'cursor' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'gemini-cli' \| 'github' \| 'gitlab' \| 'google-admob' \| 'google-ads' \| 'google-adsense' \| 'google-analytics' \| 'google-cloud' \| 'google-play' \| 'google-search-console' \| 'grok' \| 'hermes' \| 'kimi' \| 'linear' \| 'mattermost' \| 'meta' \| 'meta-ads' \| 'microsoft-teams' \| 'notion' \| 'openai' \| 'opencode' \| 'pi' \| 'postgresql' \| 'qwen' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
+| `vendor` | `Vendor`: `'app-store-connect' \| 'apple' \| 'apple-ads' \| 'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'copilot' \| 'crewlet' \| 'cursor' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'gemini-cli' \| 'github' \| 'gitlab' \| 'google' \| 'google-admob' \| 'google-ads' \| 'google-adsense' \| 'google-analytics' \| 'google-cloud' \| 'google-play' \| 'google-search-console' \| 'grok' \| 'hermes' \| 'kimi' \| 'linear' \| 'mattermost' \| 'meta' \| 'meta-ads' \| 'microsoft-teams' \| 'notion' \| 'openai' \| 'opencode' \| 'pi' \| 'postgresql' \| 'qwen' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `muted` | boolean | `false` | Drains the colour, for an application that is available but not connected. |
 
 **This is the one place the design system draws somebody else's colours.** Colour here carries state and never identity, and a third-party application's mark is the deliberate exception: identity is exactly what a mark is for, and a recoloured Slack mark is not Slack's. No hue in `svg/vendor/` is a token, nothing reads state from a mark, and a mark appears only beside the name of the application it belongs to.
 
-GitHub's (and so Copilot's), Notion's, OpenCode's, Expo's, DigitalOcean's, Cursor's and OpenAI's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
+GitHub's (and so Copilot's), Notion's, OpenCode's, Expo's, DigitalOcean's, Cursor's, OpenAI's and Apple's (and so Apple Ads') marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
 
 Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's violet one are each drawn for a light ground, and each vendor publishes the same drawing in white or in the text colour for a dark one, which is what the dark themes draw: on the dark ground Mattermost's blue falls under 3:1, Qwen's under 2.5:1, and Scaleway's purple and Sentry's violet under 2:1, and each mark all but disappears.
 
-**Grok, Hermes and Kimi publish a second drawing for a dark ground** (`svg/vendor/dark/`). The mark mounts both, and `VendorMark.css` shows the one for the document's theme.
+**Grok, Hermes, Kimi and App Store Connect publish a second drawing for a dark ground** (`svg/vendor/dark/`). The mark mounts both, and `VendorMark.css` shows the one for the document's theme.
 
 **`claude`, `openai` (Codex), `cursor`, `gemini-cli`, `copilot`, `grok`, `hermes`, `kimi` (Kimi Code), `meta` (Muse Code), `opencode`, `pi` and `qwen` name the coding harness a model runs.** Each is its owner's trademark, from the owner's own file (read on 2026-11-16, and on 2026-11-17 for `openai`, `meta` and `kimi`):
 
@@ -112,26 +112,33 @@ Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's viol
 
 **`google-cloud` is Google Cloud's mark**, Simple Icons' rendering (CC0 1.0) from simple-icons 16.35.0 (`icons/googlecloud.svg`, path unchanged), in Google Blue, #4285F4, the hex that release records and sources to cloud.google.com. Google draws the same cloud in four colours; this is its silhouette in one. Google's brand terms allow a product icon only beside the product's name and never by itself, so draw it with "Google Cloud" beside it, as every mark here is drawn.
 
-**Ten products draw no mark, because their owners allow a third party none without leave.** AWS's trademark guidelines allow a plain-text reference only; Google's brand terms ask for a request through its Partner Marketing Hub; Apple allows no third-party use of its logos or icons without a written licence; and Meta requires approval for every use of its logo (the `meta` mark was supplied for the Muse Code harness alone). Each of these tiles draws a Lucide glyph for what the product does, on a plate (Google Analytics' own logo ships apart, only as attribution beside its data; see [The Google Analytics logo](#the-google-analytics-logo)):
+**The store, ads and analytics products draw their owners' own logos** (read on 2026-11-23). Each is the owner's current product icon from its own site, its shapes and colours unchanged, framed to its drawing. `apple` and `google` are the companies' own logos, for a surface that names the company rather than one of its products, such as an atlas's vendor:
 
-| Vendor | Product | Glyph | Why this glyph |
-| ------ | ------- | ----- | -------------- |
-| `aws` | AWS | `cloud` | Cloud infrastructure. |
-| `google-analytics` | Google Analytics | `chart-line` | Traffic and conversion reports. A line rather than columns, which would echo the bars of Google's own logo. |
-| `google-search-console` | Search Console | `search-check` | How a site shows in search, and whether its pages are indexed. |
-| `google-ads` | Google Ads | `mouse-pointer-click` | Paid clicks. |
-| `apple-ads` | Apple Ads | `megaphone` | Promoting an app in the App Store. |
-| `meta-ads` | Meta Ads Manager | `target` | Audience targeting. |
-| `google-adsense` | AdSense | `banknote` | A site's ad earnings. |
-| `google-admob` | AdMob | `circle-dollar-sign` | An app's ad earnings. |
-| `app-store-connect` | App Store Connect | `store` | An app's store listings, sales and releases. |
-| `google-play` | Google Play | `smartphone` | An Android app's listings, releases and vitals. |
+| Vendor | Product | Source | As drawn |
+| ------ | ------- | ------ | -------- |
+| `google-analytics` | Google Analytics | `https://www.gstatic.com/analytics-suite/header/suite/v2/ic_analytics.svg`, the logo developers.google.com/analytics draws | No-op box removed |
+| `google-search-console` | Search Console | `https://www.gstatic.com/images/branding/productlogos/search_console/v1/192px.svg`, linked from developers.google.com/webmaster-tools | No-op box and two unpainted guides removed |
+| `google-ads` | Google Ads | `https://www.gstatic.com/images/branding/productlogos/ads/v5/192px.svg`, the logo ads.google.com draws (developers.google.com/google-ads/api serves the same drawing) | Its rotated rectangle written as the same four-corner path |
+| `google-adsense` | AdSense | `https://www.gstatic.com/images/branding/productlogos/google_adsense/v5/192px.svg` | No-op box removed |
+| `google-admob` | AdMob | `https://www.gstatic.com/images/branding/productlogos/admob/v5/192px.svg` | No-op box removed |
+| `google-play` | Google Play | `https://www.gstatic.com/images/branding/productlogos/play_prism/v9/192px.svg`, the logo developer.android.com draws | No-op box removed |
+| `app-store-connect` | App Store Connect | `https://developer.apple.com/assets/elements/icons/app-store-connect/app-store-connect-64x64_2x.png` and `app-store-connect-dark/app-store-connect-dark-64x64_2x.png`, the icons developer.apple.com/app-store-connect draws | Each PNG embedded unchanged, clipped to its tile |
+| `apple` | Apple | The Apple logo in apple.com's global header | Text colour |
+| `apple-ads` | Apple Ads | The `apple` drawing, which ads.apple.com draws before "Ads" | As `apple` |
+| `google` | Google | `https://www.gstatic.com/images/branding/productlogos/googleg/v6/192px.svg`, the Google "G" | No-op box removed |
+| `meta-ads` | Meta Ads Manager | The Meta Ads Manager app icon on its Google Play listing (`com.facebook.adsmanager`, `https://play-lh.googleusercontent.com/pQFqzurOVje53viJu8oC6EcObOn0Tap25j9s8yalmCElpo6CA3bk3DooV2TFiMsnUfTtE_MIz-0ADCYIdmKUMA=s192`) | The PNG embedded unchanged, clipped to its circle |
 
-The plate is one family for all ten, so they read as designed beside the marks rather than as missing ones: a 24 unit square with 5 unit corners filling the mark's frame as every mark does, painted in the current text colour at a tenth (`fill-opacity="0.1"`), with the glyph centred in its middle two thirds and in the full text colour. The glyph's line is set to 2.5 (`.crewlet-vendor-mark__glyph` in `VendorMark.css`), so at two thirds it draws near the 1.75 weight of a glyph the plate's own size. The width is also set plainly, so it holds where a strict `style-src` drops the glyph's own style. No glyph is shared by two tiles, and none borrows an owner's colour, shape or lettering. `muted` drains the plate and glyph together, as it does a mark.
+**App Store Connect and Meta Ads Manager are published only as PNG**, so their marks embed the owner's file as a `data:` image rather than tracing it: a page that draws them must allow `img-src data:` in its Content-Security-Policy. Apple publishes App Store Connect's icon for a light and a dark ground, and the mark shows the one for the document's theme. Meta's app icon is its circle on a white tile, so the mark draws it through a circular clip half a pixel inside the circle's edge. `test/vendors.test.mjs` holds each embedded file to its SHA-256:
 
-**The plate needs room, so it draws from 16px up.** Below 16px, and at a size that cannot be measured while rendering (the default `1em`, a `rem`: a mark in a line of text or in another tile's badge), the glyph is drawn alone at full size, as a glyph beside a word is, because on a plate there it would be too small to read. Pass a size in px or a step from `md` up where a catalogue draws the tile.
+| File | SHA-256 of the embedded PNG |
+| ---- | --------------------------- |
+| `svg/vendor/app-store-connect.svg` | `d670ff551a23ada8e5e9db2fbf337697ca28343bcb309c0006bcded12d80ce83` |
+| `svg/vendor/dark/app-store-connect.svg` | `3b42a3f2b8510bcd5215bc47176d0587ce4e4109d4fd17e5c06a9c7334fec0ee` |
+| `svg/vendor/meta-ads.svg` | `f10dd0c7ae1dd1317e552d18cebd474785ddc2f25955f345ef0d301d50d9ce82` |
 
-Once an owner approves its icon, the same key draws the vendor's file instead, with no change for a consumer. Always draw these with the product's name beside them.
+**AWS draws no mark**, because its trademark guidelines allow a plain-text reference only. Its tile draws the Lucide `cloud` glyph, for cloud infrastructure, on a plate: a 24 unit square with 5 unit corners filling the mark's frame as every mark does, painted in the current text colour at a tenth (`fill-opacity="0.1"`), with the glyph centred in its middle two thirds and in the full text colour. The glyph's line is set to 2.5 (`.crewlet-vendor-mark__glyph` in `VendorMark.css`), so at two thirds it draws near the 1.75 weight of a glyph the plate's own size. The width is also set plainly, so it holds where a strict `style-src` drops the glyph's own style. `muted` drains the plate and glyph together, as it does a mark.
+
+**The plate needs room, so it draws from 16px up.** Below 16px, and at a size that cannot be measured while rendering (the default `1em`, a `rem`: a mark in a line of text or in another tile's badge), the glyph is drawn alone at full size, as a glyph beside a word is, because on a plate there it would be too small to read. Pass a size in px or a step from `md` up where a catalogue draws the tile. Always draw it with "AWS" beside it.
 
 **`crewlet` is Crewlet's own mark**, for the services built into it (Worklet, Doclet) where a catalogue lists them beside the third-party apps they stand in for. It is drawn from the brand mark the package already carries (`svg/crewlet-icon.svg`, `CrewletIcon`), not a second copy, and takes the same `size` and `muted` as any other vendor.
 
@@ -141,7 +148,7 @@ A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is draw
 
 The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRADEMARKS.md), which ships in the package. The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram, Microsoft Teams, Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are Simple Icons' renderings, whose path data is CC0 1.0. The Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings are taken from simple-icons 16.35.0, each path unchanged and in the hex that release records for its brand (Scaleway's purple, #4F0599, sourced there to Scaleway's own design system, Ultraviolet).
 
-`VENDORS` lists every vendor the package draws, the ten unmarked tiles and the SSH key among them.
+`VENDORS` lists every vendor the package draws, the AWS tile and the SSH key among them.
 
 ## The Google Analytics logo
 
@@ -156,7 +163,7 @@ import onDark from '@crewlethq/icons/attribution/google-analytics/lockup_ic_Anal
 
 Google's [developer branding policy](https://developers.google.com/analytics/terms/branding-policy) asks an application that shows Google Analytics data to show the official Google Analytics logo beside it. These are the two files that page offers for the horizontal logo (1519 by 402), byte for byte as Google serves them, checksummed in `SHA256SUMS` and held to it by `test/attribution.test.mjs`. They are raw files rather than components, so a bundler serves them as assets. They are Google's, outside the package's licence, and only for an application that uses the Google Analytics API and shows its data.
 
-Follow the policy where one is shown: the white-text file on a dark ground and the other on a light one; at least 154 by 50 px, which at this aspect is a 50 px height (189 px wide); on one solid ground; unaltered and uncovered; linked to Google Analytics, either its product page (`https://www.google.com/analytics`) or into the product (`https://analytics.google.com/`); never beside your own product's name or description; never the most prominent element on the page; never as the integration's icon. [`TRADEMARKS.md`](./TRADEMARKS.md) records where Crewlet shows it.
+Follow the policy where one is shown: the white-text file on a dark ground and the other on a light one; at least 154 by 50 px, which at this aspect is a 50 px height (189 px wide); on one solid ground; unaltered and uncovered; linked to Google Analytics, either its product page (`https://www.google.com/analytics`) or into the product (`https://analytics.google.com/`); never beside your own product's name or description; never the most prominent element on the page; never as the integration's icon, which is the `google-analytics` vendor mark. [`TRADEMARKS.md`](./TRADEMARKS.md) records where Crewlet shows it.
 
 ## Product marks
 

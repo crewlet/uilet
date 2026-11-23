@@ -1,8 +1,9 @@
 /**
  * The coding harnesses' marks at 24px on a light and a dark document: one
  * drawing shown for Grok, Hermes and Kimi, Qwen reversed on dark, OpenAI in the
- * text's ink, every square filled. The unmarked tiles' plates fill their
- * square in the text's ink at a tenth, their glyphs centred in the middle.
+ * text's ink, every square filled. The store, ads and analytics marks fill
+ * their square, App Store Connect showing Apple's file for the ground. AWS's
+ * plate fills its square in the text's ink at a tenth, its glyph centred.
  */
 import { afterEach, describe, expect, test } from 'vitest';
 import { page } from 'vitest/browser';
@@ -24,17 +25,20 @@ afterEach(() => {
   document.documentElement.removeAttribute('data-theme');
 });
 
-const UNMARKED: Vendor[] = [
-  'aws',
-  'google-analytics',
-  'google-search-console',
-  'google-ads',
-  'apple-ads',
-  'meta-ads',
-  'google-adsense',
-  'google-admob',
+const UNMARKED: Vendor[] = ['aws'];
+
+const GROWTH: Vendor[] = [
   'app-store-connect',
+  'apple',
+  'apple-ads',
+  'google',
+  'google-admob',
+  'google-ads',
+  'google-adsense',
+  'google-analytics',
   'google-play',
+  'google-search-console',
+  'meta-ads',
 ];
 
 const HARNESSES: Vendor[] = ['claude', 'copilot', 'cursor', 'gemini-cli', 'grok', 'hermes', 'kimi', 'meta', 'openai', 'opencode', 'pi', 'qwen'];
@@ -53,7 +57,7 @@ async function mount(theme: 'light' | 'dark', vendor: Vendor): Promise<SVGSVGEle
 const shown = (element: Element) => getComputedStyle(element).display !== 'none';
 
 describe.each(['light', 'dark'] as const)('on a %s document', (theme) => {
-  test.each(['grok', 'hermes', 'kimi'] as const)("%s shows the vendor's drawing for the ground, filling the mark", async (vendor) => {
+  test.each(['app-store-connect', 'grok', 'hermes', 'kimi'] as const)("%s shows the vendor's drawing for the ground, filling the mark", async (vendor) => {
     const mark = await mount(theme, vendor);
     const light = mark.querySelector('.crewlet-vendor-mark__light')!;
     const dark = mark.querySelector('.crewlet-vendor-mark__dark')!;
@@ -68,8 +72,8 @@ describe.each(['light', 'dark'] as const)('on a %s document', (theme) => {
     expect(getComputedStyle(mark.querySelector('path')!).fill).toBe(theme === 'light' ? 'rgb(8, 45, 255)' : 'rgb(240, 240, 240)');
   });
 
-  test("OpenAI's blossom takes the text's ink on either ground", async () => {
-    const mark = await mount(theme, 'openai');
+  test.each(['openai', 'apple', 'apple-ads'] as const)("%s takes the text's ink on either ground", async (vendor) => {
+    const mark = await mount(theme, vendor);
     expect(getComputedStyle(mark.querySelector('path')!).fill).toBe(theme === 'light' ? 'rgb(20, 20, 20)' : 'rgb(240, 240, 240)');
   });
 
@@ -79,12 +83,12 @@ describe.each(['light', 'dark'] as const)('on a %s document', (theme) => {
     expect(getComputedStyle(tile).fill).toBe(theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)');
   });
 
-  test.each(HARNESSES)('%s is a 24px square its drawing spans', async (vendor) => {
+  test.each([...HARNESSES, ...GROWTH])('%s is a 24px square its drawing spans', async (vendor) => {
     const mark = await mount(theme, vendor);
     const frame = mark.getBoundingClientRect();
     expect([frame.width, frame.height]).toEqual([24, 24]);
     // The paths of the drawing that is shown: a mark with two hides one of them.
-    const painted = [...mark.querySelectorAll('path, rect')].filter((shape) => !shape.closest('clipPath') && shown(shape.closest('svg')!));
+    const painted = [...mark.querySelectorAll('path, rect, circle, image')].filter((shape) => !shape.closest('clipPath') && shown(shape.closest('svg')!));
     const boxes = painted.map((path) => path.getBoundingClientRect()).filter((box) => box.width > 0);
     expect(boxes.length).toBeGreaterThan(0);
     const left = Math.min(...boxes.map((box) => box.left));
@@ -128,7 +132,7 @@ describe('a plate in an icon zone that paints its drawings', () => {
     host.style.color = 'rgb(20, 20, 20)';
     document.body.append(host);
     root = createRoot(host);
-    flushSync(() => root!.render(<VendorMark vendor="google-analytics" size={20} />));
+    flushSync(() => root!.render(<VendorMark vendor="aws" size={20} />));
     const glyph = host.querySelector('.crewlet-vendor-mark__glyph')!;
     const shapes = [...glyph.querySelectorAll('path')];
     expect(shapes.length).toBeGreaterThan(0);
