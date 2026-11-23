@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { parseHex } from '@crewlethq/tokens/test/palette';
+import { channels, installThemed, themeColour } from '../../../../apps/ui-tests/src/cascade.js';
 import { Copyable, CopyButton } from './index.js';
 // Through the package root, because "it is exported" is under test: a
 // function missing from the folder barrel is one no consumer can import.
@@ -484,34 +486,43 @@ test('an inline value takes the size and ink of the row it stands in, a value am
   expect(container.querySelector('.crewlet-copyable__value')!.textContent).toBe('https://api.example.com/v1/');
 });
 
-test('a compact value is framed, sized to itself, drawn whole and wrapped, its control always shown', () => {
-  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Copyable.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-  const frame = /\.crewlet-copyable--compact \{([^}]*)\}/.exec(css)?.[1] ?? '';
-  expect(frame).toMatch(/border: 1px solid var\(--color-border-strong\)/);
-  // Sized to the value: no width of its own, unlike a block's whole row.
-  expect(frame).not.toMatch(/(^|[^-])width:/);
-  const value = /\.crewlet-copyable--compact \.crewlet-copyable__value \{([^}]*)\}/.exec(css)?.[1] ?? '';
-  expect(value).toMatch(/white-space:\s*normal;/);
-  expect(value).toMatch(/overflow-wrap:\s*anywhere;/);
-  expect(value).toMatch(/text-overflow:\s*clip;/);
-  expect(css).toMatch(/\.crewlet-copyable--compact \.crewlet-copyable__button \{[^}]*opacity: 1;/);
-
-  const name = 'crewlet-growth-marketing-lead';
-  const address = 'crewlet-growth@example-identity.iam.example.com/agents';
-  const { container } = render(
-    <>
-      <Copyable value={name} variant="compact" ariaLabel="Copy the key's name" />
-      <Copyable value={address} variant="compact" />
-    </>,
-  );
-  const [opaque, path] = [...container.querySelectorAll('.crewlet-copyable')];
-  // Whole, past the chip's cut, and with no tooltip repeating what is drawn.
-  const drawn = opaque!.querySelector('.crewlet-copyable__value')!;
-  expect(drawn.textContent).toBe(name);
-  expect(drawn.hasAttribute('title')).toBe(false);
-  expect(opaque!.classList.contains('crewlet-copyable--opaque')).toBe(true);
-  expect(path!.querySelectorAll('wbr')).toHaveLength(1);
-  expect(screen.getByRole('button', { name: "Copy the key's name" })).toBeDefined();
+test('a compact value is framed, sized to itself, drawn whole as copied, its control always shown', () => {
+  // Read back from the cascade, so the compact rules are measured winning over the base and IconButton ones.
+  const uninstall = installThemed('light', 'IconButton/IconButton.css', 'Copyable/Copyable.css');
+  try {
+    const name = 'crewlet-growth-marketing-lead';
+    const address = 'crewlet-growth@example-identity.iam.example.com/agents';
+    const { container } = render(
+      <>
+        <Copyable value={name} variant="compact" ariaLabel="Copy the key's name" />
+        <Copyable value={name} variant="chip" />
+        <Copyable value={address} variant="compact" />
+      </>,
+    );
+    const [compact, chip, path] = [...container.querySelectorAll('.crewlet-copyable')];
+    // A chip cuts a value this long; compact draws it whole, with no tooltip repeating what is drawn.
+    expect(chip!.querySelector('.crewlet-copyable__value')!.textContent).toContain('…');
+    const drawn = compact!.querySelector('.crewlet-copyable__value')!;
+    expect(drawn.textContent).toBe(name);
+    expect(drawn.hasAttribute('title')).toBe(false);
+    const value = getComputedStyle(drawn);
+    expect(value.getPropertyValue('white-space')).toBe('pre-wrap');
+    expect(value.getPropertyValue('overflow-wrap')).toBe('anywhere');
+    expect(value.getPropertyValue('text-overflow')).toBe('clip');
+    const frame = getComputedStyle(compact!);
+    const strong = ['color-border-strong'].map((token) => `--${token}`)[0]!;
+    expect(channels(frame.borderTopColor)).toEqual(parseHex(themeColour('light', strong)));
+    // Sized to the value: no width of its own, as a block's whole row has.
+    expect(['', 'auto']).toContain(frame.width);
+    const button = getComputedStyle(screen.getByRole('button', { name: "Copy the key's name" }));
+    expect(button.opacity).toBe('1');
+    expect(button.width).toBe('24px');
+    expect(compact!.classList.contains('crewlet-copyable--opaque')).toBe(true);
+    expect(path!.querySelectorAll('wbr')).toHaveLength(1);
+  } finally {
+    cleanup();
+    uninstall();
+  }
 });
 
 test('words drawn in an identifier\'s place take the surrounding face, and a short id stays mono', () => {
