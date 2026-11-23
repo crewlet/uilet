@@ -71,6 +71,7 @@ function Card() {
           )}
         />
       ),
+      href: seat.helper ? undefined : `#seat-${seat.key}`,
       actions: seat.helper ? null : (
         <Menu label={`More actions for ${seat.name}`} align="end" items={[{ key: 'open', label: 'Open seat', onSelect: () => {} }]} />
       ),
@@ -108,6 +109,42 @@ export const WhoRunsOnWhichModel: Story = {
       <div style={{ border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
         <Card />
       </div>
+    </BothThemes>
+  ),
+};
+
+/** A seat whose jobs run on different models: a picker per part, each labelled under the name. */
+export const SplitRow: Story = {
+  render: () => (
+    <BothThemes>
+      <AssignmentList
+        groups={[
+          {
+            key: 'seats',
+            label: 'Seats',
+            rows: [
+              {
+                key: 'qa',
+                name: 'QA Engineer',
+                href: '#seat-qa',
+                icon: <UserGlyph size="sm" aria-hidden="true" />,
+                lines: (['Coding', 'Reviews', 'Routines'] as const).map((label, index) => ({
+                  key: label,
+                  label,
+                  value: (
+                    <AssignmentPicker
+                      aria-label={`${label} for QA Engineer`}
+                      primary={index === 0 ? 'platform-opus-long-context-14' : 'platform-sonnet-8'}
+                      secondary={index === 0 ? MODELS['platform-opus-long-context-14'] : MODELS['platform-sonnet-8']}
+                    />
+                  ),
+                })),
+                actions: <Menu label="More actions for QA Engineer" align="end" items={[{ key: 'one', label: 'Use one model', onSelect: () => {} }]} />,
+              },
+            ],
+          },
+        ]}
+      />
     </BothThemes>
   ),
 };
