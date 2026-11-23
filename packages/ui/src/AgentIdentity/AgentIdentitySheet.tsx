@@ -68,6 +68,18 @@ export interface AgentIdentityVerdict {
   view: ReactNode;
   /** The read the check stopped at, by its id; the last read where it is left out. */
   failedAt?: string | undefined;
+  /**
+   * What each read that ran found, by its id: `note` is the sentence under it
+   * (why it failed), `detail` the vendor's answers in the mono face. A read
+   * the check did not reach draws neither.
+   */
+  steps?: Readonly<Record<string, AgentIdentityStepNote>> | undefined;
+}
+
+/** What one read of the check found. */
+export interface AgentIdentityStepNote {
+  note?: ReactNode;
+  detail?: ReactNode;
 }
 
 /** Crewlet can make the identity itself, with one button. */
@@ -320,7 +332,14 @@ function Walk({
     else if (unfinished) state = 'stopped';
     else if (verdict.ok) state = 'done';
     else state = i < failedIndex ? 'done' : i === failedIndex ? 'failed' : 'pending';
-    return { id: r.id, label: r.label, state };
+    const found = state === 'done' || state === 'failed' ? verdict?.steps?.[r.id] : undefined;
+    return {
+      id: r.id,
+      label: r.label,
+      state,
+      ...(found?.note ? { note: found.note } : {}),
+      ...(found?.detail ? { detail: found.detail } : {}),
+    };
   });
 
   const vendorSteps = <VendorSteps steps={steps} link={link} />;
