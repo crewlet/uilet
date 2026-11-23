@@ -661,24 +661,15 @@
   line-height: var(--crewlet-chat-line);
 }
 
-/* A group's label is a rule, not a row: the day in its own case on the faces'
-   edge and a hairline running on, as a transcript's dividers (ChatDivider.css),
-   with more air above it than under it. */
+/* A group's label is a thin band across the list: the day in its own case on
+   the faces' edge, centred on equal padding over the sunk-well fill, no rule. */
 .crewlet-inbox-list--chat .crewlet-inbox-list__label {
   display: flex;
   align-items: center;
-  padding: var(--spacing-3) var(--crewlet-chat-pad-x) var(--spacing-1);
+  padding: var(--spacing-1) var(--crewlet-chat-pad-x);
+  background: var(--color-surface-inset);
   font-size: var(--crewlet-chat-meta);
   line-height: var(--font-line-height-snug);
-}
-
-.crewlet-inbox-list--chat .crewlet-inbox-list__label:not(:has(> .crewlet-inbox-list__disclosure))::after,
-.crewlet-inbox-list--chat .crewlet-inbox-list__disclosure::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  margin-inline-start: var(--spacing-3);
-  background: var(--color-edge-hairline);
 }
 
 .crewlet-inbox-list__day {
@@ -686,19 +677,18 @@
   color: var(--color-text-tertiary);
 }
 
-/* The rule that opens a group closes the one before it, so no second line;
-   a row leaving keeps its own until it has gone. */
+/* The band that opens a group closes the one before it, so no hairline over
+   it; a row leaving keeps its own until it has gone. */
 .crewlet-inbox-list--chat
   .crewlet-inbox-list__group:has(+ .crewlet-inbox-list__group > .crewlet-inbox-list__label)
   .crewlet-inbox-row:nth-last-child(1 of :not(.crewlet-inbox-row--leaving)) {
   border-bottom: 0;
 }
 
-/* Forced colours repaint a background to Canvas: the rule is a border there. */
+/* Forced colours repaint the fill to Canvas: a border marks the band there. */
 @media (forced-colors: active) {
-  .crewlet-inbox-list--chat .crewlet-inbox-list__label:not(:has(> .crewlet-inbox-list__disclosure))::after,
-  .crewlet-inbox-list--chat .crewlet-inbox-list__disclosure::after {
-    border-top: 1px solid CanvasText;
+  .crewlet-inbox-list--chat .crewlet-inbox-list__label {
+    border-block: 1px solid CanvasText;
   }
 }
 
