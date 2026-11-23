@@ -18,7 +18,7 @@ export interface AgentIdentityCopy {
   value: string;
   /**
    * The rule the value keeps: "Lowercase letters, digits and hyphens, at most 30."
-   * Not drawn, since the value is copied as it is; a string is the value's tooltip.
+   * @deprecated Not drawn: the suggested value is copied as it is.
    */
   rule?: ReactNode;
 }
@@ -572,12 +572,7 @@ function VendorSteps({
             {s.copy ? (
               <>
                 {' '}
-                <span
-                  className="crewlet-agent-identity-sheet__copy"
-                  title={typeof s.copy.rule === 'string' ? s.copy.rule : undefined}
-                >
-                  <Copyable variant="compact" value={s.copy.value} ariaLabel={`Copy the ${s.copy.label}`} />
-                </span>
+                <Copyable variant="compact" value={s.copy.value} ariaLabel={`Copy the ${s.copy.label}`} />
               </>
             ) : null}
           </ListItem>

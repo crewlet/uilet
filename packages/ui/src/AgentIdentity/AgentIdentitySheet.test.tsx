@@ -135,7 +135,7 @@ test('a page no step names keeps its button under the steps', () => {
   );
 });
 
-test('draws the suggested name as a compact copy after its step\'s words, the rule only on its tooltip', () => {
+test('draws the suggested name as a compact copy after its step\'s words, and not the rule', () => {
   sheet();
   const copy = within(dialog()).getByRole('button', { name: "Copy the key's name" });
   const chip = within(dialog()).getByText('crewlet-growth').closest('.crewlet-copyable')!;
@@ -143,9 +143,9 @@ test('draws the suggested name as a compact copy after its step\'s words, the ru
   expect(chip.contains(copy)).toBe(true);
   // In the step's own sentence, "Name: crewlet-growth", rather than a panel under it.
   expect(chip.closest('li')!.textContent).toMatch(/^Name: crewlet-growth/);
-  // Copied as it is, so the rule it was made to is no line of its own.
+  // Copied as it is, so the rule it was made to is drawn nowhere.
   expect(within(dialog()).queryByText('Lowercase letters, digits and hyphens, at most 30.')).toBeNull();
-  expect(chip.parentElement!.getAttribute('title')).toBe('Lowercase letters, digits and hyphens, at most 30.');
+  expect(dialog().innerHTML).not.toContain('at most 30');
 });
 
 test('a replacement is titled Replace identity', () => {
