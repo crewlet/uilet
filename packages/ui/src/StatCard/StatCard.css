@@ -201,7 +201,8 @@
  * every tile in a row one height, so a second line costs no alignment.
  */
 .crewlet-statcard__sub {
-  min-height: calc(1em * var(--font-line-height-body));
+  /* One line, or as many as `subLines` asks, in every state. */
+  min-height: calc(var(--crewlet-statcard-sub-lines, 1) * 1em * var(--font-line-height-body));
   font-size: var(--font-size-xs);
   line-height: var(--font-line-height-body);
   /* The quiet step, with the label. The line qualifies the number rather than

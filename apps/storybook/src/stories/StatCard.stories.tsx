@@ -146,6 +146,23 @@ export const Loading: Story = {
   args: { loading: true },
 };
 
+/** Two lines kept for the note, loading and loaded: the tile stands at one height when its number lands. */
+export const LoadingKeepsItsRoom: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 14rem)', gap: '1rem' }}>
+      <StatCard label="Waiting, held or blocked" value="" loading subLines={2} />
+      <StatCard
+        label="Waiting, held or blocked"
+        value="1,059"
+        unit="h"
+        delta={{ value: '+148%', polarity: 'bad' }}
+        sub="331 h waiting, 197 h held, 531 h blocked"
+        subLines={2}
+      />
+    </div>
+  ),
+};
+
 /**
  * A lone tile is the card, so it is the same object as the panel beside it:
  * the card's ground, its hairline and its 12px corner, flat as every card is.
