@@ -1,0 +1,68 @@
+/*
+ * What confirming will do: an eyebrow, then choices and facts on one text
+ * edge. A fact's glyph sits where a choice's box sits, so every line's words
+ * start where the checkbox labels do.
+ */
+.crewlet-consequence-list {
+  /* It takes the width it is given, so a long name never widens the dialog. */
+  contain: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-consequence-list__heading {
+  margin-bottom: var(--spacing-1);
+}
+
+.crewlet-consequence-list__choice {
+  min-width: 0;
+}
+
+/* A long label or chip wraps between words, never inside one. */
+.crewlet-consequence-list__choice .crewlet-checkbox__label,
+.crewlet-consequence-list__text {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.crewlet-consequence-list__fact {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  min-width: 0;
+  margin: 0;
+  padding-block: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+/* The glyph column is the checkbox's width, and the glyph sits on the first line. */
+.crewlet-consequence-list__mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--crewlet-checkbox-size, 16px);
+  height: calc(var(--font-line-height-normal) * 1em);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-consequence-list__fact--warning .crewlet-consequence-list__mark {
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-consequence-list__fact--danger {
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-consequence-list__fact--danger .crewlet-consequence-list__mark {
+  color: inherit;
+}
+
+/* A named resource is one chip: it ends in an ellipsis rather than breaking. */
+.crewlet-resource-name {
+  max-width: min(100%, 32ch);
+}

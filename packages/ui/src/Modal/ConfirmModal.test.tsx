@@ -12,6 +12,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
+import { useState } from 'react';
 import { ConfirmModal } from './index.js';
 
 afterEach(cleanup);
@@ -147,6 +148,107 @@ test('the prompt carries no accessibility violation', async () => {
         <input id="ack" type="checkbox" /> I understand this cannot be undone
       </label>
     </ConfirmModal>,
+  );
+  const result = await axe.run(document.body, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test('a confirmation with changes and consequences draws them, the consequences under a rule', () => {
+  render(
+    <ConfirmModal
+      open
+      onClose={() => {}}
+      onConfirm={() => {}}
+      title="Move Site Reliability Engineer?"
+      message="Its jobs move to the new model on their next turn."
+      changes={[
+        {
+          key: 'sre',
+          subject: 'Site Reliability Engineer',
+          rows: [{ kind: 'changed', label: 'Coding', from: 'platform-sonnet-8', to: 'platform-opus-14' }],
+        },
+      ]}
+      consequencesHeading="What follows"
+      consequences={[{ kind: 'fact', key: 'turn', tone: 'follows', text: 'A running turn finishes first.' }]}
+    />,
+  );
+  const body = document.querySelector('.crewlet-modal__body')!;
+  const parts = Array.from(body.children).map((child) => child.className.split(' ')[0]);
+  expect(parts).toEqual(['crewlet-modal__prompt-title', 'crewlet-modal__message', 'crewlet-change-groups', 'crewlet-consequence-list']);
+  expect(screen.getByRole('group', { name: 'What follows' })).toBeTruthy();
+  expect(body.textContent).toContain('Changed from platform-sonnet-8');
+});
+
+test('a required choice holds confirm until it is ticked, from the button and from Enter', () => {
+  let confirmed = 0;
+  function Rename() {
+    const [ack, setAck] = useState(false);
+    return (
+      <ConfirmModal
+        open
+        onClose={() => {}}
+        onConfirm={() => { confirmed += 1; }}
+        title="Rename the company?"
+        confirmLabel="Save"
+        consequences={[
+          { kind: 'choice', key: 'ack', label: 'I understand what renaming the company does', tone: 'danger', required: true, checked: ack, onCheckedChange: setAck },
+        ]}
+      />
+    );
+  }
+  render(<Rename />);
+  const save = screen.getByRole('button', { name: /Save/ });
+  expect(save.getAttribute('aria-disabled')).toBe('true');
+  fireEvent.click(save);
+  fireEvent.submit(save.closest('form')!);
+  expect(confirmed).toBe(0);
+  fireEvent.click(screen.getByRole('checkbox', { name: 'I understand what renaming the company does' }));
+  expect(screen.getByRole('button', { name: /Save/ }).getAttribute('aria-disabled')).not.toBe('true');
+  fireEvent.submit(save.closest('form')!);
+  expect(confirmed).toBe(1);
+});
+
+test('an alternative sits on the footer start and calls its own handler', () => {
+  let disabled = 0;
+  render(
+    <ConfirmModal
+      open
+      destructive
+      onClose={() => {}}
+      onConfirm={() => {}}
+      title="Remove linear"
+      confirmLabel="Remove server"
+      alternative={{ label: 'Disable instead', onSelect: () => { disabled += 1; } }}
+    />,
+  );
+  const alternative = screen.getByRole('button', { name: 'Disable instead' });
+  expect(alternative.closest('.crewlet-modal__footer-start')).toBeTruthy();
+  fireEvent.click(alternative);
+  expect(disabled).toBe(1);
+});
+
+test('a full confirmation has no axe violations', async () => {
+  render(
+    <ConfirmModal
+      open
+      destructive
+      onClose={() => {}}
+      onConfirm={() => {}}
+      title="Remove team-sonnet"
+      message="Used by 9 seats, Ask Crewlet and the Advisor."
+      shape="framed"
+      consequencesHeading="When you remove it"
+      consequences={[
+        { kind: 'choice', key: 'secret', label: 'Delete its secret', name: 'MODEL_TOKEN_TEAM_SONNET', checked: true, onCheckedChange: () => {} },
+        { kind: 'fact', key: 'kept', tone: 'kept', text: 'Another model still uses the shared secret.' },
+      ]}
+      changes={[{ key: 'pm', subject: 'Product Manager', rows: [{ kind: 'changed', label: 'Coding', from: 'a', to: 'b' }] }]}
+      alternative={{ label: 'Disable instead', onSelect: () => {} }}
+    />,
   );
   const result = await axe.run(document.body, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
