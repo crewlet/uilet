@@ -209,7 +209,7 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.176.0
+## Changes in 0.177.0
 
 ### Store, ads and analytics integrations draw their owners' logos
 
