@@ -78,6 +78,8 @@ test('with onSelect each badge is a button naming its member, and the counted me
   const panel = screen.getByRole('dialog', { name: '3 more' });
   fireEvent.click(within(panel).getByRole('button', { name: /^Jane Founder, viewing/ }));
   expect(onSelect).toHaveBeenCalledWith(members[3]);
+  // The panel closes first, so the host's own menu does not open under it.
+  expect(screen.queryByRole('dialog')).toBeNull();
 });
 
 test('draws nothing for an empty room, and refuses a max that is not a count', () => {

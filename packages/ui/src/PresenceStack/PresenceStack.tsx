@@ -123,17 +123,24 @@ export function PresenceStack({ members, self = true, max = 4, size = 'sm', onSe
         <ListOverflow
           className="crewlet-avatar-stack__member crewlet-avatar-stack__more"
           label={text.more(hidden.length)}
-          items={hidden.map((member) => (
-            <button
-              key={member.id}
-              type="button"
-              className="crewlet-presence-stack__row"
-              onClick={() => onSelect(member)}
-            >
-              {badge(member)}
-              <span>{text.member(member)}</span>
-            </button>
-          ))}
+          count={hidden.length}
+          items={(close) =>
+            hidden.map((member) => (
+              <button
+                key={member.id}
+                type="button"
+                className="crewlet-presence-stack__row"
+                onClick={() => {
+                  // The panel closes first, so the host's own menu is not opened under it.
+                  close();
+                  onSelect(member);
+                }}
+              >
+                {badge(member)}
+                <span>{text.member(member)}</span>
+              </button>
+            ))
+          }
         >
           <span aria-hidden="true">+{hidden.length}</span>
           <VisuallyHidden>{text.more(hidden.length)}</VisuallyHidden>

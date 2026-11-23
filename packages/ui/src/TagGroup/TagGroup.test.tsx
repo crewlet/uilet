@@ -107,38 +107,47 @@ describe('TagGroup', () => {
 
 describe('TagGroup overflow="fit"', () => {
   /**
-   * jsdom lays nothing out, so each item's line is stubbed: the first
-   * `perLine` items sit on the first line and the rest wrap below it.
+   * jsdom lays nothing out, so the widths are stubbed: the group is `room`
+   * wide, each tag `tag` wide and the chip `chip` wide, with no gap.
    */
-  const lay = (perLine: number) => {
-    const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetTop');
-    Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+  const lay = (room: number, tag: number, chip: number) => {
+    const offset = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
+    const client = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
       configurable: true,
       get(this: HTMLElement) {
-        const parent = this.parentElement;
-        if (!parent?.classList.contains('crewlet-tag-group')) return 0;
-        return [...parent.children].indexOf(this) < perLine ? 0 : 24;
+        if (!this.parentElement?.classList.contains('crewlet-tag-group')) return 0;
+        return this.hasAttribute('data-count') ? chip : tag;
+      },
+    });
+    Object.defineProperty(Element.prototype, 'clientWidth', {
+      configurable: true,
+      get(this: Element) {
+        return this.classList.contains('crewlet-tag-group') ? room : 0;
       },
     });
     return () => {
-      if (original) Object.defineProperty(HTMLElement.prototype, 'offsetTop', original);
+      if (offset) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', offset);
+      if (client) Object.defineProperty(Element.prototype, 'clientWidth', client);
     };
   };
 
-  test('keeps one line and names what wrapped in a chip that lists it, room left for the chip', () => {
-    const restore = lay(3);
+  const five = (props: Partial<Parameters<typeof TagGroup>[0]> = {}) => (
+    <TagGroup label="Tags" overflow="fit" {...props}>
+      {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((name) => (
+        <Tag key={name}>{name}</Tag>
+      ))}
+    </TagGroup>
+  );
+
+  test('keeps one line and names what does not fit in a chip that lists it, room left for the chip', () => {
+    const restore = lay(160, 50, 60);
     try {
-      render(
-        <TagGroup label="Tags" overflow="fit">
-          {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((name) => (
-            <Tag key={name}>{name}</Tag>
-          ))}
-        </TagGroup>,
-      );
+      render(five());
       const list = screen.getByRole('list', { name: 'Tags, 5' });
-      // Three fit; the count chip needs the third one's place, so two stay.
-      expect(screen.queryByText('Gamma')).toBeNull();
+      // Three tags fit alone; with the chip's 60px beside them, two do.
       expect(screen.getByText('Beta')).toBeDefined();
+      expect(screen.queryByText('Gamma')).toBeNull();
       expect(list.className).toContain('crewlet-tag-group--fit');
       fireEvent.click(screen.getByRole('button', { name: '+3 more' }));
       const panel = screen.getByRole('dialog', { name: 'Tags, 3 more' });
@@ -148,66 +157,38 @@ describe('TagGroup overflow="fit"', () => {
     }
   });
 
-  test('names the tags with the noun it is given, and stays words inside a grid cell', () => {
-    const restore = lay(3);
+  test('folded to one tag, the tag gives way beside the chip; with no room for it, the chip stands alone', () => {
+    const restore = lay(120, 80, 60);
     try {
-      const { rerender } = render(
-        <TagGroup label="Problems" overflow="fit" noun={{ one: 'problem', other: 'problems' }}>
-          {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((name) => (
-            <Tag key={name}>{name}</Tag>
-          ))}
-        </TagGroup>,
-      );
+      const { unmount } = render(five({ noun: { one: 'problem', other: 'problems' } }));
+      expect(screen.getByText('Alpha')).toBeDefined();
+      expect(screen.getByRole('list').hasAttribute('data-folded')).toBe(true);
+      expect(screen.getByRole('button', { name: '+4 more problems' })).toBeDefined();
+      unmount();
+    } finally {
+      restore();
+    }
+    const narrow = lay(90, 80, 60);
+    try {
+      render(five({ noun: { one: 'problem', other: 'problems' } }));
+      expect(screen.queryByText('Alpha')).toBeNull();
+      // Nothing is drawn before it, so it does not say "more".
+      expect(screen.getByRole('button', { name: '5 problems' })).toBeDefined();
+    } finally {
+      narrow();
+    }
+  });
+
+  test('names the tags with the noun it is given, and stays words inside a grid cell', () => {
+    const restore = lay(160, 50, 60);
+    try {
+      const { rerender } = render(five({ noun: { one: 'problem', other: 'problems' } }));
       expect(screen.getByRole('button', { name: '+3 more problems' })).toBeDefined();
-      rerender(
-        <TagGroup label="Problems" overflow="fit" countOnly noun={{ one: 'problem', other: 'problems' }}>
-          {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((name) => (
-            <Tag key={name}>{name}</Tag>
-          ))}
-        </TagGroup>,
-      );
+      rerender(five({ noun: { one: 'problem', other: 'problems' }, countOnly: true }));
       expect(screen.getByText('+3 more problems')).toBeDefined();
       expect(screen.queryByRole('button')).toBeNull();
     } finally {
       restore();
-    }
-  });
-
-  test('a count chip standing a pixel lower on the same line costs no tag that fits', () => {
-    // The line centres its items, so a chip of another height starts a pixel
-    // away from the tags beside it. The first four items fit on the line.
-    const top = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetTop');
-    const height = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
-    const inGroup = (el: HTMLElement) => el.parentElement?.classList.contains('crewlet-tag-group') ?? false;
-    Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
-      configurable: true,
-      get(this: HTMLElement) {
-        if (!inGroup(this)) return 0;
-        if ([...this.parentElement!.children].indexOf(this) >= 4) return 26;
-        return this.hasAttribute('data-count') ? 1 : 0;
-      },
-    });
-    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
-      configurable: true,
-      get(this: HTMLElement) {
-        return inGroup(this) ? 22 : 0;
-      },
-    });
-    try {
-      render(
-        <TagGroup label="Tags" overflow="fit">
-          {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((name) => (
-            <Tag key={name}>{name}</Tag>
-          ))}
-        </TagGroup>,
-      );
-      // Three tags and the count share the line; matching tops alone kept one.
-      expect(screen.getByText('Gamma')).toBeDefined();
-      expect(screen.queryByText('Delta')).toBeNull();
-      expect(screen.getByText('+2 more')).toBeDefined();
-    } finally {
-      if (top) Object.defineProperty(HTMLElement.prototype, 'offsetTop', top);
-      if (height) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', height);
     }
   });
 

@@ -50,7 +50,8 @@
  * pill and 2px over a sheet cell's 18px one.
  */
 .crewlet-tag-group__item[data-count] {
-  flex: none;
+  /* It may give way only where it stands alone in a group narrower than its words. */
+  flex: 0 1 auto;
   align-self: stretch;
 }
 

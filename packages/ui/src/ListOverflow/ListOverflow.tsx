@@ -1,6 +1,7 @@
-import type { MouseEvent, ReactNode } from 'react';
+import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import { Popover } from '../Popover/index.js';
 import { cx } from '../utils/cx.js';
+import { titleWhenCut } from '../utils/titleIfCut.js';
 
 /** What one item of a list is called, in both numbers: a plural is a word, not a suffix ("person", "people"). */
 export interface ListNoun {
@@ -27,8 +28,10 @@ export function shownBeforeOverflow(total: number, max: number): number {
 }
 
 export interface ListOverflowProps {
-  /** The items the list left out, one per line in the panel the chip opens. */
-  items: readonly ReactNode[];
+  /** The items the list left out, one per line in the panel; a function gets `close` for items that act. */
+  items: readonly ReactNode[] | ((close: () => void) => readonly ReactNode[]);
+  /** How many items are left out, where `items` is a function. */
+  count?: number | undefined;
   /** What the items are called. Left out, the chip says "+3 more". */
   noun?: ListNoun | undefined;
   /** The chip's words, where `overflowWords` is not what this list calls them. */
@@ -47,8 +50,17 @@ export interface ListOverflowProps {
  * ("+2 more problems") and is a button that opens a named panel listing them,
  * so a keyboard, touch or screen reader user reaches them, not only a hover title.
  */
-export function ListOverflow({ items, noun, children, label, size = 'sm', align = 'start', className }: ListOverflowProps) {
-  const words = overflowWords(items.length, noun);
+export function ListOverflow({
+  items,
+  count,
+  noun,
+  children,
+  label,
+  size = 'sm',
+  align = 'start',
+  className,
+}: ListOverflowProps) {
+  const words = overflowWords(typeof items === 'function' ? (count ?? 0) : items.length, noun);
   return (
     <Popover
       label={label ?? words.slice(1)}
@@ -64,18 +76,27 @@ export function ListOverflow({ items, noun, children, label, size = 'sm', align 
             event.stopPropagation();
             toggle();
           }}
+          onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+            // Nor does a row that opens on Enter or Space take the key that opens the chip.
+            if (event.key === 'Enter' || event.key === ' ') event.stopPropagation();
+          }}
         >
-          {children ?? words}
+          {/* Cut, never clipped, where the chip is wider than its row; whole on hover. */}
+          <span className="crewlet-list-overflow__words" onMouseEnter={titleWhenCut}>
+            {children ?? words}
+          </span>
         </button>
       )}
     >
-      <ul className="crewlet-list-overflow__list">
-        {items.map((item, index) => (
-          <li key={index} className="crewlet-list-overflow__item">
-            {item}
-          </li>
-        ))}
-      </ul>
+      {(close) => (
+        <ul className="crewlet-list-overflow__list">
+          {(typeof items === 'function' ? items(close) : items).map((item, index) => (
+            <li key={index} className="crewlet-list-overflow__item">
+              {item}
+            </li>
+          ))}
+        </ul>
+      )}
     </Popover>
   );
 }

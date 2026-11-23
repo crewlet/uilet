@@ -70,6 +70,18 @@ describe('ListOverflow', () => {
     expect(row).not.toHaveBeenCalled();
   });
 
+  test('Enter or Space on the chip does not reach a row that opens on them', () => {
+    const row = vi.fn();
+    render(<ListOverflow items={['a', 'b']} />);
+    document.body.addEventListener('keydown', row);
+    const chip = screen.getByRole('button', { name: '+2 more' });
+    fireEvent.keyDown(chip, { key: 'Enter' });
+    fireEvent.keyDown(chip, { key: ' ' });
+    fireEvent.keyDown(chip, { key: 'ArrowDown' });
+    document.body.removeEventListener('keydown', row);
+    expect(row).toHaveBeenCalledTimes(1);
+  });
+
   test('carries no axe violation, closed or open', async () => {
     const { container } = chip();
     const rules = {

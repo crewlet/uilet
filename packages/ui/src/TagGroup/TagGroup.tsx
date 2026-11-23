@@ -11,7 +11,7 @@ export interface TagGroupProps {
    */
   label: string;
   /**
-   * How many to show before the rest go behind a count. Six, because six
+   * How many to show before the rest go behind a count; one more is drawn rather than counted. Six, because six
    * handles or addresses are legible at a glance on one line of a card and the
    * seventh is where a row starts wrapping; the measured long case is
    * thirty-six service accounts.
@@ -75,7 +75,8 @@ export function TagGroup({
 
   const all = Children.toArray(children);
   const fit = overflow === 'fit';
-  const fitted = useFitted(list, fit, all.length);
+  const signature = all.map((tag) => (isValidElement(tag) ? String(tag.key) : String(tag))).join('\u0000');
+  const fitted = useFitted(list, fit, all.length, signature);
   // Ending a row of 18px pills (a sheet cell), the chip takes their step.
   const xs = all.some((tag) => isValidElement<{ size?: unknown }>(tag) && tag.props.size === 'xs');
   const shown = fit ? all.slice(0, fitted) : open ? all : all.slice(0, shownBeforeOverflow(all.length, max));
@@ -110,7 +111,7 @@ export function TagGroup({
       ) : hidden > 0 && fit ? (
         <li className="crewlet-tag-group__item" data-count="">
           <ListOverflow items={all.slice(shown.length)} noun={noun} size={xs ? 'xs' : 'sm'} label={`${label}, ${hidden} more`}>
-            {countLabel(hidden)}
+            {shown.length === 0 ? allWords(hidden, noun) : countLabel(hidden)}
           </ListOverflow>
         </li>
       ) : hidden > 0 ? (
@@ -134,61 +135,79 @@ export function TagGroup({
   );
 }
 
+/** The chip's words when no tag fits beside it, so it never says "more" than nothing: "3 problems". */
+function allWords(count: number, noun: ListNoun | undefined): string {
+  return noun === undefined ? `Show ${count}` : `${count.toLocaleString()} ${count === 1 ? noun.one : noun.other}`;
+}
+
+/** The narrowest a tag may give way to beside the chip: its round ends and about four letters. */
+const MIN_TAG = 48;
+
 /**
- * How many tags fit on the group's first line, with room for the count chip
- * when any are left out. Measured after layout and again when the group's
- * width changes: every item laid out below the first line's top is one that
- * wrapped. Starts at all of them, so a group that fits never re-renders.
+ * How many tags, of natural `widths`, fit on one line of `room` beside a chip
+ * `chip` wide. Folded to one, the tag gives way down to MIN_TAG; past that the chip stands alone.
  */
-function useFitted(list: RefObject<HTMLUListElement | null>, active: boolean, total: number): number {
+function fitCount(room: number, widths: readonly number[], chip: number, gap: number): number {
+  const span = (n: number) => widths.slice(0, n).reduce((sum, width) => sum + width, 0) + gap * Math.max(0, n - 1);
+  if (span(widths.length) <= room) return widths.length;
+  for (let n = widths.length - 1; n >= 1; n -= 1) if (span(n) + gap + chip <= room) return n;
+  return room - chip - gap >= MIN_TAG ? 1 : 0;
+}
+
+/**
+ * How many tags fit on the group's one line. Each tag's natural width is
+ * measured once, with all of them drawn, so a resize is arithmetic: the chip
+ * (and a panel open from it) is never torn down just to measure again.
+ */
+function useFitted(list: RefObject<HTMLUListElement | null>, active: boolean, total: number, signature: string): number {
   const [fitted, setFitted] = useState(total);
-  const width = useRef<number | null>(null);
+  const [round, setRound] = useState(0);
+  const widths = useRef<number[] | null>(null);
 
   useLayoutEffect(() => {
-    if (!active) return;
-    setFitted(total);
-  }, [active, total]);
+    if (!active) return undefined;
+    const remeasure = () => {
+      widths.current = null;
+      setFitted(total);
+      setRound((n) => n + 1);
+    };
+    remeasure();
+    // A web font that arrives later changes every tag's width.
+    let live = true;
+    void document.fonts?.ready.then(() => live && remeasure());
+    return () => {
+      live = false;
+    };
+  }, [active, total, signature]);
 
   useLayoutEffect(() => {
     const box = list.current;
-    if (!active || !box) return;
+    // A group with no width (inside a hidden panel) has nothing to measure yet.
+    if (!active || !box || box.clientWidth === 0) return;
     const items = [...box.children] as HTMLElement[];
-    const first = items[0];
-    if (!first) return;
-    /*
-     * ON THE FIRST LINE MEANS STARTING ABOVE THE FIRST ITEM'S BOTTOM EDGE, not
-     * only sharing its top. The line centres its items, so a member shorter or
-     * taller than the first starts a pixel or two away from it while standing
-     * on the same line, and an exact match counted a count chip 2px shorter
-     * than the tags as wrapped: one tag fewer than fits was shown, with an
-     * empty stretch where it belonged. A wrapped item starts at or below that
-     * edge, because the first line's box holds the first item whole. The
-     * shared top still counts, for a group laid out with no height at all
-     * (one inside a hidden panel), where every edge is the same zero.
-     */
-    const top = first.offsetTop;
-    const bottom = top + first.offsetHeight;
-    const onFirstLine = (item: HTMLElement) => item.offsetTop === top || item.offsetTop < bottom;
     const tags = items.filter((item) => !item.hasAttribute('data-count'));
-    const count = items.find((item) => item.hasAttribute('data-count'));
-    const onLine = tags.filter(onFirstLine).length;
-    // The count chip itself must sit on the line too, or one more tag gives way to it.
-    const room = count && !onFirstLine(count) ? onLine - 1 : onLine;
-    const next = Math.max(1, Math.min(room, tags.length));
-    if (next < tags.length) setFitted(next);
-  }, [list, active, fitted, total]);
+    if (widths.current === null) {
+      if (tags.length < total) return;
+      widths.current = tags.map((tag) => tag.offsetWidth);
+    }
+    const chip = items.find((item) => item.hasAttribute('data-count'))?.offsetWidth ?? 0;
+    const gap = parseFloat(getComputedStyle(box).columnGap) || 0;
+    const next = fitCount(box.clientWidth, widths.current, chip, gap);
+    if (next !== fitted) setFitted(next);
+  }, [list, active, total, fitted, round]);
 
   useLayoutEffect(() => {
     const box = list.current;
     if (!active || !box || typeof ResizeObserver !== 'function') return undefined;
+    let last: number | null = null;
     const observer = new ResizeObserver(([entry]) => {
       const now = entry?.contentRect.width ?? 0;
-      if (width.current !== null && width.current !== now) setFitted(total);
-      width.current = now;
+      if (last !== null && last !== now) setRound((n) => n + 1);
+      last = now;
     });
     observer.observe(box);
     return () => observer.disconnect();
-  }, [list, active, total]);
+  }, [list, active]);
 
   return active ? fitted : total;
 }

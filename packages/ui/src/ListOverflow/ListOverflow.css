@@ -11,6 +11,8 @@
   position: relative;
   display: inline-flex;
   flex: none;
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
   box-sizing: border-box;
   height: var(--crewlet-list-overflow-height);
@@ -45,6 +47,12 @@
   height: 24px;
   transform: translateY(-50%);
   content: '';
+}
+
+.crewlet-list-overflow__words {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .crewlet-list-overflow:hover,
