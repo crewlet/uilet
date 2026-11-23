@@ -78,9 +78,30 @@ describe('the SSH mark', () => {
   });
 });
 
-describe('the unmarked tiles', () => {
-  const UNMARKED = [
-    ['aws', 'AWS'],
+describe('the unmarked tile', () => {
+  test('AWS is named once titled, is decoration without a title, and draws a plate in the text ink', () => {
+    const { container } = render(
+      <>
+        <VendorMark vendor="aws" size={24} title="AWS" />
+        <VendorMark vendor="aws" size={24} />
+      </>,
+    );
+    expect(screen.getAllByRole('img')).toHaveLength(1);
+    const mark = screen.getByRole('img', { name: 'AWS' });
+    // The untitled mark and every plate's glyph are hidden, so only the titled mark is read.
+    const untitled = container.querySelectorAll(':scope > svg')[1]!;
+    expect(untitled.getAttribute('aria-hidden')).toBe('true');
+    for (const glyph of container.querySelectorAll('.crewlet-vendor-mark__glyph')) expect(glyph.getAttribute('aria-hidden')).toBe('true');
+    expect(mark.getAttribute('class')).toContain('crewlet-vendor-mark--aws');
+    // A plate and a glyph in the text's ink: nothing of the owner's own colour.
+    expect(mark.querySelector('.crewlet-vendor-mark__plate')?.getAttribute('fill')).toBe('currentColor');
+    expect(mark.querySelector('.crewlet-vendor-mark__glyph')?.getAttribute('stroke')).toBe('currentColor');
+    expect(mark.outerHTML).not.toMatch(/(fill|stroke)="#/);
+  });
+});
+
+describe('the store, ads and analytics marks', () => {
+  const GROWTH = [
     ['google-analytics', 'Google Analytics'],
     ['google-search-console', 'Search Console'],
     ['google-ads', 'Google Ads'],
@@ -92,7 +113,7 @@ describe('the unmarked tiles', () => {
     ['google-play', 'Google Play'],
   ] as const;
 
-  test.each(UNMARKED)('%s is named %s once titled, and is decoration without a title', (vendor, name) => {
+  test.each(GROWTH)("%s is named %s once titled, is decoration without a title, and draws its owner's logo", (vendor, name) => {
     const { container } = render(
       <>
         <VendorMark vendor={vendor} size={24} title={name} />
@@ -101,14 +122,12 @@ describe('the unmarked tiles', () => {
     );
     expect(screen.getAllByRole('img')).toHaveLength(1);
     const mark = screen.getByRole('img', { name });
-    // The untitled mark and every plate's glyph are hidden, so only the titled mark is read.
-    const untitled = container.querySelectorAll(':scope > svg')[1]!;
-    expect(untitled.getAttribute('aria-hidden')).toBe('true');
-    for (const glyph of container.querySelectorAll('.crewlet-vendor-mark__glyph')) expect(glyph.getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelectorAll(':scope > svg')[1]!.getAttribute('aria-hidden')).toBe('true');
     expect(mark.getAttribute('class')).toContain(`crewlet-vendor-mark--${vendor}`);
-    // A plate and a glyph in the text's ink: nothing of the owner's own colour.
-    expect(mark.querySelector('.crewlet-vendor-mark__plate')?.getAttribute('fill')).toBe('currentColor');
-    expect(mark.querySelector('.crewlet-vendor-mark__glyph')?.getAttribute('stroke')).toBe('currentColor');
-    expect(mark.outerHTML).not.toMatch(/(fill|stroke)="#/);
+    expect(mark.querySelector('.crewlet-vendor-mark__plate, .crewlet-glyph')).toBeNull();
+    // A drawing, or the owner's PNG where it publishes no vector, and nothing fetched.
+    const images = [...mark.querySelectorAll('image')];
+    for (const image of images) expect(image.getAttribute('href')).toMatch(/^data:image\/png;base64,/);
+    expect(mark.querySelectorAll('path, circle').length + images.length).toBeGreaterThan(0);
   });
 });

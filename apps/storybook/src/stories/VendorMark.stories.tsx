@@ -13,7 +13,8 @@ import { themeScope } from '../themeScope';
  * GitHub's, Notion's, OpenCode's, Expo's, DigitalOcean's and OpenAI's are the
  * current text colour and invert with the theme. SSH's key is Crewlet's own drawing,
  * in the brand mark's violet on every theme.
- * Marks that follow the document's theme (Grok, Hermes, Kimi, Qwen) are in the pinned stories below.
+ * Marks that follow the document's theme (Grok, Hermes, Kimi, Qwen, App Store
+ * Connect) are in the pinned stories below.
  * The muted state is the answer to "available, not connected", and it drains
  * the mark's own colour rather than inventing a second palette for somebody
  * else's brand.
@@ -231,86 +232,82 @@ export const Ssh: StoryObj = {
   ),
 };
 
-/** The products whose owners allow no mark here, each beside its own name. */
-const UNMARKED = [
-  ['aws', 'AWS'],
+/** The store, ads and analytics products, each beside its own name. */
+const GROWTH = [
   ['google-analytics', 'Google Analytics'],
   ['google-search-console', 'Search Console'],
   ['google-ads', 'Google Ads'],
-  ['apple-ads', 'Apple Ads'],
-  ['meta-ads', 'Meta Ads Manager'],
   ['google-adsense', 'AdSense'],
   ['google-admob', 'AdMob'],
-  ['app-store-connect', 'App Store Connect'],
   ['google-play', 'Google Play'],
+  ['app-store-connect', 'App Store Connect'],
+  ['apple-ads', 'Apple Ads'],
+  ['meta-ads', 'Meta Ads Manager'],
 ] as const satisfies readonly (readonly [Vendor, string])[];
 
-/** Marks a catalogue lists beside them, so the plate is judged among real marks. */
+/** Marks a catalogue lists beside them, AWS's plate among them. */
 const NEIGHBOURS = [
   ['datadog', 'Datadog'],
   ['cloudflare', 'Cloudflare'],
   ['expo', 'Expo'],
   ['google-cloud', 'Google Cloud'],
+  ['aws', 'AWS'],
   ['ssh', 'SSH'],
 ] as const satisfies readonly (readonly [Vendor, string])[];
 
 const list: CSSProperties = { display: 'grid', gap: 'var(--spacing-3)', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))' };
 
-/**
- * UNMARKED TILES, BESIDE THE MARKS THEY SIT AMONG. AWS, Google, Apple and Meta
- * allow a third party none of these products' logos without leave, so each
- * draws a Lucide glyph for what it does on a plate of the text colour: one
- * family, no owner's hue, shape or lettering. Shown as a catalogue's list rows
- * at 16px among real marks, in the 48px tile, at 12 to 36px (below 16px the
- * glyph is drawn alone, as the plate would leave it too small), and muted.
- */
-export const UnmarkedTiles: StoryObj = {
-  render: () => (
-    <div style={{ padding: 'var(--spacing-5)', display: 'grid', gap: 'var(--spacing-5)' }}>
-      {(['light', 'dark'] as const).map((theme) => (
-        <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
-          <p style={caption}>{theme}, 16px list rows among real marks</p>
-          <div style={list}>
-            {[...NEIGHBOURS, ...UNMARKED].map(([vendor, name]) => (
-              <span key={vendor} style={label}>
-                <VendorMark vendor={vendor} size={16} />
-                {name}
-              </span>
-            ))}
-          </div>
-          <p style={caption}>20px in a 48px box</p>
-          <div style={row}>
-            {UNMARKED.map(([vendor]) => (
-              <span key={vendor} style={{ display: 'grid', justifyItems: 'center', gap: 'var(--spacing-1)' }}>
-                <span style={tile}>
-                  <VendorMark vendor={vendor} size={20} />
-                </span>
-                <span style={caption}>{vendor}</span>
-              </span>
-            ))}
-          </div>
-          <p style={caption}>12 and 14 draw the glyph alone; 16, 20, 24 and 36 on its plate</p>
-          {[12, 14, 16, 20, 24, 36].map((size) => (
-            <div key={size} style={row}>
-              {UNMARKED.map(([vendor, name]) => (
-                <span key={vendor} style={label}>
-                  <VendorMark vendor={vendor} size={size} />
-                  {name}
-                </span>
-              ))}
-            </div>
-          ))}
-          <p style={caption}>muted</p>
-          <div style={row}>
-            {UNMARKED.map(([vendor, name]) => (
-              <span key={vendor} style={label}>
-                <VendorMark vendor={vendor} size={20} muted />
-                {name}
-              </span>
-            ))}
-          </div>
-        </div>
+/** The nine on the document's theme: list rows among real marks, the 48px tile, 12 to 48px, and muted. */
+const storeAdsAndAnalytics = () => (
+  <div style={{ ...panel, margin: 'var(--spacing-5)' }}>
+    <p style={caption}>16px list rows among the marks a catalogue lists beside them</p>
+    <div style={list}>
+      {[...NEIGHBOURS, ...GROWTH].map(([vendor, name]) => (
+        <span key={vendor} style={label}>
+          <VendorMark vendor={vendor} size={16} />
+          {name}
+        </span>
       ))}
     </div>
-  ),
-};
+    <p style={caption}>20px in a 48px box</p>
+    <div style={row}>
+      {GROWTH.map(([vendor]) => (
+        <span key={vendor} style={{ display: 'grid', justifyItems: 'center', gap: 'var(--spacing-1)' }}>
+          <span style={tile}>
+            <VendorMark vendor={vendor} size={20} />
+          </span>
+          <span style={caption}>{vendor}</span>
+        </span>
+      ))}
+    </div>
+    <p style={caption}>12, 16, 24, 36 and 48</p>
+    {[12, 16, 24, 36, 48].map((size) => (
+      <div key={size} style={row}>
+        {GROWTH.map(([vendor, name]) => (
+          <span key={vendor} style={label}>
+            <VendorMark vendor={vendor} size={size} />
+            {name}
+          </span>
+        ))}
+      </div>
+    ))}
+    <p style={caption}>muted</p>
+    <div style={row}>
+      {GROWTH.map(([vendor, name]) => (
+        <span key={vendor} style={label}>
+          <VendorMark vendor={vendor} size={20} muted />
+          {name}
+        </span>
+      ))}
+    </div>
+  </div>
+);
+
+/**
+ * THE STORE, ADS AND ANALYTICS MARKS ON A LIGHT DOCUMENT: each owner's own
+ * logo. App Store Connect and Meta Ads Manager embed their owners' PNGs.
+ */
+export const StoreAdsAndAnalyticsLight: StoryObj = { render: storeAdsAndAnalytics, globals: { theme: 'light' } };
+
+/** The same marks on a dark document, where App Store Connect draws Apple's dark icon and Apple's logo turns white. */
+export const StoreAdsAndAnalyticsDark: StoryObj = { render: storeAdsAndAnalytics, globals: { theme: 'dark' } };
