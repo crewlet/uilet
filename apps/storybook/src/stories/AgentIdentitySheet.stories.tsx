@@ -56,6 +56,20 @@ const WRONG_ROLE: AgentIdentityVerdict = {
   ),
 };
 
+const UNSIGNED_AGREEMENT: AgentIdentityVerdict = {
+  ok: false,
+  failedAt: 'sign',
+  steps: {
+    sign: { note: 'Apple refuses every API call for this team until its Account Holder accepts the latest agreement.' },
+  },
+  view: (
+    <Callout variant="danger" title="Apple refused the check. Crewlet kept nothing.">
+      Sign in to App Store Connect as the Account Holder, accept the agreement shown on the home page or under Business,
+      then check again.
+    </Callout>
+  ),
+};
+
 const APPLE: AgentIdentitySheetProps = {
   open: true,
   onClose: () => {},
@@ -274,6 +288,12 @@ export const Works: Story = {
 /** The check stopped at the role: the read marked, the rest unmade, and Try again. */
 export const WrongRole: Story = {
   render: () => <Opened {...INVITED} onCheck={answer(WRONG_ROLE, 300)} />,
+  play: runCheck,
+};
+
+/** Apple refused at the first read: that read says why, and the rest did not run. */
+export const RefusedAtSignIn: Story = {
+  render: () => <Opened {...INVITED} onCheck={answer(UNSIGNED_AGREEMENT, 300)} />,
   play: runCheck,
 };
 
