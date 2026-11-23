@@ -9,8 +9,8 @@
  * from a mark, and a mark appears only beside the app's own name, so the rule
  * holds everywhere else.
  *
- * GitHub's, Notion's, OpenCode's, Expo's, DigitalOcean's and Apple's (for Apple
- * Ads) marks are monochrome by design, so they take the current text colour
+ * GitHub's, Notion's, OpenCode's, Expo's, DigitalOcean's and Apple's marks are
+ * monochrome by design, so they take the current text colour
  * and read on either theme. That is each vendor's own instruction rather than
  * an exemption from the rule above: each publishes one mark, dark on a light
  * ground and light on a dark one, and a fixed hex would be wrong in one theme
@@ -94,7 +94,8 @@
  * says what that does and does not allow.
  *
  * THE STORE, ADS AND ANALYTICS PRODUCTS draw their owners' own logos, sourced
- * in README.md and TRADEMARKS.md. App Store Connect and Meta Ads Manager ship
+ * in README.md and TRADEMARKS.md; `apple` and `google` are the companies' own,
+ * and Apple Ads draws Apple's, as ads.apple.com does. App Store Connect and Meta Ads Manager ship
  * only as PNG, so their marks embed the owner's file and need `img-src data:`.
  *
  * AWS HAS NO MARK HERE (its guidelines allow a plain-text reference only), so
@@ -119,6 +120,7 @@ import * as marks from './generated/vendors/index.js';
 /** The apps this package draws on a catalogue tile, Crewlet's own services and SSH among them. */
 export const VENDORS = [
   'app-store-connect',
+  'apple',
   'apple-ads',
   'atlassian',
   'aws',
@@ -136,6 +138,7 @@ export const VENDORS = [
   'gemini-cli',
   'github',
   'gitlab',
+  'google',
   'google-admob',
   'google-ads',
   'google-adsense',
@@ -194,7 +197,8 @@ const PLATE_FROM = 16;
 
 const drawings: Record<Exclude<Vendor, Unmarked>, ComponentType<SVGProps<SVGSVGElement>>> = {
   'app-store-connect': marks.AppStoreConnect,
-  'apple-ads': marks.AppleAds,
+  apple: marks.Apple,
+  'apple-ads': marks.Apple,
   atlassian: marks.Atlassian,
   claude: marks.Claude,
   clickup: marks.Clickup,
@@ -210,6 +214,7 @@ const drawings: Record<Exclude<Vendor, Unmarked>, ComponentType<SVGProps<SVGSVGE
   'gemini-cli': marks.GeminiCli,
   github: marks.Github,
   gitlab: marks.Gitlab,
+  google: marks.Google,
   'google-admob': marks.GoogleAdmob,
   'google-ads': marks.GoogleAds,
   'google-adsense': marks.GoogleAdsense,

@@ -74,14 +74,14 @@ import { VendorMark } from '@crewlethq/icons';
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `vendor` | `Vendor`: `'app-store-connect' \| 'apple-ads' \| 'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'copilot' \| 'crewlet' \| 'cursor' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'gemini-cli' \| 'github' \| 'gitlab' \| 'google-admob' \| 'google-ads' \| 'google-adsense' \| 'google-analytics' \| 'google-cloud' \| 'google-play' \| 'google-search-console' \| 'grok' \| 'hermes' \| 'kimi' \| 'linear' \| 'mattermost' \| 'meta' \| 'meta-ads' \| 'microsoft-teams' \| 'notion' \| 'openai' \| 'opencode' \| 'pi' \| 'postgresql' \| 'qwen' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
+| `vendor` | `Vendor`: `'app-store-connect' \| 'apple' \| 'apple-ads' \| 'atlassian' \| 'aws' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'copilot' \| 'crewlet' \| 'cursor' \| 'datadog' \| 'digitalocean' \| 'discord' \| 'expo' \| 'figma' \| 'gemini-cli' \| 'github' \| 'gitlab' \| 'google' \| 'google-admob' \| 'google-ads' \| 'google-adsense' \| 'google-analytics' \| 'google-cloud' \| 'google-play' \| 'google-search-console' \| 'grok' \| 'hermes' \| 'kimi' \| 'linear' \| 'mattermost' \| 'meta' \| 'meta-ads' \| 'microsoft-teams' \| 'notion' \| 'openai' \| 'opencode' \| 'pi' \| 'postgresql' \| 'qwen' \| 'scaleway' \| 'sentry' \| 'slack' \| 'ssh' \| 'stripe' \| 'telegram'` | required | Which mark. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `muted` | boolean | `false` | Drains the colour, for an application that is available but not connected. |
 
 **This is the one place the design system draws somebody else's colours.** Colour here carries state and never identity, and a third-party application's mark is the deliberate exception: identity is exactly what a mark is for, and a recoloured Slack mark is not Slack's. No hue in `svg/vendor/` is a token, nothing reads state from a mark, and a mark appears only beside the name of the application it belongs to.
 
-GitHub's (and so Copilot's), Notion's, OpenCode's, Expo's, DigitalOcean's, Cursor's, OpenAI's and Apple's (Apple Ads') marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
+GitHub's (and so Copilot's), Notion's, OpenCode's, Expo's, DigitalOcean's, Cursor's, OpenAI's and Apple's (and so Apple Ads') marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
 
 Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's violet one are each drawn for a light ground, and each vendor publishes the same drawing in white or in the text colour for a dark one, which is what the dark themes draw: on the dark ground Mattermost's blue falls under 3:1, Qwen's under 2.5:1, and Scaleway's purple and Sentry's violet under 2:1, and each mark all but disappears.
 
@@ -112,7 +112,7 @@ Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's viol
 
 **`google-cloud` is Google Cloud's mark**, Simple Icons' rendering (CC0 1.0) from simple-icons 16.35.0 (`icons/googlecloud.svg`, path unchanged), in Google Blue, #4285F4, the hex that release records and sources to cloud.google.com. Google draws the same cloud in four colours; this is its silhouette in one. Google's brand terms allow a product icon only beside the product's name and never by itself, so draw it with "Google Cloud" beside it, as every mark here is drawn.
 
-**The store, ads and analytics products draw their owners' own logos** (read on 2026-11-23). Each is the owner's current product icon from its own site, its shapes and colours unchanged, framed to its drawing:
+**The store, ads and analytics products draw their owners' own logos** (read on 2026-11-23). Each is the owner's current product icon from its own site, its shapes and colours unchanged, framed to its drawing. `apple` and `google` are the companies' own logos, for a surface that names the company rather than one of its products, such as an atlas's vendor:
 
 | Vendor | Product | Source | As drawn |
 | ------ | ------- | ------ | -------- |
@@ -123,7 +123,9 @@ Mattermost's blue mark, Qwen's blue one, Scaleway's purple one and Sentry's viol
 | `google-admob` | AdMob | `https://www.gstatic.com/images/branding/productlogos/admob/v5/192px.svg` | No-op box removed |
 | `google-play` | Google Play | `https://www.gstatic.com/images/branding/productlogos/play_prism/v9/192px.svg`, the logo developer.android.com draws | No-op box removed |
 | `app-store-connect` | App Store Connect | `https://developer.apple.com/assets/elements/icons/app-store-connect/app-store-connect-64x64_2x.png` and `app-store-connect-dark/app-store-connect-dark-64x64_2x.png`, the icons developer.apple.com/app-store-connect draws | Each PNG embedded unchanged, clipped to its tile |
-| `apple-ads` | Apple Ads | The Apple logo in apple.com's global header, which ads.apple.com draws before "Ads" | Text colour |
+| `apple` | Apple | The Apple logo in apple.com's global header | Text colour |
+| `apple-ads` | Apple Ads | The `apple` drawing, which ads.apple.com draws before "Ads" | As `apple` |
+| `google` | Google | `https://www.gstatic.com/images/branding/productlogos/googleg/v6/192px.svg`, the Google "G" | No-op box removed |
 | `meta-ads` | Meta Ads Manager | The Meta Ads Manager app icon on its Google Play listing (`com.facebook.adsmanager`, `https://play-lh.googleusercontent.com/pQFqzurOVje53viJu8oC6EcObOn0Tap25j9s8yalmCElpo6CA3bk3DooV2TFiMsnUfTtE_MIz-0ADCYIdmKUMA=s192`) | The PNG embedded unchanged, clipped to its circle |
 
 **App Store Connect and Meta Ads Manager are published only as PNG**, so their marks embed the owner's file as a `data:` image rather than tracing it: a page that draws them must allow `img-src data:` in its Content-Security-Policy. Apple publishes App Store Connect's icon for a light and a dark ground, and the mark shows the one for the document's theme. Meta's app icon is its circle on a white tile, so the mark draws it through a circular clip half a pixel inside the circle's edge. `test/vendors.test.mjs` holds each embedded file to its SHA-256:

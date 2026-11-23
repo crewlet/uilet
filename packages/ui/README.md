@@ -213,7 +213,7 @@ places:
 
 ### Store, ads and analytics integrations draw their owners' logos
 
-**`VendorMark` draws Google Analytics, Search Console, Google Ads, AdSense, AdMob, Google Play, App Store Connect, Apple Ads and Meta Ads Manager with each owner's own logo** (`@crewlethq/icons`), at every size, where it drew a Lucide glyph on a plate. The keys and props are unchanged. Google's six are its product icons in its own colours; Apple Ads draws Apple's logo in the text colour; App Store Connect shows Apple's light or dark icon for the document's theme; App Store Connect and Meta Ads Manager embed their owners' PNGs, so a page that draws them must allow `img-src data:`. AWS keeps its glyph on a plate. The icons README records each file's source and changes. Stories: `VendorMark` Store Ads And Analytics Light and Dark.
+**`VendorMark` draws Google Analytics, Search Console, Google Ads, AdSense, AdMob, Google Play, App Store Connect, Apple Ads and Meta Ads Manager with each owner's own logo** (`@crewlethq/icons`), at every size, where it drew a Lucide glyph on a plate. The keys and props are unchanged. Google's six are its product icons in its own colours; Apple Ads draws Apple's logo in the text colour; App Store Connect shows Apple's light or dark icon for the document's theme; App Store Connect and Meta Ads Manager embed their owners' PNGs, so a page that draws them must allow `img-src data:`. `apple` and `google` are new keys for the companies' own logos (`apple-ads` draws Apple's), for a surface that names the company. AWS keeps its glyph on a plate. The icons README records each file's source and changes. Stories: `VendorMark` Store Ads And Analytics Light and Dark.
 
 ## Changes in 0.174.0
 

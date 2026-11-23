@@ -25,10 +25,12 @@ import { PACKAGE, attribute, render } from './support.mjs';
 const UNMARKED = [['aws', CloudGlyph]];
 const UNMARKED_VENDORS = UNMARKED.map(([vendor]) => vendor);
 
-/** The store, ads and analytics products, each drawn with its owner's own logo. */
+/** The store, ads and analytics products and their companies, each drawn with its owner's own logo. */
 const GROWTH = [
   'app-store-connect',
+  'apple',
   'apple-ads',
+  'google',
   'google-admob',
   'google-ads',
   'google-adsense',
@@ -52,12 +54,12 @@ const shapes = (markup) =>
   );
 
 describe('the vendor list', () => {
-  it('is exactly the drawings the package carries, Crewlet, Copilot and the unmarked tiles', async () => {
+  it('is exactly the drawings the package carries, Crewlet, Copilot, Apple Ads and the unmarked tile', async () => {
     const files = (await readdir(resolve(PACKAGE, 'svg/vendor')))
       .filter((file) => file.endsWith('.svg'))
       .map((file) => file.slice(0, -'.svg'.length))
       .sort();
-    const borrowed = ['copilot', 'crewlet', ...UNMARKED_VENDORS];
+    const borrowed = ['apple-ads', 'copilot', 'crewlet', ...UNMARKED_VENDORS];
     assert.deepEqual(VENDORS.filter((vendor) => !borrowed.includes(vendor)).sort(), files);
   });
 
@@ -128,6 +130,13 @@ describe('the vendor list', () => {
     assert.equal(Number(/(?:^|[;\s])stroke-width:\s*([\d.]+);/.exec(rule)?.[1]), weight);
   });
 
+  it("draws Apple Ads with Apple's logo, as ads.apple.com draws it before the word", () => {
+    const paths = (markup) => [...markup.matchAll(/\sd="([^"]+)"/g)].map((match) => match[1]);
+    const mark = render(VendorMark, { vendor: 'apple-ads' });
+    assert.deepEqual(paths(mark), paths(render(VendorMark, { vendor: 'apple' })));
+    assert.match(attribute(mark, 'class') ?? '', /(^| )crewlet-vendor-mark--apple-ads( |$)/);
+  });
+
   it("draws Crewlet's own services with the brand mark, never a second copy of it", () => {
     // The built-in services stand beside the apps they replace, and their
     // mark is the one the product is known by: the same paths as CrewletIcon,
@@ -143,11 +152,12 @@ describe('the vendor list', () => {
     // A typo in the map from a vendor to its component draws the wrong
     // company's mark beside the right company's name, and every other rule
     // here would still pass. The vendor's own class is left out, since it
-    // names the vendor whatever is drawn; Copilot is GitHub's mark by design.
+    // names the vendor whatever is drawn; Copilot is GitHub's mark by design,
+    // and Apple Ads Apple's.
     const drawn = new Map(
       VENDORS.map((vendor) => [vendor, render(VendorMark, { vendor }).replace(` crewlet-vendor-mark--${vendor}`, '')]),
     );
-    const meant = new Set(['copilot github', 'github copilot']);
+    const meant = new Set(['copilot github', 'github copilot', 'apple-ads apple', 'apple apple-ads']);
     for (const [vendor, markup] of drawn) {
       const twins = [...drawn]
         .filter(([other, theirs]) => other !== vendor && theirs === markup && !meant.has(`${vendor} ${other}`))
@@ -293,7 +303,7 @@ describe('a vendor mark', () => {
      * sanctioned exception to colour carrying state rather than identity, and
      * a mark quietly joining this list is a mark that has lost them.
      */
-    const monochrome = ['apple-ads', 'copilot', 'cursor', 'digitalocean', 'expo', 'github', 'notion', 'openai', 'opencode'];
+    const monochrome = ['apple', 'apple-ads', 'copilot', 'cursor', 'digitalocean', 'expo', 'github', 'notion', 'openai', 'opencode'];
     // Monochrome is the current text colour AND no colour of the mark's own
     // beneath it: Crewlet's drawing is rooted in currentColor, as every
     // illustration is, and paints its brand violet on the group inside. SSH's

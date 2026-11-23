@@ -232,7 +232,7 @@ export const Ssh: StoryObj = {
   ),
 };
 
-/** The store, ads and analytics products, each beside its own name. */
+/** The store, ads and analytics products, then their companies, each beside its own name. */
 const GROWTH = [
   ['google-analytics', 'Google Analytics'],
   ['google-search-console', 'Search Console'],
@@ -243,6 +243,9 @@ const GROWTH = [
   ['app-store-connect', 'App Store Connect'],
   ['apple-ads', 'Apple Ads'],
   ['meta-ads', 'Meta Ads Manager'],
+  ['apple', 'Apple'],
+  ['google', 'Google'],
+  ['meta', 'Meta'],
 ] as const satisfies readonly (readonly [Vendor, string])[];
 
 /** Marks a catalogue lists beside them, AWS's plate among them. */

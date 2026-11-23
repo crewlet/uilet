@@ -111,6 +111,8 @@ describe('the store, ads and analytics marks', () => {
     ['google-admob', 'AdMob'],
     ['app-store-connect', 'App Store Connect'],
     ['google-play', 'Google Play'],
+    ['apple', 'Apple'],
+    ['google', 'Google'],
   ] as const;
 
   test.each(GROWTH)("%s is named %s once titled, is decoration without a title, and draws its owner's logo", (vendor, name) => {

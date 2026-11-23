@@ -29,7 +29,9 @@ const UNMARKED: Vendor[] = ['aws'];
 
 const GROWTH: Vendor[] = [
   'app-store-connect',
+  'apple',
   'apple-ads',
+  'google',
   'google-admob',
   'google-ads',
   'google-adsense',
@@ -70,7 +72,7 @@ describe.each(['light', 'dark'] as const)('on a %s document', (theme) => {
     expect(getComputedStyle(mark.querySelector('path')!).fill).toBe(theme === 'light' ? 'rgb(8, 45, 255)' : 'rgb(240, 240, 240)');
   });
 
-  test.each(['openai', 'apple-ads'] as const)("%s takes the text's ink on either ground", async (vendor) => {
+  test.each(['openai', 'apple', 'apple-ads'] as const)("%s takes the text's ink on either ground", async (vendor) => {
     const mark = await mount(theme, vendor);
     expect(getComputedStyle(mark.querySelector('path')!).fill).toBe(theme === 'light' ? 'rgb(20, 20, 20)' : 'rgb(240, 240, 240)');
   });
