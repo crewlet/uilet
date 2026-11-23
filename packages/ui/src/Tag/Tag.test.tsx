@@ -612,3 +612,30 @@ function drawn(element: Element, property: string): number {
   const parsed = Number.parseFloat(getComputedStyle(element).getPropertyValue(property));
   return Number.isFinite(parsed) ? parsed : 0;
 }
+
+describe('Tag cut by its row', () => {
+  /** jsdom lays nothing out, so the label's widths are stubbed: `scroll` past `client` is a cut label. */
+  const widths = (label: HTMLElement, scroll: number, client: number) => {
+    Object.defineProperty(label, 'scrollWidth', { configurable: true, value: scroll });
+    Object.defineProperty(label, 'clientWidth', { configurable: true, value: client });
+  };
+
+  test('carries its whole words on hover while its label is cut, and none while it fits', () => {
+    render(<Tag>Rate limited by the provider</Tag>);
+    const label = screen.getByText('Rate limited by the provider');
+    widths(label, 180, 60);
+    fireEvent.mouseEnter(label);
+    expect(label.getAttribute('title')).toBe('Rate limited by the provider');
+    widths(label, 180, 180);
+    fireEvent.mouseEnter(label);
+    expect(label.getAttribute('title')).toBeNull();
+  });
+
+  test('keeps a title of its own rather than its words', () => {
+    render(<Tag title="The provider refused the last three calls">Rate limited</Tag>);
+    const label = screen.getByText('Rate limited');
+    widths(label, 180, 60);
+    fireEvent.mouseEnter(label);
+    expect(label.getAttribute('title')).toBeNull();
+  });
+});

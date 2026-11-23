@@ -29,7 +29,7 @@ export const THREAD_SUMMARY_LABELS: ThreadSummaryLabels = {
 export interface ThreadSummaryProps {
   /** How many replies the thread holds. */
   replies: number;
-  /** Who replied, each once, as faces: at most three are drawn. */
+  /** Who replied, each once, as faces: three are drawn and the rest counted, a fourth drawn rather than counted. */
   participants: readonly AvatarStackMember[];
   /** When the last reply came, in the caller's words: "12m ago". */
   last: string;

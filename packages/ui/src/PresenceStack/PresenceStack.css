@@ -104,3 +104,30 @@ button.crewlet-presence-stack__member:focus-visible {
     outline-offset: 2px;
   }
 }
+
+/* A member past the cap, as a row of the panel its chip opens: the face and
+   its words, one target. */
+.crewlet-presence-stack__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: 24px;
+  padding: var(--spacing-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: start;
+  cursor: pointer;
+}
+
+.crewlet-presence-stack__row:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-presence-stack__row:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}

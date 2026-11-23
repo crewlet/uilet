@@ -3,6 +3,7 @@ import { isCrewletCharacter } from '@crewlethq/icons/characters';
 import { AVATAR_SIZES, Avatar, avatarCorner, type AvatarSizeStep } from '../Avatar/index.js';
 import { presenceHueClass } from '../PresenceRing/index.js';
 import { presenceLabels, presenceOrder, type PresenceLabels, type PresenceMember } from '../PresenceModel/index.js';
+import { ListOverflow, shownBeforeOverflow } from '../ListOverflow/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -47,8 +48,8 @@ export function PresenceStack({ members, self = true, max = 4, size = 'sm', onSe
   const text = presenceLabels(labels);
   const ordered = presenceOrder(members);
   if (ordered.length === 0 && !self) return null;
-  const shown = ordered.slice(0, max);
-  const hidden = ordered.slice(max);
+  const shown = ordered.slice(0, shownBeforeOverflow(ordered.length, max));
+  const hidden = ordered.slice(shown.length);
   const here = label ?? text.here(ordered.length, self);
   const spoken = [here, ...ordered.map((member) => text.member(member))].join('. ');
 
@@ -72,7 +73,11 @@ export function PresenceStack({ members, self = true, max = 4, size = 'sm', onSe
 
   const more =
     hidden.length > 0 ? (
-      <span className="crewlet-avatar-stack__member crewlet-avatar-stack__more" aria-hidden="true">
+      <span
+        className="crewlet-avatar-stack__member crewlet-avatar-stack__more"
+        aria-hidden="true"
+        title={`${text.more(hidden.length)}: ${hidden.map((member) => text.member(member)).join(', ')}`}
+      >
         +{hidden.length}
       </span>
     ) : null;
@@ -113,9 +118,33 @@ export function PresenceStack({ members, self = true, max = 4, size = 'sm', onSe
           {badge(member)}
         </button>
       ))}
-      {more}
       {hidden.length > 0 ? (
-        <VisuallyHidden>{`${text.more(hidden.length)}: ${hidden.map((member) => text.member(member)).join(', ')}`}</VisuallyHidden>
+        // Faces that select are reachable past the cap too: the chip lists them.
+        <ListOverflow
+          className="crewlet-avatar-stack__member crewlet-avatar-stack__more"
+          label={text.more(hidden.length)}
+          count={hidden.length}
+          items={(close) =>
+            hidden.map((member) => (
+              <button
+                key={member.id}
+                type="button"
+                className="crewlet-presence-stack__row"
+                onClick={() => {
+                  // The panel closes first, so the host's own menu is not opened under it.
+                  close();
+                  onSelect(member);
+                }}
+              >
+                {badge(member)}
+                <span>{text.member(member)}</span>
+              </button>
+            ))
+          }
+        >
+          <span aria-hidden="true">+{hidden.length}</span>
+          <VisuallyHidden>{text.more(hidden.length)}</VisuallyHidden>
+        </ListOverflow>
       ) : null}
     </div>
   );

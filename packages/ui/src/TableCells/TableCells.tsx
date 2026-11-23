@@ -2,12 +2,12 @@ import type { ReactNode } from 'react';
 import { Avatar, type AvatarKind, type AvatarSizeStep } from '../Avatar/index.js';
 import { EmptyValue } from '../EmptyValue/index.js';
 import { Link } from '../Link/index.js';
+import { ListOverflow, overflowWords, shownBeforeOverflow } from '../ListOverflow/index.js';
 import { RelativeTime, type TimeValue } from '../RelativeTime/index.js';
 import { Tag } from '../Tag/index.js';
 import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
 import { titleIfCut } from '../utils/titleIfCut.js';
-import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import type { Tone } from '../utils/tone.js';
 
 /*
@@ -219,46 +219,45 @@ export function TableStatusCell({ label, glyph, tone = 'neutral', title }: Table
 }
 
 export interface TableTagsCellLabels {
-  /** The count of tags past `max`, read in full: "2 more tags". */
+  /** The chip for the tags past `max`, which opens a list of them: "+2 more tags". */
   more: (count: number) => string;
 }
 
 export const TABLE_TAGS_CELL_LABELS: TableTagsCellLabels = {
-  more: (count) => (count === 1 ? '1 more tag' : `${count.toLocaleString()} more tags`),
+  more: (count) => overflowWords(count, { one: 'tag', other: 'tags' }),
 };
 
 export interface TableTagsCellProps {
   tags: readonly string[] | null | undefined;
-  /** How many tags are drawn before the rest are counted. Three by default. */
+  /** How many tags are drawn before the rest are counted. Three by default; one more is drawn, never folded. */
   max?: number | undefined;
   emptyLabel?: string | undefined;
   labels?: Partial<TableTagsCellLabels> | undefined;
 }
 
 /**
- * Tags, capped with a count rather than wrapping a row to three lines. Neutral
- * and outlined: a tag names a thing, and identity takes no colour. The tags
- * past the cap are named on the count's title and counted in words for a
- * screen reader.
+ * Tags, capped with a named count rather than wrapping a row to three lines.
+ * Neutral and outlined: a tag names a thing, and identity takes no colour.
+ * The count is a button whose panel lists the tags past the cap.
  */
 export function TableTagsCell({ tags, max = 3, emptyLabel = 'No tags', labels: overrides }: TableTagsCellProps) {
   const list = tags ?? [];
   if (list.length === 0) return <EmptyValue label={emptyLabel} />;
   const labels: TableTagsCellLabels = overrides ? { ...TABLE_TAGS_CELL_LABELS, ...overrides } : TABLE_TAGS_CELL_LABELS;
-  const shown = list.slice(0, max);
-  const rest = list.length - shown.length;
+  const shown = list.slice(0, shownBeforeOverflow(list.length, max));
+  const rest = list.slice(shown.length);
+  const tag = (name: string) => (
+    <Tag key={name} appearance="outline" size="xs">
+      {name}
+    </Tag>
+  );
   return (
     <span className="crewlet-table-cell__tags">
-      {shown.map((tag) => (
-        <Tag key={tag} appearance="outline" size="xs">
-          {tag}
-        </Tag>
-      ))}
-      {rest > 0 && (
-        <span className="crewlet-table-cell__more" title={list.slice(max).join(', ')}>
-          <span aria-hidden="true">+{rest}</span>
-          <VisuallyHidden>{labels.more(rest)}</VisuallyHidden>
-        </span>
+      {shown.map(tag)}
+      {rest.length > 0 && (
+        <ListOverflow className="crewlet-table-cell__more" items={rest.map(tag)} size="xs" label={labels.more(rest.length).replace(/^\+/, '')}>
+          {labels.more(rest.length)}
+        </ListOverflow>
       )}
     </span>
   );

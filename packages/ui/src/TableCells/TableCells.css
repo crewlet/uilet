@@ -116,12 +116,6 @@
   min-width: 0;
 }
 
-.crewlet-table-cell__more {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
-}
-
 /*
  * A VALUE OVER A QUIETER LINE (TableTwoLineCell), each line its own block cut
  * on one line. A column of boxes rather than two runs of text, so neither

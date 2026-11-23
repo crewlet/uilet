@@ -45,12 +45,16 @@ test('one reply is a reply, and nothing is new unless told', () => {
   expect(document.querySelector('.crewlet-tag')).toBeNull();
 });
 
-test('draws at most three faces, said by nothing (the count says it)', () => {
-  render(<Summary />);
-  const stack = document.querySelector('.crewlet-avatar-stack')!;
-  expect(stack.getAttribute('aria-hidden')).toBe('true');
-  expect(stack.querySelectorAll('.crewlet-avatar-stack__member:not(.crewlet-avatar-stack__more)')).toHaveLength(3);
-  expect(stack.querySelector('.crewlet-avatar-stack__more')!.textContent).toBe('+1');
+test('draws three faces and counts the rest, said by nothing (the count says it), a fourth drawn rather than "+1"', () => {
+  const { rerender } = render(<Summary />);
+  const stack = () => document.querySelector('.crewlet-avatar-stack')!;
+  const faces = () => stack().querySelectorAll('.crewlet-avatar-stack__member:not(.crewlet-avatar-stack__more)');
+  expect(stack().getAttribute('aria-hidden')).toBe('true');
+  expect(faces()).toHaveLength(4);
+  expect(stack().querySelector('.crewlet-avatar-stack__more')).toBeNull();
+  rerender(<Summary participants={[...people, { name: 'SRE', id: 'sre' }]} />);
+  expect(faces()).toHaveLength(3);
+  expect(stack().querySelector('.crewlet-avatar-stack__more')!.textContent).toBe('+2');
 });
 
 // OPEN IS A STATE, NOT WORDS: the button says it through aria-expanded and

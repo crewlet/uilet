@@ -131,10 +131,10 @@ export function CellDisplay({ column, value, context, onOpenLink }: CellDisplayP
     case 'select':
       return <OptionChip column={column} id={String(value)} labels={labels} />;
     case 'multiselect':
-      // ONE LINE: the chips that do not fit are counted ("+1") rather than
-      // cut mid-glyph by the cell's edge.
+      // ONE LINE: the chips that do not fit are counted ("+2 more") rather than
+      // cut mid-glyph by the cell's edge; the cell's editor lists them all.
       return (
-        <TagGroup label={column.label} overflow="fit" className="crewlet-sheet-cell__chips">
+        <TagGroup label={column.label} overflow="fit" countOnly className="crewlet-sheet-cell__chips">
           {(value as readonly string[]).map((id) => (
             <OptionChip key={id} column={column} id={id} labels={labels} />
           ))}

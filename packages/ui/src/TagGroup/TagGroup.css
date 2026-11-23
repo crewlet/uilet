@@ -50,7 +50,24 @@
  * pill and 2px over a sheet cell's 18px one.
  */
 .crewlet-tag-group__item[data-count] {
+  /* It may give way only where it stands alone in a group narrower than its words. */
+  flex: 0 1 auto;
   align-self: stretch;
+}
+
+/* FOLDED TO ONE TAG, the line no longer wraps: the tag gives way beside the
+   chip and cuts its label (its words on hover), so the chip is never clipped. */
+.crewlet-tag-group--fit[data-folded] {
+  flex-wrap: nowrap;
+}
+
+.crewlet-tag-group--fit[data-folded] > .crewlet-tag-group__item > .crewlet-tag {
+  min-width: 0;
+}
+
+/* The chip a fit group ends on is centred on its line, not stretched to it. */
+.crewlet-tag-group__item[data-count] > .crewlet-list-overflow {
+  align-self: center;
 }
 
 .crewlet-tag-group__count {
