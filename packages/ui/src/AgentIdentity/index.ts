@@ -20,6 +20,7 @@ export type {
   AgentIdentityRead,
   AgentIdentitySheetProps,
   AgentIdentitySheetStep,
+  AgentIdentityStepNote,
   AgentIdentityVendorStep,
   AgentIdentityVerdict,
 } from './AgentIdentitySheet.js';

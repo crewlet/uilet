@@ -241,6 +241,49 @@ test('marks the read a refusal stopped at, leaves the rest unmade, and Try again
   expect(within(steps()).queryByRole('button', { name: /Check/ })).toBeNull();
 });
 
+test('a failed read says why under it, and a read the check did not reach says nothing', async () => {
+  const { pending } = sheet();
+  fireEvent.click(button('Next'));
+  chooseFile('AuthKey_7KQ4M2ZX9P.p8');
+  fireEvent.click(button('Check'));
+  await act(async () =>
+    pending.answer({
+      ok: false,
+      failedAt: 'sign',
+      steps: {
+        sign: { note: 'Apple refuses every API call until the Account Holder accepts the agreement.' },
+        role: { note: 'Never drawn: the check stopped before it.', detail: 'financeReports_getCollection 200' },
+      },
+      view: <p>Accept the agreement, then check again.</p>,
+    }),
+  );
+  const reads = within(dialog()).getByRole('list', { name: "Checking Growth Marketer's identity at Apple" });
+  expect(readStates(reads)).toEqual(['failed', 'pending', 'pending']);
+  expect(within(reads).getByText('Apple refuses every API call until the Account Holder accepts the agreement.')).toBeTruthy();
+  expect(within(reads).queryByText('Never drawn: the check stopped before it.')).toBeNull();
+  expect(reads.textContent).not.toContain('financeReports_getCollection');
+  await axeClean();
+});
+
+test('a read that ran shows the vendor\'s answers under it', async () => {
+  const { pending } = sheet();
+  fireEvent.click(button('Next'));
+  chooseFile('AuthKey_7KQ4M2ZX9P.p8');
+  fireEvent.click(button('Check'));
+  await act(async () =>
+    pending.answer({
+      ok: false,
+      failedAt: 'role',
+      steps: { role: { note: 'Fits no role.', detail: 'financeReports_getCollection 200' } },
+      view: <p>Fits no role.</p>,
+    }),
+  );
+  const reads = within(dialog()).getByRole('list', { name: "Checking Growth Marketer's identity at Apple" });
+  // THE DETAIL BREAKS AT ITS SPACES, so it is read as the list's text.
+  expect(reads.textContent).toContain('financeReports_getCollection 200');
+  expect(within(reads).getByText('Fits no role.')).toBeTruthy();
+});
+
 test('a check that throws is drawn as one that did not finish', async () => {
   const { pending } = sheet();
   fireEvent.click(button('Next'));
