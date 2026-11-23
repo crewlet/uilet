@@ -14,6 +14,8 @@ export interface ConfirmModalProps {
    */
   onConfirm: () => void | Promise<void>;
   title: ReactNode;
+  /** A glyph beside the title, drawn in the framed shape's head; the prompt shape has none. */
+  icon?: ReactNode;
   /** The sentence the prompt leads with. */
   message?: ReactNode;
   /**
@@ -108,6 +110,7 @@ export function ConfirmModal({
   onClose,
   onConfirm,
   title,
+  icon,
   message,
   moveTo,
   changes,
@@ -157,6 +160,7 @@ export function ConfirmModal({
       open={open}
       onClose={onClose}
       title={title}
+      icon={icon}
       shape={shape}
       size={size}
       role={destructive ? 'alertdialog' : 'dialog'}

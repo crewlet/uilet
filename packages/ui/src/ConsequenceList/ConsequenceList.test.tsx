@@ -96,3 +96,8 @@ test('has no axe violations', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+test('a divided list is ruled off from what is above it', () => {
+  render(<ConsequenceList divided items={[{ kind: 'fact', key: 'f', text: 'A fact' }]} />);
+  expect(document.querySelector('.crewlet-consequence-list')?.className).toContain('crewlet-consequence-list--divided');
+});
