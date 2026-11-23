@@ -4,7 +4,7 @@ import { MIRRORED_TEXT_STYLES, copyTextStyles } from './fieldMirror.js';
 // One list for every mirror, so the auto-resize and the caret anchor wrap a
 // field's text the same way. Mutation: drop a wrapping style and it fails.
 test('copies every style that decides where a field wraps onto the mirror', () => {
-  for (const key of ['width', 'fontFamily', 'fontSize', 'lineHeight', 'letterSpacing', 'paddingLeft', 'borderLeftWidth', 'whiteSpace', 'overflowWrap', 'wordBreak'] as const) {
+  for (const key of ['width', 'fontFamily', 'fontSize', 'lineHeight', 'letterSpacing', 'paddingLeft', 'borderLeftWidth', 'whiteSpace', 'overflowWrap', 'wordBreak', 'scrollbarGutter'] as const) {
     expect(MIRRORED_TEXT_STYLES).toContain(key);
   }
   const field = document.createElement('textarea');

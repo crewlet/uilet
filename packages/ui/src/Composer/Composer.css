@@ -55,11 +55,14 @@
 /* On the textarea's own class, so the auto-resize inset (Input.css) cannot
    outrank the box's in either stylesheet order. */
 .crewlet-composer .crewlet-composer__field.crewlet-textarea {
+  /* The words' inset from the box's top and bottom, which the bar's track keeps too. */
+  --crewlet-composer-field-block: var(--spacing-2);
+
   flex: 1;
   min-width: 0;
   min-height: 68px;
   max-height: 220px;
-  padding: var(--spacing-2) var(--spacing-3);
+  padding: var(--crewlet-composer-field-block) var(--spacing-3);
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -83,10 +86,11 @@
 .crewlet-composer--inline .crewlet-composer__field.crewlet-textarea {
   --crewlet-composer-line: calc(var(--font-line-height-normal) * var(--font-size-compact));
   --crewlet-composer-row: calc(var(--size-control-md) + var(--spacing-2));
+  --crewlet-composer-field-block: max(0px, calc((var(--crewlet-composer-row) - var(--crewlet-composer-line)) / 2));
 
   min-height: var(--crewlet-composer-row);
   max-height: 140px;
-  padding-block: max(0px, calc((var(--crewlet-composer-row) - var(--crewlet-composer-line)) / 2));
+  padding-block: var(--crewlet-composer-field-block);
 }
 
 /*
@@ -181,9 +185,16 @@
   opacity: 1;
 }
 
-/* Past its cap the field scrolls rather than pushing the page. */
+/* Past its cap the field scrolls rather than pushing the page. It keeps the
+   bar's gutter, so the words never re-wrap as the bar comes, and the bar runs
+   along the words rather than from the box's edge to the footer's rule. */
 .crewlet-composer .crewlet-composer__field.is-auto-resize {
   overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.crewlet-composer .crewlet-composer__field::-webkit-scrollbar-track {
+  margin-block: var(--crewlet-composer-field-block);
 }
 
 /*
@@ -276,10 +287,11 @@
    the textarea's own class so its auto-resize inset cannot outrank it. */
 .crewlet-composer--chat .crewlet-composer__field.crewlet-textarea {
   --crewlet-composer-line: calc(var(--crewlet-chat-line) * var(--crewlet-chat-text));
+  --crewlet-composer-field-block: var(--spacing-2);
 
   min-height: 0;
-  max-height: min(calc(var(--crewlet-composer-line) * 14 + 2 * var(--spacing-2)), 50dvh);
-  padding: var(--spacing-2) var(--spacing-3);
+  max-height: min(calc(var(--crewlet-composer-line) * 14 + 2 * var(--crewlet-composer-field-block)), 50dvh);
+  padding: var(--crewlet-composer-field-block) var(--spacing-3);
   font-size: var(--crewlet-chat-text);
   line-height: var(--crewlet-chat-line);
 }

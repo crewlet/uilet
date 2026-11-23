@@ -172,6 +172,19 @@ export const ChatNearTheLimit: Story = {
   render: () => <Chat max={120} initial={'Only show blocked tasks in Core, most tokens first. '.repeat(2)} />,
 };
 
+/**
+ * Past its cap the field scrolls. Its bar runs along the words, inset as they
+ * are from the box's edges, in a gutter the words always keep, so nothing
+ * re-wraps as the bar comes.
+ */
+export const PastItsCap: Story = {
+  render: () => (
+    <Chat
+      initial={Array.from({ length: 9 }, (_, i) => `Question ${i + 1}: do I add the developer key and the app manager key, or change the role too?`).join('\n')}
+    />
+  ),
+};
+
 /** The page removed: "Add this page" stands where the chip was. */
 export const PageRemoved: Story = { render: () => <Chat attached={false} /> };
 
