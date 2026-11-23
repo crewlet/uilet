@@ -1,0 +1,35 @@
+/*
+ * The set-up sheet's step: its parts stacked at one gap, each value to copy
+ * under the words of its own step, and the vendor's page on a line of its own.
+ */
+.crewlet-agent-identity-sheet__step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-inline-size: 0;
+}
+
+.crewlet-agent-identity-sheet__copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-inline-size: 0;
+}
+
+.crewlet-agent-identity-sheet__link {
+  display: flex;
+}
+
+.crewlet-agent-identity-sheet__note {
+  margin: 0;
+}
+
+/*
+ * The step takes focus when it changes, and keeps the browser's own focus
+ * treatment: after a press nothing is drawn, after a key the ring shows where
+ * the reader now is. The verdict's live region stays in the tree while empty,
+ * so a screen reader hears what fills it; empty, it takes back the gap before it.
+ */
+.crewlet-agent-identity-sheet__verdict:empty {
+  margin-block-start: calc(-1 * var(--spacing-3));
+}

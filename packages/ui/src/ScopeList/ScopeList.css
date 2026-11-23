@@ -1,0 +1,72 @@
+/*
+ * The things an agent may reach, a row each: the box and the name first, a
+ * detail quiet under the name, the ID quiet at the row's end. A chosen row
+ * takes the selected fill, so what is chosen reads at a glance down a long
+ * list; the box stays the mark that clears 3:1.
+ */
+.crewlet-scope-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* The count at the start and the one control at the end, on the rows' own inset. */
+.crewlet-scope-list__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  padding-inline-start: var(--spacing-3);
+}
+
+.crewlet-scope-list__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-scope-list__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  min-inline-size: 0;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+}
+
+.crewlet-scope-list__row[data-chosen] {
+  background: var(--color-surface-selected);
+}
+
+/* The box and its words take the row, so a click anywhere on the name or its detail ticks it. */
+.crewlet-scope-list__check {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.crewlet-scope-list__detail {
+  font-family: var(--font-family-mono);
+  overflow-wrap: anywhere;
+}
+
+/* On the name's line, never squeezed into two. */
+.crewlet-scope-list__id {
+  flex: none;
+  /* Level with the name's first line, which the box's row centres. */
+  line-height: var(--size-control-sm);
+  white-space: nowrap;
+}
+
+.crewlet-scope-list__empty {
+  margin: 0;
+  padding-inline-start: var(--spacing-3);
+}
