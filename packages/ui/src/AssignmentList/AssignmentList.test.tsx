@@ -76,3 +76,34 @@ test('has no axe violations', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+test('a row may link its name and split its value into labelled parts', () => {
+  render(
+    <AssignmentList
+      groups={[
+        {
+          key: 'seats',
+          label: 'Seats',
+          rows: [
+            {
+              key: 'qa',
+              name: 'QA Engineer',
+              href: '#/seats/qa',
+              nameTitle: 'QA Engineer · @qa',
+              lines: [
+                { key: 'coding', label: 'Coding', value: <button type="button">platform-sonnet-8</button> },
+                { key: 'reviews', label: 'Reviews', value: <button type="button">platform-haiku-3</button> },
+              ],
+            },
+          ],
+        },
+      ]}
+    />,
+  );
+  const link = screen.getByRole('link', { name: 'QA Engineer' });
+  expect(link.getAttribute('href')).toBe('#/seats/qa');
+  expect(link.getAttribute('title')).toBe('QA Engineer · @qa');
+  const row = link.closest('li')!;
+  const lines = Array.from(row.querySelectorAll('.crewlet-assignment-list__line')).map((line) => line.textContent);
+  expect(lines).toEqual(['Codingplatform-sonnet-8', 'Reviewsplatform-haiku-3']);
+});

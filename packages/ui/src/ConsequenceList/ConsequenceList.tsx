@@ -54,6 +54,8 @@ export interface ConsequenceListProps {
   items: readonly ConsequenceItem[];
   /** The group's eyebrow: "When you remove it", "What follows". */
   heading?: ReactNode;
+  /** A rule above the group, setting it apart from the summary over it, as `ConfirmModal` draws one. */
+  divided?: boolean | undefined;
   className?: string | undefined;
 }
 
@@ -82,14 +84,14 @@ export function ResourceName({ children, className }: { children: string; classN
  * What confirming will do: typed choices (a checkbox, a short label, what it does) and facts (a muted line whose
  * glyph sits where a box would), all on the labels' edge, so every confirmation spaces and tones them alike.
  */
-export function ConsequenceList({ items, heading, className }: ConsequenceListProps) {
+export function ConsequenceList({ items, heading, divided = false, className }: ConsequenceListProps) {
   const headingId = useId();
   const named = heading !== undefined && heading !== null;
   return (
     <div
       role="group"
       aria-labelledby={named ? headingId : undefined}
-      className={cx('crewlet-consequence-list', className)}
+      className={cx('crewlet-consequence-list', divided && 'crewlet-consequence-list--divided', className)}
     >
       {named ? (
         <Eyebrow as="div" id={headingId} className="crewlet-consequence-list__heading">

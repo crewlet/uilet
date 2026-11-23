@@ -150,6 +150,39 @@
   margin-inline-end: auto;
 }
 
+/* A link name keeps the name's ink, and underlines where the pointer is. */
+.crewlet-assignment-list__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.crewlet-assignment-list__link:hover {
+  text-decoration: underline;
+}
+
+.crewlet-assignment-list__link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* A split row's parts: each a row of the subgrid, its label on the name's text edge. */
+.crewlet-assignment-list__line {
+  display: grid;
+  grid-column: 1 / 3;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.crewlet-assignment-list__line-label {
+  min-width: 0;
+  padding-inline-start: calc(var(--crewlet-assignment-list-icon) + var(--spacing-2));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
 /* NARROW: the value drops under the name, the actions stay on the name's line. */
 @container (max-width: 30rem) {
   .crewlet-assignment-list__grid {
@@ -170,9 +203,16 @@
     grid-row: 1;
   }
 
-  .crewlet-assignment-list__value {
+  .crewlet-assignment-list__row > .crewlet-assignment-list__value {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+
+  /* A part's label sits over its picker, both across the row. */
+  .crewlet-assignment-list__line {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--spacing-1);
   }
 }
 
