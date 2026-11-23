@@ -26,8 +26,17 @@ export interface AssignmentRow {
   icon?: ReactNode;
   /** The subject's name, plain words so a cut one can show them whole. */
   name: string;
+  /** Where the name leads, such as the subject's own page: the name becomes a link. */
+  href?: string | undefined;
+  /** The name's hover text, where the name alone is not the whole story (a handle beside it). */
+  nameTitle?: string | undefined;
   /** The control that picks the value: an `AssignmentPicker` (inside a Menu or Popover) or a `Select`. */
-  value: ReactNode;
+  value?: ReactNode;
+  /**
+   * A value split into parts, each its own picker: a seat whose jobs run on different models.
+   * Each line's label sits under the name and its picker in the value column.
+   */
+  lines?: readonly AssignmentLine[] | undefined;
   /**
    * The row has a change not saved yet: the value it had, said under the name
    * ("Was platform-sonnet-8 · Not saved") and the picker tinted. A string is
@@ -36,6 +45,13 @@ export interface AssignmentRow {
   was?: ReactNode;
   /** The row's own actions, such as a `Menu`; its column is kept on every row. */
   actions?: ReactNode;
+}
+
+/** One part of a split row: "Coding" and its picker. */
+export interface AssignmentLine {
+  key: string;
+  label: string;
+  value: ReactNode;
 }
 
 export interface AssignmentGroup {
@@ -103,9 +119,20 @@ function Row({ row, labels }: { row: AssignmentRow; labels: AssignmentListLabels
           {row.icon === undefined || row.icon === null ? null : (
             <span className="crewlet-assignment-list__icon">{row.icon}</span>
           )}
-          <span className="crewlet-assignment-list__words" onMouseEnter={titleWhenCut}>
-            {row.name}
-          </span>
+          {row.href === undefined ? (
+            <span className="crewlet-assignment-list__words" title={row.nameTitle} onMouseEnter={row.nameTitle ? undefined : titleWhenCut}>
+              {row.name}
+            </span>
+          ) : (
+            <a
+              className="crewlet-assignment-list__words crewlet-assignment-list__link"
+              href={row.href}
+              title={row.nameTitle}
+              onMouseEnter={row.nameTitle ? undefined : titleWhenCut}
+            >
+              {row.name}
+            </a>
+          )}
         </span>
         {pending ? (
           <span className="crewlet-assignment-list__was">
@@ -127,6 +154,14 @@ function Row({ row, labels }: { row: AssignmentRow; labels: AssignmentListLabels
       </div>
       <div className="crewlet-assignment-list__value">{row.value}</div>
       <div className="crewlet-assignment-list__actions">{row.actions}</div>
+      {row.lines?.map((line) => (
+        <div key={line.key} className="crewlet-assignment-list__line">
+          <span className="crewlet-assignment-list__line-label" onMouseEnter={titleWhenCut}>
+            {line.label}
+          </span>
+          <div className="crewlet-assignment-list__value">{line.value}</div>
+        </div>
+      ))}
     </li>
   );
 }
