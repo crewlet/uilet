@@ -183,6 +183,8 @@ test('says nothing is done while the check runs, then every read done when it wo
   const states = () => readStates(reads);
   expect(states()).toEqual(['running', 'pending', 'pending']);
   expect(button('Check').getAttribute('aria-busy')).toBe('true');
+  // THE LIVE REGION IS THERE BEFORE THE VERDICT, so what fills it is heard.
+  expect(dialog().querySelector('.crewlet-agent-identity-sheet__verdict[aria-live="polite"]')).toBeTruthy();
   await axeClean();
   await act(async () => pending.answer({ ok: true, view: <p>Works. Crewlet keeps it.</p> }));
   expect(states()).toEqual(['done', 'done', 'done']);
@@ -292,7 +294,7 @@ test('a make that cannot run now says why and leaves the steps by hand open', ()
   expect(button('Next')).toBeTruthy();
 });
 
-test('an answer to a check the person left is dropped', async () => {
+test('a sheet closed during a check opens fresh, with nothing of that check', async () => {
   const { pending, rerender, onCheck, onClose } = sheet();
   fireEvent.click(button('Next'));
   chooseFile('AuthKey_7KQ4M2ZX9P.p8');

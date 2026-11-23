@@ -74,9 +74,9 @@ test('at a desk, the identity spans the box and its action stands at the top rig
   expect(box(at.querySelector('dl')!).top).toBeGreaterThanOrEqual(s.bottom);
 });
 
-test('on a phone with two actions, they keep the top right and nothing leaves the box', async () => {
-  await page.viewport(390, 844);
-  const at = await mount(320, 'refused');
+for (const width of [320, 256]) test(`in a ${width}px box with two actions, they keep the top right and nothing leaves the box`, async () => {
+  await page.viewport(320, 844);
+  const at = await mount(width, 'refused');
   const s = section(at);
   const r = box(s);
   const action = box(primary(at));
@@ -87,7 +87,7 @@ test('on a phone with two actions, they keep the top right and nothing leaves th
   expect(box(company).top).toBeGreaterThanOrEqual(action.bottom);
   // THE LABEL KEEPS A COLUMN OF ITS OWN: no word under a button, and the chip whole.
   const title = s.querySelector<HTMLElement>('.crewlet-agent-identity__title')!;
-  expect(box(title).width).toBeGreaterThanOrEqual(120);
+  expect(box(title).width).toBeGreaterThanOrEqual(Math.min(120, width * 0.4) - 1);
   for (const word of [title.querySelector('span')!, title.querySelector<HTMLElement>('.crewlet-tag')!]) {
     const w = box(word);
     for (const b of [action, box(company)]) {

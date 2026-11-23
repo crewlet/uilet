@@ -28,5 +28,8 @@
  * The step takes focus when it changes, and keeps the browser's own focus
  * treatment: after a press nothing is drawn, after a key the ring shows where
  * the reader now is. The verdict's live region stays in the tree while empty,
- * so a screen reader hears what fills it.
+ * so a screen reader hears what fills it; empty, it takes back the gap before it.
  */
+.crewlet-agent-identity-sheet__verdict:empty {
+  margin-block-start: calc(-1 * var(--spacing-3));
+}

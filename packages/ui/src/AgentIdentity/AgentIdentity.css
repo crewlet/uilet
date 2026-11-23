@@ -55,6 +55,16 @@
   gap: var(--spacing-2);
 }
 
+/*
+ * AN ACTION'S WORDS WRAP rather than push it out of the box: in a box under
+ * about 19rem (a 320px phone, less the page's and the box's padding) the
+ * floor above leaves "Use the company's for now" less than its one line.
+ */
+.crewlet-agent-identity__actions > .crewlet-btn {
+  max-inline-size: 100%;
+  white-space: normal;
+}
+
 .crewlet-agent-identity__summary {
   margin: 0;
   overflow-wrap: anywhere;

@@ -430,8 +430,8 @@ function Walk({
   const index = STEPS.indexOf(step);
   const done = verdict?.ok === true;
   // ONE ROW OF THREE PLACES, the primary always the last: the button pressed
-  // (Next, Check) becomes the next one (Check, Done, Try again) in place, so
-  // focus stays on it rather than falling to the page behind the sheet.
+  // becomes the next one in place (Check to Done or Try again, when a verdict
+  // arrives on the same step), so focus stays on it there.
   const footer = (
     <>
       {!done && (failed || step === 'vendor') ? (
