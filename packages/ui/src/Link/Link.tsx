@@ -108,7 +108,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   // The mark, the sentence and the new-tab behaviour travel together, so
   // `asChild` gets them too.
   const externalAttributes = external
-    ? { target: '_blank', rel: 'noreferrer' }
+    ? { target: '_blank', rel: 'noopener noreferrer' }
     : { target: rest.target, rel: rest.rel };
 
   if (asChild) {

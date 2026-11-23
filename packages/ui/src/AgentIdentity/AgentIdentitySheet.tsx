@@ -93,8 +93,11 @@ export interface AgentIdentitySheetProps {
   replacing?: boolean | undefined;
   /** The steps at the vendor, numbered, in its own labels. */
   steps: readonly AgentIdentityVendorStep[];
-  /** The vendor's page the steps start on, opened in a new tab. */
-  link: { label: string; href: string };
+  /**
+   * The vendor's page, as a button under the steps, only where no step names
+   * it; a step that names the page links its own words (`VendorText`).
+   */
+  link?: { label: string; href: string } | undefined;
   /** Who at the vendor may do it, and what never to choose there. */
   note?: ReactNode;
   /** A limit or a caution that applies now, over the steps. */
@@ -119,8 +122,9 @@ export interface AgentIdentitySheetProps {
 /**
  * The one sheet every vendor's Set up identity opens, in the same three steps:
  *
- * 1. At the vendor: numbered steps in its own labels, each value to copy under
- *    its step with the rule it keeps, and the vendor's page; or, where Crewlet
+ * 1. At the vendor: numbered steps in its own labels, the vendor's page linked
+ *    on the step that names it, each value to copy under its step with the
+ *    rule it keeps; or, where Crewlet
  *    can, one button that makes it, the steps by hand folded under it.
  * 2. Back here: the file or the token the vendor gave, or nothing.
  * 3. Check: the reads Crewlet makes, then the verdict.
@@ -507,8 +511,14 @@ function Walk({
   );
 }
 
-/** The vendor's steps, numbered, each value to copy under its own step, and the vendor's page. */
-function VendorSteps({ steps, link }: { steps: readonly AgentIdentityVendorStep[]; link: { label: string; href: string } }) {
+/** The vendor's steps, numbered, each value to copy under its own step, and the vendor's page where no step names it. */
+function VendorSteps({
+  steps,
+  link,
+}: {
+  steps: readonly AgentIdentityVendorStep[];
+  link: { label: string; href: string } | undefined;
+}) {
   return (
     <>
       <List variant="numbered" className="crewlet-agent-identity-sheet__steps">
@@ -530,11 +540,13 @@ function VendorSteps({ steps, link }: { steps: readonly AgentIdentityVendorStep[
           </ListItem>
         ))}
       </List>
-      <span className="crewlet-agent-identity-sheet__link">
-        <ButtonLink size="small" variant="secondary" href={link.href} external>
-          {link.label}
-        </ButtonLink>
-      </span>
+      {link ? (
+        <span className="crewlet-agent-identity-sheet__link">
+          <ButtonLink size="small" variant="secondary" href={link.href} external>
+            {link.label}
+          </ButtonLink>
+        </span>
+      ) : null}
     </>
   );
 }
