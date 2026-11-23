@@ -42,7 +42,7 @@ export interface CountProps {
  * label, or the row it sits in, says what is waiting.
  *
  * Tabular figures, so a count that ticks up does not shift the heading beside
- * it, and a minimum width so 1 and 10 draw the same pill.
+ * it, and a minimum width of its own height, so one figure is a circle.
  */
 export function Count({ value, label, tone = 'quiet', className }: CountProps) {
   return (

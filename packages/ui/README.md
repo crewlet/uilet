@@ -208,6 +208,16 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.171.1
+
+### A grid row that only reads keeps the arrow
+
+**`DataGrid` gives the pointer only to a row that acts**: one with `rowHref` or `onRowActivate`, whose overlay takes the click. A row that only reads (an access table, a list of settings) showed the hand while a click on it did nothing; it now keeps the arrow. `SettingsTable` drops its own override, which this makes redundant.
+
+### A tab's count reads as its label's own
+
+**`Count` is a circle while it holds one figure**: at least as wide as it is tall, with the badge's side pads, so `1` draws an 18px circle and `128` a pill of the same height, where `1` was a 23px oval. **An underline tab's icon, count and marker stand 6px from its label**, not 8px, so a count no longer floats 16px off the word it counts.
+
 ## Changes in 0.171.0
 
 ### A short block beside a tall one leaves no hole
