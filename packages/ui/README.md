@@ -208,7 +208,7 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.172.1
+## Changes in 0.172.2
 
 ### A grid row that only reads keeps the arrow
 
