@@ -209,11 +209,17 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.175.0
+## Changes in 0.176.0
 
 ### Store, ads and analytics integrations draw their owners' logos
 
 **`VendorMark` draws Google Analytics, Search Console, Google Ads, AdSense, AdMob, Google Play, App Store Connect, Apple Ads and Meta Ads Manager with each owner's own logo** (`@crewlethq/icons`), at every size, where it drew a Lucide glyph on a plate. The keys and props are unchanged. Google's six are its product icons in its own colours; Apple Ads draws Apple's logo in the text colour; App Store Connect shows Apple's light or dark icon for the document's theme; App Store Connect and Meta Ads Manager embed their owners' PNGs, so a page that draws them must allow `img-src data:`. `apple` and `google` are new keys for the companies' own logos (`apple-ads` draws Apple's), for a surface that names the company. AWS keeps its glyph on a plate. The icons README records each file's source and changes. Stories: `VendorMark` Store Ads And Analytics Light and Dark.
+
+## Changes in 0.175.0
+
+### One more value beside a handed-in file
+
+**`AgentIdentitySheet` can ask for one optional value beside the file**: `handIn.detail` (`{ label, hint, inputMode }`) draws a plain text field under the file's own `field` in Back here, its label marked "(optional)" as every optional field is, its hint the field's help line, read with it by a screen reader. Left empty it does not hold the check back and is left out of what `onCheck` is handed; typed, it arrives trimmed as `detail`. `inputMode: 'numeric'` brings up a phone's number pad for a value that is digits. Story: `AgentIdentitySheet` Back Here With Detail.
 
 ## Changes in 0.174.0
 
