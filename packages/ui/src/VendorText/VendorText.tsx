@@ -16,9 +16,10 @@ export interface VendorUIProps {
 }
 
 /**
- * A name on a vendor's screen, set inside a sentence of instructions: medium
- * weight in a hairline frame, so it reads apart from the words around it by
- * shape as well as ink. A menu path draws a chevron between its levels.
+ * A name on a vendor's screen, set inside a sentence of instructions: semibold
+ * in a framed chip that stands off the surface under it, so it reads apart from
+ * the words around it by shape as well as ink. A menu path draws a chevron
+ * between its levels.
  */
 export function VendorUI({ path, separatorLabel = 'then', className }: VendorUIProps) {
   const levels = typeof path === 'string' ? [path] : path;
