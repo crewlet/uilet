@@ -204,9 +204,11 @@
  * Underline tabs sit flush on the baseline and the slider is the indicator,
  * so the label carries no chrome of its own: its only side pad is the room
  * the focus ring is drawn in, and the labels stand one scale step apart.
+ * Its icon, count and marker stand 6px from the label, close enough to read
+ * as the label's own and well inside the step to the next tab.
  */
 .crewlet-tabs--underline .crewlet-tabs__tab {
-  gap: var(--spacing-2);
+  gap: calc(var(--spacing-1) * 1.5);
   padding: var(--spacing-2) var(--spacing-1);
   font-size: var(--font-size-compact);
   position: relative;

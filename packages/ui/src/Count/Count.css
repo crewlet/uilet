@@ -4,11 +4,16 @@
  */
 
 .crewlet-count {
+  /* ONE FIGURE IS A CIRCLE, as the tab's danger marker is: the pill is at
+     least as wide as it is tall, its line and 1px a side, with the badge's
+     side pads, so a longer figure grows it into a pill. */
+  --crewlet-count-line: round(nearest, calc(var(--font-line-height-body) * 1em), 1px);
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  padding: 1px var(--spacing-2);
+  min-width: calc(var(--crewlet-count-line) + 2px);
+  padding: 1px var(--size-badge-pad);
   border-radius: var(--radius-pill);
   background: var(--color-surface-inset);
   color: var(--color-text-tertiary);
@@ -21,7 +26,7 @@
      pills, and Chromium floors the share of a fractional leading above the
      text, so the figures stood high in it. A whole 16px line splits evenly
      and the pill lands on 18px with its figures on its middle. */
-  line-height: round(nearest, calc(var(--font-line-height-body) * 1em), 1px);
+  line-height: var(--crewlet-count-line);
 }
 
 /*
