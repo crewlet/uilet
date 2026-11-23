@@ -213,6 +213,7 @@ places:
 ### An empty state without a mark
 
 **`EmptyState` takes `icon={false}`**, which draws no mark in the default and compact sizes: only the title, the sentence and the action. Without it, a box with no `icon` still draws the inbox glyph, and an `illustration` still wins where both are given. Story: `EmptyState` No Mark.
+
 ## Changes in 0.171.1
 
 ### A limit stack keeps inside a narrow grid cell
