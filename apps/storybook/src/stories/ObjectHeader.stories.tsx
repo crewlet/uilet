@@ -107,8 +107,25 @@ export const WithMark: Story = {
     description: 'Each agent posts as its own bot.',
     facts: [
       { label: 'Agents ready', value: '2 of 2' },
-      { label: 'Delivered', value: '279' },
-      { label: 'Last checked', value: '4m ago' },
+      { label: 'Delivered', value: '279', note: 'since Nov 13, 2026' },
+      { label: 'Last check', value: '41s ago', note: 'next in 9m' },
+    ],
+  },
+};
+
+/**
+ * A note runs on after its value, smaller and quieter, and wraps with it as
+ * one phrase: here beside a short value, a long one, and a long note.
+ */
+export const FactNotes: Story = {
+  args: {
+    ...WithMark.args,
+    facts: [
+      { label: 'Delivered', value: '0', note: 'since Nov 13, 2026' },
+      { label: 'Last check', value: '41s ago', note: 'next in 9m' },
+      { label: 'Phase', value: 'Execute → Review → Execute again', note: '2 iterations' },
+      { label: 'Tool calls', value: '15', note: '3 not listed: the executor’s record did not keep them' },
+      { label: 'Trace', value: 'trc_01HZX9F3A91C2E7B', token: true, note: 'sampled' },
     ],
   },
 };

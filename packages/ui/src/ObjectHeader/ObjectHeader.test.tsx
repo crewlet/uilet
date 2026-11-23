@@ -116,9 +116,41 @@ describe('FactLine', () => {
     const body = fact.querySelector('.crewlet-fact-line__body')!;
     expect([...body.children].map((child) => child.className.split(' ')[0])).toEqual([
       'crewlet-fact-line__value',
-      'crewlet-fact-line__note',
       'crewlet-set-by',
     ]);
+  });
+
+  test('a note runs on after its value, the dot held to the value, and wraps with it', () => {
+    const { container } = render(<FactLine facts={[{ label: 'Last check', value: '41s ago', note: 'next in 9m' }]} />);
+    const value = container.querySelector('.crewlet-fact-line__value')!;
+    // One phrase in the value's own clamp, which gives it a line more for the note.
+    const clamp = value.querySelector('.crewlet-text')!;
+    expect(clamp.classList.contains('crewlet-text--clamp-3')).toBe(true);
+    expect(clamp.textContent).toBe('41s ago\u00a0· next in 9m');
+    // The dot is drawn, not read; a no-break space keeps it off the start of a line.
+    const [dot, note] = [...clamp.querySelectorAll('.crewlet-fact-line__note')];
+    expect(dot!.getAttribute('aria-hidden')).toBe('true');
+    expect(note!.textContent).toBe('next in 9m');
+    expect(container.querySelector('.crewlet-fact-line__body > .crewlet-fact-line__note')).toBeNull();
+  });
+
+  test('a token, a set or a whole reading keeps its note on a line of its own', () => {
+    const { container } = render(
+      <FactLine
+        facts={[
+          { label: 'Trace', value: 'f3a91c2e7b', token: true, note: 'sampled' },
+          { label: 'Roles', value: 'reader', set: true, note: 'from its seat' },
+          { label: 'Schedule', value: '0 9 * * 1', whole: true, note: 'Mondays at 9' },
+        ]}
+      />,
+    );
+    const bodies = [...container.querySelectorAll('.crewlet-fact-line__body')];
+    expect(bodies.map((body) => body.querySelector(':scope > .crewlet-fact-line__note')?.textContent)).toEqual([
+      'sampled',
+      'from its seat',
+      'Mondays at 9',
+    ]);
+    expect(container.querySelector('.crewlet-fact-line__value .crewlet-fact-line__note')).toBeNull();
   });
 
   test('a footnote cannot set its fact\'s column or its row', () => {
@@ -235,12 +267,15 @@ test('draws a mark on its own plate beside the header, and only when given one',
   expect(body.textContent).toContain('Each agent posts as its own bot.');
 });
 
-test('a fact line holds two sizes: a note and a by-line are set as the label is', () => {
-  const sheet = css();
-  const label = /\.crewlet-fact-line__label\s*\{([^}]*)\}/.exec(sheet)?.[1]?.match(/font-size:\s*([^;]+);/)?.[1];
-  const note = /\.crewlet-fact-line__note,\s*\.crewlet-fact-line__set-by\s*\{([^}]*)\}/.exec(sheet)?.[1]?.match(/font-size:\s*([^;]+);/)?.[1];
-  expect(label).toBe('var(--font-size-xs)');
-  expect(note).toBe(label);
+test('a note is set a step under the label in the quiet ink, and a by-line as the label is', () => {
+  const sheet = css().replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const rule = (selector: string) => new RegExp(`${selector.replace(/[.]/g, '\\.')}\\s*\\{([^}]*)\\}`).exec(sheet)?.[1] ?? '';
+  const size = (selector: string) => /font-size:\s*([^;]+);/.exec(rule(selector))?.[1];
+  expect(size('.crewlet-fact-line__label')).toBe('var(--font-size-xs)');
+  expect(size('.crewlet-fact-line__set-by')).toBe('var(--font-size-xs)');
+  expect(size('.crewlet-fact-line__value')).toBe('var(--font-size-compact)');
+  expect(size('.crewlet-fact-line__note')).toBe('var(--font-size-2xs)');
+  expect(rule('.crewlet-fact-line__note')).toMatch(/color:\s*var\(--color-text-tertiary\)/);
 });
 
 /** Lays a clamp out as cut: jsdom measures nothing, so the box is given. */

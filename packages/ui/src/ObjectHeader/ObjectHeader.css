@@ -242,12 +242,18 @@
   overflow-wrap: normal;
 }
 
-/* A footnote may not set its column's width: the track does, and the note
-   wraps inside it, balanced so the wrap reads as deliberate. It is set as
-   the label is, so a fact line holds two sizes, the labels' and the values'. */
-.crewlet-fact-line__note,
+/* A footnote may not set its column's width: the track does, and a by-line
+   wraps inside it, balanced so the wrap reads as deliberate. */
 .crewlet-fact-line__set-by {
   font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-wrap: balance;
+}
+
+/* A note is an aside to its value, a step under the label in the quiet ink. */
+.crewlet-fact-line__note {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-tertiary);
   text-wrap: balance;
 }

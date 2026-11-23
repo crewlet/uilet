@@ -153,6 +153,10 @@ export interface FactLineProps {
  * phrase cut at one ("not running on this no…") loses the part that said
  * where.
  *
+ * A NOTE RUNS ON AFTER ITS VALUE, smaller and quieter ("41s ago · next in
+ * 9m"), and wraps with it as one phrase; only a token, a set or a whole
+ * reading, which keep their own shape, take it on a line of its own.
+ *
  * NEVER "SET BY" UNDER NOTHING. A fact with no value is dropped, its
  * attribution with it.
  */
@@ -167,6 +171,18 @@ const valueOf = (fact: ObjectFact): ReactNode =>
   ) : (
     fact.value
   );
+
+/** A note run on after its value: the dot is held to the value's last word, so a wrap never opens a line with it. */
+function FactNote({ note }: { note: ReactNode }) {
+  return (
+    <>
+      <span className="crewlet-fact-line__note crewlet-fact-line__note--inline" aria-hidden="true">
+        {'\u00a0·'}
+      </span>{' '}
+      <span className="crewlet-fact-line__note crewlet-fact-line__note--inline">{note}</span>
+    </>
+  );
+}
 
 export function FactLine({ facts, className }: FactLineProps) {
   const shown = facts.filter((fact) => fact.value !== null && fact.value !== undefined && fact.value !== '');
@@ -193,15 +209,16 @@ export function FactLine({ facts, className }: FactLineProps) {
               )}
             >
               {clamps(fact) ? (
-                // A kit Text clamps, so a cut value carries its words on hover.
-                <Text variant="inherit" clamp={2}>
+                // A kit Text clamps, so a cut value carries its words on hover; a line more for a note.
+                <Text variant="inherit" clamp={fact.note ? 3 : 2}>
                   {valueOf(fact)}
+                  {fact.note ? <FactNote note={fact.note} /> : null}
                 </Text>
               ) : (
                 valueOf(fact)
               )}
             </span>
-            {fact.note ? <span className="crewlet-fact-line__note">{fact.note}</span> : null}
+            {fact.note && !clamps(fact) ? <span className="crewlet-fact-line__note">{fact.note}</span> : null}
             {fact.setBy ? <SetByLine setBy={fact.setBy} className="crewlet-fact-line__set-by" /> : null}
           </span>
         </span>
