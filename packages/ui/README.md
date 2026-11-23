@@ -211,6 +211,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.178.1
+
+### App Store Connect's mark weighs a quarter as much
+
+**`VendorMark`'s `app-store-connect` embeds Apple's icons at 8 bits per channel** (`@crewlethq/icons`), with their colour profile kept, where 0.177.0 embedded Apple's 16-bit files. It draws the same, and the module every vendor mark shares is about 87 KB lighter once gzipped. Nothing to change.
+
 ## Changes in 0.178.0
 
 ### A process's steps read as a timeline, and a chart holds its room while it loads
