@@ -1,4 +1,5 @@
 import type { CSSProperties, HTMLAttributes } from 'react';
+import { shownBeforeOverflow } from '../ListOverflow/index.js';
 import { cx } from '../utils/cx.js';
 import type { CrewletCharacterId } from '@crewlethq/icons/characters';
 import type { NodeHue } from '../utils/nodeHue.js';
@@ -26,7 +27,8 @@ export interface AvatarStackProps extends Omit<HTMLAttributes<HTMLSpanElement>, 
   /** Everybody in the stack, in the order they are drawn. */
   members: readonly AvatarStackMember[];
   /**
-   * How many badges are drawn before the rest are counted in a chip.
+   * How many badges are drawn before the rest are counted in a chip. One
+   * more is drawn rather than counted, as the chip would take its place.
    *
    * FOUR BY DEFAULT, because that is the most any stack in the approved design
    * draws, and a stack is a glance at WHO rather than a roster: past four the
@@ -117,8 +119,9 @@ export function AvatarStack({
   }
   if (members.length === 0) return null;
 
-  const shown = members.slice(0, max);
-  const overflow = members.length - shown.length;
+  const shown = members.slice(0, shownBeforeOverflow(members.length, max));
+  const hidden = members.slice(shown.length);
+  const overflow = hidden.length;
 
   return (
     <span
@@ -150,7 +153,12 @@ export function AvatarStack({
         />
       ))}
       {overflow > 0 ? (
-        <span className="crewlet-avatar-stack__member crewlet-avatar-stack__more" aria-hidden="true">
+        <span
+          className="crewlet-avatar-stack__member crewlet-avatar-stack__more"
+          aria-hidden="true"
+          // The stack's name already says every member; the chip names its own on hover.
+          title={`${overflow.toLocaleString()} more: ${hidden.map((member) => member.name).join(', ')}`}
+        >
           +{overflow}
         </span>
       ) : null}

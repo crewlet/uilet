@@ -1,5 +1,6 @@
-import { Children, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { Children, isValidElement, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useAnnouncer } from '../Announcer/index.js';
+import { ListOverflow, overflowWords, shownBeforeOverflow, type ListNoun } from '../ListOverflow/index.js';
 import { cx } from '../utils/cx.js';
 
 export interface TagGroupProps {
@@ -17,21 +18,20 @@ export interface TagGroupProps {
    */
   max?: number | undefined;
   /**
-   * What happens to the tags that do not fit.
-   *
-   * `expand` (the default) folds everything past `max` behind a "+N more"
-   * button that shows them in place.
-   *
-   * `fit` keeps the group on ONE LINE in whatever width it is given: the tags
-   * that would wrap are left out and counted in a static "+N" chip, so a tag is
-   * never cut mid-glyph by the box it sits in. It is for a dense row (a sheet
-   * cell, a table) where a button per row would be a tab stop per row; the
-   * group's name still says how many there are.
+   * `expand` (the default) folds everything past `max` behind a "+N more" button that shows them in place;
+   * `fit` keeps ONE LINE in any width, naming what wraps in a chip that lists it ("+2 more labels").
    */
   overflow?: 'expand' | 'fit' | undefined;
+  /** What the tags are called, for the overflow's words: "+2 more problems". */
+  noun?: ListNoun | undefined;
+  /**
+   * The `fit` chip is words, not a button: for a group inside a widget that
+   * owns the pointer and the keyboard (a grid cell), whose editor lists them all.
+   */
+  countOnly?: boolean | undefined;
   /** The overflow control's label. */
   moreLabel?: ((hidden: number) => string) | undefined;
-  /** The `fit` count chip's text. */
+  /** The `fit` chip's text. */
   countLabel?: ((hidden: number) => string) | undefined;
   /** What is said once the rest are shown. */
   expandedMessage?: ((total: number) => string) | undefined;
@@ -61,8 +61,10 @@ export function TagGroup({
   label,
   max = 6,
   overflow = 'expand',
-  moreLabel = (hidden) => `+${hidden} more`,
-  countLabel = (hidden) => `+${hidden}`,
+  noun,
+  countOnly = false,
+  moreLabel = (hidden) => overflowWords(hidden, noun),
+  countLabel = (hidden) => overflowWords(hidden, noun),
   expandedMessage = (total) => `Showing all ${total}.`,
   className,
   children,
@@ -74,7 +76,9 @@ export function TagGroup({
   const all = Children.toArray(children);
   const fit = overflow === 'fit';
   const fitted = useFitted(list, fit, all.length);
-  const shown = fit ? all.slice(0, fitted) : open ? all : all.slice(0, max);
+  // Ending a row of 18px pills (a sheet cell), the chip takes their step.
+  const xs = all.some((tag) => isValidElement<{ size?: unknown }>(tag) && tag.props.size === 'xs');
+  const shown = fit ? all.slice(0, fitted) : open ? all : all.slice(0, shownBeforeOverflow(all.length, max));
   const hidden = all.length - shown.length;
 
   return (
@@ -88,6 +92,8 @@ export function TagGroup({
        */
       tabIndex={-1}
       className={cx('crewlet-tag-group', fit && 'crewlet-tag-group--fit', className)}
+      // One tag left beside the chip: the line stops wrapping and the tag gives way.
+      data-folded={fit && hidden > 0 && shown.length === 1 ? '' : undefined}
       aria-label={`${label}, ${all.length}`}
     >
       {shown.map((tag, index) => (
@@ -97,9 +103,15 @@ export function TagGroup({
           {tag}
         </li>
       ))}
-      {hidden > 0 && fit ? (
+      {hidden > 0 && fit && countOnly ? (
         <li className="crewlet-tag-group__item" data-count="">
           <span className="crewlet-tag-group__count">{countLabel(hidden)}</span>
+        </li>
+      ) : hidden > 0 && fit ? (
+        <li className="crewlet-tag-group__item" data-count="">
+          <ListOverflow items={all.slice(shown.length)} noun={noun} size={xs ? 'xs' : 'sm'} label={`${label}, ${hidden} more`}>
+            {countLabel(hidden)}
+          </ListOverflow>
         </li>
       ) : hidden > 0 ? (
         <li className="crewlet-tag-group__item">

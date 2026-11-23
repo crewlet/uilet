@@ -1,0 +1,88 @@
+/*
+ * The chip a list's overflow is drawn as: the tag's pill with a dashed edge,
+ * so it reads as a member of the row that stands for more of it.
+ */
+
+.crewlet-list-overflow {
+  /* The tag's own 9px inside each round end. */
+  --crewlet-list-overflow-pad: calc(var(--spacing-2) + var(--spacing-1) / 4);
+  --crewlet-list-overflow-height: max(24px, calc(24px * var(--density, 1)));
+
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--crewlet-list-overflow-height);
+  margin: 0;
+  padding: 0 var(--crewlet-list-overflow-pad);
+  border: 1px dashed var(--color-border-hover);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* Ending a row of 18px pills it takes their height and type; an invisible
+   24px box around it keeps the pointer target at the WCAG 2.2 floor. */
+.crewlet-list-overflow--xs {
+  --crewlet-list-overflow-height: calc(18px * var(--density, 1));
+  --crewlet-list-overflow-pad: calc(var(--spacing-1) * 1.5);
+  font-size: var(--font-size-2xs);
+}
+
+.crewlet-list-overflow--xs::before {
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 24px;
+  transform: translateY(-50%);
+  content: '';
+}
+
+.crewlet-list-overflow:hover,
+.crewlet-list-overflow[data-open] {
+  border-color: var(--color-border-strong-hover);
+  color: var(--color-text-primary);
+}
+
+/* One ring over the dashed edge, as every field draws it. */
+.crewlet-list-overflow:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-list-overflow__panel {
+  padding: var(--spacing-2);
+}
+
+.crewlet-list-overflow__list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A hidden item is shown whole here: the panel is where a cut one is read. */
+.crewlet-list-overflow__item {
+  display: flex;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-list-overflow {
+    transition: none;
+  }
+}

@@ -3,7 +3,7 @@
  * present, faded when idle, and said from the reader's point of view.
  */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
 import type { PresenceMember } from '../PresenceModel/index.js';
@@ -32,11 +32,13 @@ test('is one image named from the reader point of view, every member said with w
   );
 });
 
-test('draws four badges by default, ordered by activity, and counts the rest', () => {
-  const { container } = render(<PresenceStack members={members} />);
+test('draws four badges by default, ordered by activity, and counts the rest, named on hover', () => {
+  const { container } = render(<PresenceStack members={[...members, { id: 's6', name: 'SRE', kind: 'agent', activity: 'viewing' }]} />);
   const badges = container.querySelectorAll('.crewlet-presence-stack__badge');
   expect(badges).toHaveLength(4);
-  expect(container.querySelector('.crewlet-avatar-stack__more')?.textContent).toBe('+1');
+  const more = container.querySelector('.crewlet-avatar-stack__more')!;
+  expect(more.textContent).toBe('+2');
+  expect(more.getAttribute('title')).toBe('2 more: SRE, reading, Kai Lee, idle');
   expect(badges[0]!.classList.contains('crewlet-presence-hue--cyan')).toBe(true);
   expect(badges[0]!.classList.contains('crewlet-presence-stack__badge--present')).toBe(true);
 });
@@ -59,14 +61,23 @@ test('an idle badge loses its ring and fades', () => {
   expect(idle.classList.contains('crewlet-presence-stack__badge--present')).toBe(false);
 });
 
-test('with onSelect each badge is a button naming its member, and the counted members are still said', () => {
+test('one member past the cap is drawn, not counted', () => {
+  const { container } = render(<PresenceStack members={members} />);
+  expect(container.querySelectorAll('.crewlet-presence-stack__badge')).toHaveLength(5);
+  expect(container.querySelector('.crewlet-avatar-stack__more')).toBeNull();
+});
+
+test('with onSelect each badge is a button naming its member, and the counted members open from their chip', () => {
   const onSelect = vi.fn();
   render(<PresenceStack members={members} onSelect={onSelect} max={2} />);
   expect(screen.getByRole('group', { name: 'You and 5 others are here' })).toBeDefined();
   fireEvent.click(screen.getByRole('button', { name: 'Maya Ortiz, editing row Acme Corp' }));
   expect(onSelect).toHaveBeenCalledWith(members[2]);
-  expect(screen.getAllByRole('button')).toHaveLength(2);
-  expect(screen.getByText(/^3 more: Jane Founder, viewing/)).toBeDefined();
+  expect(screen.getAllByRole('button')).toHaveLength(3);
+  fireEvent.click(screen.getByRole('button', { name: '3 more' }));
+  const panel = screen.getByRole('dialog', { name: '3 more' });
+  fireEvent.click(within(panel).getByRole('button', { name: /^Jane Founder, viewing/ }));
+  expect(onSelect).toHaveBeenCalledWith(members[3]);
 });
 
 test('draws nothing for an empty room, and refuses a max that is not a count', () => {

@@ -2,6 +2,7 @@ import type { HTMLAttributes, MouseEvent, ReactNode } from 'react';
 import { XGlyph } from '@crewlethq/icons/glyphs';
 import { StatusDot } from '../StatusDot/index.js';
 import { cx } from '../utils/cx.js';
+import { titleWhenCut } from '../utils/titleIfCut.js';
 import type { NodeHue } from '../utils/nodeHue.js';
 import type { Tone } from '../utils/tone.js';
 
@@ -221,7 +222,10 @@ export function Tag(props: TagProps) {
           {leadingIcon}
         </span>
       ) : null}
-      <span className="crewlet-tag__label">{children}</span>
+      {/* A label cut by a narrow row carries its whole words on hover, unless the tag has a title of its own. */}
+      <span className="crewlet-tag__label" onMouseEnter={rest.title === undefined ? titleWhenCut : undefined}>
+        {children}
+      </span>
       {/*
        * The count is drawn here rather than with the Count component. Count is
        * the neutral pill a heading or a tab carries, on the inset surface and

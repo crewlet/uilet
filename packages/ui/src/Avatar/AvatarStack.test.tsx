@@ -115,7 +115,14 @@ describe('what a stack draws', () => {
     rerender(<AvatarStack members={AGENTS} max={2} />);
     expect(container.querySelectorAll('.crewlet-avatar')).toHaveLength(2);
     expect(container.querySelector('.crewlet-avatar-stack__more')!.textContent).toBe('+4');
+    expect(container.querySelector('.crewlet-avatar-stack__more')!.getAttribute('title')).toBe(
+      `4 more: ${AGENTS.slice(2).map((member) => member.name).join(', ')}`,
+    );
     rerender(<AvatarStack members={AGENTS} max={6} />);
+    expect(container.querySelectorAll('.crewlet-avatar')).toHaveLength(6);
+    expect(container.querySelector('.crewlet-avatar-stack__more')).toBeNull();
+    // One past the cap is drawn: a chip saying "+1" takes the room of the face it hides.
+    rerender(<AvatarStack members={AGENTS} max={5} />);
     expect(container.querySelectorAll('.crewlet-avatar')).toHaveLength(6);
     expect(container.querySelector('.crewlet-avatar-stack__more')).toBeNull();
   });

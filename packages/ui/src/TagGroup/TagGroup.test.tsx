@@ -9,7 +9,7 @@
  * working through.
  */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
 import { Announcer } from '../Announcer/index.js';
@@ -125,7 +125,7 @@ describe('TagGroup overflow="fit"', () => {
     };
   };
 
-  test('keeps one line and counts what wrapped, room left for the count, with no button to tab to', () => {
+  test('keeps one line and names what wrapped in a chip that lists it, room left for the chip', () => {
     const restore = lay(3);
     try {
       render(
@@ -139,8 +139,34 @@ describe('TagGroup overflow="fit"', () => {
       // Three fit; the count chip needs the third one's place, so two stay.
       expect(screen.queryByText('Gamma')).toBeNull();
       expect(screen.getByText('Beta')).toBeDefined();
-      expect(screen.getByText('+3')).toBeDefined();
       expect(list.className).toContain('crewlet-tag-group--fit');
+      fireEvent.click(screen.getByRole('button', { name: '+3 more' }));
+      const panel = screen.getByRole('dialog', { name: 'Tags, 3 more' });
+      expect(within(panel).getByText('Epsilon')).toBeDefined();
+    } finally {
+      restore();
+    }
+  });
+
+  test('names the tags with the noun it is given, and stays words inside a grid cell', () => {
+    const restore = lay(3);
+    try {
+      const { rerender } = render(
+        <TagGroup label="Problems" overflow="fit" noun={{ one: 'problem', other: 'problems' }}>
+          {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((name) => (
+            <Tag key={name}>{name}</Tag>
+          ))}
+        </TagGroup>,
+      );
+      expect(screen.getByRole('button', { name: '+3 more problems' })).toBeDefined();
+      rerender(
+        <TagGroup label="Problems" overflow="fit" countOnly noun={{ one: 'problem', other: 'problems' }}>
+          {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((name) => (
+            <Tag key={name}>{name}</Tag>
+          ))}
+        </TagGroup>,
+      );
+      expect(screen.getByText('+3 more problems')).toBeDefined();
       expect(screen.queryByRole('button')).toBeNull();
     } finally {
       restore();
@@ -178,7 +204,7 @@ describe('TagGroup overflow="fit"', () => {
       // Three tags and the count share the line; matching tops alone kept one.
       expect(screen.getByText('Gamma')).toBeDefined();
       expect(screen.queryByText('Delta')).toBeNull();
-      expect(screen.getByText('+2')).toBeDefined();
+      expect(screen.getByText('+2 more')).toBeDefined();
     } finally {
       if (top) Object.defineProperty(HTMLElement.prototype, 'offsetTop', top);
       if (height) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', height);
@@ -194,5 +220,13 @@ describe('TagGroup overflow="fit"', () => {
     );
     expect(screen.getByText('Beta')).toBeDefined();
     expect(screen.queryByText(/^\+/)).toBeNull();
+  });
+});
+
+describe('TagGroup overflow="expand", one past the cap', () => {
+  test('draws the seventh tag rather than a chip for it', () => {
+    render(group(subjects(7)));
+    expect(screen.getAllByRole('listitem')).toHaveLength(7);
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

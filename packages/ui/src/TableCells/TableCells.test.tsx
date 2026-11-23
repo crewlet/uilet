@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
 import {
@@ -79,10 +79,19 @@ test('a status prints its word, and its mark is hidden', () => {
   expect(container.querySelector('.crewlet-table-cell__status--warning')).not.toBeNull();
 });
 
-test('tags past the cap are counted in words and named on the title', () => {
-  const { container } = render(<TableTagsCell tags={['alpha', 'beta', 'gamma', 'delta', 'epsilon']} />);
-  expect(screen.getByText('2 more tags')).toBeTruthy();
-  expect(container.querySelector('.crewlet-table-cell__more')!.getAttribute('title')).toBe('delta, epsilon');
+test('tags past the cap are a named count that lists them on demand', () => {
+  render(<TableTagsCell tags={['alpha', 'beta', 'gamma', 'delta', 'epsilon']} />);
+  expect(screen.queryByText('delta')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '+2 more tags' }));
+  const panel = screen.getByRole('dialog', { name: '2 more tags' });
+  expect(within(panel).getByText('delta')).toBeTruthy();
+  expect(within(panel).getByText('epsilon')).toBeTruthy();
+});
+
+test('one tag past the cap is drawn, not folded behind a count', () => {
+  render(<TableTagsCell tags={['alpha', 'beta', 'gamma', 'delta']} />);
+  expect(screen.getByText('delta')).toBeTruthy();
+  expect(screen.queryByRole('button')).toBeNull();
 });
 
 test("a column's icon is hidden and a row's mark is read", () => {
