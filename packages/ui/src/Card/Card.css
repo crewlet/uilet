@@ -432,6 +432,11 @@
   min-width: 0;
 }
 
+/* A card held taller than its content (a row of cards one height) grows its last body. */
+.crewlet-card > .crewlet-card__body:not(:has(~ .crewlet-card__body)) {
+  flex-grow: 1;
+}
+
 /*
  * The panel foot: a quiet strip at the card's inset, in the caption register.
  * A row of buttons carries its own ink, so the tertiary step here is what the
@@ -444,6 +449,11 @@
   border-top: 1px solid var(--color-border-default);
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
+}
+
+/* At the card's foot however tall the card is drawn, with or without a body above it. */
+.crewlet-card > .crewlet-card__footer {
+  margin-block-start: auto;
 }
 
 .crewlet-card__footer--actions {

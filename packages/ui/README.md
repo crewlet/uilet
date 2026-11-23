@@ -52,7 +52,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `StackedRing`, `ActivityStrip`, `TimeSeries`, `Sparkline` (with its `fine` weight), the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count` (with `tone="attention"`), `StatusDot`, `Spinner`, `EmptyValue`, `VisuallyHidden` |
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
-| Layout | `Container`, `Section`, `Card`, `TileGrid`, `ListDetail`, `RailList` (a directory's groups as a rail beside its list, folding into a picker), `AsideLayout`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
+| Layout | `Container`, `Section`, `Card`, `CardGrid` (cards side by side, each row one height), `TileGrid`, `ListDetail`, `RailList` (a directory's groups as a rail beside its list, folding into a picker), `AsideLayout`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
 | Arranging a page | `ArrangeBoard`, `ArrangeGrid`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
 | Application shell | `AppShell` with `AppShell.Rail`, the compact rail (`rail="compact"`, the one fold control from `onRailChange`, and `useAppShell().rail` to pick the shape) and `fill="flush"`, the `aside` track and the `peek` slot (`useAppShellAside`, `useAppShellPeek`), `AppShell.ResizeHandle` (also `ResizeHandle`) and `useStoredWidth`, `SidePanel` and `SidePanelFrame`, `PeekRail` and `PeekHost` (with `PeekNeighbours`, `usePeekNeighbours`, `usePeekStep`, `peekClickHandler`, `peekRowActivation`), `SectionFrame` (with `SectionFrame.Nav` and `SectionFrame.Body`), `DockColumn` and `usePresence`, `LockedLabel`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem` (with `dense` lists, `unread` and `muted` rows and `collapsible` groups), `CompactNav` with `CompactNavItem`, `CompactNavGroup` and `CompactNavSeparator` (the rail folded to its marks, fed from the same places), `DirectoryList`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen`, `useIdle`, `useMediaMatch` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
@@ -208,6 +208,16 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.176.0
+
+### Cards side by side end at one height
+
+**`CardGrid` is new**: cards side by side, every card in a row as tall as the row. Each cell stretches to its row whatever alignment the page gives the grid, a cell that wraps its card (a focus target, a list item) hands the row's height down to it, and the grid folds to one card per row, each its own height, where two would be narrower than `min`. `columns` (2, 3 or 4) caps a row, unset it holds as many as fit; `min` takes `AutoGrid`'s steps (`sm` 180px, `md` 260px, `lg` 360px); `gap` is 3, 4 or 5; `as="ul"` makes the grid the list. Story: `CardGrid` Short Beside Tall, With Actions, Empty Body, Wrapped, Narrow.
+
+**A `Card` drawn taller than its content grows its last body, and its `Card.Footer` stays at its foot**, so a short card in a stretched row or cell keeps its actions level with its neighbour's instead of floating under its content. A card at its content's height is unchanged.
+
+What to change: lay cards that sit side by side in a `CardGrid` rather than a grid of your own, and put a cell's own attributes (an `id`, a `ref`, `tabIndex`) on the card itself or on one wrapper around it.
 
 ## Changes in 0.175.0
 
