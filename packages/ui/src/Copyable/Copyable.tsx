@@ -5,7 +5,11 @@ import { pathBreaks } from '../utils/pathBreaks.js';
 import { useClipboard } from '../utils/useClipboard.js';
 import { CopyStatus, copyGlyph } from './CopyButton.js';
 
-export type CopyableVariant = 'chip' | 'inline' | 'block';
+/**
+ * `chip` a pill for a table cell, `inline` a value in a detail row, `compact` a
+ * framed value set in a sentence with its control always drawn, `block` a panel.
+ */
+export type CopyableVariant = 'chip' | 'inline' | 'compact' | 'block';
 
 export interface CopyableProps {
   /** The value shown, and the text copied. */
@@ -78,9 +82,12 @@ export const Copyable = ({
   const resolvedLength = truncateLength ?? (variant === 'chip' ? 14 : 24);
   const shouldTruncate = truncate || (variant === 'chip' && text.length > resolvedLength);
   const rendered = display ?? (shouldTruncate ? truncateValue(text, resolvedLength, variant) : text);
-  // An opaque value (a token, an id: one run with no space and no `/`) means
-  // nothing in its pieces, so a block breaks it at any character.
-  const opaque = variant === 'block' && display === undefined && !/[\s/]/.test(text);
+  // A whole value drawn (block, compact) wraps, and an opaque one (a token,
+  // an id: one run with no space and no `/`) breaks at any character.
+  const wraps = variant === 'block' || variant === 'compact';
+  const opaque = wraps && display === undefined && !/[\s/]/.test(text);
+  // A compact value is drawn whole, so it needs its words on a title only where they were replaced.
+  const valueTitle = variant === 'compact' && rendered === text ? undefined : text;
 
   return (
     <span
@@ -96,7 +103,7 @@ export const Copyable = ({
       )}
     >
       {/* The whole value in the tooltip, because the drawn one may be cut. */}
-      <span className="crewlet-copyable__value" title={text}>
+      <span className="crewlet-copyable__value" title={valueTitle}>
         {/* A PATH OR AN ADDRESS BREAKS AT ITS SEPARATORS where it wraps (`pathBreaks`). */}
         {variant === 'chip' || shouldTruncate ? rendered : pathBreaks(rendered)}
       </span>

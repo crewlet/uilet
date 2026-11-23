@@ -16,14 +16,17 @@ export interface AgentIdentityCopy {
   /** What the value is, for the copy control's name: "key's name". */
   label: string;
   value: string;
-  /** The rule the value keeps, said under it: "Lowercase letters, digits and hyphens, at most 30." */
+  /**
+   * The rule the value keeps: "Lowercase letters, digits and hyphens, at most 30."
+   * Not drawn, since the value is copied as it is; a string is the value's tooltip.
+   */
   rule?: ReactNode;
 }
 
 /** One numbered step at the vendor, in the vendor's own labels. */
 export interface AgentIdentityVendorStep {
   text: ReactNode;
-  /** The value to copy at this step, drawn under its words. */
+  /** The value to copy at this step, drawn after its words on the same line. */
   copy?: AgentIdentityCopy | undefined;
 }
 
@@ -139,9 +142,9 @@ export interface AgentIdentitySheetProps {
  * The one sheet every vendor's Set up identity opens, in the same three steps:
  *
  * 1. At the vendor: numbered steps in its own labels, the vendor's page linked
- *    on the step that names it, each value to copy under its step with the
- *    rule it keeps; or, where Crewlet
- *    can, one button that makes it, the steps by hand folded under it.
+ *    on the step that names it, each value to copy after its step's words;
+ *    or, where Crewlet can, one button that makes it, the steps by hand
+ *    folded under it.
  * 2. Back here: the file or the token the vendor gave, or nothing.
  * 3. Check: the reads Crewlet makes, then the verdict.
  *
@@ -552,7 +555,7 @@ function Walk({
   );
 }
 
-/** The vendor's steps, numbered, each value to copy under its own step, and the vendor's page where no step names it. */
+/** The vendor's steps, numbered, each value to copy after its step's words, and the vendor's page where no step names it. */
 function VendorSteps({
   steps,
   link,
@@ -565,19 +568,18 @@ function VendorSteps({
       <List variant="numbered" className="crewlet-agent-identity-sheet__steps">
         {steps.map((s, i) => (
           <ListItem key={i}>
+            {s.text}
             {s.copy ? (
-              <span className="crewlet-agent-identity-sheet__copy">
-                <span>{s.text}</span>
-                <Copyable variant="block" monospace value={s.copy.value} ariaLabel={`Copy the ${s.copy.label}`} />
-                {s.copy.rule ? (
-                  <Text variant="caption" tone="secondary">
-                    {s.copy.rule}
-                  </Text>
-                ) : null}
-              </span>
-            ) : (
-              s.text
-            )}
+              <>
+                {' '}
+                <span
+                  className="crewlet-agent-identity-sheet__copy"
+                  title={typeof s.copy.rule === 'string' ? s.copy.rule : undefined}
+                >
+                  <Copyable variant="compact" value={s.copy.value} ariaLabel={`Copy the ${s.copy.label}`} />
+                </span>
+              </>
+            ) : null}
           </ListItem>
         ))}
       </List>

@@ -1,7 +1,7 @@
 /**
  * The one set-up sheet: three steps the same on every vendor, the value to
- * copy with its rule, the file or token brought back, Make it for me where
- * Crewlet can, and the check drawn only as it answers.
+ * copy beside its step's words, the file or token brought back, Make it for
+ * me where Crewlet can, and the check drawn only as it answers.
  */
 
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
@@ -135,11 +135,17 @@ test('a page no step names keeps its button under the steps', () => {
   );
 });
 
-test('draws the suggested name ready to copy, with the vendor\'s rule under it', () => {
+test('draws the suggested name as a compact copy after its step\'s words, the rule only on its tooltip', () => {
   sheet();
-  expect(within(dialog()).getByRole('button', { name: "Copy the key's name" })).toBeTruthy();
-  expect(within(dialog()).getByText('crewlet-growth')).toBeTruthy();
-  expect(within(dialog()).getByText('Lowercase letters, digits and hyphens, at most 30.')).toBeTruthy();
+  const copy = within(dialog()).getByRole('button', { name: "Copy the key's name" });
+  const chip = within(dialog()).getByText('crewlet-growth').closest('.crewlet-copyable')!;
+  expect(chip.classList.contains('crewlet-copyable--compact')).toBe(true);
+  expect(chip.contains(copy)).toBe(true);
+  // In the step's own sentence, "Name: crewlet-growth", rather than a panel under it.
+  expect(chip.closest('li')!.textContent).toMatch(/^Name: crewlet-growth/);
+  // Copied as it is, so the rule it was made to is no line of its own.
+  expect(within(dialog()).queryByText('Lowercase letters, digits and hyphens, at most 30.')).toBeNull();
+  expect(chip.parentElement!.getAttribute('title')).toBe('Lowercase letters, digits and hyphens, at most 30.');
 });
 
 test('a replacement is titled Replace identity', () => {

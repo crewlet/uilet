@@ -1,6 +1,7 @@
 /*
  * Copyable: a value and the IconButton that copies it, as a `chip` (a pill for
- * a table cell), `inline` (in a detail row) or `block` (a panel for a command).
+ * a table cell), `inline` (in a detail row), `compact` (in a sentence) or
+ * `block` (a panel for a command).
  */
 
 .crewlet-copyable {
@@ -80,6 +81,35 @@
   font-family: inherit;
   font-variant-ligatures: normal;
   letter-spacing: inherit;
+}
+
+/* ---- compact ----------------------------------------------------------- */
+
+/* A value set in a sentence ("Name: crewlet-sre"): framed, sized to the value,
+   kept on the sentence's line, its control always drawn. */
+.crewlet-copyable--compact {
+  gap: 0;
+  padding-inline-start: var(--spacing-2);
+  background: var(--color-surface-inset);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+/* Whole, as a block is: a value too long for the line wraps inside the frame. */
+.crewlet-copyable--compact .crewlet-copyable__value {
+  font-size: var(--font-size-compact);
+  color: var(--color-text-primary);
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+}
+
+/* The control at the target floor, so the frame stands about a line high. */
+.crewlet-copyable--compact .crewlet-copyable__button {
+  opacity: 1;
+  width: var(--size-target-min);
+  height: var(--size-target-min);
 }
 
 /* ---- block ------------------------------------------------------------- */
