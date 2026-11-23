@@ -412,6 +412,35 @@ test('with nothing focusable in the body, focus goes to the footer and never to 
   expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Got it' }));
 });
 
+test('with nothing focusable in the body, focus goes to the footer actions before the footer start', () => {
+  render(
+    <Modal
+      open
+      onClose={() => {}}
+      title="Remove linear?"
+      footerStart={<button>Disable instead</button>}
+      footer={
+        <>
+          <button>Cancel</button>
+          <button>Remove server</button>
+        </>
+      }
+    >
+      <p>Finding everything that names linear.</p>
+    </Modal>,
+  );
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel' }));
+});
+
+test('with no footer actions, focus falls back to the footer start', () => {
+  render(
+    <Modal open onClose={() => {}} title="Saved" footerStart={<button>Undo</button>}>
+      <p>Saved a moment ago.</p>
+    </Modal>,
+  );
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Undo' }));
+});
+
 test('a surface mid-write refuses Escape, the veil and Close alike', () => {
   let closed = 0;
   render(

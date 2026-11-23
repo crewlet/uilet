@@ -231,6 +231,27 @@ test('an alternative sits on the footer start and calls its own handler', () => 
   expect(disabled).toBe(1);
 });
 
+test('the framed shape draws its icon in the head, and an alternative never takes the first focus', () => {
+  render(
+    <ConfirmModal
+      open
+      destructive
+      shape="framed"
+      onClose={() => {}}
+      onConfirm={() => {}}
+      title="Disconnect Slack"
+      icon={<svg data-testid="plug" />}
+      message="Agents stop working in Slack."
+      alternative={{ label: 'Disable instead', onSelect: () => {} }}
+      confirmLabel="Disconnect"
+    />,
+  );
+  const icon = screen.getByTestId('plug').closest('.crewlet-modal__icon');
+  expect(icon?.closest('.crewlet-modal__header')).toBeTruthy();
+  expect(icon?.getAttribute('aria-hidden')).toBe('true');
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel' }));
+});
+
 test('a full confirmation has no axe violations', async () => {
   render(
     <ConfirmModal

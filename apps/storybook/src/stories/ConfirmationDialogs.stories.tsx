@@ -222,12 +222,8 @@ export const DisconnectIntegration: Story = {
           destructive
           shape="framed"
           size="md"
-          title={
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-              <PlugGlyph size="sm" aria-hidden="true" />
-              Disconnect Slack
-            </span>
-          }
+          title="Disconnect Slack"
+          icon={<PlugGlyph size="md" />}
           message="Agents stop working in Slack, and its webhooks are removed."
           consequencesHeading="When you disconnect"
           consequences={[
