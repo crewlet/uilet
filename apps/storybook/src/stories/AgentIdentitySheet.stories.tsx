@@ -7,6 +7,7 @@ import {
   DescriptionList,
   type AgentIdentitySheetProps,
   type AgentIdentityVerdict,
+  VendorText,
 } from '@crewlethq/ui';
 
 /** Opens the sheet over the story, and a button to open it again once closed. */
@@ -62,17 +63,16 @@ const APPLE: AgentIdentitySheetProps = {
   vendor: 'Apple',
   why: 'Apple then records its submissions under its own key, and you can revoke it alone.',
   steps: [
-    { text: 'Open Users and Access, then Integrations, then Team Keys.' },
-    { text: 'Press Generate API Key, or + if the team already has keys.' },
+    { text: <VendorText parts={[{ text: 'Open ' }, { ui: ['Users and Access', 'Integrations', 'Team Keys'], url: 'https://appstoreconnect.apple.com/access/integrations/api' }, { text: '.' }]} /> },
+    { text: <VendorText parts={[{ text: 'Press ' }, { ui: ['Generate API Key'] }, { text: ', or ' }, { ui: ['+'] }, { text: ' if the team already has keys.' }]} /> },
     {
       text: 'Name:',
       copy: { label: "key's name", value: 'crewlet-growth', rule: 'Lowercase letters, digits and hyphens, at most 30.' },
     },
-    { text: 'Access: App Manager. Never Admin.' },
-    { text: 'Press Generate.' },
-    { text: "On the new key's row, press Download API Key. Apple offers the file once." },
+    { text: <VendorText parts={[{ ui: ['Access'] }, { text: ': ' }, { ui: ['App Manager'] }, { text: '. Never ' }, { ui: ['Admin'] }, { text: '.' }]} /> },
+    { text: <VendorText parts={[{ text: 'Press ' }, { ui: ['Generate'] }, { text: '.' }]} /> },
+    { text: <VendorText parts={[{ text: "On the new key's row, press " }, { ui: ['Download API Key'] }, { text: '. Apple offers the file once.' }]} /> },
   ],
-  link: { label: 'Open Team Keys', href: 'https://appstoreconnect.apple.com/access/integrations/api' },
   note: "Only the Account Holder or an Admin can make team keys. A key reaches every app of the team; Crewlet keeps the agent to its own.",
   handIn: {
     kind: 'file',
@@ -94,17 +94,16 @@ const META: AgentIdentitySheetProps = {
   vendor: 'Meta',
   why: "Meta's activity history then names the agent, and its token can be cut off alone.",
   steps: [
-    { text: 'Open Business settings, then Users, then System users.' },
-    { text: 'Press Add.' },
+    { text: <VendorText parts={[{ text: 'Open ' }, { ui: ['Business settings', 'Users', 'System users'], url: 'https://business.facebook.com/settings/system-users' }, { text: '.' }]} /> },
+    { text: <VendorText parts={[{ text: 'Press ' }, { ui: ['Add'] }, { text: '.' }]} /> },
     {
       text: 'System user name:',
       copy: { label: "system user's name", value: 'crewlet-growth', rule: 'Lowercase letters, digits and hyphens, at most 30.' },
     },
-    { text: 'Role: Employee. Never Admin.' },
-    { text: 'Assign assets: the ad accounts, with Manage campaigns and View performance.' },
-    { text: 'Generate new token, with ads_management and ads_read, and copy it.' },
+    { text: <VendorText parts={[{ ui: ['Role'] }, { text: ': ' }, { ui: ['Employee'] }, { text: '. Never ' }, { ui: ['Admin'] }, { text: '.' }]} /> },
+    { text: <VendorText parts={[{ ui: ['Assign assets'] }, { text: ': the ad accounts, with ' }, { ui: ['Manage campaigns'] }, { text: ' and ' }, { ui: ['View performance'] }, { text: '.' }]} /> },
+    { text: <VendorText parts={[{ ui: ['Generate new token'] }, { text: ', with ' }, { ui: ['ads_management'] }, { text: ' and ' }, { ui: ['ads_read'] }, { text: ', and copy it.' }]} /> },
   ],
-  link: { label: 'Open System users', href: 'https://business.facebook.com/settings/system-users' },
   note: 'Meta allows 10 system users per business at Full access, 1 at Limited.',
   make: {
     title: 'Crewlet can make it for you',
@@ -132,7 +131,7 @@ const meta: Meta<typeof AgentIdentitySheet> = {
 export default meta;
 type Story = StoryObj<typeof AgentIdentitySheet>;
 
-/** App Store Connect: six steps in Apple's labels, the key's name to copy, and the file to bring back. */
+/** App Store Connect: six steps in Apple's labels, Team Keys linked on the step that names it, the key's name to copy, and the file to bring back. */
 export const AppStoreConnect: Story = { render: () => <Opened {...APPLE} /> };
 
 /** Back here: the file Apple gave, its key ID read from the name. */
@@ -171,7 +170,7 @@ export const GooglePlayInvited: Story = {
       vendor="Google Play"
       why="Google Play then records what the agent does under its own Google identity."
       steps={[
-        { text: 'Open Users and permissions, then Invite new users.' },
+        { text: <VendorText parts={[{ text: 'Open ' }, { ui: ['Users and permissions'], url: 'https://play.google.com/console/users-and-permissions' }, { text: ', then press ' }, { ui: ['Invite new users'] }, { text: '.' }]} /> },
         {
           text: 'Email address:',
           copy: {
@@ -180,10 +179,9 @@ export const GooglePlayInvited: Story = {
             rule: "Google's rule: lowercase letters, digits and hyphens, 6 to 30.",
           },
         },
-        { text: 'App permissions: add the agent’s apps, with View app information and Reply to reviews.' },
-        { text: 'Press Invite user. Google can take up to 48 hours to apply it.' },
+        { text: <VendorText parts={[{ ui: ['App permissions'] }, { text: ': add the agent’s apps, with ' }, { ui: ['View app information'] }, { text: ' and ' }, { ui: ['Reply to reviews'] }, { text: '.' }]} /> },
+        { text: <VendorText parts={[{ text: 'Press ' }, { ui: ['Invite user'] }, { text: '. Google can take up to 48 hours to apply it.' }]} /> },
       ]}
-      link={{ label: 'Open Users and permissions', href: 'https://play.google.com/console/users-and-permissions' }}
       note="Only an Admin of the developer account can invite users."
       handIn={{ kind: 'nothing', text: 'Nothing to bring back: Crewlet checks that the identity was added.' }}
       reads={[
@@ -202,12 +200,11 @@ export const ExpoToken: Story = {
       vendor="Expo"
       why="Expo then records the agent's builds and submissions under its own robot."
       steps={[
-        { text: 'Open Access tokens, then Robots.' },
-        { text: 'Press Create robot.', copy: { label: "robot's name", value: 'crewlet-growth' } },
-        { text: 'Role: Developer.' },
-        { text: 'Press Create token, and copy it.' },
+        { text: <VendorText parts={[{ text: 'Open ' }, { ui: ['Access tokens', 'Robots'], url: 'https://expo.dev/settings/access-tokens' }, { text: '.' }]} /> },
+        { text: <VendorText parts={[{ text: 'Press ' }, { ui: ['Create robot'] }, { text: '.' }]} />, copy: { label: "robot's name", value: 'crewlet-growth' } },
+        { text: <VendorText parts={[{ ui: ['Role'] }, { text: ': ' }, { ui: ['Developer'] }, { text: '.' }]} /> },
+        { text: <VendorText parts={[{ text: 'Press ' }, { ui: ['Create token'] }, { text: ', and copy it.' }]} /> },
       ]}
-      link={{ label: 'Open Robots', href: 'https://expo.dev/settings/access-tokens' }}
       note={undefined}
       handIn={{ kind: 'token', label: 'Robot token', hint: 'Expo shows it once.' }}
       reads={[
@@ -263,4 +260,15 @@ export const WrongRole: Story = {
 export const DidNotFinish: Story = {
   render: () => <Opened {...INVITED} onCheck={() => Promise.reject(new Error('The engine did not answer in time.'))} />,
   play: runCheck,
+};
+
+/** A page no step names keeps its button under the steps. */
+export const PageNoStepNames: Story = {
+  render: () => (
+    <Opened
+      {...APPLE}
+      steps={[{ text: <VendorText parts={[{ text: 'Press ' }, { ui: ['Generate'] }, { text: '.' }]} /> }]}
+      link={{ label: 'Open Team Keys', href: 'https://appstoreconnect.apple.com/access/integrations/api' }}
+    />
+  ),
 };

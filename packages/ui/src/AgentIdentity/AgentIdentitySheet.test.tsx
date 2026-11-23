@@ -9,6 +9,7 @@ import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
 import type { ModalProps } from '../Modal/index.js';
 import { Modal } from '../Modal/index.js';
+import { VendorText } from '../VendorText/index.js';
 import {
   AgentIdentitySheet,
   type AgentIdentityBrought,
@@ -24,14 +25,23 @@ const APPLE: Omit<AgentIdentitySheetProps, 'onCheck' | 'onClose'> = {
   vendor: 'Apple',
   why: 'Apple then records its submissions under its own key.',
   steps: [
-    { text: 'Open Users and Access, then Integrations, then Team Keys.' },
+    {
+      text: (
+        <VendorText
+          parts={[
+            { text: 'Open ' },
+            { ui: ['Users and Access', 'Integrations', 'Team Keys'], url: 'https://appstoreconnect.apple.com/access/integrations/api' },
+            { text: '.' },
+          ]}
+        />
+      ),
+    },
     {
       text: 'Name:',
       copy: { label: "key's name", value: 'crewlet-growth', rule: 'Lowercase letters, digits and hyphens, at most 30.' },
     },
     { text: 'Access: App Manager. Never Admin.' },
   ],
-  link: { label: 'Open Team Keys', href: 'https://appstoreconnect.apple.com/access/integrations/api' },
   note: 'Only the Account Holder or an Admin can make team keys.',
   handIn: {
     kind: 'file',
@@ -104,10 +114,25 @@ test('opens on the vendor step of three, titled for the agent, with the vendor\'
   expect(within(steps()).getByText('At Apple').closest('[aria-current="step"]')).toBeTruthy();
   const numbered = within(dialog()).getByRole('region', { name: 'At Apple' }).querySelector('ol');
   expect(numbered?.querySelectorAll(':scope > li')).toHaveLength(3);
-  expect(within(dialog()).getByRole('link', { name: /Open Team Keys/ }).getAttribute('href')).toBe(
-    'https://appstoreconnect.apple.com/access/integrations/api',
-  );
   expect(within(dialog()).getByText('Only the Account Holder or an Admin can make team keys.')).toBeTruthy();
+});
+
+test('the page a step names is linked on that step, and no button repeats it', () => {
+  sheet();
+  const first = within(dialog()).getByRole('region', { name: 'At Apple' }).querySelector('ol > li');
+  const link = within(first as HTMLElement).getByRole('link', {
+    name: /Users and Access then Integrations then Team Keys/,
+  });
+  expect(link.getAttribute('href')).toBe('https://appstoreconnect.apple.com/access/integrations/api');
+  expect(link.getAttribute('target')).toBe('_blank');
+  expect(within(dialog()).getAllByRole('link')).toHaveLength(1);
+});
+
+test('a page no step names keeps its button under the steps', () => {
+  sheet({ steps: [{ text: 'Press Generate.' }], link: { label: 'Open Team Keys', href: 'https://example.com/keys' } });
+  expect(within(dialog()).getByRole('link', { name: /Open Team Keys/ }).getAttribute('href')).toBe(
+    'https://example.com/keys',
+  );
 });
 
 test('draws the suggested name ready to copy, with the vendor\'s rule under it', () => {

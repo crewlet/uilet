@@ -28,7 +28,7 @@ test('an external link reads the new-tab sentence and hands over nothing', () =>
   );
   const link = screen.getByRole('link', { name: 'Install (opens in a new tab)' });
   expect(link.getAttribute('target')).toBe('_blank');
-  expect(link.getAttribute('rel')).toBe('noreferrer');
+  expect(link.getAttribute('rel')).toBe('noopener noreferrer');
 });
 
 test('an application link stays in this tab and adds nothing to its name', () => {
@@ -93,7 +93,7 @@ test('asChild puts the look on a router own link and keeps its navigation', () =
   // drawn and the words were read over a link that opened in this tab and
   // handed the referrer over on the way.
   expect(link.getAttribute('target')).toBe('_blank');
-  expect(link.getAttribute('rel')).toBe('noreferrer');
+  expect(link.getAttribute('rel')).toBe('noopener noreferrer');
 });
 
 test('asChild with no element child says so rather than rendering nothing', () => {

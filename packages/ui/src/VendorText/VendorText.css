@@ -1,0 +1,29 @@
+/*
+ * A name on a vendor's screen inside a sentence: medium-weight primary ink in
+ * a hairline frame on the subtle surface, set apart by shape, not ink alone.
+ */
+.crewlet-vendor-ui {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xs);
+  padding: 0 var(--spacing-1);
+  /* Inline, so a link's underline reaches the name; sliced where it wraps, as InlineCode is. */
+  display: inline;
+  box-decoration-break: slice;
+  overflow-wrap: anywhere;
+}
+
+/* A path's chevron stays on the line of the level after it. */
+.crewlet-vendor-ui__separator {
+  display: inline;
+  vertical-align: -0.1em;
+  color: var(--color-text-tertiary);
+}
+
+/* Linked, the name takes the link's ink and underline and keeps its frame. */
+.crewlet-step-link .crewlet-vendor-ui,
+.crewlet-step-link .crewlet-vendor-ui__separator {
+  color: inherit;
+}
