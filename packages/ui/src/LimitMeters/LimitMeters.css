@@ -5,8 +5,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
-  /* Inline-size containment gives no intrinsic width, so a content-sized column needs a floor. */
-  min-width: 12rem;
+  /* Inline-size containment gives no intrinsic width, so 12rem stands in for it in a content-sized
+     column; no minimum, so a narrower cell shrinks the stack instead of the figures overflowing it. */
+  contain-intrinsic-inline-size: 12rem;
+  min-width: 0;
   font-size: var(--font-size-xs);
   line-height: var(--font-line-height-snug);
 }
