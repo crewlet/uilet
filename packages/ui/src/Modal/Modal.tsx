@@ -343,22 +343,25 @@ function ModalFrame({
    */
   const bodyTakesFocus = useScrollerFocus(bodyElement);
   const foot = useRef<HTMLDivElement | null>(null);
+  const footEnd = useRef<HTMLDivElement | null>(null);
   const start = useRef(initialFocus);
   start.current = initialFocus;
 
   /*
-   * THE BODY FIRST, then the footer, then the frame itself, and never the
-   * close control that comes first in the markup. A surface that opens with
-   * focus on Close has made closing the first thing it asks, which is wrong
-   * for an editor and merely rude for a prompt. The frame is the last resort
-   * so a screen reader announces the surface rather than carrying on behind
-   * the veil.
+   * THE BODY FIRST, then the footer's own actions, then its start, then the
+   * frame itself, and never the close control that comes first in the markup.
+   * A surface that opens with focus on Close, or on the quieter way out in the
+   * footer's start ("Disable instead"), has made that the first thing it asks.
+   * The frame is the last resort so a screen reader announces the surface
+   * rather than carrying on behind the veil.
    */
   const where = useCallback(() => {
     const chosen = start.current?.();
     if (chosen) return chosen;
     const inBody = body.current ? focusables(body.current)[0] : undefined;
     if (inBody) return inBody;
+    const inActions = footEnd.current ? focusables(footEnd.current)[0] : undefined;
+    if (inActions) return inActions;
     const inFoot = foot.current ? focusables(foot.current)[0] : undefined;
     return inFoot ?? frame.current;
   }, []);
@@ -498,7 +501,9 @@ function ModalFrame({
           className={cx('crewlet-modal__footer', sheet ? 'crewlet-modal__footer--sheet' : undefined)}
         >
           {given(footerStart) ? <div className="crewlet-modal__footer-start">{footerStart}</div> : null}
-          <div className="crewlet-modal__footer-end">{footer}</div>
+          <div ref={footEnd} className="crewlet-modal__footer-end">
+            {footer}
+          </div>
         </div>
       ) : null}
     </>
