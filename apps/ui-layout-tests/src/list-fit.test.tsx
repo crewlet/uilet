@@ -105,3 +105,27 @@ test('a taller block shows more rows, and a block of its content height shows th
   expect(content.shown.length).toBe(8);
   expect(content.more).toBe('All shown');
 });
+
+test('a divided list settles at every height, never refitting the row on its edge', async () => {
+  await page.viewport(1200, 900);
+  let fits = 0;
+  const at = (px: number) => (
+    <div style={{ display: 'flex', flexDirection: 'column', height: px, width: 320 }}>
+      <Card padding="none" style={{ minHeight: 0 }}>
+        <List fit onFit={() => (fits += 1)}>
+          {Array.from({ length: 40 }, (_, i) => (
+            <ListItem key={i} href="#">{`Row ${i + 1}`}</ListItem>
+          ))}
+        </List>
+      </Card>
+    </div>
+  );
+  await mount(at(200));
+  // Every height between two rows' edges, a pixel at a time: each one refits once at most.
+  for (let px = 201; px <= 260; px++) {
+    fits = 0;
+    flushSync(() => root!.render(at(px)));
+    await frames();
+    expect(fits, `${px}px`).toBeLessThanOrEqual(1);
+  }
+});

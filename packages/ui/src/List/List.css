@@ -100,9 +100,14 @@
   border-bottom: 1px solid var(--color-border-default);
 }
 
-.crewlet-list--divided .crewlet-list__item:last-child,
-.crewlet-list--divided .crewlet-list__item:has(+ [data-fit-hidden]) {
+.crewlet-list--divided .crewlet-list__item:last-child {
   border-bottom: none;
+}
+
+/* The last row a fitting list shows keeps its rule's width, so fitting never
+   changes a row's height and refits it. */
+.crewlet-list--divided .crewlet-list__item:has(+ [data-fit-hidden]) {
+  border-bottom-color: transparent;
 }
 
 .crewlet-list--divided .crewlet-list__row {

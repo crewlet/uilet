@@ -34,7 +34,8 @@ const idle = () => {};
 /**
  * Shows the rows of `ref`'s box that fit it whole and hides the rest, so no
  * row is ever cut in half, measured again whenever the box, a row or the set
- * of rows changes. The box is held to the room it is given and clips.
+ * of rows changes. The box is held to the room it is given and clips. Nothing
+ * may size a row by whether it is hidden, or a row on the edge refits forever.
  */
 export function useFitRows(ref: RefObject<HTMLElement | null>, { enabled = true, onFit }: FitRowsOptions = {}) {
   const heard = useRef(onFit);
