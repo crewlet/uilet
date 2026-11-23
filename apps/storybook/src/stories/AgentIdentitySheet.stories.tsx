@@ -137,6 +137,27 @@ export const AppStoreConnect: Story = { render: () => <Opened {...APPLE} /> };
 /** Back here: the file Apple gave, its key ID read from the name. */
 export const BackHere: Story = { render: () => <Opened {...APPLE} startAt="back" /> };
 
+/** Back here with a second value under the key ID, typed and optional: the team's vendor number, digits. */
+export const BackHereWithDetail: Story = {
+  render: () => (
+    <Opened
+      {...APPLE}
+      startAt="back"
+      handIn={{
+        kind: 'file',
+        accept: '.p8',
+        hint: 'The file Apple offered: AuthKey_<Key ID>.p8',
+        field: { label: 'Key ID', fromName: /^AuthKey_([A-Z0-9]{10})\.p8$/ },
+        detail: {
+          label: 'Vendor number',
+          hint: 'Only for a Sales key: digits, on Payments and Financial Reports.',
+          inputMode: 'numeric',
+        },
+      }}
+    />
+  ),
+};
+
 /** A new key for an agent that holds one. */
 export const Replacing: Story = { render: () => <Opened {...APPLE} replacing /> };
 

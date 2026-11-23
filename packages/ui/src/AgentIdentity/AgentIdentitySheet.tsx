@@ -43,6 +43,8 @@ export type AgentIdentityHandIn =
       hint: ReactNode;
       /** A value read from the file's name, editable: Apple's key ID from `AuthKey_<ID>.p8`. */
       field?: { label: string; fromName?: RegExp | undefined } | undefined;
+      /** One more value beside the file, typed and optional, drawn under the field with one line of hint. */
+      detail?: { label: string; hint?: ReactNode; inputMode?: 'text' | 'numeric' | undefined } | undefined;
     }
   | { kind: 'token'; label: string; hint?: ReactNode }
   | { kind: 'nothing'; text: ReactNode };
@@ -53,6 +55,8 @@ export interface AgentIdentityBrought {
   made: boolean;
   file?: File;
   field?: string;
+  /** The hand-in's `detail`, trimmed; left out where the person typed nothing. */
+  detail?: string;
   token?: string;
 }
 
@@ -178,6 +182,7 @@ function Walk({
   const [file, setFile] = useState<PickedFile | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [field, setField] = useState('');
+  const [detail, setDetail] = useState('');
   const [token, setToken] = useState('');
   const [made, setMade] = useState(false);
   const [running, setRunning] = useState(false);
@@ -226,6 +231,7 @@ function Walk({
           made: false,
           ...(handIn.kind === 'file' && file ? { file: file.file } : {}),
           ...(handIn.kind === 'file' && handIn.field && field.trim() ? { field: field.trim() } : {}),
+          ...(handIn.kind === 'file' && handIn.detail && detail.trim() ? { detail: detail.trim() } : {}),
           ...(handIn.kind === 'token' && token.trim() ? { token: token.trim() } : {}),
         };
     const settle = (answer: AgentIdentityVerdict, threw = false) => {
@@ -267,6 +273,7 @@ function Walk({
     setFile(null);
     setFileError(null);
     setField('');
+    setDetail('');
     setToken('');
     const back: AgentIdentitySheetStep = made || handIn.kind === 'nothing' ? 'vendor' : 'back';
     // A FAILED MAKE IS FORGOTTEN: the person may now go by hand, and Back here
@@ -373,6 +380,21 @@ function Walk({
                   autoComplete="off"
                   spellCheck={false}
                   onChange={(e) => setField(e.target.value)}
+                />
+              )}
+            </FormField>
+          ) : null}
+          {handIn.detail ? (
+            <FormField label={handIn.detail.label} optional helper={handIn.detail.hint}>
+              {({ id, describedBy }) => (
+                <Input
+                  id={id}
+                  value={detail}
+                  inputMode={handIn.detail?.inputMode}
+                  aria-describedby={describedBy}
+                  autoComplete="off"
+                  spellCheck={false}
+                  onChange={(e) => setDetail(e.target.value)}
                 />
               )}
             </FormField>

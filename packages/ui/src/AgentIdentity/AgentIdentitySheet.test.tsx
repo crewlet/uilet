@@ -268,6 +268,42 @@ test('a token is pasted into a password field and sent trimmed', () => {
   expect(onCheck).toHaveBeenCalledWith({ made: false, token: 'expo_abc' });
 });
 
+const WITH_DETAIL: AgentIdentitySheetProps['handIn'] = {
+  kind: 'file',
+  accept: '.p8',
+  hint: 'The file Apple offered: AuthKey_<Key ID>.p8',
+  field: { label: 'Key ID', fromName: /^AuthKey_([A-Z0-9]{10})\.p8$/ },
+  detail: { label: 'Vendor number', hint: 'Only for a Sales key: digits, on Payments and Financial Reports.', inputMode: 'numeric' },
+};
+
+test('a detail beside the file is labelled optional, carries its hint, and is sent trimmed', async () => {
+  const { onCheck } = sheet({ handIn: WITH_DETAIL });
+  fireEvent.click(button('Next'));
+  // NAMED BY ITS LABEL AND MARKED OPTIONAL in it, as every optional field in the kit is.
+  const box = within(dialog()).getByRole('textbox', { name: /^Vendor number\s*\(optional\)$/ }) as HTMLInputElement;
+  expect(box.labels?.[0]?.textContent).toBe('Vendor number (optional)');
+  expect(box.inputMode).toBe('numeric');
+  const said = (box.getAttribute('aria-describedby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent);
+  expect(said).toContain('Only for a Sales key: digits, on Payments and Financial Reports.');
+  // OPTIONAL: the file and its key ID are enough to check.
+  const file = chooseFile('AuthKey_7KQ4M2ZX9P.p8');
+  expect(button('Check').getAttribute('aria-disabled')).not.toBe('true');
+  await axeClean();
+  fireEvent.change(box, { target: { value: ' 85012345 ' } });
+  fireEvent.click(button('Check'));
+  expect(onCheck).toHaveBeenCalledWith({ made: false, file, field: '7KQ4M2ZX9P', detail: '85012345' });
+});
+
+test('a detail left empty, or only spaces, is left out of the check', () => {
+  const { onCheck } = sheet({ handIn: WITH_DETAIL });
+  fireEvent.click(button('Next'));
+  const file = chooseFile('AuthKey_7KQ4M2ZX9P.p8');
+  fireEvent.change(within(dialog()).getByRole('textbox', { name: /^Vendor number/ }), { target: { value: '   ' } });
+  fireEvent.click(button('Check'));
+  expect(onCheck.mock.calls[0]![0]).toEqual({ made: false, file, field: '7KQ4M2ZX9P' });
+  expect(onCheck.mock.calls[0]![0]).not.toHaveProperty('detail');
+});
+
 test('Make it for me runs the check at once, listing what Crewlet does before the reads', () => {
   const { onCheck } = sheet({
     handIn: { kind: 'nothing', text: 'Nothing to bring back.' },
