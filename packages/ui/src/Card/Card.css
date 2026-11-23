@@ -446,6 +446,11 @@
   color: var(--color-text-tertiary);
 }
 
+/* At the card's foot however tall the card is drawn; a second footer stays under the first. */
+.crewlet-card > .crewlet-card__footer:not(.crewlet-card__footer ~ .crewlet-card__footer) {
+  margin-block-start: auto;
+}
+
 .crewlet-card__footer--actions {
   justify-content: flex-end;
 }
