@@ -332,3 +332,19 @@ test('a fitting list shows the rows that fit whole, hides the rest and says how 
   expect(list.querySelectorAll('[data-fit-hidden]')).toHaveLength(0);
   expect((list.children[2] as HTMLElement).style.visibility).toBe('');
 });
+
+test('a list that does not fit leaves its rows alone', () => {
+  const { container, rerender } = render(
+    <List>
+      <ListItem style={{ visibility: 'hidden' }}>Kept as the caller set it</ListItem>
+    </List>,
+  );
+  rerender(
+    <List>
+      <ListItem style={{ visibility: 'hidden' }}>Kept as the caller set it</ListItem>
+    </List>,
+  );
+  const row = container.querySelector('li')!;
+  expect(row.style.visibility).toBe('hidden');
+  expect(row.hasAttribute('data-fit-hidden')).toBe(false);
+});

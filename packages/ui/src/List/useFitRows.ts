@@ -49,9 +49,10 @@ export function useFitRows(ref: RefObject<HTMLElement | null>, { enabled = true,
 
   useLayoutEffect(() => {
     const box = ref.current;
-    if (!box) return;
+    // Off, nothing is measured and no row is touched.
+    if (!box || !enabled) return;
     const run = () => {
-      const shown = enabled ? fitRows(box) : box.children.length;
+      const shown = fitRows(box);
       hide(box, shown);
       if (last.current === shown) return;
       last.current = shown;
@@ -59,11 +60,6 @@ export function useFitRows(ref: RefObject<HTMLElement | null>, { enabled = true,
     };
     measure.current = run;
     run();
-    if (!enabled) {
-      return () => {
-        measure.current = idle;
-      };
-    }
     const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(run);
     const watch = () => {
       if (!resized) return;
