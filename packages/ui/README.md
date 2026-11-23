@@ -209,6 +209,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.175.0
+
+### One more value beside a handed-in file
+
+**`AgentIdentitySheet` can ask for one optional value beside the file**: `handIn.detail` (`{ label, hint, inputMode }`) draws a plain text field under the file's own `field` in Back here, its label marked "(optional)" as every optional field is, its hint the field's help line, read with it by a screen reader. Left empty it does not hold the check back and is left out of what `onCheck` is handed; typed, it arrives trimmed as `detail`. `inputMode: 'numeric'` brings up a phone's number pad for a value that is digits. Story: `AgentIdentitySheet` Back Here With Detail.
+
 ## Changes in 0.174.0
 
 ### A vendor's UI names read apart, and the page a step names is linked there
