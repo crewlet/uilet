@@ -208,6 +208,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.171.1
+
+### A limit stack keeps inside a narrow grid cell
+
+**`LimitMeters` shrinks to a cell narrower than 12rem** rather than overflowing it. The stack's 12rem is now its intrinsic width (`contain-intrinsic-inline-size`) instead of a minimum, so a content-sized column still sizes it to 12rem, while a flexible column floored below that (a DataGrid column with `floor: '11rem'` in a tight row) shrinks its bar and keeps the figures inside the cell instead of drawing them over the next column. Nothing to change.
+
 ## Changes in 0.171.0
 
 ### A short block beside a tall one leaves no hole

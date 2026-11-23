@@ -171,7 +171,12 @@ describe('LimitMeters.css', () => {
     );
   });
 
-  test('the stack keeps a floor, since inline-size containment gives it no width of its own', () => {
-    expect(css).toMatch(/\.crewlet-limit-meters \{[^}]*container-type: inline-size;[^}]*min-width: 12rem;/);
+  test('the stack reads 12rem wide to a content-sized column, since inline-size containment gives it no width of its own', () => {
+    expect(css).toMatch(/\.crewlet-limit-meters \{[^}]*container-type: inline-size;[^}]*contain-intrinsic-inline-size: 12rem;/);
+  });
+
+  test('the stack keeps no minimum, so a narrower cell shrinks it rather than the figures overflowing the cell', () => {
+    expect(css).toMatch(/\.crewlet-limit-meters \{[^}]*min-width: 0;/);
+    expect(css).not.toMatch(/min-width: 12rem/);
   });
 });
