@@ -208,7 +208,7 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.171.1
+## Changes in 0.171.2
 
 ### A grid row that only reads keeps the arrow
 
@@ -217,6 +217,12 @@ places:
 ### A tab's count reads as its label's own
 
 **`Count` is a circle while it holds one figure**: at least as wide as it is tall, with the badge's side pads, so `1` draws an 18px circle and `128` a pill of the same height, where `1` was a 23px oval. **An underline tab's icon, count and marker stand 6px from its label**, not 8px, so a count no longer floats 16px off the word it counts.
+
+## Changes in 0.171.1
+
+### A limit stack keeps inside a narrow grid cell
+
+**`LimitMeters` shrinks to a cell narrower than 12rem** rather than overflowing it. The stack's 12rem is now its intrinsic width (`contain-intrinsic-inline-size`) instead of a minimum, so a content-sized column still sizes it to 12rem, while a flexible column floored below that (a DataGrid column with `floor: '11rem'` in a tight row) shrinks its bar and keeps the figures inside the cell instead of drawing them over the next column. Nothing to change.
 
 ## Changes in 0.171.0
 
