@@ -305,7 +305,6 @@
   min-height: var(--size-row-md);
   border-bottom: 1px solid var(--color-border-default);
   color: inherit;
-  cursor: pointer;
   /* The containing block for the row's link. */
   position: relative;
   /* A row keeps whatever it holds to itself: a cell's control raised with a
@@ -314,10 +313,12 @@
   transition: background var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-/* THE ROW'S OWN LINK, STRETCHED OVER IT, out of flow so it takes no track. */
+/* THE ROW'S OWN LINK, STRETCHED OVER IT, out of flow so it takes no track.
+   Only a row with one takes the pointer: a row that only reads keeps the arrow. */
 .crewlet-data-grid__row-link {
   position: absolute;
   inset: 0;
+  cursor: pointer;
 }
 
 /* A button overlay (a row that acts and has no address) gives up the chrome a

@@ -21,11 +21,6 @@
     calc(var(--crewlet-settings-table-actions) + var(--spacing-3) + var(--crewlet-data-grid-edge));
 }
 
-/* A setting's row is read, not opened: no pointer that promises a page. */
-.crewlet-settings-table .crewlet-settings-table__row {
-  cursor: auto;
-}
-
 .crewlet-settings-table__head--hidden {
   position: absolute;
   width: 1px;
