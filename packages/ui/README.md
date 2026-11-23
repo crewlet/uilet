@@ -211,6 +211,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.179.0
+
+### A stat tile stands at one height while its number loads
+
+**`StatCard` takes `subLines`**: how many lines its second line keeps room for, loading or not, so a row whose notes wrap differently, or have not arrived, stands at one height and nothing under it moves when the numbers land. **A loading tile's number arrives as a node of its own** rather than the placeholder's node moving to hold the digits, which a browser counted as a layout shift. Story: `StatCard` Loading Keeps Its Room.
+
 ## Changes in 0.178.1
 
 ### App Store Connect's mark weighs a quarter as much

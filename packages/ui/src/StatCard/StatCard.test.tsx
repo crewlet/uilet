@@ -412,3 +412,28 @@ test("the sub wraps rather than ending in an ellipsis", () => {
   expect(rule).not.toMatch(/text-overflow:\s*ellipsis/);
   expect(rule).toMatch(/text-wrap:\s*balance/);
 });
+
+// THE NUMBER LANDS AS A NEW NODE: the placeholder's node moving to hold the
+// digits is a shift a browser counts. Mutation: drop the keys, and the
+// placeholder's node is reused for the number.
+test('the value arrives as its own node, never the placeholder moved', () => {
+  const { container, rerender } = render(<StatCard label="Open work" value="" loading />);
+  const placeholder = container.querySelector('.crewlet-statcard__placeholder');
+  rerender(<StatCard label="Open work" value="18" />);
+  const number = container.querySelector('.crewlet-statcard__number');
+  expect(number?.textContent).toBe('18');
+  expect(number).not.toBe(placeholder);
+  expect(placeholder?.isConnected).toBe(false);
+});
+
+// THE SECOND LINE KEEPS THE ROOM IT IS ASKED FOR, in every state, so a tile
+// whose note has not arrived stands as tall as one whose note wraps.
+test('subLines keeps its room loading and loaded', () => {
+  const { container, rerender } = render(<StatCard label="Waiting" value="" loading subLines={2} />);
+  const sub = () => container.querySelector<HTMLElement>('.crewlet-statcard__sub')!;
+  expect(sub().style.getPropertyValue('--crewlet-statcard-sub-lines')).toBe('2');
+  rerender(<StatCard label="Waiting" value="7" sub="7 h waiting" subLines={2} />);
+  expect(sub().style.getPropertyValue('--crewlet-statcard-sub-lines')).toBe('2');
+  rerender(<StatCard label="Waiting" value="7" />);
+  expect(sub().style.getPropertyValue('--crewlet-statcard-sub-lines')).toBe('');
+});

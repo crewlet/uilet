@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import { Fragment, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 
@@ -88,6 +88,11 @@ export interface StatCardProps extends HTMLAttributes<HTMLDivElement> {
   tone?: StatCardTone;
   /** The value has not arrived. Draws a placeholder and marks the tile busy. */
   loading?: boolean;
+  /**
+   * How many lines the second line keeps room for, loading or not, so a row
+   * whose notes wrap differently, or have not arrived, stands at one height.
+   */
+  subLines?: number | undefined;
   /** What a reader is told while it is loading. */
   loadingLabel?: string;
   /**
@@ -136,6 +141,7 @@ export const StatCard = ({
   tone = 'neutral',
   loading = false,
   loadingLabel = 'Loading',
+  subLines,
   flush = false,
   className,
   ...rest
@@ -162,23 +168,28 @@ export const StatCard = ({
       )}
       <div className={cx('crewlet-statcard__reading', trendPlacement === 'below' && 'crewlet-statcard__reading--below')}>
         <div className="crewlet-statcard__value">
+          {/* KEYED APART, so the number lands as a new node rather than the
+              placeholder's node moving, which a browser counts as a shift. */}
           {loading ? (
-            <>
+            <Fragment key="loading">
               <span className="crewlet-statcard__placeholder" aria-hidden />
               <VisuallyHidden>{loadingLabel}</VisuallyHidden>
-            </>
+            </Fragment>
           ) : (
-            <>
+            <Fragment key="value">
               <span className="crewlet-statcard__number">{value}</span>
               {unit ? <span className="crewlet-statcard__unit">{unit}</span> : null}
-            </>
+            </Fragment>
           )}
         </div>
         {trend && !loading ? <div className="crewlet-statcard__trend">{trend}</div> : null}
       </div>
       {/* Rendered whether or not there is one: a row where one tile has a second
           line and the rest do not would otherwise sit at two different heights. */}
-      <div className={cx('crewlet-statcard__sub', subTone !== 'neutral' && `crewlet-statcard__sub--${subTone}`)}>
+      <div
+        className={cx('crewlet-statcard__sub', subTone !== 'neutral' && `crewlet-statcard__sub--${subTone}`)}
+        style={subLines === undefined ? undefined : ({ '--crewlet-statcard-sub-lines': subLines } as CSSProperties)}
+      >
         {change ? (
           <span className={cx('crewlet-statcard__delta', `crewlet-statcard__delta--${change.polarity}`)}>
             {change.value}
