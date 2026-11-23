@@ -1,5 +1,7 @@
 import { useCallback, useId, type ReactNode } from 'react';
 import { Button, type ButtonVariant } from '../Button/index.js';
+import { ChangeGroups, type ChangeGroup } from '../ChangeList/index.js';
+import { ConsequenceList, consequencesAnswered, type ConsequenceItem } from '../ConsequenceList/index.js';
 import { given, Modal, type ModalShape, type ModalSize } from './Modal.js';
 
 export interface ConfirmModalProps {
@@ -12,9 +14,39 @@ export interface ConfirmModalProps {
    */
   onConfirm: () => void | Promise<void>;
   title: ReactNode;
+  /** A glyph beside the title, drawn in the framed shape's head; the prompt shape has none. */
+  icon?: ReactNode;
   /** The sentence the prompt leads with. */
   message?: ReactNode;
-  /** Anything below the message: an acknowledgement checkbox, a phrase to type. */
+  /**
+   * A control right under the message that decides where things go: a "Move
+   * them to" `FormField` with its `Select`.
+   */
+  moveTo?: ReactNode;
+  /**
+   * What will change, a subject at a time: a seat once as a heading, its jobs
+   * as rows, the old value struck and the new one tinted (`ChangeGroups`).
+   * Never write before and after as sentences in a dialog; pass them here.
+   */
+  changes?: readonly ChangeGroup[] | undefined;
+  /** The eyebrow over the changes, when the title does not already say it. */
+  changesHeading?: ReactNode;
+  /** Subjects shown before the rest fold behind "Show N more". 3 by default. */
+  changesCollapseAfter?: number | undefined;
+  /**
+   * What confirming does besides: choices (a checkbox each) and facts (a muted
+   * line each), drawn by `ConsequenceList` under a rule. A choice marked
+   * `required` keeps the confirm button unavailable until it is ticked.
+   */
+  consequences?: readonly ConsequenceItem[] | undefined;
+  /** The consequences' eyebrow: "When you remove it", "What follows". */
+  consequencesHeading?: ReactNode;
+  /**
+   * A quieter way out on the footer's other end, such as "Disable instead":
+   * it calls `onSelect` and leaves closing to the caller.
+   */
+  alternative?: { label: ReactNode; onSelect: () => void } | undefined;
+  /** Anything below the rest: a phrase to type, a field of the caller's own. */
   children?: ReactNode;
   confirmLabel?: ReactNode;
   cancelLabel?: ReactNode;
@@ -78,7 +110,15 @@ export function ConfirmModal({
   onClose,
   onConfirm,
   title,
+  icon,
   message,
+  moveTo,
+  changes,
+  changesHeading,
+  changesCollapseAfter,
+  consequences,
+  consequencesHeading,
+  alternative,
   children,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
@@ -94,7 +134,10 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const messageId = `${useId()}-message`;
   const resolvedConfirm: ButtonVariant = confirmVariant ?? (destructive ? 'danger' : 'primary');
-  const blocked = confirmDisabled || submitting;
+  // A required choice left unticked holds the button as a disabled confirm does.
+  const unanswered = !consequencesAnswered(consequences);
+  const held = confirmDisabled || unanswered;
+  const blocked = held || submitting;
 
   const submit = useCallback(() => {
     // The form submits on Enter as well as on the button, so the guard lives
@@ -117,6 +160,7 @@ export function ConfirmModal({
       open={open}
       onClose={onClose}
       title={title}
+      icon={icon}
       shape={shape}
       size={size}
       role={destructive ? 'alertdialog' : 'dialog'}
@@ -132,6 +176,13 @@ export function ConfirmModal({
       closeDisabledReason={busyReason}
       onSubmit={submit}
       stackBody
+      footerStart={
+        alternative ? (
+          <Button variant="ghost" onClick={alternative.onSelect} disabledReason={submitting ? busyReason : undefined}>
+            {alternative.label}
+          </Button>
+        ) : undefined
+      }
       footer={
         <>
           <Button
@@ -145,7 +196,7 @@ export function ConfirmModal({
             type="submit"
             variant={resolvedConfirm}
             loading={submitting}
-            disabledReason={confirmDisabled ? confirmDisabledReason : undefined}
+            disabledReason={held ? confirmDisabledReason : undefined}
           >
             {confirmLabel}
           </Button>
@@ -156,6 +207,22 @@ export function ConfirmModal({
         <p className="crewlet-modal__message" id={messageId}>
           {message}
         </p>
+      ) : null}
+      {moveTo}
+      {changes && changes.length > 0 ? (
+        <ChangeGroups
+          groups={changes}
+          heading={changesHeading}
+          collapseAfter={changesCollapseAfter}
+          className="crewlet-confirm-modal__changes"
+        />
+      ) : null}
+      {consequences && consequences.length > 0 ? (
+        <ConsequenceList
+          items={consequences}
+          heading={consequencesHeading}
+          className="crewlet-confirm-modal__consequences"
+        />
       ) : null}
       {children}
     </Modal>

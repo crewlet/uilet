@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
+import { contrast, flatten, OPAQUE_SURFACES, parseHex } from '@crewlethq/tokens/test/palette';
+import { channels, installThemed, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
 import { StepLink, VendorText, VendorUI, vendorTextString } from './index.js';
 
 afterEach(cleanup);
@@ -34,9 +36,36 @@ test('a single name draws no separator', () => {
 test('a vendor name is set apart by weight and frame, not by ink alone', () => {
   const rule = /\.crewlet-vendor-ui \{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(rule).toContain('font-weight: var(--font-weight-semibold)');
-  expect(rule).toMatch(/border: 1px solid var\(--color-border-default\)/);
+  expect(rule).toMatch(/border: 1px solid var\(--color-border-strong\)/);
   // Inline, so a link's underline is drawn under the name inside it.
   expect(rule).toContain('display: inline;');
+});
+
+test('the chip stands off every surface it is set on, in both modes, and its words stay clear on it', () => {
+  // Read back from the cascade on each opaque rung: the fill a visible step on all of them, the frame
+  // at 1.4:1 on the page and card surfaces instructions are set on, the words clear everywhere.
+  const SET_ON = ['color-surface-background', 'color-surface-subtle'].map((name) => `--${name}`);
+  const failures: string[] = [];
+  for (const theme of ['dark', 'light'] as const) {
+    const uninstall = installThemed(theme, 'VendorText/VendorText.css');
+    const { container } = render(<VendorUI path="Generate API Key" />);
+    const chip = getComputedStyle(container.querySelector('.crewlet-vendor-ui')!);
+    const palette = themeColours(theme);
+    for (const surface of OPAQUE_SURFACES) {
+      const ground = parseHex(palette.get(surface) ?? '');
+      if (ground === null) throw new Error(`${theme}: ${surface} is not opaque`);
+      const fill = flatten(chip.backgroundColor, ground);
+      const edge = flatten(chip.borderTopColor, ground);
+      const at = `${theme} on ${surface}`;
+      if (contrast(fill, ground) < 1.2) failures.push(`${at}: fill ${contrast(fill, ground).toFixed(2)}:1`);
+      const floor = SET_ON.includes(surface) ? 1.4 : 1.15;
+      if (contrast(edge, ground) < floor) failures.push(`${at}: edge ${contrast(edge, ground).toFixed(2)}:1`);
+      if (contrast(channels(chip.color), fill) < 7) failures.push(`${at}: words ${contrast(channels(chip.color), fill).toFixed(2)}:1`);
+    }
+    cleanup();
+    uninstall();
+  }
+  expect(failures).toEqual([]);
 });
 
 test('a step link opens the vendor page in a new tab with no opener, underlined in a sentence, and says so', () => {

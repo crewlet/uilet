@@ -1,4 +1,5 @@
 import './Modal.css';
+import './ConfirmModal.css';
 
 export { Modal } from './Modal.js';
 export type {

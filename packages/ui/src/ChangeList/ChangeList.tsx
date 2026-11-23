@@ -1,9 +1,11 @@
-import { useId, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { ArrowRightGlyph } from '@crewlethq/icons/glyphs';
 import { DiffList, type DiffListLabels, type DiffRow } from '../DiffList/index.js';
+import { Button } from '../Button/index.js';
 import { Disclosure } from '../Disclosure/index.js';
 import { Tag } from '../Tag/index.js';
 import { cx } from '../utils/cx.js';
+import { titleWhenCut } from '../utils/titleIfCut.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /** One run of a word diff: unchanged (`=`), added (`+`) or removed (`-`). */
@@ -96,6 +98,10 @@ export interface ChangeListLabels {
   betweenChanges: string;
   /** The disclosure that opens the whole change. */
   showWhole: string;
+  /** The control that shows the rows folded away: "Show 3 more". */
+  more: (hidden: number) => string;
+  /** The same control once they are shown. */
+  less: string;
 }
 
 export const CHANGE_LIST_LABELS: ChangeListLabels = {
@@ -108,6 +114,8 @@ export const CHANGE_LIST_LABELS: ChangeListLabels = {
   removedWords: 'removed:',
   betweenChanges: ';',
   showWhole: 'Show the whole change',
+  more: (hidden) => `Show ${hidden} more`,
+  less: 'Show fewer',
 };
 
 /**
@@ -130,6 +138,19 @@ export interface ChangeListProps {
   layout?: ChangeListLayout | undefined;
   /** The eyebrow over the rows: "What will change", "What will be created", "What changed". */
   heading?: ReactNode;
+  /**
+   * What the rows belong to, said once as a heading in the primary ink: a
+   * seat whose jobs are the rows, a record whose fields are. Rows then name
+   * only the field ("Coding"), never the subject again.
+   */
+  subject?: ReactNode;
+  /**
+   * Each value on one line, cut with its words on hover, the arrow and new value dropping under the old as a unit:
+   * for names that must never break mid-word. Labels get a bounded column and wrap between words.
+   */
+  truncate?: boolean | undefined;
+  /** Rows shown before the rest fold behind "Show N more". All by default. */
+  collapseAfter?: number | undefined;
   /**
    * The change is over (applied, declined, expired). The values step back to
    * the secondary ink; the tints stay, so the record of what changed is still
@@ -331,33 +352,45 @@ function Value({
   row,
   labels,
   inline,
+  truncate,
 }: {
   row: Exclude<ChangeListRow, ChangeListTextRow>;
   labels: ChangeListLabels;
   inline: boolean;
+  truncate: boolean;
 }) {
   if (row.block) return <BlockValue row={row} labels={labels} />;
   if (inline) return <ChipValue row={row} labels={labels} />;
+  // A cut value shows its whole words on hover; a value that fits gets no title.
+  const cut = truncate ? titleWhenCut : undefined;
   switch (row.kind) {
     case 'fact':
-      return <span className="crewlet-change-list__fact">{row.value}</span>;
+      return (
+        <span className="crewlet-change-list__fact" onMouseEnter={cut}>
+          {row.value}
+        </span>
+      );
     case 'changed':
       return (
         <span className="crewlet-change-list__pair">
           <VisuallyHidden>{`${labels.changedFrom} `}</VisuallyHidden>
-          <del className="crewlet-change-list__from">{row.from}</del>
+          <del className="crewlet-change-list__from" onMouseEnter={cut}>
+            {row.from}
+          </del>
           {/* The arrow and the new value wrap together, under the old value on a narrow card. */}
           <span className="crewlet-change-list__next">
             <ArrowRightGlyph size="sm" className="crewlet-change-list__arrow" />
             <VisuallyHidden>{` ${labels.to} `}</VisuallyHidden>
-            <ins className="crewlet-change-list__to">{row.to}</ins>
+            <ins className="crewlet-change-list__to" onMouseEnter={cut}>
+              {row.to}
+            </ins>
           </span>
         </span>
       );
     case 'added':
       return (
         <span className="crewlet-change-list__pair">
-          <ins className="crewlet-change-list__to">
+          <ins className="crewlet-change-list__to" onMouseEnter={cut}>
             <VisuallyHidden>{`${labels.added} `}</VisuallyHidden>
             {row.to}
           </ins>
@@ -370,7 +403,7 @@ function Value({
       );
     case 'removed':
       return (
-        <del className="crewlet-change-list__removed">
+        <del className="crewlet-change-list__removed" onMouseEnter={cut}>
           <VisuallyHidden>{`${labels.removed} `}</VisuallyHidden>
           {row.from}
         </del>
@@ -400,6 +433,9 @@ function Value({
 export function ChangeList({
   rows,
   heading,
+  subject,
+  truncate = false,
+  collapseAfter,
   layout = 'grid',
   settled = false,
   labels: overrides,
@@ -408,22 +444,37 @@ export function ChangeList({
 }: ChangeListProps) {
   const labels = overrides ? { ...CHANGE_LIST_LABELS, ...overrides } : CHANGE_LIST_LABELS;
   const headingId = useId();
+  const subjectId = `${headingId}-subject`;
+  const rowsId = `${headingId}-rows`;
+  const [expanded, setExpanded] = useState(false);
+  const hasHeading = heading !== undefined && heading !== null;
+  const hasSubject = subject !== undefined && subject !== null;
+  // Folding one row behind a button costs a line to save a line, so it never does.
+  const folds = collapseAfter !== undefined && rows.length > collapseAfter + 1;
+  const shown = folds && !expanded ? rows.slice(0, collapseAfter) : rows;
+  const named = cx(hasHeading && headingId, hasSubject && subjectId) || undefined;
   return (
     <div
       className={cx(
         'crewlet-change-list',
         layout === 'inline' && 'crewlet-change-list--inline',
         settled && 'crewlet-change-list--settled',
+        truncate && 'crewlet-change-list--truncate',
         className,
       )}
     >
-      {heading === undefined || heading === null ? null : (
+      {hasHeading ? (
         <div id={headingId} className="crewlet-change-list__heading">
           {heading}
         </div>
-      )}
-      <dl className="crewlet-change-list__rows" aria-labelledby={heading === undefined || heading === null ? undefined : headingId}>
-        {rows.map((row, index) => (
+      ) : null}
+      {hasSubject ? (
+        <div id={subjectId} className="crewlet-change-list__subject" onMouseEnter={truncate ? titleWhenCut : undefined}>
+          {subject}
+        </div>
+      ) : null}
+      <dl id={rowsId} className="crewlet-change-list__rows" aria-labelledby={named}>
+        {shown.map((row, index) => (
           <div
             // A label is unique within a change in practice, but two rows of one
             // field (removed and added) are not impossible, so the position
@@ -447,7 +498,7 @@ export function ChangeList({
                   ) : null}
                 </>
               ) : (
-                <Value row={row} labels={labels} inline={layout === 'inline'} />
+                <Value row={row} labels={labels} inline={layout === 'inline'} truncate={truncate} />
               )}
               {row.note === undefined || row.note === null ? null : (
                 <span className="crewlet-change-list__note">{row.note}</span>
@@ -456,6 +507,19 @@ export function ChangeList({
           </div>
         ))}
       </dl>
+      {folds ? (
+        <Button
+          variant="ghost"
+          size="small"
+          flush
+          className="crewlet-change-list__more"
+          aria-expanded={expanded}
+          aria-controls={rowsId}
+          onClick={() => setExpanded((open) => !open)}
+        >
+          {expanded ? labels.less : labels.more(rows.length - collapseAfter)}
+        </Button>
+      ) : null}
     </div>
   );
 }

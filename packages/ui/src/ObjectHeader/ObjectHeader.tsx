@@ -3,6 +3,7 @@ import { ArrowUpRightGlyph } from '@crewlethq/icons/glyphs';
 import { Link } from '../Link/index.js';
 import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /**
  * How the actor came by the value: `set` it (the default), `seen` it in a
@@ -153,6 +154,10 @@ export interface FactLineProps {
  * phrase cut at one ("not running on this no…") loses the part that said
  * where.
  *
+ * A NOTE FOLLOWS ITS VALUE, smaller and quieter ("41s ago · next in 9m"):
+ * beside a phrase where both fit and on a line of its own where they do not,
+ * so the value keeps its two lines and the note is never cut.
+ *
  * NEVER "SET BY" UNDER NOTHING. A fact with no value is dropped, its
  * attribution with it.
  */
@@ -167,6 +172,26 @@ const valueOf = (fact: ObjectFact): ReactNode =>
   ) : (
     fact.value
   );
+
+/** The value, a phrase clamped at two lines with its words on hover when cut. */
+function FactValue({ fact }: { fact: ObjectFact }) {
+  return (
+    <span
+      className={cx(
+        'crewlet-fact-line__value',
+        fact.token ? 'crewlet-fact-line__value--token' : clamps(fact) && 'crewlet-fact-line__value--clamp',
+      )}
+    >
+      {clamps(fact) ? (
+        <Text variant="inherit" clamp={2}>
+          {valueOf(fact)}
+        </Text>
+      ) : (
+        valueOf(fact)
+      )}
+    </span>
+  );
+}
 
 export function FactLine({ facts, className }: FactLineProps) {
   const shown = facts.filter((fact) => fact.value !== null && fact.value !== undefined && fact.value !== '');
@@ -184,24 +209,19 @@ export function FactLine({ facts, className }: FactLineProps) {
         >
           <span className="crewlet-fact-line__label">{fact.label}</span>
           <span className="crewlet-fact-line__body">
-            <span
-              className={cx(
-                'crewlet-fact-line__value',
-                fact.token
-                  ? 'crewlet-fact-line__value--token'
-                  : clamps(fact) && 'crewlet-fact-line__value--clamp',
-              )}
-            >
-              {clamps(fact) ? (
-                // A kit Text clamps, so a cut value carries its words on hover.
-                <Text variant="inherit" clamp={2}>
-                  {valueOf(fact)}
-                </Text>
-              ) : (
-                valueOf(fact)
-              )}
-            </span>
-            {fact.note ? <span className="crewlet-fact-line__note">{fact.note}</span> : null}
+            {fact.note && clamps(fact) ? (
+              // The note beside its value where both fit; the separator is drawn by CSS and said here.
+              <span className="crewlet-fact-line__phrase">
+                <FactValue fact={fact} />
+                <VisuallyHidden>, </VisuallyHidden>
+                <span className="crewlet-fact-line__note">{fact.note}</span>
+              </span>
+            ) : (
+              <>
+                <FactValue fact={fact} />
+                {fact.note ? <span className="crewlet-fact-line__note">{fact.note}</span> : null}
+              </>
+            )}
             {fact.setBy ? <SetByLine setBy={fact.setBy} className="crewlet-fact-line__set-by" /> : null}
           </span>
         </span>

@@ -1,18 +1,11 @@
 /*
  * The set-up sheet's step: its parts stacked at one gap, each value to copy
- * under the words of its own step, and the vendor's page on a line of its own.
+ * after the words of its own step, and the vendor's page on a line of its own.
  */
 .crewlet-agent-identity-sheet__step {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
-  min-inline-size: 0;
-}
-
-.crewlet-agent-identity-sheet__copy {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-1);
   min-inline-size: 0;
 }
 
