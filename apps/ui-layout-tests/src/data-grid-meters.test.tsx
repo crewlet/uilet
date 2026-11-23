@@ -1,6 +1,6 @@
 /**
- * A limit stack in a grid column keeps inside its cell: the column holds the
- * stack's floor, so a figure never runs into the next column's value.
+ * A limit stack in a grid column narrower than 12rem shrinks to its cell, so a
+ * figure never runs into the next column's value.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';
@@ -77,7 +77,8 @@ test.each([974, 720])('at %ipx, every limit stack ends inside its cell and the n
     const cells = [...row.querySelectorAll(':scope > .crewlet-data-grid__cell')];
     const limits = cells[2]!;
     const stack = limits.querySelector('.crewlet-limit-meters')!;
-    expect(box(stack).right).toBeLessThanOrEqual(box(limits).right + 0.5);
+    const end = box(limits).right - parseFloat(getComputedStyle(limits).paddingRight);
+    expect(box(stack).right).toBeLessThanOrEqual(end + 0.5);
     for (const figure of stack.querySelectorAll('.crewlet-limit-meters__figure')) {
       expect(box(figure).right).toBeLessThanOrEqual(box(cells[3]!).left + 0.5);
     }
