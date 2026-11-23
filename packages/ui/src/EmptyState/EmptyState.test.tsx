@@ -51,6 +51,33 @@ describe('EmptyState', () => {
     expect(container.querySelector('.crewlet-empty-state__mark')?.getAttribute('aria-hidden')).toBe('true');
   });
 
+  test('icon={false} draws no mark: the title, the sentence and the action alone', () => {
+    const { container } = render(
+      <EmptyState
+        size="compact"
+        icon={false}
+        title="No model yet"
+        description="A model is a coding harness signed in to its vendor."
+        action={<Button size="small">Add model</Button>}
+      />,
+    );
+    const box = container.firstElementChild as HTMLElement;
+    expect(box.querySelector('.crewlet-empty-state__mark')).toBeNull();
+    expect(box.querySelector('svg')).toBeNull();
+    expect([...box.children].map((c) => c.className)).toEqual([
+      'crewlet-empty-state__title',
+      'crewlet-empty-state__description',
+      'crewlet-empty-state__action',
+    ]);
+  });
+
+  test('an illustration still stands where icon={false} is also given', () => {
+    const { container } = render(
+      <EmptyState icon={false} illustration={<span data-testid="art" />} title="Nothing" description="Nothing yet." />,
+    );
+    expect(container.querySelector('.crewlet-empty-state__mark [data-testid="art"]')).not.toBeNull();
+  });
+
   test('the box is quiet, and quiet is not faint', () => {
     // The engine sets the sentence a step under the page's own ink and the
     // line beneath it a step under that: nothing is here, so the box should

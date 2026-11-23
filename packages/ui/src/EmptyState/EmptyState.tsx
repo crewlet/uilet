@@ -13,8 +13,11 @@ import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/heading
 export type EmptyStateSize = 'default' | 'compact' | 'inline';
 
 export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
-  /** A glyph, drawn large and quiet. Replaced by `illustration` when both are given. */
-  icon?: ReactNode;
+  /**
+   * A glyph, drawn large and quiet. Replaced by `illustration` when both are
+   * given. `false` draws no mark: the title, the sentence and the action alone.
+   */
+  icon?: ReactNode | false;
   /** A full drawing, where a glyph is too small to carry the moment: a first run. */
   illustration?: ReactNode;
   title: ReactNode;
@@ -76,11 +79,14 @@ export function EmptyState({
       </div>
     );
   }
+  const mark = illustration ?? (icon === false ? null : (icon ?? <InboxGlyph size={size === 'compact' ? 'xl' : 32} />));
   return (
     <div {...rest} className={cx('crewlet-empty-state', `crewlet-empty-state--${size}`, className)}>
-      <span className="crewlet-empty-state__mark" aria-hidden>
-        {illustration ?? icon ?? <InboxGlyph size={size === 'compact' ? 'xl' : 32} />}
-      </span>
+      {mark === null ? null : (
+        <span className="crewlet-empty-state__mark" aria-hidden>
+          {mark}
+        </span>
+      )}
       <Heading className="crewlet-empty-state__title">{title}</Heading>
       <p className="crewlet-empty-state__description">{description}</p>
       {action ? <div className="crewlet-empty-state__action">{action}</div> : null}
