@@ -1,0 +1,159 @@
+/*
+ * StepTimeline: a process's steps as one line each, a status mark on a rail
+ * that joins them, the call behind a step quiet under it, the time at the end.
+ */
+
+.crewlet-step-timeline {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-step-timeline__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-step-timeline__step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
+  column-gap: var(--spacing-2);
+  padding-block: var(--spacing-1);
+}
+
+/* The rail runs from under one mark to the next one, never past the last. */
+.crewlet-step-timeline__step:not(:last-child)::before,
+.crewlet-step-timeline__fold::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: calc(0.5rem - 0.5px);
+  top: calc(var(--spacing-1) + 1.125rem);
+  bottom: calc(-1 * var(--spacing-1) + 0.125rem);
+  width: 1px;
+  background: var(--color-border-default);
+}
+
+.crewlet-step-timeline__mark,
+.crewlet-step-timeline__fold-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: calc(var(--font-size-compact) * var(--font-line-height-snug));
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-step-timeline__step--done .crewlet-step-timeline__mark {
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-step-timeline__step--failed .crewlet-step-timeline__mark {
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-step-timeline__step--running .crewlet-step-timeline__mark {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-step-timeline__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crewlet-step-timeline__text,
+.crewlet-step-timeline__why,
+.crewlet-step-timeline__detail {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.crewlet-step-timeline__text {
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-primary);
+}
+
+.crewlet-step-timeline__step--pending .crewlet-step-timeline__text {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-step-timeline__why {
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+/* The call behind the step: one quiet line, cut at its end rather than wrapped. */
+.crewlet-step-timeline__detail {
+  overflow: hidden;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.crewlet-step-timeline__time {
+  font-size: var(--font-size-xs);
+  line-height: calc(var(--font-size-compact) * var(--font-line-height-snug));
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.crewlet-step-timeline__fold,
+.crewlet-step-timeline__fewer {
+  margin: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.crewlet-step-timeline__fold {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  column-gap: var(--spacing-2);
+  padding: var(--spacing-1) 0;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-step-timeline__fold-words {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--spacing-2);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-step-timeline__fold-action,
+.crewlet-step-timeline__fewer {
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-step-timeline__fewer {
+  align-self: flex-start;
+  padding: var(--spacing-1) 0 0 calc(1rem + var(--spacing-2));
+}
+
+.crewlet-step-timeline__fold:hover .crewlet-step-timeline__fold-action,
+.crewlet-step-timeline__fewer:hover {
+  text-decoration: underline;
+}
+
+.crewlet-step-timeline__fold:focus-visible,
+.crewlet-step-timeline__fewer:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+  border-radius: var(--radius-sm);
+}
+

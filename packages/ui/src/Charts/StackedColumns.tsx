@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 import { ChartEmpty } from './ChartEmpty.js';
+import { LoadingPlot, LoadingSaid, LoadingWord } from './ChartLoading.js';
 import { ChartTooltip } from './ChartTooltip.js';
 import { dataColor } from './dataColor.js';
 import { Legend } from './Legend.js';
@@ -92,6 +93,13 @@ export interface StackedColumnsProps {
   formatTime?: (at: number) => string;
   /** What the chart says in place of the plot when there is no bucket to draw. */
   emptyLabel?: ReactNode;
+  /**
+   * The buckets have not arrived: the chart holds the room it will draw in
+   * (its head, its plot, its dates and a legend row) with a placeholder.
+   */
+  loading?: boolean;
+  /** What a reader is told while it loads; "Loading" and the label by default. */
+  loadingLabel?: string;
   /** The chart's own sentence. The default names the window, the tallest column and each series' total. */
   summary?: (facts: {
     from: number | null;
@@ -184,6 +192,8 @@ export function StackedColumns({
   formatScale = format,
   formatTime = (at) => new Date(at).toLocaleDateString(),
   emptyLabel = 'Nothing recorded in this window',
+  loading = false,
+  loadingLabel,
   summary,
   className,
 }: StackedColumnsProps) {
@@ -229,6 +239,47 @@ export function StackedColumns({
    * NOTHING TO DRAW IS SAID, NOT DRAWN: a scale of 0 to 4 over no columns read
    * as four days of nothing.
    */
+  if (loading) {
+    const hasHead = head !== undefined && head !== null && head !== false;
+    const headed = hasHead || legend === 'head';
+    const plot = height === 'fill' ? minHeight : height;
+    return (
+      <figure
+        className={cx('crewlet-stacked-columns', !headed && 'crewlet-stacked-columns--headless', 'crewlet-chart-loading', className)}
+        aria-busy="true"
+      >
+        {headed ? (
+          <div className="crewlet-stacked-columns__head">
+            {hasHead ? <div className="crewlet-stacked-columns__heading">{head}</div> : null}
+            {legend === 'head' ? <LoadingWord wide /> : null}
+          </div>
+        ) : null}
+        <div className="crewlet-stacked-columns__axis" aria-hidden style={{ height: plot }}>
+          <span className="crewlet-stacked-columns__tick">
+            <LoadingWord />
+          </span>
+        </div>
+        <div className="crewlet-chart-frame">
+          <LoadingPlot height={plot} />
+        </div>
+        <figcaption className="crewlet-stacked-columns__scale" aria-hidden>
+          <span>
+            <LoadingWord />
+          </span>
+          <span>
+            <LoadingWord />
+          </span>
+        </figcaption>
+        {legend === 'below' ? (
+          <div className="crewlet-legend crewlet-stacked-columns__legend crewlet-stacked-columns__legend--below" aria-hidden>
+            <LoadingWord wide />
+          </div>
+        ) : null}
+        <LoadingSaid>{loadingLabel ?? `Loading ${label}`}</LoadingSaid>
+      </figure>
+    );
+  }
+
   if (buckets.length === 0) {
     return (
       <ChartEmpty height={height === 'fill' ? minHeight : height} className={className}>

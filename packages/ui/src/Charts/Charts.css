@@ -1207,3 +1207,16 @@ button.crewlet-histogram__bar[data-empty]:focus-visible > .crewlet-histogram__fi
     transition: none;
   }
 }
+
+/* A chart still loading holds its room: a word's place in its scale or legend. */
+.crewlet-chart-loading__word {
+  display: inline-block;
+  width: 4rem;
+  height: 0.75em;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.crewlet-chart-loading__word--wide {
+  width: 9rem;
+}
