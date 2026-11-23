@@ -691,3 +691,23 @@ export const FineLines: Story = {
     </div>
   ),
 };
+
+/** Data still on its way: every chart holds the room it will draw in, so nothing under it moves when it lands. */
+export const Loading: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem', maxWidth: '60rem' }}>
+      <Card padding="md">
+        <Card.Title>Tokens per hour</Card.Title>
+        <TimeSeries label="Tokens per hour" series={[]} from={0} to={1} height="7rem" loading />
+      </Card>
+      <Card padding="md">
+        <Card.Title>Open items by holder</Card.Title>
+        <StackedColumns label="Open items by holder" series={[]} buckets={[]} height="7rem" loading />
+      </Card>
+      <Card padding="md">
+        <Card.Title>Spend by model</Card.Title>
+        <BarList data={[]} limit={5} loading />
+      </Card>
+    </div>
+  ),
+};

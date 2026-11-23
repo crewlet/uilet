@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
 import { ChartEmpty } from './ChartEmpty.js';
+import { LoadingSaid, LoadingWord } from './ChartLoading.js';
 import { DATA_COLORS, dataColor } from './dataColor.js';
 import { Legend } from './Legend.js';
 
@@ -85,6 +86,13 @@ export interface BarListProps {
   /** What the tail says. It is a count, so the caller can phrase it. */
   moreLabel?: (remaining: number) => ReactNode;
   emptyLabel?: ReactNode;
+  /**
+   * The rows have not arrived: the list holds the room of `limit` rows (3
+   * without one) with a placeholder.
+   */
+  loading?: boolean;
+  /** What a reader is told while it loads. */
+  loadingLabel?: string;
   className?: string;
 }
 
@@ -111,6 +119,8 @@ export function BarList({
   limit,
   moreLabel = (remaining) => `and ${remaining} more`,
   emptyLabel = 'Nothing recorded in this window',
+  loading = false,
+  loadingLabel = 'Loading',
   className,
 }: BarListProps) {
   /*
@@ -122,6 +132,47 @@ export function BarList({
   const shown = capped ? data.slice(0, limit) : data;
   const top = max ?? Math.max(1, ...data.map((datum) => datum.value));
   const remaining = capped ? Math.max(0, data.length - limit) : 0;
+
+  if (loading)
+    return (
+      <div className={cx('crewlet-chart-loading', className)} aria-busy="true">
+        <ul className={cx('crewlet-bar-list', `crewlet-bar-list--${layout}`)} aria-hidden>
+          {Array.from({ length: limit ?? 3 }, (_, at) => (
+            <li key={at} className="crewlet-bar-list__item">
+              <span className="crewlet-bar-list__row">
+                {layout === 'beside' ? (
+                  <>
+                    <span className="crewlet-bar-list__names">
+                      <span className="crewlet-bar-list__label">
+                        <LoadingWord wide />
+                      </span>
+                    </span>
+                    <span className="crewlet-bar-list__plot">
+                      <span className="crewlet-bar-list__scale">
+                        <LoadingWord />
+                      </span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="crewlet-bar-list__head">
+                      <span className="crewlet-bar-list__label">
+                        <LoadingWord wide />
+                      </span>
+                      <span className="crewlet-bar-list__value">
+                        <LoadingWord />
+                      </span>
+                    </span>
+                    <span className="crewlet-bar-list__track" />
+                  </>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <LoadingSaid>{loadingLabel}</LoadingSaid>
+      </div>
+    );
 
   if (!shown.length)
     return (

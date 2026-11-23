@@ -2,6 +2,7 @@ import { useId } from 'react';
 import type { CSSProperties, PointerEvent, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 import { ChartEmpty } from './ChartEmpty.js';
+import { LoadingPlot, LoadingSaid, LoadingWord } from './ChartLoading.js';
 import { ChartTooltip } from './ChartTooltip.js';
 import { DATA_COLOR_OTHER, dataColor } from './dataColor.js';
 import { Legend } from './Legend.js';
@@ -54,6 +55,13 @@ export interface TimeSeriesProps {
   legend?: 'below' | 'none';
   /** What the chart says in place of the plot when no series has a point. */
   emptyLabel?: ReactNode;
+  /**
+   * The series have not arrived: the chart holds the room it will draw in
+   * (its plot, its scale and a legend row) with a placeholder.
+   */
+  loading?: boolean;
+  /** What a reader is told while it loads; "Loading" and the label by default. */
+  loadingLabel?: string;
   className?: string;
 }
 
@@ -96,6 +104,8 @@ export function TimeSeries({
   summary,
   legend = 'below',
   emptyLabel = 'Nothing recorded in this window',
+  loading = false,
+  loadingLabel,
   className,
 }: TimeSeriesProps) {
   const id = useId();
@@ -163,6 +173,30 @@ export function TimeSeries({
    * NOTHING TO DRAW IS SAID, NOT DRAWN. A plot of no points was an empty grid
    * over a scale of the epoch ("12/31/1969 … peak 1"), which read as data.
    */
+  if (loading) {
+    return (
+      <figure className={cx('crewlet-time-series', 'crewlet-chart-loading', className)} aria-busy="true">
+        <div className="crewlet-chart-frame">
+          <LoadingPlot height={height} />
+        </div>
+        <figcaption className="crewlet-time-series__scale" aria-hidden>
+          <span>
+            <LoadingWord />
+          </span>
+          <span>
+            <LoadingWord />
+          </span>
+        </figcaption>
+        {legend === 'below' ? (
+          <div className="crewlet-legend crewlet-time-series__legend" aria-hidden>
+            <LoadingWord wide />
+          </div>
+        ) : null}
+        <LoadingSaid>{loadingLabel ?? `Loading ${label}`}</LoadingSaid>
+      </figure>
+    );
+  }
+
   if (instants.length === 0) {
     return (
       <ChartEmpty height={height} className={className}>

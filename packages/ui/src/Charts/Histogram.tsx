@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { ChartEmpty } from './ChartEmpty.js';
+import { LoadingPlot, LoadingSaid, LoadingWord } from './ChartLoading.js';
 
 export interface HistogramBar {
   /** The bucket's start, epoch milliseconds. It is also the bar's key. */
@@ -44,6 +45,13 @@ export interface HistogramProps {
   height?: number | undefined;
   /** What the chart says in place of the bars when it has none. */
   emptyLabel?: ReactNode;
+  /**
+   * The bars have not arrived: the chart holds the room it will draw in (its
+   * plot, and its row of ticks where `formatTick` is given) with a placeholder.
+   */
+  loading?: boolean | undefined;
+  /** What a reader is told while it loads; "Loading" and the label by default. */
+  loadingLabel?: string | undefined;
   className?: string | undefined;
 }
 
@@ -121,8 +129,25 @@ export function Histogram({
   onSelect,
   height = 96,
   emptyLabel = 'Nothing recorded in this window',
+  loading = false,
+  loadingLabel,
   className,
 }: HistogramProps) {
+  if (loading) {
+    return (
+      <div className={cx('crewlet-histogram', 'crewlet-chart-loading', className)} aria-busy="true">
+        <LoadingPlot height={`${height}px`} />
+        {formatTick && (
+          <div className="crewlet-histogram__axis" aria-hidden="true">
+            <span className="crewlet-histogram__tick" style={{ left: 0 }}>
+              <LoadingWord />
+            </span>
+          </div>
+        )}
+        <LoadingSaid>{loadingLabel ?? `Loading ${label}`}</LoadingSaid>
+      </div>
+    );
+  }
   if (bars.length === 0) {
     return (
       <ChartEmpty className={className} height={`${height}px`}>
