@@ -208,7 +208,7 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.171.2
+## Changes in 0.172.1
 
 ### A grid row that only reads keeps the arrow
 
@@ -217,6 +217,12 @@ places:
 ### A tab's count reads as its label's own
 
 **`Count` is a circle while it holds one figure**: at least as wide as it is tall, with the badge's side pads, so `1` draws an 18px circle and `128` a pill of the same height, where `1` was a 23px oval. **An underline tab's icon, count and marker stand 6px from its label**, not 8px, so a count no longer floats 16px off the word it counts.
+
+## Changes in 0.172.0
+
+### An empty state without a mark
+
+**`EmptyState` takes `icon={false}`**, which draws no mark in the default and compact sizes: only the title, the sentence and the action. Without it, a box with no `icon` still draws the inbox glyph, and an `illustration` still wins where both are given. Story: `EmptyState` No Mark.
 
 ## Changes in 0.171.1
 
