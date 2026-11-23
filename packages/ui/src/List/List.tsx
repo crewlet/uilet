@@ -4,6 +4,7 @@ import {
   createContext,
   isValidElement,
   useContext,
+  useRef,
   type CSSProperties,
   type HTMLAttributes,
   type LiHTMLAttributes,
@@ -13,6 +14,7 @@ import {
 import { CircleAlertGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { useFitRows } from './useFitRows.js';
 
 export type ListVariant =
   /**
@@ -73,6 +75,14 @@ export interface ListProps extends HTMLAttributes<HTMLElement> {
   measure?: 'normal' | 'wide' | undefined;
   /** Where `bulleted` or `numbered` markers stand: in a gutter (`indented`, the default) or in the margin before the list. */
   markers?: 'indented' | 'hanging' | undefined;
+  /**
+   * Show only the rows that fit the list's box whole, for a list in a block of
+   * a set height: the rest are hidden, never cut in half, and shown again as
+   * the box grows. The list takes the room its column leaves it.
+   */
+  fit?: boolean | undefined;
+  /** Hears how many rows show, with `fit`, each time that changes. */
+  onFit?: ((shown: number) => void) | undefined;
 }
 
 /**
@@ -91,6 +101,8 @@ export function List({
   density = 'comfortable',
   measure,
   markers = 'indented',
+  fit = false,
+  onFit,
   className,
   style,
   children,
@@ -98,10 +110,13 @@ export function List({
 }: ListProps) {
   const Tag = variant === 'numbered' || variant === 'numbered-divided' ? 'ol' : 'ul';
   const templated = template !== undefined;
+  const box = useRef<HTMLUListElement & HTMLOListElement>(null);
+  useFitRows(box, { enabled: fit, onFit });
   return (
     <ListContext.Provider value={{ variant, templated }}>
       <Tag
         {...rest}
+        ref={box}
         className={cx(
           'crewlet-list',
           `crewlet-list--${variant}`,
@@ -109,6 +124,7 @@ export function List({
           density === 'compact' && 'crewlet-list--compact',
           measure && `crewlet-list--measure-${measure}`,
           markers === 'hanging' && 'crewlet-list--hanging',
+          fit && 'crewlet-list--fit',
           className,
         )}
         style={templated ? ({ ...style, '--crewlet-list-template': template } as CSSProperties) : style}
