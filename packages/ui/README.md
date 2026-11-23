@@ -252,6 +252,12 @@ Stories: Patterns / Confirmation dialogs (remove a model, remove an MCP server,
 disconnect an integration, move a seat's model, review and save, long names,
 many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 
+## Changes in 0.185.0
+
+### A list fits the room a sized block gives it, and a sized block never scrolls
+
+**`List` takes `fit` and `onFit`**: the list takes the room its column leaves it, shows the rows that fit whole and hides the rest (still laid out, so they are measured again as the box grows, and out of the tab order and the accessibility tree), refitting whenever its box, a row or the set of rows changes. `onFit` hears how many rows show, so a card can count the rest ("+4 more"). A divided list paints the rule under its last shown row transparent, so fitting never changes a row's height. **`useFitRows` and `fitRows`** fit any other row markup the same way, a box drawn after its owner (behind a placeholder) included. **An `ArrangeFrame` given `rows` clips its content** (`overflow: clip`) where it scrolled it, so a sized block never grows a scrollbar of its own and the wheel always moves the page; a sized block holding a long list gives it `fit`. Story: `ArrangeFrame` Fixed Height On A Scrolling Page.
+
 ## Changes in 0.184.0
 
 ### A value to copy sits in its sentence, vendor names stand out, and a fact's note follows its value

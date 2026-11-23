@@ -102,8 +102,9 @@ function assign<T>(ref: Ref<T> | undefined, value: T) {
  * carries no grip. A container (a group) is moved the same way, by its header
  * or its edge, except from a field, where a press types or selects.
  *
- * A FIXED HEIGHT SCROLLS ITS CONTENT rather than cutting it off, and hands
- * the wheel to the page at its ends.
+ * A FIXED HEIGHT NEVER SCROLLS. Its content fits itself to the block (a
+ * `fit` List shows the rows that fit whole and hides the rest), and whatever
+ * still runs past the edge is clipped, never a scrollbar inside a card.
  */
 export const ArrangeFrame = forwardRef<HTMLDivElement, ArrangeFrameProps>(function ArrangeFrame(
   {

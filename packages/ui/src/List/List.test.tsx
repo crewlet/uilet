@@ -5,7 +5,8 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { List, ListItem } from './index.js';
+import { useRef } from 'react';
+import { List, ListItem, useFitRows } from './index.js';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(cleanup);
@@ -297,4 +298,85 @@ test('a bulleted list draws discs whatever list it stands in, and circles only i
   } finally {
     uninstall();
   }
+});
+
+/** Lays `list` out as a box `height` tall holding rows `row` tall, top to bottom. */
+function layOut(list: HTMLElement, height: number, row: number) {
+  const rect = (top: number, h: number) => ({ top, bottom: top + h, height: h }) as DOMRect;
+  Object.defineProperty(list, 'clientHeight', { configurable: true, value: height });
+  list.getBoundingClientRect = () => rect(0, height);
+  Array.from(list.children).forEach((li, i) => {
+    li.getBoundingClientRect = () => rect(i * row, row);
+  });
+}
+
+test('a fitting list shows the rows that fit whole, hides the rest and says how many show', () => {
+  const onFit = vi.fn();
+  const rows = (n: number) => Array.from({ length: n }, (_, i) => <ListItem key={i}>{`Row ${i + 1}`}</ListItem>);
+  const { container, rerender } = render(<List>{rows(5)}</List>);
+  const list = container.querySelector('ul')!;
+  layOut(list, 100, 40);
+  // Two rows end at 80px; the third would be cut at 100px, so it and every row after it hide.
+  rerender(
+    <List fit onFit={onFit}>
+      {rows(5)}
+    </List>,
+  );
+  expect(list.classList.contains('crewlet-list--fit')).toBe(true);
+  expect(onFit).toHaveBeenLastCalledWith(2);
+  const hidden = Array.from(list.children).map((li) => li.hasAttribute('data-fit-hidden'));
+  expect(hidden).toEqual([false, false, true, true, true]);
+  expect((list.children[2] as HTMLElement).style.visibility).toBe('hidden');
+
+  // Without `fit`, nothing is measured and every row shows.
+  rerender(<List>{rows(5)}</List>);
+  expect(list.querySelectorAll('[data-fit-hidden]')).toHaveLength(0);
+  expect((list.children[2] as HTMLElement).style.visibility).toBe('');
+});
+
+test('a list that does not fit leaves its rows alone', () => {
+  const { container, rerender } = render(
+    <List>
+      <ListItem style={{ visibility: 'hidden' }}>Kept as the caller set it</ListItem>
+    </List>,
+  );
+  rerender(
+    <List>
+      <ListItem style={{ visibility: 'hidden' }}>Kept as the caller set it</ListItem>
+    </List>,
+  );
+  const row = container.querySelector('li')!;
+  expect(row.style.visibility).toBe('hidden');
+  expect(row.hasAttribute('data-fit-hidden')).toBe(false);
+});
+
+test('rows drawn after their owner are fitted once they arrive', () => {
+  const onFit = vi.fn();
+  // A list behind a placeholder: the box the ref names arrives on a later render.
+  function Late({ ready }: { ready: boolean }) {
+    const box = useRef<HTMLUListElement>(null);
+    useFitRows(box, { onFit });
+    return ready ? (
+      <ul ref={box}>
+        {Array.from({ length: 5 }, (_, i) => (
+          <li key={i}>{`Row ${i + 1}`}</li>
+        ))}
+      </ul>
+    ) : (
+      <p>Loading</p>
+    );
+  }
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    const i = this.matches('li') ? Array.from(this.parentElement!.children).indexOf(this) : -1;
+    return (i < 0 ? { top: 0, bottom: 100 } : { top: i * 40, bottom: i * 40 + 40 }) as DOMRect;
+  });
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (this: HTMLElement) {
+    return this.matches('ul') ? 100 : 0;
+  });
+  const { container, rerender } = render(<Late ready={false} />);
+  expect(onFit).not.toHaveBeenCalled();
+  rerender(<Late ready />);
+  expect(onFit).toHaveBeenLastCalledWith(2);
+  expect(container.querySelectorAll('[data-fit-hidden]')).toHaveLength(3);
+  vi.restoreAllMocks();
 });

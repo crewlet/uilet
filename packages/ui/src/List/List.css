@@ -84,6 +84,16 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/*
+ * A list that fits its box takes the room its column leaves it and clips,
+ * without becoming a scroll container; the rows past its edge are hidden.
+ */
+.crewlet-list--fit {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: clip;
+}
+
 /* ---- Framings ---------------------------------------------------------- */
 
 .crewlet-list--divided .crewlet-list__item {
@@ -92,6 +102,12 @@
 
 .crewlet-list--divided .crewlet-list__item:last-child {
   border-bottom: none;
+}
+
+/* The last row a fitting list shows keeps its rule's width, so fitting never
+   changes a row's height and refits it. */
+.crewlet-list--divided .crewlet-list__item:has(+ [data-fit-hidden]) {
+  border-bottom-color: transparent;
 }
 
 .crewlet-list--divided .crewlet-list__row {

@@ -8,6 +8,8 @@ import {
   ArrangeGroup,
   Button,
   Card,
+  List,
+  ListItem,
   Note,
   useReorderLists,
 } from '@crewlethq/ui';
@@ -118,30 +120,39 @@ function Board() {
  */
 export const Basic: Story = { render: () => <Board /> };
 
+/** A card of `items` rows that shows the rows its block has room for, and counts the rest. */
+function FittedCard({ name, items }: { name: string; items: number }) {
+  const [shown, setShown] = useState(items);
+  return (
+    <Card padding="none">
+      <Card.Header>
+        <Card.Title>{name}</Card.Title>
+      </Card.Header>
+      <List fit onFit={setShown}>
+        {Array.from({ length: items }, (_, i) => (
+          <ListItem key={i} href="#">{`Row ${i + 1}`}</ListItem>
+        ))}
+      </List>
+      <Card.Footer variant="meta">{shown < items ? `+${items - shown} more` : 'All rows shown'}</Card.Footer>
+    </Card>
+  );
+}
+
 /**
- * Blocks given a height, on a page taller than the window. Wheel over the
- * short card: the page scrolls. Wheel over the long one: it scrolls its own
- * list, then the page once the list reaches its end.
+ * Blocks given a height, on a page taller than the window. Neither scrolls:
+ * the wheel always moves the page, and the long list shows the rows that fit
+ * its block whole and counts the rest. Resize the window to see it refit.
  */
 export const FixedHeightOnAScrollingPage: Story = {
   render: () => (
     <div style={{ paddingBottom: '150vh' }}>
       <ArrangeGrid>
         {[
-          { name: 'Live now', lines: 2 },
-          { name: 'Recent activity', lines: 30 },
-        ].map(({ name, lines }) => (
+          { name: 'Live now', items: 2 },
+          { name: 'Recent activity', items: 30 },
+        ].map(({ name, items }) => (
           <ArrangeFrame key={name} name={name} editing={false} columns={6} rows={14} rowHeight={ROW}>
-            <Card padding="none">
-              <Card.Header>
-                <Card.Title>{name}</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                {Array.from({ length: lines }, (_, i) => (
-                  <p key={i}>Line {i + 1}</p>
-                ))}
-              </Card.Body>
-            </Card>
+            <FittedCard name={name} items={items} />
           </ArrangeFrame>
         ))}
       </ArrangeGrid>
