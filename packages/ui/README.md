@@ -213,9 +213,9 @@ places:
 
 ### Cards side by side end at one height
 
-**`CardGrid` is new**: cards side by side, every card in a row as tall as the row. Each cell stretches to its row whatever alignment the page gives the grid, a cell that wraps its card (a focus target, a list item) hands the row's height down to it, and the grid folds to one card per row, each its own height, where two would be narrower than `min`. `columns` (2, 3 or 4) caps a row, unset it holds as many as fit; `min` takes `AutoGrid`'s steps (`sm` 180px, `md` 260px, `lg` 360px); `gap` is 3, 4 or 5; `as="ul"` makes the grid the list. Story: `CardGrid` Short Beside Tall, With Actions, Empty Body, Wrapped, Narrow.
+**`CardGrid` is new**: cards side by side, every card in a row as tall as the row. Each cell stretches to its row whatever alignment the page gives the grid, a cell that wraps its card (a focus target, a list item) hands the row's height down to it, and the grid folds to one card per row, each its own height, where two would be narrower than `min`. `columns` (2, 3 or 4) caps a row, unset it holds as many as fit; `min` takes `AutoGrid`'s steps (`sm` 180px, `md` 260px, `lg` 360px); `gap` is 2, 3, 4 or 5, and is set by the prop rather than a class, since the column cap counts it; `as="ul"` makes the grid the list. Story: `CardGrid` Short Beside Tall, With Actions, Empty Body, Wrapped, Narrow.
 
-**A `Card` drawn taller than its content grows its last body, and its `Card.Footer` stays at its foot**, so a short card in a stretched row or cell keeps its actions level with its neighbour's instead of floating under its content. A card at its content's height is unchanged.
+**A `Card.Footer` stays at its card's foot however tall the card is drawn**, so a short card in a stretched row or cell keeps its actions level with its neighbour's instead of floating under its content; a second footer stays right under the first. This applies to every card its parent stretches (a `CardGrid`, a `TileGrid`, an `AutoGrid` row, a flex row, an `ArrangeFrame` given a height). A card at its content's height, and a packed board's frames sized by their content, are unchanged.
 
 What to change: lay cards that sit side by side in a `CardGrid` rather than a grid of your own, and put a cell's own attributes (an `id`, a `ref`, `tabIndex`) on the card itself or on one wrapper around it.
 

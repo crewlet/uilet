@@ -8,9 +8,17 @@
 
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(var(--crewlet-card-grid-min), 100%), 1fr));
-  gap: var(--crewlet-card-grid-gap);
   align-items: stretch;
   min-width: 0;
+}
+
+/* The gap is the prop's, above a page's one-class utility, since the column cap counts it. */
+.crewlet-card-grid[data-gap] {
+  gap: var(--crewlet-card-grid-gap);
+}
+
+/* A list's reset, at no weight, so a page's own spacing on the grid still applies. */
+:where(.crewlet-card-grid) {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -22,6 +30,10 @@
 
 .crewlet-card-grid[data-min='lg'] {
   --crewlet-card-grid-min: 360px;
+}
+
+.crewlet-card-grid[data-gap='2'] {
+  --crewlet-card-grid-gap: var(--spacing-2);
 }
 
 .crewlet-card-grid[data-gap='3'] {
@@ -69,11 +81,11 @@
 }
 
 /* A cell that wraps its card (a focus target, a list item) hands the row's height down to it. */
-.crewlet-card-grid > :not(.crewlet-card):has(> .crewlet-card) {
+.crewlet-card-grid > :not(.crewlet-card, [hidden]):has(> .crewlet-card) {
   display: flex;
   flex-direction: column;
 }
 
-.crewlet-card-grid > * > .crewlet-card {
+.crewlet-card-grid > :not(.crewlet-card) > .crewlet-card {
   flex: 1 1 auto;
 }

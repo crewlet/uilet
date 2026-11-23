@@ -60,8 +60,9 @@ function expectOneRow(at: HTMLElement) {
   const [a, b] = cards(at);
   expect(Math.abs(box(a!).top - box(b!).top)).toBeLessThan(0.5);
   expect(Math.abs(box(a!).bottom - box(b!).bottom)).toBeLessThan(0.5);
-  // A real difference, so the equal bottoms are the grid's doing.
-  expect(box(a!).height).toBeGreaterThan(100);
+  // The short card's body ends well above its foot, so the equal feet are the grid's doing.
+  const body = b!.querySelector('.crewlet-card__body')!;
+  expect(box(b!).bottom - box(body).bottom).toBeGreaterThan(40);
 }
 
 test('a short card beside a tall one ends where the tall one does', async () => {
@@ -161,4 +162,77 @@ test('narrow, one card per row, each its own height', async () => {
   expect(box(short!).top).toBeGreaterThan(box(tall!).bottom);
   expect(box(short!).height).toBeLessThan(box(tall!).height - 50);
   expect(Math.abs(box(short!).width - 320)).toBeLessThan(0.5);
+});
+
+test('two footers in a stretched card stay together at its foot', async () => {
+  const at = await mount(
+    900,
+    <CardGrid columns={2}>
+      <Tall />
+      <Card padding="none">
+        <Card.Header>
+          <Card.Title>Checks</Card.Title>
+        </Card.Header>
+        <Card.Footer variant="meta">Last run a minute ago</Card.Footer>
+        <Card.Footer>
+          <Button size="small">Run</Button>
+        </Card.Footer>
+      </Card>
+    </CardGrid>,
+  );
+  const [, short] = cards(at);
+  const [first, second] = [...short!.querySelectorAll('.crewlet-card__footer')];
+  expect(Math.abs(box(second!).top - box(first!).bottom)).toBeLessThan(0.5);
+  expect(Math.abs(box(short!).bottom - 1 - box(second!).bottom)).toBeLessThan(0.5);
+});
+
+test('a well inside a card keeps its own height, and what follows it stays under it', async () => {
+  const at = await mount(
+    900,
+    <CardGrid columns={2}>
+      <Tall />
+      <Card>
+        <Card variant="inset">A well</Card>
+        <p className="after-well">After the well.</p>
+      </Card>
+    </CardGrid>,
+  );
+  const [, outer] = cards(at);
+  const well = at.querySelector('.crewlet-card--inset')!;
+  const after = at.querySelector('.after-well')!;
+  expect(box(well).height).toBeLessThan(80);
+  expect(box(outer!).bottom - box(after).bottom).toBeGreaterThan(40);
+});
+
+test('a hidden cell stays hidden', async () => {
+  const at = await mount(
+    900,
+    <CardGrid as="ul" columns={2}>
+      <li>
+        <Tall />
+      </li>
+      <li hidden>
+        <Short />
+      </li>
+    </CardGrid>,
+  );
+  expect(box(at.querySelector('li[hidden]')!).height).toBe(0);
+});
+
+test("a page's gap class does not change how many cards a row holds", async () => {
+  const sheet = document.createElement('style');
+  sheet.textContent = '.page-wide-gap { gap: 24px; }';
+  document.head.append(sheet);
+  try {
+    const at = await mount(
+      900,
+      <CardGrid columns={2} className="page-wide-gap">
+        <Tall />
+        <Short />
+      </CardGrid>,
+    );
+    expectOneRow(at);
+  } finally {
+    sheet.remove();
+  }
 });

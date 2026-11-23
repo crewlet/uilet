@@ -8,13 +8,14 @@ export type CardGridColumns = 2 | 3 | 4;
 export type CardGridMin = 'sm' | 'md' | 'lg';
 
 /** The space between cards, as a step on the spacing scale. */
-export type CardGridGap = 3 | 4 | 5;
+export type CardGridGap = 2 | 3 | 4 | 5;
 
 export interface CardGridProps extends HTMLAttributes<HTMLElement> {
   /** The most cards a row holds; unset, as many as fit at `min`. */
   columns?: CardGridColumns | undefined;
   /** The narrowest card before the row drops one. `md` (260px) by default. */
   min?: CardGridMin | undefined;
+  /** The space between cards; set here rather than by a class, since the column cap counts it. */
   gap?: CardGridGap | undefined;
   /** The element the cards stand in: a `ul` for cards that are `li`s. */
   as?: 'div' | 'section' | 'ul' | 'ol' | undefined;
@@ -22,11 +23,9 @@ export interface CardGridProps extends HTMLAttributes<HTMLElement> {
 }
 
 /**
- * Cards side by side, every card in a row as tall as the row.
- *
- * Each cell stretches to its row whatever alignment a page gives the grid, a
- * cell that wraps its card hands the height down to it, and a card's last body
- * grows so its footer stays at the foot. A narrow grid is one card per row.
+ * Cards side by side, every card in a row as tall as the row: each cell stretches
+ * whatever alignment a page gives the grid, and a cell wrapping its card hands it
+ * the height. A narrow grid is one card per row.
  */
 export function CardGrid({ columns, min = 'md', gap = 4, as: Tag = 'div', className, children, ...rest }: CardGridProps) {
   return (
