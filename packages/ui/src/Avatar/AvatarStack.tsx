@@ -62,6 +62,11 @@ export interface AvatarStackProps extends Omit<HTMLAttributes<HTMLSpanElement>, 
    * three names would say them twice.
    */
   decorative?: boolean | undefined;
+  /**
+   * The opaque colour the stack stands on, for its cut-out and its plates. Without
+   * it the stack inherits `--crewlet-avatar-stack-ground` (tables set it), else the sheet.
+   */
+  ground?: string | undefined;
 }
 
 /** "1 agent", "3 agents", "1 person", "2 people". */
@@ -91,9 +96,9 @@ export function avatarStackLabel(members: readonly AvatarStackMember[]): string 
  *
  * EACH BADGE OVERLAPS THE ONE BEFORE IT BY 6PX and is cut out of it by a 2px
  * ring in the colour of the ground the stack stands on, which is the design's
- * own stack. The ground is `--crewlet-avatar-stack-ground`, the sheet by
- * default, which is where the design draws every stack; a stack standing on a
- * card or on any other surface sets it on the stack. Past `max` the rest are
+ * own stack. The ground is `--crewlet-avatar-stack-ground` (inherited, the sheet
+ * by default) with `--crewlet-avatar-stack-tint` laid over it; a table row sets
+ * both, and `ground` sets the first on the stack itself. Past `max` the rest are
  * counted in a chip, which is a PILL rather than either kind's outline: it is
  * a number, not somebody.
  *
@@ -107,6 +112,7 @@ export function AvatarStack({
   spread = false,
   label,
   decorative = false,
+  ground,
   className,
   style,
   ...rest
@@ -134,7 +140,13 @@ export function AvatarStack({
       )}
       // The badges' box, from the one table or the px given, for the chip: the
       // badges size themselves, and the chip stands as tall as they do.
-      style={{ '--crewlet-avatar-stack-size': `${typeof size === 'number' ? size : AVATAR_SIZES[size]}px`, ...style } as CSSProperties}
+      style={
+        {
+          '--crewlet-avatar-stack-size': `${typeof size === 'number' ? size : AVATAR_SIZES[size]}px`,
+          ...(ground === undefined ? null : { '--crewlet-avatar-stack-ground': ground }),
+          ...style,
+        } as CSSProperties
+      }
       role={decorative ? undefined : 'img'}
       aria-label={decorative ? undefined : (label ?? avatarStackLabel(members))}
       aria-hidden={decorative ? true : undefined}

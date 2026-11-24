@@ -56,6 +56,11 @@
   border-radius: var(--radius-md);
 }
 
+/* A face stack in a row is cut out of the row's own ground (AvatarStack.css). */
+.crewlet-tree-grid {
+  --crewlet-avatar-stack-ground: var(--color-surface-subtle);
+}
+
 .crewlet-tree-grid__grid {
   display: grid;
   grid-template-columns: var(--crewlet-tree-grid-columns, minmax(0, 1fr));
@@ -134,6 +139,7 @@
 }
 
 .crewlet-tree-grid__body > .crewlet-tree-grid__row:hover {
+  --crewlet-avatar-stack-tint: var(--color-surface-hover);
   background: var(--color-surface-hover);
 }
 
