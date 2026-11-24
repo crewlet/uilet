@@ -98,6 +98,11 @@ export type OrgLabelMark =
        */
       iconRing?: boolean | undefined;
       /**
+       * `zone` (the default) paints the mark in the zone's ink; `own` keeps a
+       * mark's own colours, for a product mark or a face in the zone.
+       */
+      iconTone?: 'zone' | 'own' | undefined;
+      /**
        * An organization's own logo in place of the glyph: contained in its own
        * colours, never stretched or cropped, and as tall as the words beside it.
        */
@@ -122,6 +127,7 @@ export type OrgLabelMark =
       icon?: undefined;
       iconSize?: undefined;
       iconRing?: undefined;
+      iconTone?: undefined;
       logo?: undefined;
     };
 
@@ -197,6 +203,7 @@ export function OrgLabel(props: OrgLabelProps) {
           'crewlet-org-label__icon',
           props.iconSize === 'lg' && 'crewlet-org-label__icon--lg',
           props.iconRing === true && 'crewlet-org-label__icon--ring',
+          props.iconTone === 'own' && 'crewlet-org-label__icon--own',
         )}
         aria-hidden="true"
       >

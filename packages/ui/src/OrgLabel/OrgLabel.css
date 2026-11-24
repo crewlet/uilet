@@ -54,6 +54,11 @@
   font-size: var(--font-size-3xl);
 }
 
+/* `iconTone="own"`: a mark in its own colours (a product mark, a face), never repainted by the zone. */
+.crewlet-org-label__icon--own {
+  color: inherit;
+}
+
 /* AN ORGANIZATION'S LOGO, whole and in its own colours: on a node as tall as
    the name and caption beside it, in a row the size of a seat's badge there. */
 .crewlet-org-label__logo {
@@ -77,9 +82,9 @@
  * in its corner. Stated as the zone's own rule rather than asked of each
  * caller, because the zone is what decides that a node is drawn in one colour.
  */
-.crewlet-org-label__icon svg,
-.crewlet-org-label__icon svg g,
-.crewlet-org-label__icon svg path {
+.crewlet-org-label__icon:where(:not(.crewlet-org-label__icon--own)) svg,
+.crewlet-org-label__icon:where(:not(.crewlet-org-label__icon--own)) svg g,
+.crewlet-org-label__icon:where(:not(.crewlet-org-label__icon--own)) svg path {
   /* THE INK AS WELL AS THE FILL, which is what made the rule above true. A
      mark may publish its own hue as a `color` on its own root (the Crewlet
      figure does, from the brand token), and `currentcolor` under that root
@@ -101,9 +106,9 @@
    group in the zone, a mask's included, so a hole cut by a mask fills with a
    share of the ink that changes with the hue: every agent's eyes on the chart
    did, until the Crewlet characters cut their faces into their own paths. */
-.crewlet-org-label__icon svg:not(.crewlet-glyph),
-.crewlet-org-label__icon svg:not(.crewlet-glyph) g:not(.crewlet-glyph *),
-.crewlet-org-label__icon svg:not(.crewlet-glyph) path:not(.crewlet-glyph *) {
+.crewlet-org-label__icon:where(:not(.crewlet-org-label__icon--own)) svg:not(.crewlet-glyph),
+.crewlet-org-label__icon:where(:not(.crewlet-org-label__icon--own)) svg:not(.crewlet-glyph) g:not(.crewlet-glyph *),
+.crewlet-org-label__icon:where(:not(.crewlet-org-label__icon--own)) svg:not(.crewlet-glyph) path:not(.crewlet-glyph *) {
   fill: currentColor;
 }
 
