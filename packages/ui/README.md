@@ -252,6 +252,12 @@ Stories: Patterns / Confirmation dialogs (remove a model, remove an MCP server,
 disconnect an integration, move a seat's model, review and save, long names,
 many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 
+## Changes in 0.187.0
+
+### Rows of groups and members: faces, adds, strips and pickers that fit a table
+
+**`AvatarStack` is cut out of the row it stands in.** Its ring and plates read two inherited properties, `--crewlet-avatar-stack-ground` (the opaque surface) and `--crewlet-avatar-stack-tint` (a row's wash over it); `TreeGrid` and `DataGrid` set both on hovered, selected and picked rows, so the ring reads as a gap on every row state and the faces stay opaque. `ground` sets the ground on one stack. **`AddPill` and `OrgTableAdd` take `onAdd`** for one thing to add (a press runs it, the mark never splits) and **`face={false}`** to keep the mark's face under the pointer; **`AddCircleGlyph`** is the control's circled plus. **`Select` takes `hintColumn="fit"`** (every hint in one column at the row's end, as wide as the widest, so status dots line up) and **`inset="flush"`** (a quiet picker's text on its column's x). **`OrgLabel` and `OrgTableName` take `iconTone="own"`** for a mark in its own colours. **`OrgTableActions` takes `slots`**, the controls its strip keeps room for. An org table's last column keeps `align: 'left'`; a tree grid row shows no focus ring after a pointer press, the next key brings it back; a labelled phone card starts its values at the grid's edge. Stories: Avatar Stack In A Table Row, AddPill One Thing To Add and Add Circle, Select Hint Column Fit, OrgLabel Own Colours, OrgTable Rows.
+
 ## Changes in 0.186.1
 
 ### The shared clock answers one instant within a render

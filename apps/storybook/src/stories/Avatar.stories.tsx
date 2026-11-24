@@ -13,6 +13,7 @@ import {
   type AvatarStackMember,
 } from '@crewlethq/ui';
 import samplePortrait from '../fixtures/sample-portrait.svg';
+import { BothThemes } from '../BothThemes';
 
 const meta: Meta<typeof Avatar> = {
   title: 'UI/Avatar',
@@ -497,4 +498,54 @@ export const StackSpread: Story = {
       </div>
     );
   },
+};
+
+const ROW_STATES: { name: string; tint?: string }[] = [
+  { name: 'At rest' },
+  { name: 'Hovered', tint: 'var(--color-surface-hover)' },
+  { name: 'Selected', tint: 'var(--color-brand-accent-soft)' },
+  { name: 'Picked', tint: 'var(--color-surface-selected)' },
+];
+
+/**
+ * A STACK IN A TABLE ROW, on every row state, light and dark: the row's table
+ * sets `--crewlet-avatar-stack-ground` (its surface) and, on a washed row,
+ * `--crewlet-avatar-stack-tint` (the wash), so the cut-out reads as a gap and
+ * each face stays opaque. TreeGrid, OrgTable and DataGrid set both themselves.
+ */
+export const StackInATableRow: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ background: 'var(--color-surface-subtle)', borderRadius: 8, overflow: 'hidden' }}>
+        {ROW_STATES.map(({ name, tint }) => (
+          <div
+            key={name}
+            style={
+              {
+                ...row,
+                justifyContent: 'space-between',
+                padding: '8px 16px',
+                background: tint,
+                '--crewlet-avatar-stack-ground': 'var(--color-surface-subtle)',
+                ...(tint ? { '--crewlet-avatar-stack-tint': tint } : {}),
+              } as CSSProperties
+            }
+          >
+            <span style={{ fontSize: 13 }}>{name}</span>
+            <AvatarStack
+              size="xs"
+              decorative
+              members={[
+                { name: 'Chief Technology', character: 'hexlet', hue: 'amber' },
+                { name: 'Software Engineer', character: 'gemlet', hue: 'cyan' },
+                { name: 'Jane Founder', kind: 'human' },
+                { name: 'Product Lead', character: 'coglet', hue: 'purple' },
+                { name: 'Designer', character: 'cloudlet', hue: 'rose' },
+              ]}
+            />
+          </div>
+        ))}
+      </div>
+    </BothThemes>
+  ),
 };
