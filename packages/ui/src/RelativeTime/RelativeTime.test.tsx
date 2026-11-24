@@ -6,16 +6,25 @@
  * they covered.
  */
 
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { RelativeTime, currentNow, formatElapsed, formatRelative, formatUntil, toInstant, useNow } from './index.js';
 
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 const NOW = Date.parse('2026-01-01T12:00:00Z');
+
+/**
+ * Settles once every microtask queued so far has run: the end of the current
+ * synchronous pass, as a later event or render sees it.
+ */
+function nextPass(): Promise<void> {
+  return new Promise((resolve) => queueMicrotask(resolve));
+}
 
 describe('the grammar', () => {
   test('an age reads backwards in the shortest honest unit', () => {
@@ -101,11 +110,13 @@ describe('the clock', () => {
     expect(screen.getByTestId('pair').textContent).toBe('agreed');
   });
 
-  test('a reader arriving after the clock sat idle reads the time now, not when the last reader left', () => {
+  test('a reader arriving after the clock sat idle reads the time now, not when the last reader left', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-24T12:00:00Z'));
     currentNow();
-    // A quiet minute with no reader: no interval runs to move the clock.
+    // A quiet minute with no reader: no interval runs to move the clock, and
+    // the reader arrives in a later pass, as anything a minute later does.
+    await nextPass();
     vi.setSystemTime(new Date('2026-10-24T12:01:00Z'));
     function Reader() {
       return <span data-testid="now">{useNow()}</span>;
@@ -125,5 +136,54 @@ describe('the clock', () => {
     unmount();
     // A screen with no relative time on it runs no timer at all.
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  /*
+   * ONE READING PER PASS WHILE STOPPED. React reads a snapshot twice in a row
+   * and logs "The result of getSnapshot should be cached" when the two differ.
+   * A stopped clock replaced its reading on any read a tick stale, so two
+   * reads either side of the tick (999 ms stale, then 1000 ms) differed. The
+   * wall clock is stubbed to answer exactly that pair.
+   */
+  const LAST = Date.parse('2031-01-01T00:00:00Z');
+
+  /** Stops the clock with `LAST` as its reading, and hands back the stubbed wall clock. */
+  async function stoppedAtLast() {
+    const wall = vi.spyOn(Date, 'now').mockReturnValue(LAST);
+    renderHook(() => useNow()).unmount();
+    await nextPass();
+    return wall;
+  }
+
+  // Mutation: let every read of a stopped clock decide, and the second read is the later instant.
+  test('a stopped clock read twice in one pass answers one instant, though a tick falls between the reads', async () => {
+    const wall = await stoppedAtLast();
+    wall.mockReturnValueOnce(LAST + 999).mockReturnValue(LAST + 1000);
+    const first = currentNow();
+    const second = currentNow();
+    expect(Object.is(first, second)).toBe(true);
+  });
+
+  // FRESH WHEN IDLE STILL HOLDS: the guard lasts one pass, not until the next
+  // reader. Mutation: never clear it, and the stopped clock never moves again.
+  test('the next pass reads a stopped clock fresh again', async () => {
+    const wall = await stoppedAtLast();
+    wall.mockReturnValueOnce(LAST + 999).mockReturnValue(LAST + 1000);
+    currentNow();
+    currentNow();
+    await nextPass();
+    expect(currentNow()).toBe(LAST + 1000);
+  });
+
+  // The defect as an application meets it: a reader mounted between React's two reads.
+  test('a reader mounting across that tick draws no uncached-snapshot error from React', async () => {
+    const wall = await stoppedAtLast();
+    const error = vi.spyOn(console, 'error');
+    wall.mockReturnValueOnce(LAST + 999).mockReturnValue(LAST + 1000);
+    const { result, unmount } = renderHook(() => useNow());
+    unmount();
+    const said = error.mock.calls.map((args) => args.map(String).join(' '));
+    expect(said.filter((line) => line.includes('getSnapshot should be cached'))).toEqual([]);
+    expect(result.current).toBe(LAST);
   });
 });
