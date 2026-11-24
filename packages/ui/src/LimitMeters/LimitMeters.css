@@ -8,6 +8,8 @@
   /* Inline-size containment gives no intrinsic width, so 12rem stands in for it in a content-sized
      column; no minimum, so a narrower cell shrinks the stack instead of the figures overflowing it. */
   contain-intrinsic-inline-size: 12rem;
+  /* The width it is given, in a flex cell too: there the stand-in alone made it 12rem in any cell. */
+  inline-size: 100%;
   min-width: 0;
   font-size: var(--font-size-xs);
   line-height: var(--font-line-height-snug);
