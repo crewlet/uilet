@@ -186,13 +186,14 @@
  * THE ACTIVE-DESCENDANT MODE (`activeDescendant`). Focus stays on the list,
  * which draws no ring outside forced colours, and the highlighted row is the one cue: the accent fill
  * under the on-accent ink (3:1 or more on the panel, its words 4.5:1). The
- * pointer moves that highlight, so there is no separate hover fill.
+ * pointer moves that highlight, so there is no separate hover fill; the active
+ * row keeps its fill under the pointer.
  */
 .crewlet-menu--descendant .crewlet-menu__list:focus-visible {
   outline: 2px solid transparent;
 }
 
-.crewlet-menu--descendant .crewlet-menu__item:hover:not(.is-disabled) {
+.crewlet-menu--descendant .crewlet-menu__item:hover:not(.is-active) {
   background: transparent;
 }
 

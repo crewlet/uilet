@@ -196,6 +196,8 @@ export function Menu({
   const menu = useRef<HTMLDivElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const startAt = useRef<'first' | 'last' | 'none'>('first');
+  // The trigger was pressed by a key: Enter and Space open on the first item, a press opens on none.
+  const keyed = useRef(false);
   const [place, setPlace] = useState<{ left: number; top: number; floor: number | undefined; room: number } | null>(null);
   const container = useLayerContainer();
 
@@ -345,6 +347,13 @@ export function Menu({
   }, [active, activeDescendant]);
 
   function onTriggerKeyDown(event: KeyboardEvent<HTMLElement>) {
+    keyed.current = event.key === 'Enter' || event.key === ' ';
+    if (keyed.current) {
+      const press = () => {
+        keyed.current = false;
+      };
+      document.addEventListener('pointerdown', press, { once: true, capture: true });
+    }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       startAt.current = event.key === 'ArrowUp' ? 'last' : 'first';
@@ -437,8 +446,8 @@ export function Menu({
       aria-checked={entry.checked}
       tabIndex={-1}
       id={activeDescendant ? itemId(order.get(entry.key)!) : undefined}
-      // The pointer moves the highlight and never takes focus off the menu.
-      onPointerMove={activeDescendant ? () => setActive(order.get(entry.key)!) : undefined}
+      // The pointer moves the highlight and never takes focus off the menu; a disabled row takes none.
+      onPointerMove={activeDescendant ? () => setActive(entry.disabled ? -1 : order.get(entry.key)!) : undefined}
       onMouseDown={activeDescendant ? (event) => event.preventDefault() : undefined}
       className={cx(
         activeDescendant && order.get(entry.key) === active && 'is-active',
@@ -512,6 +521,8 @@ export function Menu({
         aria-label={label}
         aria-describedby={header ? headerId : undefined}
         aria-activedescendant={activeDescendant && active >= 0 ? itemId(active) : undefined}
+        // The pointer leaving the rows takes the highlight with it.
+        onPointerLeave={activeDescendant ? (event) => event.pointerType !== 'touch' && setActive(-1) : undefined}
         // Focusable programmatically, never by Tab: focus rests on an item, and
         // this is where it lands if a menu is ever opened with no items in it.
         tabIndex={-1}
@@ -542,7 +553,8 @@ export function Menu({
       if (open) {
         close(true);
       } else {
-        startAt.current = activeDescendant ? 'none' : 'first';
+        startAt.current = activeDescendant && !keyed.current ? 'none' : 'first';
+        keyed.current = false;
         setOpen(true);
       }
     },
