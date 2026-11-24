@@ -188,6 +188,16 @@ export interface SelectProps extends NativePassthrough {
    * A quiet filter that is on takes the accent's soft fill and ink.
    */
   appearance?: SelectAppearance;
+  /**
+   * `flush` pulls the trigger back by its own padding and border, so its text
+   * starts on the column's x, as a quiet picker in a table cell wants.
+   */
+  inset?: 'default' | 'flush' | undefined;
+  /**
+   * `fit` sets every option's `hint` in one column at the row's end, as wide as
+   * the widest, so a status dot in each starts at one x. Listbox mode only.
+   */
+  hintColumn?: 'inline' | 'fit' | undefined;
   ariaLabel?: string;
   searchable?: boolean;
   searchPlaceholder?: string;
@@ -254,6 +264,8 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
     active = false,
     error: errorProp,
     appearance = 'field',
+    inset = 'default',
+    hintColumn = 'inline',
     ariaLabel,
     searchable = false,
     searchPlaceholder = 'Search',
@@ -274,7 +286,12 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
    * The width is a class on the root of whichever control is drawn, so it is
    * decided once here rather than threaded through both branches.
    */
-  const classes = cx(className, width === 'auto' && 'crewlet-select--auto', appearance === 'quiet' && 'crewlet-select--quiet');
+  const classes = cx(
+    className,
+    width === 'auto' && 'crewlet-select--auto',
+    appearance === 'quiet' && 'crewlet-select--quiet',
+    inset === 'flush' && 'crewlet-select--flush',
+  );
 
   /*
    * WHAT IS CHOSEN, and the one case that is not obvious: the EMPTY STRING.
@@ -350,6 +367,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
       multiple={multiple}
       renderTrigger={renderTrigger}
       renderOption={renderOption}
+      hintColumn={hintColumn}
       renderMultiLabel={renderMultiLabel}
       emptyMessage={emptyMessage}
       onHighlight={onHighlight}
@@ -508,6 +526,7 @@ interface ListboxSelectProps {
   multiple: boolean;
   renderTrigger: SelectProps['renderTrigger'];
   renderOption: SelectProps['renderOption'];
+  hintColumn: 'inline' | 'fit';
   renderMultiLabel: SelectProps['renderMultiLabel'];
   emptyMessage: string;
   onHighlight: SelectProps['onHighlight'];
@@ -543,6 +562,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     multiple,
     renderTrigger,
     renderOption,
+    hintColumn,
     renderMultiLabel,
     emptyMessage,
     onHighlight,
@@ -607,6 +627,8 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
    * instead, after the hint when there is one.
    */
   const tickAtEnd = useMemo(() => flat.some((option) => option.leading !== undefined), [flat]);
+  // A fitted hint column lays the rows on two shared tracks (Select.css).
+  const fitted = hintColumn === 'fit';
 
   const close = useCallback((restore: boolean) => {
     setOpen(false);
@@ -1009,6 +1031,34 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     };
   };
 
+  const content = (option: SelectOption, highlighted: boolean, selected: boolean, tick: ReactNode, hint = true) =>
+    renderOption ? (
+      renderOption(option, { active: highlighted, selected })
+    ) : (
+      <>
+        {tickAtEnd ? null : tick}
+        {option.leading !== undefined ? (
+          <span className="crewlet-select__option-leading" aria-hidden="true">
+            {option.leading}
+          </span>
+        ) : null}
+        <span className="crewlet-select__option-body">
+          <span className="crewlet-select__option-label">{option.label}</span>
+          {option.description ? (
+            <span className="crewlet-select__option-desc">{option.description}</span>
+          ) : null}
+        </span>
+        {hint && option.hint !== undefined ? (
+          <>
+            {/* A space the layout ignores and a name does not: without it
+                the row is read as one run-on word, "AbyssVivid violet". */}{' '}
+            <span className="crewlet-listbox__hint">{option.hint}</span>
+          </>
+        ) : null}
+        {tickAtEnd ? tick : null}
+      </>
+    );
+
   let index = -1;
   const rows = groups.map((group, position) => {
     const items = group.items.map((option) => {
@@ -1049,31 +1099,17 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
           )}
           {...(option.disabled ? {} : optionHandlers(at))}
         >
-          {renderOption ? (
-            renderOption(option, { active: highlighted, selected })
-          ) : (
+          {fitted ? (
             <>
-              {tickAtEnd ? null : tick}
-              {option.leading !== undefined ? (
-                <span className="crewlet-select__option-leading" aria-hidden="true">
-                  {option.leading}
-                </span>
-              ) : null}
-              <span className="crewlet-select__option-body">
-                <span className="crewlet-select__option-label">{option.label}</span>
-                {option.description ? (
-                  <span className="crewlet-select__option-desc">{option.description}</span>
-                ) : null}
+              <span className="crewlet-select__option-main">
+                {content(option, highlighted, selected, tick, renderOption !== undefined)}
+              </span>{' '}
+              <span className="crewlet-listbox__hint crewlet-select__option-hint">
+                {renderOption ? null : option.hint}
               </span>
-              {option.hint !== undefined ? (
-                <>
-                  {/* A space the layout ignores and a name does not: without it
-                      the row is read as one run-on word, "AbyssVivid violet". */}{' '}
-                  <span className="crewlet-listbox__hint">{option.hint}</span>
-                </>
-              ) : null}
-              {tickAtEnd ? tick : null}
             </>
+          ) : (
+            content(option, highlighted, selected, tick)
           )}
         </div>
       );
@@ -1176,7 +1212,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
           list.current = el;
         }}
         id={listId}
-        className={cx('crewlet-listbox', 'crewlet-select__list')}
+        className={cx('crewlet-listbox', 'crewlet-select__list', fitted && 'crewlet-select__list--fit')}
         role="listbox"
         aria-label={ariaLabel ?? placeholder}
         aria-multiselectable={multiple || undefined}

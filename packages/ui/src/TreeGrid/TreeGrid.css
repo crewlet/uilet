@@ -56,6 +56,11 @@
   border-radius: var(--radius-md);
 }
 
+/* A face stack in a row is cut out of the row's own ground (AvatarStack.css). */
+.crewlet-tree-grid {
+  --crewlet-avatar-stack-ground: var(--color-surface-subtle);
+}
+
 .crewlet-tree-grid__grid {
   display: grid;
   grid-template-columns: var(--crewlet-tree-grid-columns, minmax(0, 1fr));
@@ -134,6 +139,7 @@
 }
 
 .crewlet-tree-grid__body > .crewlet-tree-grid__row:hover {
+  --crewlet-avatar-stack-tint: var(--color-surface-hover);
   background: var(--color-surface-hover);
 }
 
@@ -295,6 +301,13 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/* AFTER A POINTER PRESS, NO RING: the keyboard's ring returns with its next key.
+   Transparent rather than none, so forced-colors mode still draws one. */
+.crewlet-tree-grid[data-pointer] .crewlet-tree-grid__row:focus-visible,
+.crewlet-tree-grid[data-pointer] .crewlet-tree-grid__cell:focus-visible {
+  outline: 2px solid transparent;
+}
+
 /*
  * A HEADLESS GRID keeps its header row for a screen reader and draws no band:
  * the row is taken out of the layout the way VisuallyHidden takes text out.
@@ -399,8 +412,12 @@
   justify-content: flex-start;
 }
 
-/* A VALUE'S LINE STARTS WHERE THE ROW'S NAME DOES: past the edge, the chevron
-   and the row's level. A drawn indent (an org table's wires) sets its own. */
+/* A VALUE'S LINE STARTS WHERE THE ROW'S NAME DOES in a compact card (below); a
+   labelled card starts it at the grid's edge, so its labels are one column. */
+.crewlet-tree-grid[data-stacked]:not([data-phone-rows='compact']) .crewlet-tree-grid__cell {
+  --crewlet-tree-grid-value-indent: var(--crewlet-tree-grid-edge);
+}
+
 .crewlet-tree-grid[data-stacked] .crewlet-tree-grid__cell:not(:first-child) {
   padding-block: 1px;
   padding-inline: var(

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { AddPill, OrgTableAdd, OrgTableName } from '@crewlethq/ui';
+import { AddCircleGlyph, AddPill, OrgTableAdd, OrgTableName } from '@crewlethq/ui';
 import { BothThemes } from '../BothThemes';
 import { CrewletFigure } from '@crewlethq/icons';
 import { FolderPlusGlyph, UserPlusGlyph } from '@crewlethq/icons/glyphs';
@@ -149,4 +149,38 @@ export const RefusedWithAReason: Story = {
       { ...SECTIONS[2]!, disabledReason: 'This draft is read-only while a check is out.' },
     ],
   },
+};
+
+/**
+ * ONE THING TO ADD (`onAdd`): the mark keeps its face under the pointer, its
+ * green lifting from quiet to full, and a press runs the one action. Beside a
+ * name (`OrgTableAdd placement="name"`) as a table row draws it, light and dark.
+ * `face={false}` keeps the face for a pill of choices too, opening on a press.
+ */
+export const OneThingToAdd: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-6)' }}>
+        <OrgTableName
+          icon={<FolderPlusGlyph size="sm" />}
+          name="Claude Opus"
+          nameAction={<OrgTableAdd label="Add members to Claude Opus" placement="name" onAdd={() => {}} />}
+        />
+        <AddPill label="Add to Engineering" face={false} sections={SECTIONS} />
+      </div>
+    </BothThemes>
+  ),
+};
+
+/** The add control's mark as a glyph (`AddCircleGlyph`), at the glyph steps, for a control that adds in its place. */
+export const AddCircle: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-4)', color: 'var(--color-node-green)' }}>
+        {(['xs', 'sm', 'md', 'lg', 'xl'] as const).map((size) => (
+          <AddCircleGlyph key={size} size={size} />
+        ))}
+      </div>
+    </BothThemes>
+  ),
 };

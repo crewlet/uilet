@@ -686,6 +686,35 @@ describe('focus', () => {
     rerender(view('seat:ceo'));
     expect(document.activeElement).toBe(toolbar);
   });
+
+  test('a pointer press hides the focus ring until the next key', () => {
+    const { container } = mount();
+    const frame = container.querySelector<HTMLElement>('.crewlet-tree-grid')!;
+    expect(frame.hasAttribute('data-pointer')).toBe(false);
+    fireEvent.pointerDown(rowOf('seat:ceo'));
+    expect(frame.hasAttribute('data-pointer')).toBe(true);
+    rowOf('seat:ceo').focus();
+    press('ArrowDown');
+    expect(frame.hasAttribute('data-pointer')).toBe(false);
+  });
+
+  test('a labelled card starts its values at the grid edge, and a compact one under the name', () => {
+    const rules = declarations();
+    const labelled = rules.find(
+      ([selector]) =>
+        selector === ".crewlet-tree-grid[data-stacked]:not([data-phone-rows='compact']) .crewlet-tree-grid__cell",
+    );
+    expect(labelled?.[1]).toMatch(/--crewlet-tree-grid-value-indent:\s*var\(--crewlet-tree-grid-edge\)/);
+    expect(rules.some(([selector]) => selector.startsWith(".crewlet-tree-grid[data-phone-rows='compact']"))).toBe(true);
+  });
+
+  test('the ring is hidden only while the frame is marked by a pointer', () => {
+    const rules = declarations().filter(([selector]) => selector.includes('[data-pointer]'));
+    expect(rules.map(([selector]) => selector.replace(/\s+/g, ' '))).toEqual([
+      '.crewlet-tree-grid[data-pointer] .crewlet-tree-grid__row:focus-visible, .crewlet-tree-grid[data-pointer] .crewlet-tree-grid__cell:focus-visible',
+    ]);
+    expect(rules[0]![1]).toMatch(/outline:\s*2px solid transparent/);
+  });
 });
 
 // ---------------------------------------------------------------------------

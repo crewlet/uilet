@@ -28,6 +28,11 @@ afterEach(() => {
 /** Spelled without the leading dashes and prefixed at use: the package's
     variable check reads a quoted `--name` in a .tsx file as a declaration. */
 const property = (name: string) => `--${name}`;
+/** The cut-out: the row's tint over the opaque ground; returns the ground's fallback as computed. */
+const RING = new RegExp(
+  `^0 0 0 2px var\\(${property('crewlet-avatar-stack-tint')}, transparent\\), 0 0 0 2px var\\(${property('crewlet-avatar-stack-ground')}, (.+)\\)$`,
+);
+const ringOf = (element: Element) => getComputedStyle(element).boxShadow.replace(/\s+/g, ' ').trim();
 
 const AGENTS: AvatarStackMember[] = [
   { name: 'SWE' },
@@ -221,41 +226,34 @@ describe('what a stack draws', () => {
       expect(members).toHaveLength(5);
       expect(px(members[0]!, 'margin-inline-start'), theme).toBe(0);
       for (const member of members.slice(1)) expect(px(member, 'margin-inline-start'), theme).toBe(-6);
+      // The ground is the SHEET when nothing sets it, through the ring's fallback.
+      expect(getComputedStyle(stack).getPropertyValue(property('crewlet-avatar-stack-ground')).trim(), theme).toBe('');
       for (const member of members) {
-        expect(getComputedStyle(member).boxShadow, theme).toBe(
-          `0 0 0 2px var(${property('crewlet-avatar-stack-ground')})`,
+        const fallback = RING.exec(ringOf(member))?.[1] ?? '';
+        expect(channels(fallback), theme).toEqual(
+          parseHex(themeColours(theme).get(property('color-surface-background')) ?? ''),
         );
       }
-      // The ground is the SHEET by default: every stack the approved design
-      // draws stands on it (a page's top bar, a task's side column), and its
-      // own cut-out is drawn in the sheet's colour.
-      const ground = getComputedStyle(stack).getPropertyValue(property('crewlet-avatar-stack-ground')).trim();
-      expect(channels(ground), theme).toEqual(
-        parseHex(themeColours(theme).get(property('color-surface-background')) ?? ''),
-      );
     }
   });
 
-  test('a stack on a card sets the ground on itself, and the cut-out reads it', () => {
-    // The one way to move it: a style or a rule on the stack's own root, since
-    // the stack declares the default there and an ancestor's value would be
-    // shadowed by it. The caller's `style` reaches that root beside the size
-    // the component writes, and every member's cut-out reads the variable.
+  test('a surface sets the ground and the tint for every stack on it, or the stack takes a ground', () => {
     uninstall = installThemed('dark', 'Avatar/Avatar.css', 'Avatar/AvatarStack.css');
     const card = `var(${property('color-surface-subtle')})`;
+    const hover = `var(${property('color-surface-hover')})`;
     const { container } = render(
-      <AvatarStack
-        members={AGENTS.slice(0, 2)}
-        style={{ [property('crewlet-avatar-stack-ground')]: card } as CSSProperties}
-      />,
+      <div style={{ [property('crewlet-avatar-stack-ground')]: card, [property('crewlet-avatar-stack-tint')]: hover } as CSSProperties}>
+        <AvatarStack members={AGENTS.slice(0, 2)} />
+        <AvatarStack members={AGENTS.slice(0, 2)} ground="red" />
+      </div>,
     );
-    const stack = container.querySelector('.crewlet-avatar-stack')!;
-    expect(getComputedStyle(stack).getPropertyValue(property('crewlet-avatar-stack-ground')).trim()).toBe(card);
-    expect(getComputedStyle(stack).getPropertyValue(property('crewlet-avatar-stack-size')).trim()).toBe(
-      `${AVATAR_SIZES.sm}px`,
-    );
-    for (const member of stack.querySelectorAll('.crewlet-avatar-stack__member')) {
-      expect(getComputedStyle(member).boxShadow).toBe(`0 0 0 2px var(${property('crewlet-avatar-stack-ground')})`);
+    const [inherited, own] = [...container.querySelectorAll<HTMLElement>('.crewlet-avatar-stack')];
+    expect(getComputedStyle(inherited!).getPropertyValue(property('crewlet-avatar-stack-ground')).trim()).toBe(card);
+    expect(getComputedStyle(inherited!).getPropertyValue(property('crewlet-avatar-stack-tint')).trim()).toBe(hover);
+    expect(own!.style.getPropertyValue(property('crewlet-avatar-stack-ground'))).toBe('red');
+    expect(getComputedStyle(own!).getPropertyValue(property('crewlet-avatar-stack-size')).trim()).toBe(`${AVATAR_SIZES.sm}px`);
+    for (const member of container.querySelectorAll('.crewlet-avatar-stack__member')) {
+      expect(ringOf(member)).toMatch(RING);
     }
   });
 
@@ -382,4 +380,23 @@ test('overlaps as before without spread', () => {
   const { container } = render(<AvatarStack members={AGENTS} size={24} max={3} />);
   const members = [...container.querySelectorAll<HTMLElement>('.crewlet-avatar-stack__member')];
   expect(px(members[1]!, 'margin-inline-start')).toBe(-6);
+});
+
+describe('a stack in a table row', () => {
+  const sheet = (name: string) =>
+    readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), `../${name}`), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  test.each(['TreeGrid/TreeGrid.css', 'DataGrid/DataGrid.css'])('%s cuts its stacks out of the row as it is painted', (name) => {
+    const css = sheet(name);
+    expect(css).toMatch(/--crewlet-avatar-stack-ground:\s*var\(--color-surface-subtle\)/);
+    // Every row wash is also the stacks' tint, so the ring reads as a gap on it.
+    const rows = [...css.matchAll(/([^{}]*__row[^{}]*)\{([^{}]*)\}/g)].filter(([, , body]) =>
+      /--crewlet-avatar-stack-tint/.test(body!),
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    for (const [, selector, body] of rows) {
+      const tint = /--crewlet-avatar-stack-tint:\s*([^;]+);/.exec(body!)![1];
+      const wash = /(?:^|\s)background:\s*([^;]+);/.exec(body!)![1];
+      expect(tint, selector).toBe(wash);
+    }
+  });
 });

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { OrgLabel, StatusDot } from '@crewlethq/ui';
+import { Avatar, OrgLabel, StatusDot } from '@crewlethq/ui';
+import { ProductMark } from '@crewlethq/icons';
 import { BotGlyph, BuildingComplexGlyph, TriangleAlertGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
 import mark from '@crewlethq/icons/favicon/crewlet.svg';
 import { BothThemes } from '../BothThemes';
@@ -241,6 +242,29 @@ export const WithALogo: Story = {
         </Node>
         <OrgLabel layout="row" logo={{ src: mark, alt: 'Crewlet' }} name="Crewlet" caption="company" />
         <OrgLabel layout="row" icon={<BuildingComplexGlyph />} name="Crewlet" caption="company, no logo" />
+      </div>
+    </BothThemes>
+  ),
+};
+
+/**
+ * A MARK IN ITS OWN COLOURS (`iconTone="own"`): a product mark and a seat's
+ * 14px face keep their hues in the leading zone, where a glyph (the default
+ * `zone` tone) takes the zone's ink. Row layout, light and dark.
+ */
+export const OwnColours: Story = {
+  render: () => (
+    <BothThemes>
+      <div style={{ display: 'grid', gap: 'var(--spacing-3)', width: 280 }}>
+        <OrgLabel layout="row" iconTone="own" icon={<ProductMark product="assistant" size="sm" />} name="Ask Crewlet" caption="Helper" />
+        <OrgLabel
+          layout="row"
+          iconTone="own"
+          icon={<Avatar name="Software Engineer" character="gemlet" hue="cyan" size={14} decorative />}
+          name="Software Engineer"
+          caption="Seat"
+        />
+        <OrgLabel layout="row" icon={<BotGlyph size="sm" />} name="A glyph in the zone's ink" caption="Default tone" />
       </div>
     </BothThemes>
   ),

@@ -261,30 +261,43 @@ export function OrgTableName({ tone, ...content }: OrgTableNameProps) {
 export function OrgTableActions({
   children,
   shown = false,
+  slots,
   className,
 }: {
   children: ReactNode;
   /** Drawn at rest too, for a table whose rows are edited as often as they are read. */
   shown?: boolean | undefined;
+  /** How many small controls the strip keeps room for; three by default. */
+  slots?: number | undefined;
   className?: string | undefined;
 }) {
+  if (slots !== undefined && (!Number.isInteger(slots) || slots < 1)) {
+    throw new RangeError(`OrgTableActions slots must be a whole number of at least 1; it was ${slots}`);
+  }
+  const room =
+    slots === undefined
+      ? undefined
+      : ({
+          '--crewlet-org-table-strip': `calc(var(--size-control-sm) * ${slots} + var(--spacing-1) * ${slots - 1})`,
+        } as CSSProperties);
   return (
-    <span className={cx('crewlet-org-table__actions', className)} data-shown={shown ? '' : undefined}>
+    <span className={cx('crewlet-org-table__actions', className)} data-shown={shown ? '' : undefined} style={room}>
       {children}
     </span>
   );
 }
 
-export interface OrgTableAddProps extends AddPillProps {
+export type OrgTableAddProps = AddPillProps & {
   /** Says a press opened it, so the grid's one tab stop follows focus here. */
   onOpen?: (() => void) | undefined;
   /**
    * `end` (the default) holds the open pill's room at the row's end. `name`
    * stands beside a name (`OrgLabel` `nameAction`) and takes its mark's room
    * alone, open or closed, so opening moves nothing: the pill opens over the row.
+   * With `onAdd` there is no pill, and the slot is the mark's.
    */
   placement?: 'end' | 'name' | undefined;
-}
+};
 
 /**
  * The split add pill on a row: `AddPill`, in the slot the row reserves for it.

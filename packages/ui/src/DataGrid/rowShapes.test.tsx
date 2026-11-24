@@ -126,7 +126,7 @@ describe('a row pointed at (isPointed, onRowPoint)', () => {
     // The selected row keeps its own fill: one fill on a row, never two.
     expect(c!.classList.contains('crewlet-data-grid__row--pointed')).toBe(false);
     expect(sheet()).toContain(
-      '.crewlet-data-grid__row:hover, .crewlet-data-grid__row--pointed { background: var(--color-surface-hover); }',
+      '.crewlet-data-grid__row:hover, .crewlet-data-grid__row--pointed { --crewlet-avatar-stack-tint: var(--color-surface-hover); background: var(--color-surface-hover); }',
     );
   });
 });

@@ -312,6 +312,31 @@ describe('what each surface used to be missing', () => {
     }
   });
 
+  test('iconTone own keeps a mark in its own colours, fill and ink, in either layout', () => {
+    for (const layout of ['node', 'row'] as const) {
+      painted('dark');
+      const own = installCss('.product { color: #7c56ff; } .product path { fill: #ff8800; }');
+      const { container } = render(
+        <OrgLabel
+          layout={layout}
+          iconTone="own"
+          icon={
+            <svg className="product">
+              <path d="M0 0h1v1H0z" />
+            </svg>
+          }
+          name="Ask Crewlet"
+        />,
+      );
+      expect(container.querySelector('.crewlet-org-label__icon--own'), layout).not.toBeNull();
+      const svg = container.querySelector('.crewlet-org-label__icon svg')!;
+      expect(getComputedStyle(svg).color, layout).toBe('rgb(124, 86, 255)');
+      expect(getComputedStyle(svg.querySelector('path')!).fill, layout).toBe('rgb(255, 136, 0)');
+      own();
+      cleanup();
+    }
+  });
+
   /*
    * AND A GLYPH IS NEVER FILLED. The zone's fill rule is for a filled drawing,
    * a brand mark or an illustration; a glyph is a stroke, and painting its

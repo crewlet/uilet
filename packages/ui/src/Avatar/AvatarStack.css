@@ -17,12 +17,14 @@
  * the sheet, with the design's own cut-out drawn in the sheet's colour. A stack
  * that stands on a card, or on anything else, sets it on the stack itself.
  *
+ * INHERITED: `--crewlet-avatar-stack-ground`, the opaque surface (the sheet when unset), and
+ * `--crewlet-avatar-stack-tint`, a row's wash laid over it (none when unset). Tables set both.
+ *
  * Every rule is two classes deep, so it outweighs the badge's own one-class
  * rules whichever order the stylesheets are bundled in.
  */
 
 .crewlet-avatar-stack {
-  --crewlet-avatar-stack-ground: var(--color-surface-background);
   /* The badges' box, which the component sets from the step it was given; the
      default is the default step's, sm. The chip reads it, so it stands exactly
      as tall as the badges beside it. */
@@ -34,7 +36,9 @@
 }
 
 .crewlet-avatar-stack > .crewlet-avatar-stack__member {
-  box-shadow: 0 0 0 2px var(--crewlet-avatar-stack-ground);
+  box-shadow:
+    0 0 0 2px var(--crewlet-avatar-stack-tint, transparent),
+    0 0 0 2px var(--crewlet-avatar-stack-ground, var(--color-surface-background));
 }
 
 /*
@@ -78,7 +82,11 @@
 .crewlet-avatar-stack > .crewlet-avatar-stack__member > .crewlet-avatar {
   background-image:
     linear-gradient(var(--crewlet-avatar-plate), var(--crewlet-avatar-plate)),
-    linear-gradient(var(--crewlet-avatar-stack-ground), var(--crewlet-avatar-stack-ground));
+    linear-gradient(var(--crewlet-avatar-stack-tint, transparent), var(--crewlet-avatar-stack-tint, transparent)),
+    linear-gradient(
+      var(--crewlet-avatar-stack-ground, var(--color-surface-background)),
+      var(--crewlet-avatar-stack-ground, var(--color-surface-background))
+    );
 }
 
 /* The design's 6px, a little under a third of its 22px badge: enough that the

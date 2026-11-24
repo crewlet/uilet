@@ -33,6 +33,8 @@
   border-radius: var(--radius-md);
   overflow: clip;
   background: var(--color-surface-subtle);
+  /* A face stack in a row is cut out of the row's own ground (AvatarStack.css). */
+  --crewlet-avatar-stack-ground: var(--color-surface-subtle);
 }
 
 /*
@@ -355,11 +357,13 @@ button.crewlet-data-grid__row-link {
 /* Under the pointer, or pointed at from another surface showing the same records: one overlay, the same. */
 .crewlet-data-grid__row:hover,
 .crewlet-data-grid__row--pointed {
+  --crewlet-avatar-stack-tint: var(--color-surface-hover);
   background: var(--color-surface-hover);
 }
 
 .crewlet-data-grid__row--selected,
 .crewlet-data-grid__row--selected:hover {
+  --crewlet-avatar-stack-tint: var(--color-brand-accent-soft);
   background: var(--color-brand-accent-soft);
 }
 
@@ -370,6 +374,7 @@ button.crewlet-data-grid__row-link {
  */
 .crewlet-data-grid__row--picked,
 .crewlet-data-grid__row--picked:hover {
+  --crewlet-avatar-stack-tint: var(--color-surface-selected);
   background: var(--color-surface-selected);
 }
 

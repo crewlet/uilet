@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { FormField, Select, type SelectOption, type SelectValue } from '@crewlethq/ui';
+import { FormField, Select, StatusDot, type SelectOption, type SelectValue } from '@crewlethq/ui';
 import { BotGlyph, NetworkGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
 
 const fruits: SelectOption[] = [
@@ -358,6 +358,45 @@ export const LongDescriptions: Story = {
           onChange={(next) => setPlain(next)}
         />
         <span style={{ color: 'var(--color-text-tertiary)' }}>Grants beside the level</span>
+      </div>
+    );
+  },
+};
+
+const MODELS: SelectOption[] = [
+  { value: 'fleet:opus', label: 'Fleet · Claude Opus', group: 'Fleets', description: '2 of 3 members have room' },
+  { value: 'opus-main', label: 'opus-main', group: 'Models', hint: <StatusDot tone="success">Ready</StatusDot> },
+  {
+    value: 'opus-team-plan-backup',
+    label: 'opus-team-plan-backup',
+    group: 'Models',
+    hint: <StatusDot tone="warning">Sitting out</StatusDot>,
+  },
+  { value: 'gpt', label: 'gpt', group: 'Models', hint: <StatusDot tone="danger">Sign-in refused</StatusDot> },
+];
+
+/**
+ * A HINT COLUMN THAT FITS (`hintColumn="fit"`): every option's hint stands in
+ * one column at the row's end, as wide as the widest, so each status dot
+ * starts at one x whatever the label's length. A quiet picker in a table cell
+ * with `inset="flush"` starts its text on the column's x.
+ */
+export const HintColumnFit: Story = {
+  render: function Render() {
+    const [value, setValue] = useState<SelectValue | SelectValue[] | undefined>('opus-main');
+    return (
+      <div style={{ width: 280, paddingInlineStart: 16 }}>
+        <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>RUNS ON</div>
+        <Select
+          ariaLabel="Model for Software Engineer"
+          size="sm"
+          appearance="quiet"
+          inset="flush"
+          hintColumn="fit"
+          options={MODELS}
+          value={value}
+          onChange={(next) => setValue(next)}
+        />
       </div>
     );
   },
