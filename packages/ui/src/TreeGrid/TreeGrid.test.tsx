@@ -698,6 +698,16 @@ describe('focus', () => {
     expect(frame.hasAttribute('data-pointer')).toBe(false);
   });
 
+  test('a labelled card starts its values at the grid edge, and a compact one under the name', () => {
+    const rules = declarations();
+    const labelled = rules.find(
+      ([selector]) =>
+        selector === ".crewlet-tree-grid[data-stacked]:not([data-phone-rows='compact']) .crewlet-tree-grid__cell",
+    );
+    expect(labelled?.[1]).toMatch(/--crewlet-tree-grid-value-indent:\s*var\(--crewlet-tree-grid-edge\)/);
+    expect(rules.some(([selector]) => selector.startsWith(".crewlet-tree-grid[data-phone-rows='compact']"))).toBe(true);
+  });
+
   test('the ring is hidden only while the frame is marked by a pointer', () => {
     const rules = declarations().filter(([selector]) => selector.includes('[data-pointer]'));
     expect(rules.map(([selector]) => selector.replace(/\s+/g, ' '))).toEqual([

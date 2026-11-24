@@ -412,8 +412,12 @@
   justify-content: flex-start;
 }
 
-/* A VALUE'S LINE STARTS WHERE THE ROW'S NAME DOES: past the edge, the chevron
-   and the row's level. A drawn indent (an org table's wires) sets its own. */
+/* A VALUE'S LINE STARTS WHERE THE ROW'S NAME DOES in a compact card (below); a
+   labelled card starts it at the grid's edge, so its labels are one column. */
+.crewlet-tree-grid[data-stacked]:not([data-phone-rows='compact']) .crewlet-tree-grid__cell {
+  --crewlet-tree-grid-value-indent: var(--crewlet-tree-grid-edge);
+}
+
 .crewlet-tree-grid[data-stacked] .crewlet-tree-grid__cell:not(:first-child) {
   padding-block: 1px;
   padding-inline: var(
