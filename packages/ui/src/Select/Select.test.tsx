@@ -1048,10 +1048,41 @@ test('an inline hint column keeps its rows as they were', () => {
 
 test('the fitted column is one shared track in one weight, and a flush picker is pulled back by its inset', () => {
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Select.css'), 'utf8');
-  expect(css).toMatch(/\.crewlet-select__list\.crewlet-select__list--fit \{[^}]*grid-template-columns: minmax\(0, 1fr\) auto;/);
+  expect(css).toMatch(/\.crewlet-select__list\.crewlet-select__list--fit \{[^}]*grid-template-columns: auto minmax\(0, 1fr\) auto;/);
+  expect(css).toMatch(/\.crewlet-select__list\.crewlet-select__list--fit\[data-leads\] \{\s*grid-template-columns: auto minmax\(0, 1fr\) auto auto;/);
   expect(css).toMatch(/> \.crewlet-select__group > \.crewlet-select__option \{[^}]*grid-template-columns: subgrid;/);
   expect(css).toMatch(/\.crewlet-select__option-hint \{[^}]*font-weight: var\(--font-weight-regular\);/);
   render(<Picker appearance="quiet" inset="flush" size="sm" />);
   expect(trigger().closest('.crewlet-select')!.classList.contains('crewlet-select--flush')).toBe(true);
   expect(css).toMatch(/\.crewlet-select--flush\.crewlet-select--sm \{\s*--crewlet-select-flush: calc\(var\(--spacing-2\) \+ 1px\);/);
+});
+
+test('a fitted list whose rows mix marks keeps the mark track in every row, so every label starts at one x', () => {
+  const options: SelectOption[] = [
+    { value: 'a', label: 'opus-main', leading: <svg data-testid="mark" />, hint: 'Ready' },
+    { value: 'none', label: 'None', description: 'Its checks still run' },
+  ];
+  render(<Picker options={options} value="a" hintColumn="fit" />);
+  fireEvent.click(trigger());
+  const list = screen.getByRole('listbox', { name: 'Owner' });
+  expect(list.hasAttribute('data-leads')).toBe(true);
+  const [model, none] = within(list).getAllByRole('option');
+  // Mark (or its empty slot), label and description, tick, hint: one part per track, the same in every row.
+  const parts = (row: HTMLElement) =>
+    [...row.querySelectorAll(':scope > .crewlet-select__option-main > *, :scope > .crewlet-select__option-hint')].map(
+      (part) => part.classList[0],
+    );
+  const tracks = ['crewlet-select__option-leading', 'crewlet-select__option-body', 'crewlet-select__option-tick', 'crewlet-listbox__hint'];
+  expect(parts(model!)).toEqual(tracks);
+  expect(parts(none!)).toEqual(tracks);
+  expect(none!.querySelector('.crewlet-select__option-leading')!.childElementCount).toBe(0);
+  expect(none!.querySelector('.crewlet-select__option-main')!.classList.contains('crewlet-select__option-main--tracks')).toBe(true);
+});
+
+test('the mark, the tick and the hint centre on the label\'s first line in a fitted list', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Select.css'), 'utf8').replace(/\s+/g, ' ');
+  expect(css).toContain('--crewlet-select-first-line: calc(var(--font-line-height-normal) * var(--font-size-compact));');
+  expect(css).toMatch(/\.crewlet-select__list--fit \.crewlet-select__option-leading, \.crewlet-select__list--fit \.crewlet-select__option-tick \{ height: var\(--crewlet-select-first-line\);/);
+  expect(css).toMatch(/\.crewlet-select__option-hint \{[^}]*min-height: var\(--crewlet-select-first-line\);/);
+  expect(css).toMatch(/\.crewlet-select__option-main\.crewlet-select__option-main--tracks \{ display: contents; \}/);
 });
