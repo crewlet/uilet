@@ -295,6 +295,12 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/* AFTER A POINTER PRESS, NO RING: the keyboard's ring returns with its next key. */
+.crewlet-tree-grid[data-pointer] .crewlet-tree-grid__row:focus-visible,
+.crewlet-tree-grid[data-pointer] .crewlet-tree-grid__cell:focus-visible {
+  outline: none;
+}
+
 /*
  * A HEADLESS GRID keeps its header row for a screen reader and draws no band:
  * the row is taken out of the layout the way VisuallyHidden takes text out.

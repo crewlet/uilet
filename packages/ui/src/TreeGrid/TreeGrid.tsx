@@ -507,6 +507,15 @@ export function TreeGrid({
   // Measured before paint, so a narrow grid never flashes the columns it leaves
   // out. An unmeasured grid (0, as in a hidden panel) draws every column.
   const frame = useRef<HTMLDivElement>(null);
+  // A pointer press marks the frame so a scripted focus draws no ring; any key clears it.
+  const [pointer, setPointer] = useState(false);
+  useEffect(() => {
+    if (!pointer) return undefined;
+    const key = () => setPointer(false);
+    document.addEventListener('keydown', key, true);
+    return () => document.removeEventListener('keydown', key, true);
+  }, [pointer]);
+  const onPointerDownCapture = () => setPointer(true);
   const gridEl = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const reportWidth = useRef(onWidthChange);
@@ -860,7 +869,13 @@ export function TreeGrid({
 
   if (forest.length === 0 && empty) {
     return (
-      <div ref={frame} className={frameClass} data-flush={flush || undefined}>
+      <div
+        ref={frame}
+        className={frameClass}
+        data-flush={flush || undefined}
+        data-pointer={pointer || undefined}
+        onPointerDownCapture={onPointerDownCapture}
+      >
         <div className="crewlet-tree-grid__scroller">
           <EmptyState
             size="compact"
@@ -881,6 +896,8 @@ export function TreeGrid({
       data-flush={flush || undefined}
       data-stacked={stacked || undefined}
       data-phone-rows={stacked && phoneRows === 'compact' ? 'compact' : undefined}
+      data-pointer={pointer || undefined}
+      onPointerDownCapture={onPointerDownCapture}
     >
       <LayerHost className="crewlet-tree-grid__layer">
         <div className="crewlet-tree-grid__scroller" onScroll={onScroll}>

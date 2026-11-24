@@ -686,6 +686,25 @@ describe('focus', () => {
     rerender(view('seat:ceo'));
     expect(document.activeElement).toBe(toolbar);
   });
+
+  test('a pointer press hides the focus ring until the next key', () => {
+    const { container } = mount();
+    const frame = container.querySelector<HTMLElement>('.crewlet-tree-grid')!;
+    expect(frame.hasAttribute('data-pointer')).toBe(false);
+    fireEvent.pointerDown(rowOf('seat:ceo'));
+    expect(frame.hasAttribute('data-pointer')).toBe(true);
+    rowOf('seat:ceo').focus();
+    press('ArrowDown');
+    expect(frame.hasAttribute('data-pointer')).toBe(false);
+  });
+
+  test('the ring is hidden only while the frame is marked by a pointer', () => {
+    const rules = declarations().filter(([selector]) => selector.includes('[data-pointer]'));
+    expect(rules.map(([selector]) => selector.replace(/\s+/g, ' '))).toEqual([
+      '.crewlet-tree-grid[data-pointer] .crewlet-tree-grid__row:focus-visible, .crewlet-tree-grid[data-pointer] .crewlet-tree-grid__cell:focus-visible',
+    ]);
+    expect(rules[0]![1]).toMatch(/outline:\s*none/);
+  });
 });
 
 // ---------------------------------------------------------------------------
