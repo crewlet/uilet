@@ -469,7 +469,9 @@ svg.crewlet-select__chevron {
 /* A hint ends the row's FIRST line, on the label's baseline, rather than
    sitting on the row's top edge at its own smaller size. */
 .crewlet-select__option:has(> .crewlet-listbox__hint) .crewlet-select__option-body,
-.crewlet-select__option > .crewlet-listbox__hint {
+.crewlet-select__option > .crewlet-listbox__hint,
+.crewlet-select__option-main:has(> .crewlet-listbox__hint) > .crewlet-select__option-body,
+.crewlet-select__option-main > .crewlet-listbox__hint {
   align-self: baseline;
 }
 
@@ -572,4 +574,41 @@ svg.crewlet-select__chevron {
   .crewlet-select {
     transition: none;
   }
+}
+
+/* A LIST WITH STATUSES: every row on two shared tracks, so each status starts at one x. */
+.crewlet-select__list.crewlet-select__list--status {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: start;
+  column-gap: var(--spacing-3);
+}
+
+.crewlet-select__list--status > .crewlet-select__option,
+.crewlet-select__list--status > .crewlet-select__group,
+.crewlet-select__list--status > .crewlet-select__group > .crewlet-select__option {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+}
+
+.crewlet-select__list--status > .crewlet-select__group > .crewlet-listbox__heading {
+  grid-column: 1 / -1;
+}
+
+.crewlet-select__option-main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-select__option-status {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: calc(var(--font-line-height-normal) * 1em);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
 }

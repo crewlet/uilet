@@ -1016,3 +1016,36 @@ test('a held select says why, to a screen reader and on hover, and opens nothing
   fireEvent.keyDown(button, { key: 'ArrowDown' });
   expect(screen.queryByRole('listbox')).toBeNull();
 });
+
+test('a status stands in one column at the row end, read with its label, on rows of the list grid', () => {
+  const options: SelectOption[] = [
+    { value: 'a', label: 'claude-opus-a-very-long-name', group: 'Models', status: 'Ready' },
+    { value: 'b', label: 'gpt', group: 'Models', status: 'Sitting out', hint: 'fast' },
+    { value: 'c', label: 'Fleet', group: 'Fleets' },
+  ];
+  render(<Picker options={options} value="a" />);
+  fireEvent.click(trigger());
+  const list = screen.getByRole('listbox', { name: 'Owner' });
+  expect(list.classList.contains('crewlet-select__list--status')).toBe(true);
+  const rows = within(list).getAllByRole('option');
+  for (const row of rows) {
+    const parts = [...row.children].map((child) => child.className);
+    expect(parts).toEqual(['crewlet-select__option-main', 'crewlet-select__option-status']);
+  }
+  expect(rows[1]!.textContent).toBe('gpt fast Sitting out');
+  expect(rows[2]!.querySelector('.crewlet-select__option-status')!.textContent).toBe('');
+});
+
+test('a list without a status keeps its rows as they were', () => {
+  render(<Picker />);
+  fireEvent.click(trigger());
+  const list = screen.getByRole('listbox', { name: 'Owner' });
+  expect(list.classList.contains('crewlet-select__list--status')).toBe(false);
+  expect(list.querySelector('.crewlet-select__option-main')).toBeNull();
+});
+
+test('the status column is one shared track: the rows and groups are subgrids of the list', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Select.css'), 'utf8');
+  expect(css).toMatch(/\.crewlet-select__list\.crewlet-select__list--status \{[^}]*grid-template-columns: minmax\(0, 1fr\) auto;/);
+  expect(css).toMatch(/> \.crewlet-select__group > \.crewlet-select__option \{[^}]*grid-template-columns: subgrid;/);
+});
