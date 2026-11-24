@@ -148,10 +148,7 @@ interface AddPillBaseProps {
    * draws are not covered by a pill over them.
    */
   layout?: 'split' | 'inline' | undefined;
-  /**
-   * `false` keeps the mark's face under the pointer: hovering only lifts its ink,
-   * and a press opens the choices (or runs `onAdd`). True by default.
-   */
+  /** `false` keeps the mark's face under the pointer: hover lifts its ink, a press opens the choices. */
   face?: boolean | undefined;
   /** Focus stays out of the pill, for a chart that puts it in a pointer-only strip. */
   tabIndex?: number | undefined;

@@ -17,10 +17,8 @@
  * the sheet, with the design's own cut-out drawn in the sheet's colour. A stack
  * that stands on a card, or on anything else, sets it on the stack itself.
  *
- * THE GROUND AND THE TINT ARE INHERITED, so a surface sets them for every stack
- * on it: `--crewlet-avatar-stack-ground` is the opaque surface (the sheet when
- * unset), `--crewlet-avatar-stack-tint` a translucent wash laid over it (a
- * hovered or selected row; none when unset). Tables set both on their rows.
+ * INHERITED: `--crewlet-avatar-stack-ground`, the opaque surface (the sheet when unset), and
+ * `--crewlet-avatar-stack-tint`, a row's wash laid over it (none when unset). Tables set both.
  *
  * Every rule is two classes deep, so it outweighs the badge's own one-class
  * rules whichever order the stylesheets are bundled in.

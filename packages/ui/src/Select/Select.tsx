@@ -195,8 +195,7 @@ export interface SelectProps extends NativePassthrough {
   inset?: 'default' | 'flush' | undefined;
   /**
    * `fit` sets every option's `hint` in one column at the row's end, as wide as
-   * the widest hint in the list, so a status dot in each starts at one x.
-   * Listbox mode only.
+   * the widest, so a status dot in each starts at one x. Listbox mode only.
    */
   hintColumn?: 'inline' | 'fit' | undefined;
   ariaLabel?: string;
