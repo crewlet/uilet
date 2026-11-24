@@ -257,6 +257,7 @@ many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 ### Usage bars are green, yellow and red by one threshold, and a strategy loops as usage bars
 
 **Every usage bar now takes one rule**: green below 80% of the limit (the engine's warning line, `USAGE_WARN_AT`), yellow from 80%, red at the limit. `Meter`'s spent ramp paints an ordinary reading green and turns at 0.8 (it turned at 0.75 in the data series' blue); `LimitMeters` paints an ordinary window green (it was grey), and a known `used` past 80% or the limit escalates a quieter state. `okTone` keeps the old look where a bar is not a usage (`quantity` on `Meter`, `neutral` on `LimitMeters`), and `usageTone(used)` gives the tone to any other drawing. **`UtilizationDiagram`** draws a utilization strategy as looping lanes: `sequential` numbers them and fills lane 1, then 2, then 3, holds 1.5 s and starts again; `balanced` fills them together to one level; each lane takes its level's usage tone, the loop pauses off screen or in a hidden tab, and reduced motion draws a still frame. **`ReorderHandle`** is the grip a `useReorder` item is dragged by (`pointerOnly` for a row whose keys move it), and **`StatCard subLines={0}`** draws no second line. Stories: Usage and strategy (Usage Thresholds, Utilization, Tiles Without A Note, Handle).
+
 ## Changes in 0.187.0
 
 ### Rows of groups and members: faces, adds, strips and pickers that fit a table
