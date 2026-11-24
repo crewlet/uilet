@@ -164,14 +164,6 @@
   cursor: not-allowed;
 }
 
-/* ── The trigger, native and built ───────────────────────────────────── */
-
-/*
- * The trigger IS the field: the value sits on one line inset by the same step
- * a text box insets its own, and the box's height is what makes the row. It
- * stretches to the frame so a press anywhere in the control opens the list.
- */
-.crewlet-select__native,
 /* FLUSH: pulled back by its own leading padding and border, so its text starts on the column's x. */
 .crewlet-select--flush {
   --crewlet-select-flush: calc(var(--spacing-3) + 1px);
@@ -182,6 +174,14 @@
   --crewlet-select-flush: calc(var(--spacing-2) + 1px);
 }
 
+/* ── The trigger, native and built ───────────────────────────────────── */
+
+/*
+ * The trigger IS the field: the value sits on one line inset by the same step
+ * a text box insets its own, and the box's height is what makes the row. It
+ * stretches to the frame so a press anywhere in the control opens the list.
+ */
+.crewlet-select__native,
 .crewlet-select__trigger {
   appearance: none;
   -webkit-appearance: none;
