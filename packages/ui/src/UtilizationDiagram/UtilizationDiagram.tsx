@@ -1,4 +1,5 @@
 import { useEffect, useRef, type HTMLAttributes } from 'react';
+import { REDUCED_MOTION_QUERY, useMediaMatch } from '../MediaMatch/index.js';
 import { usageTone } from '../Meter/index.js';
 import { cx } from '../utils/cx.js';
 
@@ -57,6 +58,7 @@ export function utilizationStill(mode: UtilizationMode, lanes: number): number[]
 export function UtilizationDiagram({ mode, lanes = 3, label, className, ...rest }: UtilizationDiagramProps) {
   const root = useRef<HTMLSpanElement>(null);
   const fills = useRef<(HTMLSpanElement | null)[]>([]);
+  const still = useMediaMatch(REDUCED_MOTION_QUERY);
 
   useEffect(() => {
     const paint = (levels: number[], opacity = 1) => {
@@ -68,7 +70,6 @@ export function UtilizationDiagram({ mode, lanes = 3, label, className, ...rest 
         fill.dataset['tone'] = usageTone(level);
       });
     };
-    const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (still || typeof requestAnimationFrame !== 'function') {
       paint(utilizationStill(mode, lanes));
       return undefined;
@@ -109,7 +110,7 @@ export function UtilizationDiagram({ mode, lanes = 3, label, className, ...rest 
       io?.disconnect();
       document.removeEventListener('visibilitychange', sync);
     };
-  }, [mode, lanes]);
+  }, [mode, lanes, still]);
 
   if (!Number.isInteger(lanes) || lanes < 2 || lanes > 5) {
     throw new RangeError(`UtilizationDiagram lanes must be a whole number from 2 to 5; it was ${lanes}`);

@@ -17,6 +17,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const media = (matches: boolean) => ({
+  matches,
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  addListener: () => {},
+  removeListener: () => {},
+});
+
 const levels = (mode: 'balanced' | 'sequential', ms: number) => utilizationFrame(mode, 3, ms).map((one) => one.level);
 
 describe('the loop', () => {
@@ -63,7 +71,7 @@ describe('the diagram', () => {
   });
 
   test('under reduced motion it paints the still frame, in threshold tones, and never animates', () => {
-    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce') }));
+    vi.stubGlobal('matchMedia', (query: string) => media(query.includes('reduce')));
     const raf = vi.fn();
     vi.stubGlobal('requestAnimationFrame', raf);
     const { container } = render(<UtilizationDiagram mode="sequential" />);
@@ -74,7 +82,7 @@ describe('the diagram', () => {
   });
 
   test('it loops while seen and stops in a hidden tab', () => {
-    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    vi.stubGlobal('matchMedia', () => media(false));
     const queue: FrameRequestCallback[] = [];
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => queue.push(cb));
     vi.stubGlobal('cancelAnimationFrame', () => queue.splice(0));
