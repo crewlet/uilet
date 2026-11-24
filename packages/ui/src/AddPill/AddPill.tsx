@@ -57,7 +57,9 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
+  type SVGProps,
 } from 'react';
+import { cssLength, type GlyphSize } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -90,19 +92,41 @@ export interface AddPillSection {
   disabledReason?: string | undefined;
 }
 
-export interface AddPillProps {
+export interface AddMarkGlyphProps extends Omit<SVGProps<SVGSVGElement>, 'children' | 'viewBox'> {
+  /** A glyph step, px or any CSS length; `1em` by default. */
+  size?: GlyphSize | undefined;
+}
+
+/** The add control's own mark, a plus inside a ring, for any control that adds in its place. Decorative. */
+export function AddMarkGlyph({ size, className, ...rest }: AddMarkGlyphProps) {
+  const length = cssLength(size);
+  return (
+    <svg
+      width={length}
+      height={length}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      aria-hidden="true"
+      focusable="false"
+      className={cx('crewlet-add-mark', className)}
+      {...rest}
+      viewBox="0 0 16 16"
+    >
+      <circle cx="8" cy="8" r="7" />
+      <path d="M8 4.5v7M4.5 8h7" />
+    </svg>
+  );
+}
+
+interface AddPillBaseProps {
   /**
    * The resting mark's accessible name, which is what the pill belongs to:
    * "Add to Engineering". Nine controls on one chart all called "Add" are nine
    * controls a reader tells apart by looking at where they are.
    */
   label: string;
-  /**
-   * The choices, in the order they are drawn across the pill. Two to four: the
-   * pill is as wide as a pointer target per section, and past four it is wider
-   * than the node it hangs under.
-   */
-  sections: readonly AddPillSection[];
   /**
    * How big the control is.
    *
@@ -131,10 +155,55 @@ export interface AddPillProps {
   className?: string | undefined;
 }
 
+export type AddPillProps = AddPillBaseProps &
+  (
+    | {
+        /**
+         * The choices, in the order they are drawn across the pill. Two to four: the
+         * pill is as wide as a pointer target per section, and past four it is wider
+         * than the node it hangs under.
+         */
+        sections: readonly AddPillSection[];
+        onAdd?: undefined;
+      }
+    | {
+        /** One thing to add: a press runs it, and the mark never splits on hover. */
+        onAdd: () => void;
+        sections?: undefined;
+      }
+  );
+
 /** What the pill is doing: see the module doc. */
 type Phase = 'closed' | 'preview' | 'locked' | 'closing';
 
-export function AddPill({
+export function AddPill(props: AddPillProps) {
+  return props.onAdd === undefined ? <SplitAddPill {...props} /> : <SingleAdd {...props} />;
+}
+
+/** One action: the resting mark, its hover ink and its press, with no pill. */
+function SingleAdd({ label, onAdd, size = 'sm', tabIndex, onOpen, className }: AddPillBaseProps & { onAdd: () => void }) {
+  return (
+    <div className={cx('crewlet-add-pill', className)} data-phase="closed" data-size={size} data-single="">
+      <button
+        type="button"
+        className="crewlet-add-pill__mark"
+        aria-label={label}
+        title={label}
+        tabIndex={tabIndex}
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpen?.();
+          onAdd();
+        }}
+      >
+        <span className="crewlet-add-pill__disc" aria-hidden="true" />
+        <AddMarkGlyph />
+      </button>
+    </div>
+  );
+}
+
+function SplitAddPill({
   label,
   sections,
   size = 'sm',
@@ -142,7 +211,7 @@ export function AddPill({
   tabIndex,
   onOpen,
   className,
-}: AddPillProps) {
+}: AddPillBaseProps & { sections: readonly AddPillSection[] }) {
   const [phase, setPhase] = useState<Phase>('closed');
   const ids = useId();
   const closing = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -247,13 +316,8 @@ export function AddPill({
             is painted with is a promise, and a pseudo element is the one
             drawing no cascade can report. */}
         <span className="crewlet-add-pill__disc" aria-hidden="true" />
-        {/* THE CONSOLE'S ADD-CIRCLE: a ring at the disc's edge and a plus half
-            its size inside it, so the mark reads as one round control rather
-            than as a plus standing on a disc it nearly fills. */}
-        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <circle cx="8" cy="8" r="7" />
-          <path d="M8 4.5v7M4.5 8h7" />
-        </svg>
+        {/* THE CONSOLE'S ADD-CIRCLE: a ring at the disc's edge and a plus half its size. */}
+        <AddMarkGlyph />
       </button>
       {phase !== 'closed' && (
         <div className="crewlet-add-pill__sections" aria-hidden={phase === 'closing' || undefined}>

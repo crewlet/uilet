@@ -275,16 +275,17 @@ export function OrgTableActions({
   );
 }
 
-export interface OrgTableAddProps extends AddPillProps {
+export type OrgTableAddProps = AddPillProps & {
   /** Says a press opened it, so the grid's one tab stop follows focus here. */
   onOpen?: (() => void) | undefined;
   /**
    * `end` (the default) holds the open pill's room at the row's end. `name`
    * stands beside a name (`OrgLabel` `nameAction`) and takes its mark's room
    * alone, open or closed, so opening moves nothing: the pill opens over the row.
+   * With `onAdd` there is no pill, and the slot is the mark's.
    */
   placement?: 'end' | 'name' | undefined;
-}
+};
 
 /**
  * The split add pill on a row: `AddPill`, in the slot the row reserves for it.

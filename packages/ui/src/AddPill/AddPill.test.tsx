@@ -23,7 +23,8 @@ import { motion, themes } from '@crewlethq/tokens';
 import { contrast, flatten, parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installCss, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { UserPlusGlyph } from '@crewlethq/icons/glyphs';
-import { AddPill, ADD_PILL_MS, type AddPillSection } from './AddPill.js';
+import { AddMarkGlyph, AddPill, ADD_PILL_MS, type AddPillSection } from './AddPill.js';
+import { OrgTableAdd } from '../OrgTable/index.js';
 
 const Glyph = () => <svg data-testid="glyph" />;
 
@@ -597,4 +598,40 @@ test('the quiet row pill draws a smaller, lighter plus with no disc, in the same
   expect(sheet).toMatch(/\[data-size='xs'\] \.crewlet-add-pill__disc \{[^}]*background-color: transparent;/);
   // The target is the pill's own, untouched by the quiet size.
   expect(sheet).not.toMatch(/\[data-size='xs'\] \.crewlet-add-pill__mark \{/);
+});
+
+describe('one thing to add (onAdd)', () => {
+  test('a press adds at once, hovering never splits the mark, and it is no disclosure', () => {
+    const onAdd = vi.fn();
+    const onOpen = vi.fn();
+    const outside = vi.fn();
+    render(
+      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+      <div onClick={outside}>
+        <OrgTableAdd label="Add to Engineering" placement="name" onAdd={onAdd} onOpen={onOpen} />
+      </div>,
+    );
+    fireEvent.mouseEnter(mark().closest('.crewlet-add-pill')!);
+    expect(choices()).toHaveLength(0);
+    expect(mark().hasAttribute('aria-expanded')).toBe(false);
+    fireEvent.click(mark());
+    expect(onAdd).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalled();
+    expect(outside).not.toHaveBeenCalled();
+    expect(choices()).toHaveLength(0);
+  });
+
+  test('the mark keeps the add control\'s drawing, the same glyph the kit exports', () => {
+    const { container } = render(
+      <>
+        <AddPill label="Add to Engineering" onAdd={() => {}} />
+        <AddMarkGlyph size="sm" data-testid="glyph-mark" />
+      </>,
+    );
+    const drawn = container.querySelector('.crewlet-add-pill__mark svg')!;
+    const glyph = screen.getByTestId('glyph-mark');
+    expect(drawn.innerHTML).toBe(glyph.innerHTML);
+    expect(glyph.getAttribute('width')).toBe('14px');
+    expect(glyph.getAttribute('aria-hidden')).toBe('true');
+  });
 });
