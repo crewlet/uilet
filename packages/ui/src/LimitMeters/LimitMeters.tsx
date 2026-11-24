@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import type { MeterState } from '../Meter/index.js';
+import { USAGE_WARN_AT, type MeterState } from '../Meter/index.js';
 import { cx } from '../utils/cx.js';
 
 /** One window of a limit: a 5-hour window, a weekly one, a model's own. */
@@ -35,21 +35,25 @@ export interface LimitMetersProps extends Omit<HTMLAttributes<HTMLDivElement>, '
   empty?: ReactNode;
   /** A muted line under the windows, such as how old the reading is: "as of 2h ago". */
   caption?: ReactNode;
+  /** How an ordinary window is painted: `success` (green, the default) or `neutral`. */
+  okTone?: 'success' | 'neutral' | undefined;
 }
 
-/** How each state is painted: an ordinary reading stays quiet, so only a limit coming near draws the eye. */
-const STATE_TONES: Record<MeterState, 'neutral' | 'warning' | 'danger'> = {
-  ok: 'neutral',
-  near: 'warning',
-  refusing: 'danger',
-};
+type LimitTone = 'success' | 'neutral' | 'warning' | 'danger';
+const ESCALATION: Record<MeterState, number> = { ok: 0, near: 1, refusing: 2 };
 
-/** The tone a limit window is painted in. */
-export function limitWindowTone(state: MeterState): 'neutral' | 'warning' | 'danger' {
-  if (!Object.hasOwn(STATE_TONES, state)) {
+/**
+ * The tone a limit window is painted in: green inside it, yellow near it, red at
+ * it. A known `used` past the warning line (80%) or the limit escalates a state
+ * that says less, so every bar turns at the same place.
+ */
+export function limitWindowTone(state: MeterState, used?: number, okTone: 'success' | 'neutral' = 'success'): LimitTone {
+  if (!Object.hasOwn(ESCALATION, state)) {
     throw new RangeError(`LimitMeters window state must be ok, near or refusing; it was ${String(state)}`);
   }
-  return STATE_TONES[state];
+  const byUse: MeterState = used === undefined ? 'ok' : used >= 1 ? 'refusing' : used >= USAGE_WARN_AT ? 'near' : 'ok';
+  const worst = ESCALATION[byUse] > ESCALATION[state] ? byUse : state;
+  return worst === 'refusing' ? 'danger' : worst === 'near' ? 'warning' : okTone;
 }
 
 /** Refuses a window the stack cannot draw honestly, by name. */
@@ -68,7 +72,15 @@ function checked(windows: readonly LimitWindow[]): void {
  * A compact stack of a limit's windows for a table cell, one line each. A known
  * fraction is a `meter`; a window known only by its state is a hatched `img`.
  */
-export function LimitMeters({ windows, label, empty = 'None reported', caption, className, ...rest }: LimitMetersProps) {
+export function LimitMeters({
+  windows,
+  label,
+  empty = 'None reported',
+  caption,
+  okTone = 'success',
+  className,
+  ...rest
+}: LimitMetersProps) {
   checked(windows);
   if (windows.length === 0) {
     return (
@@ -90,8 +102,9 @@ export function LimitMeters({ windows, label, empty = 'None reported', caption, 
           const known = w.used !== undefined;
           const percent = known ? Math.min(100, Math.round((w.used as number) * 100)) : 0;
           const figure = w.figure ?? (known ? `${Math.round((w.used as number) * 100)}%` : undefined);
+          const tone = limitWindowTone(w.state, w.used, okTone);
           return (
-            <div key={w.id} className="crewlet-limit-meters__window" data-state={w.state}>
+            <div key={w.id} className="crewlet-limit-meters__window" data-state={w.state} data-tone={tone}>
               <span className="crewlet-limit-meters__label" aria-hidden="true">
                 {w.label}
               </span>
@@ -108,7 +121,7 @@ export function LimitMeters({ windows, label, empty = 'None reported', caption, 
                     'crewlet-limit-meters__fill',
                     known ? percent > 0 && 'crewlet-limit-meters__fill--some' : 'crewlet-limit-meters__fill--state',
                   )}
-                  data-tone={limitWindowTone(w.state)}
+                  data-tone={tone}
                   style={{ width: known ? `${percent}%` : '100%' }}
                 />
               </div>

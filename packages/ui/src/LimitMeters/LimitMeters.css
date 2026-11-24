@@ -31,11 +31,16 @@
   --crewlet-limit-meters-tone: var(--color-text-tertiary);
 }
 
-.crewlet-limit-meters__window[data-state='near'] {
+/* Green inside the limit, yellow from the warning line, red at the limit (LimitMeters.tsx). */
+.crewlet-limit-meters__window[data-tone='success'] {
+  --crewlet-limit-meters-tone: var(--color-feedback-success);
+}
+
+.crewlet-limit-meters__window[data-tone='warning'] {
   --crewlet-limit-meters-tone: var(--color-feedback-warning);
 }
 
-.crewlet-limit-meters__window[data-state='refusing'] {
+.crewlet-limit-meters__window[data-tone='danger'] {
   --crewlet-limit-meters-tone: var(--color-feedback-danger);
 }
 
@@ -86,11 +91,11 @@
   color: var(--color-text-primary);
 }
 
-.crewlet-limit-meters__window[data-state='near'] .crewlet-limit-meters__figure {
+.crewlet-limit-meters__window[data-tone='warning'] .crewlet-limit-meters__figure {
   color: var(--color-feedback-warning-ink);
 }
 
-.crewlet-limit-meters__window[data-state='refusing'] .crewlet-limit-meters__figure {
+.crewlet-limit-meters__window[data-tone='danger'] .crewlet-limit-meters__figure {
   color: var(--color-feedback-danger-ink);
 }
 

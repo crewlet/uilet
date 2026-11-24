@@ -21,6 +21,8 @@ import {
   meterState,
   meterStateTone,
   meterTone,
+  usageTone,
+  USAGE_WARN_AT,
   progressTone,
   type MeterState,
 } from './index.js';
@@ -29,9 +31,9 @@ afterEach(cleanup);
 
 describe('meterTone', () => {
   test('is derived from the fill, so a bar that is nearly full says so', () => {
-    expect(meterTone(0)).toBe('quantity');
-    expect(meterTone(74.9)).toBe('quantity');
-    expect(meterTone(75)).toBe('warning');
+    expect(meterTone(0)).toBe('success');
+    expect(meterTone(79.9)).toBe('success');
+    expect(meterTone(80)).toBe('warning');
     expect(meterTone(99.9)).toBe('warning');
     expect(meterTone(100)).toBe('danger');
     expect(meterTone(140)).toBe('danger');
@@ -41,17 +43,19 @@ describe('meterTone', () => {
 describe('meterState', () => {
   test('is ok below near, near from it, and refusing from the limit itself', () => {
     expect(meterState(0)).toBe('ok');
-    expect(meterState(0.749)).toBe('ok');
-    expect(meterState(0.75)).toBe('near');
+    expect(meterState(0.799)).toBe('ok');
+    expect(meterState(0.8)).toBe('near');
     expect(meterState(0.999)).toBe('near');
     expect(meterState(1)).toBe('refusing');
     expect(meterState(1.4)).toBe('refusing');
   });
 
-  test('the default is the ramp every caller already had, three quarters of the limit', () => {
-    expect(DEFAULT_METER_THRESHOLDS).toEqual({ near: 0.75 });
+  test("the default turns at the engine's warning line, 80% of the limit", () => {
+    expect(DEFAULT_METER_THRESHOLDS).toEqual({ near: 0.8 });
+    expect(USAGE_WARN_AT).toBe(0.8);
+    expect([0, 0.799, 0.8, 0.999, 1, 1.4].map(usageTone)).toEqual(['success', 'success', 'warning', 'warning', 'danger', 'danger']);
     // meterTone IS this ramp over a percentage, painted: the two can not drift.
-    for (const percent of [0, 74.9, 75, 99.9, 100, 140]) {
+    for (const percent of [0, 79.9, 80, 99.9, 100, 140]) {
       expect(meterTone(percent), `${percent}`).toBe(meterStateTone(meterState(percent / 100)));
     }
   });
@@ -78,8 +82,9 @@ describe('meterState', () => {
 });
 
 describe('meterStateTone', () => {
-  test('near is the warning, refusing the danger, and ok the ordinary quantity', () => {
-    expect(METER_STATES.map((state) => meterStateTone(state))).toEqual(['quantity', 'warning', 'danger']);
+  test('near is the warning, refusing the danger, and ok green unless asked for the quantity', () => {
+    expect(METER_STATES.map((state) => meterStateTone(state))).toEqual(['success', 'warning', 'danger']);
+    expect(meterStateTone('ok', 'quantity')).toBe('quantity');
   });
 
   test('refuses a state it does not know, including a key every object inherits', () => {
@@ -241,11 +246,10 @@ describe('Meter', () => {
     expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('quantity');
   });
 
-  test('the ordinary reading is the quantity, painted in the first data series rather than the accent', () => {
-    // The accent means "act here", and a bar is not an action: the reading a
-    // meter shows when it is in no state is a figure of one quantity, which
-    // its label names, and that is what the first data series is for.
-    const { container } = render(<Meter label="Spend" value={40} max={100} />);
+  test('an ordinary usage reading is green; okTone="quantity" paints it in the first data series', () => {
+    const { container, rerender } = render(<Meter label="Spend" value={40} max={100} />);
+    expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('success');
+    rerender(<Meter label="Spend" value={40} max={100} okTone="quantity" />);
     expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('quantity');
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Meter.css'), 'utf8');
     const bare = /\.crewlet-meter__fill\s*\{([^}]*)\}/.exec(css.replace(/\/\*[\s\S]*?\*\//g, ''));
@@ -271,8 +275,8 @@ describe('Meter', () => {
     const cases: [MeterState, number, string][] = [
       ['refusing', 0, 'danger'],
       ['near', 10, 'warning'],
-      ['ok', 100, 'quantity'],
-      ['ok', 140, 'quantity'],
+      ['ok', 100, 'success'],
+      ['ok', 140, 'success'],
       ['near', 0, 'warning'],
     ];
     for (const [state, value, tone] of cases) {
@@ -302,8 +306,8 @@ describe('Meter', () => {
       return drawn;
     };
     // 82 is `warning` on the default ramp and ordinary under this rule.
-    expect(tone(82)).toBe('quantity');
-    expect(tone(89)).toBe('quantity');
+    expect(tone(82)).toBe('success');
+    expect(tone(89)).toBe('success');
     expect(tone(90)).toBe('warning');
     expect(tone(99)).toBe('warning');
     expect(tone(100)).toBe('danger');
@@ -323,9 +327,9 @@ describe('Meter', () => {
       cleanup();
       return drawn;
     };
-    expect([0, 74, 75, 99, 100, 140].map(tone)).toEqual([
-      'quantity',
-      'quantity',
+    expect([0, 79, 80, 99, 100, 140].map(tone)).toEqual([
+      'success',
+      'success',
       'warning',
       'warning',
       'danger',
