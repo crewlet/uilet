@@ -226,7 +226,8 @@ export interface ModalProps extends FrameAttributes {
  * heading would meet it twice.
  */
 export function Modal({ open, ...rest }: ModalProps) {
-  const container = useLayerContainer();
+  // Over the screen wherever it opens: a table's host holds anchored layers only.
+  const container = useLayerContainer('viewport');
   // The frame is a component of its own so its hooks run only while the
   // surface is open. A `useModalLayer` that ran while closed would take a
   // place in the stack for a surface nobody can see, and would capture the

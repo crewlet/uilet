@@ -252,6 +252,12 @@ Stories: Patterns / Confirmation dialogs (remove a model, remove an MCP server,
 disconnect an integration, move a seat's model, review and save, long names,
 many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 
+## Changes in 0.188.2
+
+### Fitted select rows line up, dialogs from a table sit over the screen, a row menu lights the row under the pointer
+
+**`Select hintColumn="fit"` lays every row on tracks the whole list shares** (a mark, the label and its description, the tick, the hint): a row with no mark keeps the mark's slot when others have one, so every label and description starts at one x, and the mark, the label's first line, the tick and the hint share one centre line. **`LayerHost` takes `takes="anchored"`** for a host that holds anchored layers only, and `useLayerContainer('viewport')` walks past it: `Modal` (dialogs and sheets) and `Toaster` sit over the screen wherever they open, while a host that takes all (a fullscreen surface) still holds its own. `TreeGrid`'s host is anchored, so a dialog opened from a cell is centred on the screen. **A `Menu` in `activeDescendant` mode** keeps the highlight fill on the row under the pointer, opens on no row when pressed (on the first with Enter or Space), never lights a disabled row from the pointer, and clears the highlight when the pointer leaves the rows. Stories: Select Hint Column Mixed Rows, TreeGrid layers Row Dialog And Menu.
+
 ## Changes in 0.188.1
 
 ### A limit stack fills a flex table cell

@@ -940,6 +940,45 @@ describe('the active-descendant mode', () => {
     expect(highlighted()).toBe(item('Open seat'));
   });
 
+  test('Enter or Space on the trigger opens on the first item; a press opens on none', () => {
+    render(<Menu label="Actions for Software Engineer" items={entries()} activeDescendant />);
+    trigger().focus();
+    fireEvent.keyDown(trigger(), { key: 'Enter' });
+    fireEvent.click(trigger());
+    expect(highlighted()).toBe(item('Edit'));
+    press('Escape');
+    fireEvent.keyDown(trigger(), { key: ' ' });
+    fireEvent.click(trigger());
+    expect(highlighted()).toBe(item('Edit'));
+    press('Escape');
+    // A key pressed earlier does not leak into a later pointer open.
+    fireEvent.keyDown(trigger(), { key: 'Enter' });
+    fireEvent.pointerDown(document.body);
+    fireEvent.click(trigger());
+    expect(menu().hasAttribute('aria-activedescendant')).toBe(false);
+  });
+
+  test('the pointer never lights a disabled row, and leaving the rows takes the highlight away', () => {
+    render(<Menu label="Actions for Software Engineer" items={entries()} activeDescendant />);
+    fireEvent.click(trigger());
+    fireEvent.pointerMove(item('Edit'));
+    expect(highlighted()).toBe(item('Edit'));
+    fireEvent.pointerMove(item('Open seat'));
+    expect(highlighted()).toBeNull();
+    fireEvent.pointerMove(item('Move to'));
+    expect(highlighted()).toBe(item('Move to'));
+    fireEvent.pointerLeave(menu(), { pointerType: 'mouse' });
+    expect(highlighted()).toBeNull();
+    expect(document.querySelectorAll('.crewlet-menu__item.is-active')).toHaveLength(0);
+  });
+
+  // The rule that cleared hover must not outrank the highlight on the row under the pointer.
+  test('the row under the pointer keeps the highlight fill: hover clears only rows that are not active', () => {
+    const css = menuCss().replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ');
+    expect(css).toContain('.crewlet-menu--descendant .crewlet-menu__item:hover:not(.is-active) { background: transparent; }');
+    expect(css).not.toContain('.crewlet-menu--descendant .crewlet-menu__item:hover:not(.is-disabled)');
+  });
+
   test('Escape closes it and returns focus to the trigger', () => {
     render(<Menu label="Actions for Software Engineer" items={entries()} activeDescendant />);
     fireEvent.click(trigger());

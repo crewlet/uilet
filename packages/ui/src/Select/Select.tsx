@@ -627,7 +627,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
    * instead, after the hint when there is one.
    */
   const tickAtEnd = useMemo(() => flat.some((option) => option.leading !== undefined), [flat]);
-  // A fitted hint column lays the rows on two shared tracks (Select.css).
+  // A fitted hint column lays every row's parts on tracks the whole list shares (Select.css).
   const fitted = hintColumn === 'fit';
 
   const close = useCallback((restore: boolean) => {
@@ -1041,6 +1041,9 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
           <span className="crewlet-select__option-leading" aria-hidden="true">
             {option.leading}
           </span>
+        ) : fitted && tickAtEnd ? (
+          // The mark's track, kept empty, so this row's label starts where the marked rows' do.
+          <span className="crewlet-select__option-leading" aria-hidden="true" />
         ) : null}
         <span className="crewlet-select__option-body">
           <span className="crewlet-select__option-label">{option.label}</span>
@@ -1101,7 +1104,9 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
         >
           {fitted ? (
             <>
-              <span className="crewlet-select__option-main">
+              <span
+                className={cx('crewlet-select__option-main', !renderOption && 'crewlet-select__option-main--tracks')}
+              >
                 {content(option, highlighted, selected, tick, renderOption !== undefined)}
               </span>{' '}
               <span className="crewlet-listbox__hint crewlet-select__option-hint">
@@ -1213,6 +1218,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
         }}
         id={listId}
         className={cx('crewlet-listbox', 'crewlet-select__list', fitted && 'crewlet-select__list--fit')}
+        data-leads={fitted && tickAtEnd ? '' : undefined}
         role="listbox"
         aria-label={ariaLabel ?? placeholder}
         aria-multiselectable={multiple || undefined}

@@ -32,4 +32,4 @@ export {
 export type { BesidePlacement, Placement, PlacementRect, PlacementSize, PopupEntrance } from './place.js';
 
 export { LayerHost, useLayerContainer } from './LayerHost.js';
-export type { LayerHostProps } from './LayerHost.js';
+export type { LayerHostProps, LayerHostTakes, LayerPlacement } from './LayerHost.js';

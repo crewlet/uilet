@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { FormField, Select, StatusDot, type SelectOption, type SelectValue } from '@crewlethq/ui';
 import { BotGlyph, NetworkGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
+import { VendorMark } from '@crewlethq/icons';
 
 const fruits: SelectOption[] = [
   { value: 'apple', label: 'Apple', description: 'Red, crunchy' },
@@ -394,6 +395,53 @@ export const HintColumnFit: Story = {
           inset="flush"
           hintColumn="fit"
           options={MODELS}
+          value={value}
+          onChange={(next) => setValue(next)}
+        />
+      </div>
+    );
+  },
+};
+
+const mark = (vendor: 'claude' | 'openai') => <VendorMark vendor={vendor} size="md" />;
+
+const HELPER_MODELS: SelectOption[] = [
+  {
+    value: 'opus-main',
+    label: 'opus-main · Claude Opus 4',
+    leading: mark('claude'),
+    hint: <StatusDot tone="success">Ready</StatusDot>,
+  },
+  {
+    value: 'sonnet-team',
+    label: 'sonnet-team · Claude Sonnet 4',
+    leading: mark('claude'),
+    hint: <StatusDot tone="warning">Sitting out</StatusDot>,
+  },
+  { value: 'gpt-main', label: 'gpt-main · GPT-5', leading: mark('openai'), hint: <StatusDot tone="success">Ready</StatusDot> },
+  { value: 'retired-model', label: 'retired-model', description: "Not one of the company's models" },
+  { value: 'none', label: 'None', description: 'Its checks still run, with no explanations or report summary' },
+];
+
+/**
+ * A FITTED HINT COLUMN OVER MIXED ROWS: models with a leading mark, a label and
+ * a hint, then rows with a label and a description only. Every label starts at
+ * one x, the mark, label, hint and tick share one centre line, and the
+ * description starts under its label. Open it to see the list.
+ */
+export const HintColumnMixedRows: Story = {
+  render: function Render() {
+    const [value, setValue] = useState<SelectValue | SelectValue[] | undefined>('opus-main');
+    return (
+      <div style={{ width: 300, paddingInlineStart: 16 }}>
+        <Select
+          ariaLabel="Advisor's model"
+          size="sm"
+          width="full"
+          appearance="quiet"
+          inset="flush"
+          hintColumn="fit"
+          options={HELPER_MODELS}
           value={value}
           onChange={(next) => setValue(next)}
         />
