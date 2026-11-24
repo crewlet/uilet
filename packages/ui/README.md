@@ -256,7 +256,7 @@ many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 
 ### The shared clock answers one instant within a render
 
-**A stopped clock is read once per synchronous pass.** While no reader is subscribed, `useNow` and `currentNow` replace a reading more than a second old; the first read of a pass now decides that, and every later read in the pass returns the same instant until a microtask ends it. React's development build reads a snapshot twice on mount, and two reads either side of that second differed, so a reader mounted at that moment logged "The result of getSnapshot should be cached to avoid an infinite loop", failing a test suite that fails on an unexpected `console.error`. Nothing to change.
+**A stopped clock is read once per synchronous pass.** While no reader is subscribed, `useNow` and `currentNow` replace a reading a second or more old; the first read of a pass now decides that, and every later read in the pass returns the same instant until a microtask ends it. React's development build reads a snapshot twice on mount, and two reads either side of that second differed, so a reader mounted at that moment logged "The result of getSnapshot should be cached to avoid an infinite loop", failing a test suite that fails on an unexpected `console.error`. Nothing to change in an application. A test that moves a faked system clock between two reads of a stopped clock ends the pass first (awaits a microtask), and a suite whose fake timers also fake `queueMicrotask` (Jest's default) runs its pending microtasks between passes, or the clock keeps its first reading.
 
 ## Changes in 0.186.0
 

@@ -69,7 +69,7 @@ const TICK = 1000;
  * was when the last one left, or when the module loaded: a relative time
  * mounted after a quiet minute rendered that minute stale until the first
  * tick, and "2m ago" read "1m ago". So while the clock is idle, the first
- * read of a synchronous pass replaces a reading more than a tick old, and
+ * read of a synchronous pass replaces a reading a tick or more old, and
  * every later read in that pass returns the same value; a microtask lets the
  * next pass decide again. One read per pass, not one per call, because React
  * reads a snapshot twice in a row and warns when the two differ: two reads
