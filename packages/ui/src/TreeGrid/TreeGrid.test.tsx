@@ -703,7 +703,7 @@ describe('focus', () => {
     expect(rules.map(([selector]) => selector.replace(/\s+/g, ' '))).toEqual([
       '.crewlet-tree-grid[data-pointer] .crewlet-tree-grid__row:focus-visible, .crewlet-tree-grid[data-pointer] .crewlet-tree-grid__cell:focus-visible',
     ]);
-    expect(rules[0]![1]).toMatch(/outline:\s*none/);
+    expect(rules[0]![1]).toMatch(/outline:\s*2px solid transparent/);
   });
 });
 

@@ -301,10 +301,11 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
-/* AFTER A POINTER PRESS, NO RING: the keyboard's ring returns with its next key. */
+/* AFTER A POINTER PRESS, NO RING: the keyboard's ring returns with its next key.
+   Transparent rather than none, so forced-colors mode still draws one. */
 .crewlet-tree-grid[data-pointer] .crewlet-tree-grid__row:focus-visible,
 .crewlet-tree-grid[data-pointer] .crewlet-tree-grid__cell:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
 }
 
 /*
