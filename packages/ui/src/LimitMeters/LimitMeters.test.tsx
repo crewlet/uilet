@@ -35,8 +35,14 @@ const OPUS_REACHED: LimitWindow = {
 };
 
 describe('limitWindowTone', () => {
-  test('an ordinary reading stays quiet; near is the warning and refusing the danger', () => {
-    expect((['ok', 'near', 'refusing'] as const).map(limitWindowTone)).toEqual(['neutral', 'warning', 'danger']);
+  test('green inside the limit, yellow near it, red at it, the used fraction escalating a quieter state', () => {
+    expect((['ok', 'near', 'refusing'] as const).map((state) => limitWindowTone(state))).toEqual(['success', 'warning', 'danger']);
+    expect(limitWindowTone('ok', undefined, 'neutral')).toBe('neutral');
+    // A known fraction past the warning line or the limit escalates a quieter state, never the reverse.
+    expect(limitWindowTone('ok', 0.79)).toBe('success');
+    expect(limitWindowTone('ok', 0.8)).toBe('warning');
+    expect(limitWindowTone('ok', 1)).toBe('danger');
+    expect(limitWindowTone('refusing', 0.1)).toBe('danger');
   });
 
   test('refuses a state it does not know, including a key every object inherits', () => {
@@ -122,7 +128,7 @@ describe('LimitMeters', () => {
   test('tones follow each window state', () => {
     const { container } = render(<LimitMeters label="Limits" windows={[WEEKLY, FIVE_HOUR, OPUS_REACHED]} />);
     const tones = [...container.querySelectorAll<HTMLElement>('.crewlet-limit-meters__fill')].map((f) => f.dataset['tone']);
-    expect(tones).toEqual(['neutral', 'warning', 'danger']);
+    expect(tones).toEqual(['success', 'warning', 'danger']);
   });
 
   test('no window says the empty words, and no group or bar', () => {

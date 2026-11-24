@@ -3,17 +3,8 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 
 /**
- * What the bar is saying.
- *
- * `quantity` is the ordinary reading, because a budget that is being spent is
- * not in a state; it is just a number. It is the first data series,
- * `--color-data-1`: a meter is a figure of one quantity, and the label that
- * names it is what a data hue asks for, where the accent it used to take
- * means "act here" and a bar is not an action. The three that ARE states are
- * derived from the fill unless a caller overrides them, so a bar that is
- * nearly full says so without every call site remembering to. A caller that
- * owns the rule passes a `MeterState` instead, which names the state rather
- * than the paint.
+ * What the bar is saying: on the `spent` ramp green inside the limit, `warning` near it,
+ * `danger` at it. `quantity` (the first data series) is for a figure that is not a usage.
  */
 export type MeterTone = 'quantity' | 'success' | 'warning' | 'danger' | 'neutral';
 
@@ -67,11 +58,24 @@ export interface MeterThresholds {
   near: number;
 }
 
+/** Where a usage reading turns yellow: the engine's own warning line, 80% of the limit. */
+export const USAGE_WARN_AT = 0.8;
+
 /**
- * The thresholds a meter uses when nobody says otherwise: `near` at three
- * quarters of the limit, the ramp every existing caller has always had.
+ * The thresholds a meter uses when nobody says otherwise: `near` at the
+ * engine's warning line (`USAGE_WARN_AT`), so every usage bar turns at one place.
  */
-export const DEFAULT_METER_THRESHOLDS: Readonly<MeterThresholds> = Object.freeze({ near: 0.75 });
+export const DEFAULT_METER_THRESHOLDS: Readonly<MeterThresholds> = Object.freeze({ near: USAGE_WARN_AT });
+
+/** What an ordinary (`ok`) reading is painted: green by default, or the quiet look it had. */
+export type MeterOkTone = 'success' | 'quantity';
+
+/** A usage fraction's tone: green below 80%, yellow from 80%, red at the limit. */
+export function usageTone(used: number): 'success' | 'warning' | 'danger' {
+  if (used >= 1) return 'danger';
+  if (used >= USAGE_WARN_AT) return 'warning';
+  return 'success';
+}
 
 interface MeterBaseProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   value: number;
@@ -104,6 +108,8 @@ interface MeterBaseProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   size?: 'default' | 'compact' | undefined;
   /** Keep the label out of the picture. It stays in the accessibility tree. */
   hideLabel?: boolean | undefined;
+  /** How an ordinary reading is painted on the `spent` ramp: `success` (green, the default) or `quantity`. */
+  okTone?: MeterOkTone | undefined;
 }
 
 /**
@@ -150,25 +156,21 @@ export interface MeterThresholdProps {
 
 export type MeterProps = MeterBaseProps & (MeterVerdictProps | MeterRampProps | MeterThresholdProps);
 
-/**
- * How each state is painted: `near` is the warning, `refusing` the danger, and
- * `ok` is not a state a reader has to notice at all, so it keeps the ordinary
- * reading, `quantity`.
- */
+/** How each state is painted: green inside the limit, yellow near it, red at it. */
 const STATE_TONES: Record<MeterState, MeterTone> = {
-  ok: 'quantity',
+  ok: 'success',
   near: 'warning',
   refusing: 'danger',
 };
 
-/** The tone a `MeterState` is painted in. */
-export function meterStateTone(state: MeterState): MeterTone {
+/** The tone a `MeterState` is painted in; `okTone` paints an ordinary reading. */
+export function meterStateTone(state: MeterState, okTone: MeterOkTone = 'success'): MeterTone {
   // Own keys only: a state read off the wire as "toString" would otherwise
   // find the prototype's function and paint the fill with nothing at all.
   if (!Object.hasOwn(STATE_TONES, state)) {
     throw new RangeError(`Meter state must be one of ${METER_STATES.join(', ')}; it was ${String(state)}`);
   }
-  return STATE_TONES[state];
+  return state === 'ok' ? okTone : STATE_TONES[state];
 }
 
 /**
@@ -236,19 +238,21 @@ function drawnTone(
     tone,
     polarity = 'spent',
     thresholds,
+    okTone,
   }: {
     state: MeterState | undefined;
     tone: MeterTone | undefined;
     polarity: MeterPolarity | undefined;
     thresholds: MeterThresholds | undefined;
+    okTone: MeterOkTone | undefined;
   },
   fraction: number,
   percent: number,
 ): MeterTone {
-  if (state !== undefined) return meterStateTone(state);
+  if (state !== undefined) return meterStateTone(state, okTone);
   if (tone !== undefined) return tone;
   if (polarity === 'progress') return progressTone(percent);
-  return meterStateTone(meterState(fraction, thresholds));
+  return meterStateTone(meterState(fraction, thresholds), okTone);
 }
 
 /**
@@ -297,6 +301,7 @@ export function Meter({
   tone,
   polarity,
   thresholds,
+  okTone,
   size = 'default',
   hideLabel = false,
   className,
@@ -306,7 +311,7 @@ export function Meter({
   const bounded = max > 0;
   const fraction = bounded ? value / max : 0;
   const percent = bounded ? Math.min(100, Math.max(0, fraction * 100)) : 0;
-  const drawn = drawnTone({ state, tone, polarity, thresholds }, fraction, percent);
+  const drawn = drawnTone({ state, tone, polarity, thresholds, okTone }, fraction, percent);
   const trailing = hint ?? valueText;
 
   // The fill was already clamped; the fact it reported was not. Both ends

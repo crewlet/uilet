@@ -1,0 +1,9 @@
+/* The grip an item is dragged by (ReorderHandle.tsx). */
+.crewlet-reorder-handle {
+  cursor: grab;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-reorder-handle:active {
+  cursor: grabbing;
+}

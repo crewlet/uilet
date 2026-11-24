@@ -8,9 +8,12 @@ export {
   meterStateTone,
   meterTone,
   progressTone,
+  usageTone,
+  USAGE_WARN_AT,
 } from './Meter.js';
 export type {
   MeterPolarity,
+  MeterOkTone,
   MeterProps,
   MeterRampProps,
   MeterState,
