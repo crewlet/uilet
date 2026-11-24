@@ -1017,35 +1017,41 @@ test('a held select says why, to a screen reader and on hover, and opens nothing
   expect(screen.queryByRole('listbox')).toBeNull();
 });
 
-test('a status stands in one column at the row end, read with its label, on rows of the list grid', () => {
+test('a fitted hint column sets every hint at the row end on the list grid, read with its label', () => {
   const options: SelectOption[] = [
-    { value: 'a', label: 'claude-opus-a-very-long-name', group: 'Models', status: 'Ready' },
-    { value: 'b', label: 'gpt', group: 'Models', status: 'Sitting out', hint: 'fast' },
+    { value: 'a', label: 'claude-opus-a-very-long-name', group: 'Models', hint: 'Ready' },
+    { value: 'b', label: 'gpt', group: 'Models', hint: 'Sitting out' },
     { value: 'c', label: 'Fleet', group: 'Fleets' },
   ];
-  render(<Picker options={options} value="a" />);
+  render(<Picker options={options} value="a" hintColumn="fit" />);
   fireEvent.click(trigger());
   const list = screen.getByRole('listbox', { name: 'Owner' });
-  expect(list.classList.contains('crewlet-select__list--status')).toBe(true);
+  expect(list.classList.contains('crewlet-select__list--fit')).toBe(true);
   const rows = within(list).getAllByRole('option');
   for (const row of rows) {
-    const parts = [...row.children].map((child) => child.className);
-    expect(parts).toEqual(['crewlet-select__option-main', 'crewlet-select__option-status']);
+    expect([...row.children].map((child) => child.classList[0])).toEqual([
+      'crewlet-select__option-main',
+      'crewlet-listbox__hint',
+    ]);
   }
-  expect(rows[1]!.textContent).toBe('gpt fast Sitting out');
-  expect(rows[2]!.querySelector('.crewlet-select__option-status')!.textContent).toBe('');
+  expect(rows[1]!.textContent).toBe('gpt Sitting out');
+  expect(rows[2]!.querySelector('.crewlet-select__option-hint')!.textContent).toBe('');
 });
 
-test('a list without a status keeps its rows as they were', () => {
-  render(<Picker />);
+test('an inline hint column keeps its rows as they were', () => {
+  render(<Picker options={[{ value: 'a', label: 'A', hint: 'Ready' }]} value="a" />);
   fireEvent.click(trigger());
   const list = screen.getByRole('listbox', { name: 'Owner' });
-  expect(list.classList.contains('crewlet-select__list--status')).toBe(false);
+  expect(list.classList.contains('crewlet-select__list--fit')).toBe(false);
   expect(list.querySelector('.crewlet-select__option-main')).toBeNull();
 });
 
-test('the status column is one shared track: the rows and groups are subgrids of the list', () => {
+test('the fitted column is one shared track in one weight, and a flush picker is pulled back by its inset', () => {
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Select.css'), 'utf8');
-  expect(css).toMatch(/\.crewlet-select__list\.crewlet-select__list--status \{[^}]*grid-template-columns: minmax\(0, 1fr\) auto;/);
+  expect(css).toMatch(/\.crewlet-select__list\.crewlet-select__list--fit \{[^}]*grid-template-columns: minmax\(0, 1fr\) auto;/);
   expect(css).toMatch(/> \.crewlet-select__group > \.crewlet-select__option \{[^}]*grid-template-columns: subgrid;/);
+  expect(css).toMatch(/\.crewlet-select__option-hint \{[^}]*font-weight: var\(--font-weight-regular\);/);
+  render(<Picker appearance="quiet" inset="flush" size="sm" />);
+  expect(trigger().closest('.crewlet-select')!.classList.contains('crewlet-select--flush')).toBe(true);
+  expect(css).toMatch(/\.crewlet-select--flush\.crewlet-select--sm \{\s*--crewlet-select-flush: calc\(var\(--spacing-2\) \+ 1px\);/);
 });

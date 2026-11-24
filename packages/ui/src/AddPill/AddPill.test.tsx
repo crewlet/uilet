@@ -23,7 +23,7 @@ import { motion, themes } from '@crewlethq/tokens';
 import { contrast, flatten, parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installCss, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { UserPlusGlyph } from '@crewlethq/icons/glyphs';
-import { AddMarkGlyph, AddPill, ADD_PILL_MS, type AddPillSection } from './AddPill.js';
+import { AddCircleGlyph, AddPill, ADD_PILL_MS, type AddPillSection } from './AddPill.js';
 import { OrgTableAdd } from '../OrgTable/index.js';
 
 const Glyph = () => <svg data-testid="glyph" />;
@@ -625,7 +625,7 @@ describe('one thing to add (onAdd)', () => {
     const { container } = render(
       <>
         <AddPill label="Add to Engineering" onAdd={() => {}} />
-        <AddMarkGlyph size="sm" data-testid="glyph-mark" />
+        <AddCircleGlyph size="sm" data-testid="glyph-mark" />
       </>,
     );
     const drawn = container.querySelector('.crewlet-add-pill__mark svg')!;
@@ -634,4 +634,12 @@ describe('one thing to add (onAdd)', () => {
     expect(glyph.getAttribute('width')).toBe('14px');
     expect(glyph.getAttribute('aria-hidden')).toBe('true');
   });
+});
+
+test('face={false} keeps the mark under the pointer, and a press still opens the choices', () => {
+  render(<AddPill label="Add to Engineering" face={false} sections={sections(() => {})} />);
+  fireEvent.mouseEnter(mark().closest('.crewlet-add-pill')!);
+  expect(choices()).toHaveLength(0);
+  fireEvent.click(mark());
+  expect(choices()).toHaveLength(3);
 });

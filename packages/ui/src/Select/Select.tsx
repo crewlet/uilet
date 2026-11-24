@@ -100,12 +100,6 @@ export interface SelectOption {
    * label. Listbox mode only.
    */
   hint?: ReactNode;
-  /**
-   * A state at the row's end, in a column as wide as the widest status in the
-   * list, so every status starts at one x whatever the label's length: a
-   * status dot and its word. Read with the label. Listbox mode only.
-   */
-  status?: ReactNode;
   disabled?: boolean;
   /** Options sharing a group are listed under its name, in first-seen order. */
   group?: string;
@@ -194,6 +188,17 @@ export interface SelectProps extends NativePassthrough {
    * A quiet filter that is on takes the accent's soft fill and ink.
    */
   appearance?: SelectAppearance;
+  /**
+   * `flush` pulls the trigger back by its own padding and border, so its text
+   * starts on the column's x, as a quiet picker in a table cell wants.
+   */
+  inset?: 'default' | 'flush' | undefined;
+  /**
+   * `fit` sets every option's `hint` in one column at the row's end, as wide as
+   * the widest hint in the list, so a status dot in each starts at one x.
+   * Listbox mode only.
+   */
+  hintColumn?: 'inline' | 'fit' | undefined;
   ariaLabel?: string;
   searchable?: boolean;
   searchPlaceholder?: string;
@@ -260,6 +265,8 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
     active = false,
     error: errorProp,
     appearance = 'field',
+    inset = 'default',
+    hintColumn = 'inline',
     ariaLabel,
     searchable = false,
     searchPlaceholder = 'Search',
@@ -280,7 +287,12 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
    * The width is a class on the root of whichever control is drawn, so it is
    * decided once here rather than threaded through both branches.
    */
-  const classes = cx(className, width === 'auto' && 'crewlet-select--auto', appearance === 'quiet' && 'crewlet-select--quiet');
+  const classes = cx(
+    className,
+    width === 'auto' && 'crewlet-select--auto',
+    appearance === 'quiet' && 'crewlet-select--quiet',
+    inset === 'flush' && 'crewlet-select--flush',
+  );
 
   /*
    * WHAT IS CHOSEN, and the one case that is not obvious: the EMPTY STRING.
@@ -356,6 +368,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
       multiple={multiple}
       renderTrigger={renderTrigger}
       renderOption={renderOption}
+      hintColumn={hintColumn}
       renderMultiLabel={renderMultiLabel}
       emptyMessage={emptyMessage}
       onHighlight={onHighlight}
@@ -514,6 +527,7 @@ interface ListboxSelectProps {
   multiple: boolean;
   renderTrigger: SelectProps['renderTrigger'];
   renderOption: SelectProps['renderOption'];
+  hintColumn: 'inline' | 'fit';
   renderMultiLabel: SelectProps['renderMultiLabel'];
   emptyMessage: string;
   onHighlight: SelectProps['onHighlight'];
@@ -549,6 +563,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     multiple,
     renderTrigger,
     renderOption,
+    hintColumn,
     renderMultiLabel,
     emptyMessage,
     onHighlight,
@@ -613,8 +628,8 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
    * instead, after the hint when there is one.
    */
   const tickAtEnd = useMemo(() => flat.some((option) => option.leading !== undefined), [flat]);
-  // A list with any status lays its rows on two shared tracks (Select.css).
-  const statused = useMemo(() => flat.some((option) => option.status !== undefined), [flat]);
+  // A fitted hint column lays the rows on two shared tracks (Select.css).
+  const fitted = hintColumn === 'fit';
 
   const close = useCallback((restore: boolean) => {
     setOpen(false);
@@ -1017,7 +1032,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     };
   };
 
-  const content = (option: SelectOption, highlighted: boolean, selected: boolean, tick: ReactNode) =>
+  const content = (option: SelectOption, highlighted: boolean, selected: boolean, tick: ReactNode, hint = true) =>
     renderOption ? (
       renderOption(option, { active: highlighted, selected })
     ) : (
@@ -1034,7 +1049,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
             <span className="crewlet-select__option-desc">{option.description}</span>
           ) : null}
         </span>
-        {option.hint !== undefined ? (
+        {hint && option.hint !== undefined ? (
           <>
             {/* A space the layout ignores and a name does not: without it
                 the row is read as one run-on word, "AbyssVivid violet". */}{' '}
@@ -1085,10 +1100,14 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
           )}
           {...(option.disabled ? {} : optionHandlers(at))}
         >
-          {statused ? (
+          {fitted ? (
             <>
-              <span className="crewlet-select__option-main">{content(option, highlighted, selected, tick)}</span>{' '}
-              <span className="crewlet-select__option-status">{option.status}</span>
+              <span className="crewlet-select__option-main">
+                {content(option, highlighted, selected, tick, renderOption !== undefined)}
+              </span>{' '}
+              <span className="crewlet-listbox__hint crewlet-select__option-hint">
+                {renderOption ? null : option.hint}
+              </span>
             </>
           ) : (
             content(option, highlighted, selected, tick)
@@ -1194,7 +1213,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
           list.current = el;
         }}
         id={listId}
-        className={cx('crewlet-listbox', 'crewlet-select__list', statused && 'crewlet-select__list--status')}
+        className={cx('crewlet-listbox', 'crewlet-select__list', fitted && 'crewlet-select__list--fit')}
         role="listbox"
         aria-label={ariaLabel ?? placeholder}
         aria-multiselectable={multiple || undefined}

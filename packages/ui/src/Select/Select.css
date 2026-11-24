@@ -172,6 +172,16 @@
  * stretches to the frame so a press anywhere in the control opens the list.
  */
 .crewlet-select__native,
+/* FLUSH: pulled back by its own leading padding and border, so its text starts on the column's x. */
+.crewlet-select--flush {
+  --crewlet-select-flush: calc(var(--spacing-3) + 1px);
+  margin-inline-start: calc(-1 * var(--crewlet-select-flush));
+}
+
+.crewlet-select--flush.crewlet-select--sm {
+  --crewlet-select-flush: calc(var(--spacing-2) + 1px);
+}
+
 .crewlet-select__trigger {
   appearance: none;
   -webkit-appearance: none;
@@ -576,23 +586,24 @@ svg.crewlet-select__chevron {
   }
 }
 
-/* A LIST WITH STATUSES: every row on two shared tracks, so each status starts at one x. */
-.crewlet-select__list.crewlet-select__list--status {
+/* A FITTED HINT COLUMN: every row on two shared tracks, so each hint starts at one x.
+   One weight in every row, so the chosen row's hint is no wider. */
+.crewlet-select__list.crewlet-select__list--fit {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-content: start;
   column-gap: var(--spacing-3);
 }
 
-.crewlet-select__list--status > .crewlet-select__option,
-.crewlet-select__list--status > .crewlet-select__group,
-.crewlet-select__list--status > .crewlet-select__group > .crewlet-select__option {
+.crewlet-select__list--fit > .crewlet-select__option,
+.crewlet-select__list--fit > .crewlet-select__group,
+.crewlet-select__list--fit > .crewlet-select__group > .crewlet-select__option {
   display: grid;
   grid-template-columns: subgrid;
   grid-column: 1 / -1;
 }
 
-.crewlet-select__list--status > .crewlet-select__group > .crewlet-listbox__heading {
+.crewlet-select__list--fit > .crewlet-select__group > .crewlet-listbox__heading {
   grid-column: 1 / -1;
 }
 
@@ -603,12 +614,11 @@ svg.crewlet-select__chevron {
   min-width: 0;
 }
 
-.crewlet-select__option-status {
+.crewlet-select__menu .crewlet-select__option-hint {
   display: inline-flex;
   align-items: center;
   justify-self: start;
+  margin-left: 0;
   min-height: calc(var(--font-line-height-normal) * 1em);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  white-space: nowrap;
+  font-weight: var(--font-weight-regular);
 }

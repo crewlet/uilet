@@ -92,13 +92,13 @@ export interface AddPillSection {
   disabledReason?: string | undefined;
 }
 
-export interface AddMarkGlyphProps extends Omit<SVGProps<SVGSVGElement>, 'children' | 'viewBox'> {
+export interface AddCircleGlyphProps extends Omit<SVGProps<SVGSVGElement>, 'children' | 'viewBox'> {
   /** A glyph step, px or any CSS length; `1em` by default. */
   size?: GlyphSize | undefined;
 }
 
 /** The add control's own mark, a plus inside a ring, for any control that adds in its place. Decorative. */
-export function AddMarkGlyph({ size, className, ...rest }: AddMarkGlyphProps) {
+export function AddCircleGlyph({ size, className, ...rest }: AddCircleGlyphProps) {
   const length = cssLength(size);
   return (
     <svg
@@ -148,6 +148,11 @@ interface AddPillBaseProps {
    * draws are not covered by a pill over them.
    */
   layout?: 'split' | 'inline' | undefined;
+  /**
+   * `false` keeps the mark's face under the pointer: hovering only lifts its ink,
+   * and a press opens the choices (or runs `onAdd`). True by default.
+   */
+  face?: boolean | undefined;
   /** Focus stays out of the pill, for a chart that puts it in a pointer-only strip. */
   tabIndex?: number | undefined;
   /** Called when a press opens the pill, for a grid whose one tab stop follows focus. */
@@ -183,7 +188,7 @@ export function AddPill(props: AddPillProps) {
 /** One action: the resting mark, its hover ink and its press, with no pill. */
 function SingleAdd({ label, onAdd, size = 'sm', tabIndex, onOpen, className }: AddPillBaseProps & { onAdd: () => void }) {
   return (
-    <div className={cx('crewlet-add-pill', className)} data-phase="closed" data-size={size} data-single="">
+    <div className={cx('crewlet-add-pill', className)} data-phase="closed" data-size={size} data-face="off">
       <button
         type="button"
         className="crewlet-add-pill__mark"
@@ -197,7 +202,7 @@ function SingleAdd({ label, onAdd, size = 'sm', tabIndex, onOpen, className }: A
         }}
       >
         <span className="crewlet-add-pill__disc" aria-hidden="true" />
-        <AddMarkGlyph />
+        <AddCircleGlyph />
       </button>
     </div>
   );
@@ -206,6 +211,7 @@ function SingleAdd({ label, onAdd, size = 'sm', tabIndex, onOpen, className }: A
 function SplitAddPill({
   label,
   sections,
+  face = true,
   size = 'sm',
   layout = 'split',
   tabIndex,
@@ -290,12 +296,15 @@ function SplitAddPill({
       data-phase={phase}
       data-size={size}
       data-layout={layout}
+      data-face={face ? undefined : 'off'}
       ref={group}
       onBlur={onBlur}
       // ENTER AND LEAVE ARE THE SAME BOX'S: the mark takes no pointer while the
       // pill is open, so an enter heard on the mark alone could not bring back a
       // pill that was closing under the pointer.
-      onMouseEnter={() => setPhase((was) => (was === 'locked' ? was : 'preview'))}
+      onMouseEnter={() => {
+        if (face) setPhase((was) => (was === 'locked' ? was : 'preview'));
+      }}
       onMouseLeave={() => {
         if (phase === 'preview') close(false);
       }}
@@ -317,7 +326,7 @@ function SplitAddPill({
             drawing no cascade can report. */}
         <span className="crewlet-add-pill__disc" aria-hidden="true" />
         {/* THE CONSOLE'S ADD-CIRCLE: a ring at the disc's edge and a plus half its size. */}
-        <AddMarkGlyph />
+        <AddCircleGlyph />
       </button>
       {phase !== 'closed' && (
         <div className="crewlet-add-pill__sections" aria-hidden={phase === 'closing' || undefined}>
