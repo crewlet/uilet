@@ -229,7 +229,14 @@ export function GridHeadCell({
       ? undefined
       : (glyph ?? (column.action && !worded ? (column.label ?? actionsLabel) : undefined));
     return (
-      <div className={headClass} role="columnheader" aria-colindex={colIndex} title={glyph} aria-sort={ariaSort}>
+      <div
+        className={headClass}
+        data-align={column.align}
+        role="columnheader"
+        aria-colindex={colIndex}
+        title={glyph}
+        aria-sort={ariaSort}
+      >
         {label}
         {mark}
         {named && <VisuallyHidden>{named}</VisuallyHidden>}
@@ -239,7 +246,7 @@ export function GridHeadCell({
   // THE SORT IS THE COLUMN HEAD'S STATE (`aria-sort` on the columnheader),
   // and the control that changes it is the button inside it.
   return (
-    <div className={headClass} role="columnheader" aria-colindex={colIndex} aria-sort={ariaSort}>
+    <div className={headClass} data-align={column.align} role="columnheader" aria-colindex={colIndex} aria-sort={ariaSort}>
       <button
         type="button"
         className="crewlet-data-grid__sort"

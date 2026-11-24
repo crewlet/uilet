@@ -213,20 +213,21 @@
  * whatever it crosses.
  *
  * ITS HEADING TAKES THE SAME EDGE, so the word stands over the controls it names.
+ * A last column that asks for `align: 'left'` keeps its start edge.
  */
-.crewlet-org-table [role='gridcell']:last-child,
-.crewlet-org-table [role='columnheader']:last-child {
+.crewlet-org-table [role='gridcell']:last-child:not([data-align='left']),
+.crewlet-org-table [role='columnheader']:last-child:not([data-align='left']) {
   justify-content: safe flex-end;
 }
 
 /* AND A LAST HEAD THAT SORTS ENDS WITH ITS VALUES: its button fills the head,
    so the button takes the end, and its arrow goes before the word, as a
    right-aligned head's does, so the word stays on the column's edge. */
-.crewlet-org-table [role='columnheader']:last-child > .crewlet-data-grid__sort {
+.crewlet-org-table [role='columnheader']:last-child:not([data-align='left']) > .crewlet-data-grid__sort {
   justify-content: safe flex-end;
 }
 
-.crewlet-org-table [role='columnheader']:last-child .crewlet-data-grid__sort-mark {
+.crewlet-org-table [role='columnheader']:last-child:not([data-align='left']) .crewlet-data-grid__sort-mark {
   order: -1;
 }
 

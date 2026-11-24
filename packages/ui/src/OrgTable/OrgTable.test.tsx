@@ -403,10 +403,12 @@ describe("a row's controls", () => {
     expect(frame).toMatch(/--crewlet-org-table-actions: calc\(/);
     expect(frame).not.toMatch(/--crewlet-org-table-actions: auto/);
     // Its heading takes the same edge, so the word stands over the controls it names.
-    expect(rule(SHEET, ".crewlet-org-table [role='columnheader']:last-child")).toMatch(
+    expect(rule(SHEET, ".crewlet-org-table [role='columnheader']:last-child:not([data-align='left'])")).toMatch(
       /justify-content: safe flex-end/,
     );
-    expect(SHEET).toContain(".crewlet-org-table [role='gridcell']:last-child,\n.crewlet-org-table [role='columnheader']:last-child");
+    expect(SHEET).toContain(
+      ".crewlet-org-table [role='gridcell']:last-child:not([data-align='left']),\n.crewlet-org-table [role='columnheader']:last-child:not([data-align='left'])",
+    );
   });
 
   /* A pointer that cannot hover never reaches a row, so on a touch screen the
@@ -874,7 +876,32 @@ test('a sorted level ends its trunk at the row it draws last, and the head sorts
 test('a last head that sorts ends with its values, its arrow before its word', () => {
   const css = SHEET.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ');
   expect(css).toMatch(
-    /\.crewlet-org-table \[role='columnheader'\]:last-child > \.crewlet-data-grid__sort \{ justify-content: safe flex-end; \}/,
+    /\.crewlet-org-table \[role='columnheader'\]:last-child:not\(\[data-align='left'\]\) > \.crewlet-data-grid__sort \{ justify-content: safe flex-end; \}/,
   );
-  expect(css).toMatch(/\.crewlet-org-table \[role='columnheader'\]:last-child \.crewlet-data-grid__sort-mark \{ order: -1; \}/);
+  expect(css).toMatch(
+    /\.crewlet-org-table \[role='columnheader'\]:last-child:not\(\[data-align='left'\]\) \.crewlet-data-grid__sort-mark \{ order: -1; \}/,
+  );
+});
+
+describe('the last column', () => {
+  test.each([
+    [undefined, 'flex-end'],
+    ['left', 'normal'],
+  ] as const)('with align %s, its head and cells stand at %s', (align, edge) => {
+    const uninstall = installSheets('TreeGrid/TreeGrid.css', 'OrgTable/OrgTable.css', 'OrgLabel/OrgLabel.css');
+    try {
+      render(
+        <OrgTable
+          label="Organization"
+          columns={[{ key: 'name', header: 'Name' }, { key: 'status', header: 'Status', ...(align ? { align } : {}) }]}
+          rows={ROWS}
+          renderCell={(id, column) => (column === 1 ? <OrgTableName icon={<svg />} name={id} /> : 'Running')}
+        />,
+      );
+      const last = [screen.getAllByRole('columnheader').at(-1)!, ...document.querySelectorAll("[role='gridcell']:last-child")];
+      for (const cell of last) expect(getComputedStyle(cell).justifyContent.replace('safe ', '')).toBe(edge);
+    } finally {
+      uninstall();
+    }
+  });
 });

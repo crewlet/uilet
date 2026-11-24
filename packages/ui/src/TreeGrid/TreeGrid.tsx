@@ -977,6 +977,7 @@ export function TreeGrid({
                           aria-colindex={col}
                           tabIndex={stop(id, col) && !hasControl(id, col, drawn[col - 1]?.key ?? '') ? 0 : -1}
                           data-size={one?.size === 'sm' ? 'sm' : undefined}
+                          data-align={one?.align}
                           // The column's name, for the card a row becomes where columns do not fit.
                           data-label={
                             one && !one.action && col > 1 ? headerWord(one) || one.label || undefined : undefined
