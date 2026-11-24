@@ -3,10 +3,8 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 
 /**
- * What the bar is saying. On the `spent` ramp an ordinary reading is `success`
- * (green), near the limit `warning`, at it `danger`, derived from the fill unless
- * a caller passes a `MeterState` or a tone. `quantity` is the first data series,
- * for a figure that is not a usage of a limit.
+ * What the bar is saying: on the `spent` ramp green inside the limit, `warning` near it,
+ * `danger` at it. `quantity` (the first data series) is for a figure that is not a usage.
  */
 export type MeterTone = 'quantity' | 'success' | 'warning' | 'danger' | 'neutral';
 

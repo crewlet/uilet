@@ -43,9 +43,8 @@ type LimitTone = 'success' | 'neutral' | 'warning' | 'danger';
 const ESCALATION: Record<MeterState, number> = { ok: 0, near: 1, refusing: 2 };
 
 /**
- * The tone a limit window is painted in: green inside it, yellow near it, red at
- * it. A known `used` past the warning line (80%) or the limit escalates a state
- * that says less, so every bar turns at the same place.
+ * A window's tone: green inside the limit, yellow near it, red at it. A known `used`
+ * past 80% or the limit escalates a quieter state, so every bar turns at one place.
  */
 export function limitWindowTone(state: MeterState, used?: number, okTone: 'success' | 'neutral' = 'success'): LimitTone {
   if (!Object.hasOwn(ESCALATION, state)) {

@@ -51,9 +51,8 @@ export function utilizationStill(mode: UtilizationMode, lanes: number): number[]
 }
 
 /**
- * A utilization strategy at a glance: lanes as horizontal usage bars that loop
- * while seen, each coloured by its level (green, yellow from 80%, red at the
- * limit). Paused off screen or in a hidden tab; a still frame under reduced motion.
+ * A utilization strategy as lanes of usage bars that loop while seen, each in its level's
+ * usage tone. Paused off screen or in a hidden tab; a still frame under reduced motion.
  */
 export function UtilizationDiagram({ mode, lanes = 3, label, className, ...rest }: UtilizationDiagramProps) {
   const root = useRef<HTMLSpanElement>(null);
