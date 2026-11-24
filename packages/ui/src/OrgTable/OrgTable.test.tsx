@@ -905,3 +905,18 @@ describe('the last column', () => {
     }
   });
 });
+
+describe('the strip sized to its controls', () => {
+  test('slots keeps room for that many small controls, and refuses a count that is not one', () => {
+    render(
+      <OrgTableActions slots={2}>
+        <button type="button">Remove</button>
+      </OrgTableActions>,
+    );
+    const strip = document.querySelector<HTMLElement>('.crewlet-org-table__actions')!;
+    expect(strip.style.getPropertyValue('--crewlet-org-table-strip')).toBe(
+      'calc(var(--size-control-sm) * 2 + var(--spacing-1) * 1)',
+    );
+    expect(() => render(<OrgTableActions slots={0}>x</OrgTableActions>)).toThrow(RangeError);
+  });
+});
