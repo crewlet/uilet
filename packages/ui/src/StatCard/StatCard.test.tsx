@@ -437,3 +437,12 @@ test('subLines keeps its room loading and loaded', () => {
   rerender(<StatCard label="Waiting" value="7" />);
   expect(sub().style.getPropertyValue('--crewlet-statcard-sub-lines')).toBe('');
 });
+
+test('subLines 0 draws no second line, unless there is one to say', () => {
+  const { container, rerender } = render(<StatCard label="Fleets" value={2} subLines={0} />);
+  expect(container.querySelector('.crewlet-statcard__sub')).toBeNull();
+  rerender(<StatCard label="Fleets" value={2} subLines={0} sub="1 empty" />);
+  expect(container.querySelector('.crewlet-statcard__sub')!.textContent).toBe('1 empty');
+  rerender(<StatCard label="Fleets" value={2} />);
+  expect(container.querySelector('.crewlet-statcard__sub')).not.toBeNull();
+});

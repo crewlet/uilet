@@ -91,6 +91,7 @@ export interface StatCardProps extends HTMLAttributes<HTMLDivElement> {
   /**
    * How many lines the second line keeps room for, loading or not, so a row
    * whose notes wrap differently, or have not arrived, stands at one height.
+   * `0` draws no second line at all, for a row of tiles that say a label and a value only.
    */
   subLines?: number | undefined;
   /** What a reader is told while it is loading. */
@@ -184,22 +185,24 @@ export const StatCard = ({
         </div>
         {trend && !loading ? <div className="crewlet-statcard__trend">{trend}</div> : null}
       </div>
-      {/* Rendered whether or not there is one: a row where one tile has a second
-          line and the rest do not would otherwise sit at two different heights. */}
-      <div
-        className={cx('crewlet-statcard__sub', subTone !== 'neutral' && `crewlet-statcard__sub--${subTone}`)}
-        style={subLines === undefined ? undefined : ({ '--crewlet-statcard-sub-lines': subLines } as CSSProperties)}
-      >
-        {change ? (
-          <span className={cx('crewlet-statcard__delta', `crewlet-statcard__delta--${change.polarity}`)}>
-            {change.value}
-          </span>
-        ) : null}
-        {/* A real space rather than a margin, so the line reads as the one
-            sentence it is: "+12% vs previous 7 days". */}
-        {change && said ? ' ' : null}
-        {sub}
-      </div>
+      {/* Rendered whether or not there is one, unless asked for none (`subLines={0}`):
+          a row where one tile has a second line and the rest do not would otherwise sit at two heights. */}
+      {subLines === 0 && !said && !change ? null : (
+        <div
+          className={cx('crewlet-statcard__sub', subTone !== 'neutral' && `crewlet-statcard__sub--${subTone}`)}
+          style={subLines === undefined ? undefined : ({ '--crewlet-statcard-sub-lines': subLines } as CSSProperties)}
+        >
+          {change ? (
+            <span className={cx('crewlet-statcard__delta', `crewlet-statcard__delta--${change.polarity}`)}>
+              {change.value}
+            </span>
+          ) : null}
+          {/* A real space rather than a margin, so the line reads as the one
+              sentence it is: "+12% vs previous 7 days". */}
+          {change && said ? ' ' : null}
+          {sub}
+        </div>
+      )}
     </div>
   );
 };
