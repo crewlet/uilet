@@ -18,6 +18,8 @@ import { useSyncExternalStore } from 'react';
  */
 
 let now = Date.now();
+/** Whether this synchronous pass has already decided a stopped clock's reading (see `read`). */
+let decided = false;
 const listeners = new Set<() => void>();
 let timer: ReturnType<typeof setInterval> | 0 = 0;
 
@@ -58,12 +60,6 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/**
- * The shared instant, in epoch ms, re-rendering the caller once a second.
- *
- * Pass the value DOWN rather than calling this again deeper: two components
- * reading their own clock is the disagreement it exists to prevent.
- */
 /** The clock's resolution: it ticks once a second, so readings within a second are one instant. */
 const TICK = 1000;
 
@@ -72,20 +68,32 @@ const TICK = 1000;
  * only while a reader is subscribed, so between readers `now` is whatever it
  * was when the last one left, or when the module loaded: a relative time
  * mounted after a quiet minute rendered that minute stale until the first
- * tick, and "2m ago" read "1m ago". While the clock is idle a reading more
- * than a tick old is replaced first. Within a tick it stays the same value,
- * which is what `useSyncExternalStore` needs from a snapshot read twice in
- * one render; while the interval runs, the interval alone moves it, so every
- * reader still agrees.
+ * tick, and "2m ago" read "1m ago". So while the clock is idle, the first
+ * read of a synchronous pass replaces a reading more than a tick old, and
+ * every later read in that pass returns the same value; a microtask lets the
+ * next pass decide again. One read per pass, not one per call, because React
+ * reads a snapshot twice in a row and warns when the two differ: two reads
+ * either side of a tick (999 ms stale, then 1000 ms) did. While the interval
+ * runs, the interval alone moves it, so every reader still agrees.
  */
 function read(): number {
-  if (!timer) {
+  if (!timer && !decided) {
+    decided = true;
+    queueMicrotask(() => {
+      decided = false;
+    });
     const current = Date.now();
     if (Math.abs(current - now) >= TICK) now = current;
   }
   return now;
 }
 
+/**
+ * The shared instant, in epoch ms, re-rendering the caller once a second.
+ *
+ * Pass the value DOWN rather than calling this again deeper: two components
+ * reading their own clock is the disagreement it exists to prevent.
+ */
 export function useNow(): number {
   return useSyncExternalStore(subscribe, read, read);
 }

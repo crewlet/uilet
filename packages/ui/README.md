@@ -252,6 +252,12 @@ Stories: Patterns / Confirmation dialogs (remove a model, remove an MCP server,
 disconnect an integration, move a seat's model, review and save, long names,
 many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 
+## Changes in 0.186.1
+
+### The shared clock answers one instant within a render
+
+**A stopped clock is read once per synchronous pass.** While no reader is subscribed, `useNow` and `currentNow` replace a reading more than a second old; the first read of a pass now decides that, and every later read in the pass returns the same instant until a microtask ends it. React's development build reads a snapshot twice on mount, and two reads either side of that second differed, so a reader mounted at that moment logged "The result of getSnapshot should be cached to avoid an infinite loop", failing a test suite that fails on an unexpected `console.error`. Nothing to change.
+
 ## Changes in 0.186.0
 
 ### A list's overflow says what it hides and lists it on demand
