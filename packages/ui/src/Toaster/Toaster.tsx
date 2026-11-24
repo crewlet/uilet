@@ -462,7 +462,7 @@ export function Toaster<TVariant extends string = string>({
   titles,
   className = '',
 }: ToasterProps<TVariant>) {
-  const container = useLayerContainer();
+  const container = useLayerContainer('viewport');
   /*
    * The lead-ins this Toaster draws, the caller's over the package's own. It
    * is recomputed freely: the effect below re-runs harmlessly, because what

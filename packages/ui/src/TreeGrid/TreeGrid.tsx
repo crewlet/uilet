@@ -899,7 +899,7 @@ export function TreeGrid({
       data-pointer={pointer || undefined}
       onPointerDownCapture={onPointerDownCapture}
     >
-      <LayerHost className="crewlet-tree-grid__layer">
+      <LayerHost takes="anchored" className="crewlet-tree-grid__layer">
         <div className="crewlet-tree-grid__scroller" onScroll={onScroll}>
           <div
             ref={gridEl}
