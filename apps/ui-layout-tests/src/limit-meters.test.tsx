@@ -83,3 +83,13 @@ test('wide, the notes of the windows that have one line up in their own column',
   expect(new Set(rights).size).toBe(1);
   expect(Math.round(box(notes[0]!).left)).toBeGreaterThan(rights[0]!);
 });
+
+test('in a flex cell, as a table lays out its cells, the stack fills the cell rather than its 12rem stand-in', async () => {
+  const at = await mount(
+    320,
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      <LimitMeters label="Limits" windows={[{ ...WINDOWS[0]!, note: undefined }]} />
+    </div>,
+  );
+  expect(Math.round(box(at.querySelector('.crewlet-limit-meters')!).width)).toBe(320);
+});

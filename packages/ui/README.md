@@ -252,6 +252,12 @@ Stories: Patterns / Confirmation dialogs (remove a model, remove an MCP server,
 disconnect an integration, move a seat's model, review and save, long names,
 many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 
+## Changes in 0.188.1
+
+### A limit stack fills a flex table cell
+
+**`LimitMeters` takes the width its cell gives it.** With inline-size containment and only its 12rem stand-in, a stack placed straight in a flex cell (as a tree grid's cells are) stayed 12rem wide, so its bars were shorter than the same column's in a table that wrapped it in a block. It now fills the cell; a content-sized column still sizes it from the stand-in.
+
 ## Changes in 0.188.0
 
 ### Usage bars are green, yellow and red by one threshold, and a strategy loops as usage bars

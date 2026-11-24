@@ -181,6 +181,10 @@ describe('LimitMeters.css', () => {
     expect(css).toMatch(/\.crewlet-limit-meters \{[^}]*container-type: inline-size;[^}]*contain-intrinsic-inline-size: 12rem;/);
   });
 
+  test('the stack fills the width its cell gives it, so two tables with one column width draw one bar length', () => {
+    expect(css).toMatch(/\.crewlet-limit-meters \{[^}]*inline-size: 100%;/);
+  });
+
   test('the stack keeps no minimum, so a narrower cell shrinks it rather than the figures overflowing the cell', () => {
     expect(css).toMatch(/\.crewlet-limit-meters \{[^}]*min-width: 0;/);
     expect(css).not.toMatch(/min-width: 12rem/);
