@@ -11,10 +11,12 @@ export {
   agentIdentityNeedsYou,
 } from './AgentIdentity.js';
 export type { AgentIdentityChip, AgentIdentityProblem, AgentIdentityProps, AgentIdentityState } from './AgentIdentity.js';
-export { AgentIdentitySheet } from './AgentIdentitySheet.js';
+export { AgentIdentitySheet, agentIdentityEntryChip } from './AgentIdentitySheet.js';
 export type {
   AgentIdentityBrought,
   AgentIdentityCopy,
+  AgentIdentityEntry,
+  AgentIdentityEntryState,
   AgentIdentityHandIn,
   AgentIdentityMake,
   AgentIdentityRead,
@@ -23,4 +25,5 @@ export type {
   AgentIdentityStepNote,
   AgentIdentityVendorStep,
   AgentIdentityVerdict,
+  AgentIdentityWider,
 } from './AgentIdentitySheet.js';

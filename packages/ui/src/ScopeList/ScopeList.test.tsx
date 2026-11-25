@@ -120,6 +120,96 @@ test('says so where there is nothing to choose from', () => {
   expect(screen.getByText('Nothing to choose from.')).toBeTruthy();
 });
 
+/** Analytics properties in two accounts, one name in both, and one property no account holds. */
+const PROPERTIES: ScopeListOption[] = [
+  { value: '301', label: 'Tally web', id: '301', group: 'Tally Labs' },
+  { value: '900', label: 'Sandbox', id: '900' },
+  { value: '402', label: 'Tally web', id: '402', group: 'Tally Retail' },
+  { value: '302', label: 'Tally app', id: '302', group: 'Tally Labs' },
+  { value: '403', label: 'Ledger app', id: '403', group: 'Tally Retail' },
+  { value: '304', label: 'Ledger web', id: '304', group: 'Tally Labs' },
+  { value: '405', label: 'Tally widgets', id: '405', group: 'Tally Retail' },
+  { value: '306', label: 'Tally store', id: '306', group: 'Tally Labs' },
+];
+
+/** Each section's heading as drawn, in order: null for the ungrouped run. */
+const headings = (fieldset: HTMLElement) =>
+  [...fieldset.querySelectorAll<HTMLElement>(':scope > ul, :scope > [role="group"]')].map(
+    (section) => section.querySelector('h1, h2, h3, h4, h5, h6')?.textContent ?? null,
+  );
+
+const names = (section: HTMLElement) =>
+  within(section)
+    .getAllByRole('checkbox')
+    .map((b) => document.getElementById(b.getAttribute('aria-labelledby')!)!.textContent);
+
+test('options that name a group are drawn under its heading, one section per group in first-appearance order, the ungrouped first', () => {
+  render(<Harness options={PROPERTIES} initial={[]} />);
+  const fieldset = screen.getByRole('group', { name: "Growth Marketer's apps" });
+  expect(headings(fieldset)).toEqual([null, 'Tally Labs', 'Tally Retail']);
+  const labs = within(fieldset).getByRole('group', { name: 'Tally Labs' });
+  const retail = within(fieldset).getByRole('group', { name: 'Tally Retail' });
+  // A HEADING ELEMENT names each section, at the level a heading takes where the list stands.
+  expect(within(labs).getByRole('heading', { name: 'Tally Labs' }).tagName).toBe('H2');
+  expect(names(labs)).toEqual(['Tally web', 'Tally app', 'Ledger web', 'Tally store']);
+  expect(names(retail)).toEqual(['Tally web', 'Ledger app', 'Tally widgets']);
+  // THE UNGROUPED ROW comes first, under no heading.
+  const loose = fieldset.querySelector<HTMLElement>(':scope > ul')!;
+  expect(names(loose)).toEqual(['Sandbox']);
+  expect(loose.previousElementSibling?.matches('h1, h2, h3, h4, h5, h6')).toBe(false);
+});
+
+test('each box is described by its group too, so one name in two accounts is told apart', () => {
+  render(<Harness options={PROPERTIES} initial={[]} />);
+  const said = (box: HTMLElement) =>
+    (box.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map((id) => document.getElementById(id)?.textContent)
+      .join(' ');
+  const [labs, retail] = screen.getAllByRole('checkbox', { name: 'Tally web' });
+  expect(said(labs!)).toBe('301 Tally Labs');
+  expect(said(retail!)).toBe('402 Tally Retail');
+  // An ungrouped row names no group.
+  expect(said(screen.getByRole('checkbox', { name: 'Sandbox' }))).toBe('900');
+});
+
+test('the search matches a group\'s name, draws no group it empties, and Choose all takes only the rows shown', () => {
+  render(<Harness options={PROPERTIES} initial={[]} />);
+  const find = screen.getByRole('searchbox', { name: 'Find by name or ID' });
+  fireEvent.change(find, { target: { value: 'retail' } });
+  const fieldset = screen.getByRole('group', { name: "Growth Marketer's apps" });
+  expect(headings(fieldset)).toEqual(['Tally Retail']);
+  expect(screen.getAllByRole('checkbox')).toHaveLength(3);
+  fireEvent.click(screen.getByRole('button', { name: 'Choose all' }));
+  expect(value()).toBe('402,403,405');
+  // THE COUNT IS OVER EVERY OPTION, the control over what is shown.
+  expect(screen.getByText('3 of 8 chosen')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Clear' })).toBeTruthy();
+  // A search across groups keeps each group that still has a row, in its order.
+  fireEvent.change(find, { target: { value: 'ledger' } });
+  expect(headings(fieldset)).toEqual(['Tally Labs', 'Tally Retail']);
+  expect(screen.queryByRole('checkbox', { name: 'Sandbox' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Choose all' }));
+  expect(value()).toBe('402,403,405,304');
+  fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+  expect(value()).toBe('402,405');
+});
+
+test('a grouped list carries no axe violation', async () => {
+  const { container } = render(
+    <main>
+      <h1>Properties</h1>
+      <Harness options={PROPERTIES} initial={['301']} />
+    </main>,
+  );
+  const result = await axe.run(container, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(result.violations).toEqual([]);
+});
+
 test('carries no axe violation', async () => {
   const { container } = render(
     <main>

@@ -37,8 +37,10 @@ const APPLE: Record<AgentIdentityState, { summary: string; problem?: AgentIdenti
     summary:
       "Needs you: set up Growth Marketer's own key so Apple records its actions. Until then Apple sees the company's team keys.",
   },
+  preparing: { summary: 'Crewlet made crewlet-growth. Apple takes a moment before it can be used.' },
   checking: { summary: 'Reading the key handed in.' },
   ready: { summary: 'crewlet-growth · App Manager · checked 4 minutes ago' },
+  unchecked: { summary: 'crewlet-growth · works · Apple shows its role to nobody Crewlet signs in as' },
   wrong_role: {
     summary:
       "Needs you: set up Growth Marketer's own key so Apple records its actions. Until then Apple sees the company's team keys.",
@@ -145,3 +147,37 @@ export const Narrow: Story = {
     </div>
   ),
 };
+
+/** A Google identity Crewlet just made: Google Analytics finds it in about a minute, so nothing needs a person. */
+const GA_PREPARING = {
+  vendor: 'Google Analytics',
+  state: 'preparing',
+  summary: 'crewlet-growth-3fa91c@example-identity.iam.gserviceaccount.com · made a moment ago',
+  problem: {
+    title: 'Ready to add in about a minute',
+    body: 'Google takes about a minute before Google Analytics can find a new identity. Nothing to do until then.',
+  },
+} satisfies Partial<Parameters<typeof AgentIdentity>[0]>;
+
+/** The identity reads each property, but Google Analytics shows roles only to an administrator, so its role is unread. */
+const GA_UNCHECKED = {
+  vendor: 'Google Analytics',
+  state: 'unchecked',
+  summary: 'crewlet-growth-3fa91c@example-identity.iam.gserviceaccount.com · reads 3 of 3 properties',
+  problem: {
+    title: 'Role not checked',
+    body: 'Google Analytics shows a role only to an administrator of the property. Sign in as one to have Crewlet check it.',
+  },
+} satisfies Partial<Parameters<typeof AgentIdentity>[0]>;
+
+/** Getting ready, in light: an info chip and an info note, no action, and the row does not read Needs you. */
+export const PreparingLight: Story = { args: GA_PREPARING, globals: { theme: 'light' } };
+
+/** Getting ready, in dark. */
+export const PreparingDark: Story = { args: GA_PREPARING, globals: { theme: 'dark' } };
+
+/** The role not checked, in light: the identity works, so Replace identity stays quiet and nothing reads Needs you. */
+export const UncheckedLight: Story = { args: GA_UNCHECKED, globals: { theme: 'light' } };
+
+/** The role not checked, in dark. */
+export const UncheckedDark: Story = { args: GA_UNCHECKED, globals: { theme: 'dark' } };

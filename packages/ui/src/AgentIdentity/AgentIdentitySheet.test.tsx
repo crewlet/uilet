@@ -12,7 +12,9 @@ import { Modal } from '../Modal/index.js';
 import { VendorText } from '../VendorText/index.js';
 import {
   AgentIdentitySheet,
+  agentIdentityEntryChip,
   type AgentIdentityBrought,
+  type AgentIdentityEntry,
   type AgentIdentitySheetProps,
   type AgentIdentityVerdict,
 } from './index.js';
@@ -435,6 +437,148 @@ test('a closed sheet draws nothing and keeps nothing', () => {
   fireEvent.click(button('Next'));
   expect(within(dialog()).getByText('Drop the file here')).toBeTruthy();
   expect((within(dialog()).getByRole('textbox', { name: 'Key ID' }) as HTMLInputElement).value).toBe('');
+});
+
+/** Analytics properties in two accounts, one name in both, in every state an entry takes. */
+const ENTRIES: AgentIdentityEntry[] = [
+  { id: '301', name: 'Tally web', group: 'Tally Labs', state: 'added', href: 'https://example.com/p/301' },
+  { id: '402', name: 'Tally web', group: 'Tally Retail', state: 'missing', href: 'https://example.com/p/402' },
+  { id: '302', name: 'Tally app', group: 'Tally Labs', state: 'applying', href: 'https://example.com/p/302' },
+  { id: '403', name: 'Ledger app', group: 'Tally Retail', state: 'wrong_role', href: 'https://example.com/p/403', note: 'It holds Viewer.' },
+  { id: '304', name: 'Ledger web', group: 'Tally Labs', state: 'unchecked', href: 'https://example.com/p/304' },
+  { id: '900', name: 'Sandbox', state: 'unknown', href: 'https://example.com/p/900' },
+];
+
+const GA = { vendor: 'Google Analytics', entries: ENTRIES } satisfies Partial<AgentIdentitySheetProps>;
+
+const atVendor = () => within(dialog()).getByRole('region', { name: 'At Google Analytics' });
+/** The row whose quiet ID reads `id`. */
+const entry = (id: string) =>
+  within(atVendor())
+    .getAllByRole('listitem')
+    .find((li) => li.hasAttribute('data-state') && li.querySelector('.crewlet-agent-identity-sheet__entry-id')?.textContent === id)!;
+
+test('draws one row per entry after the steps, under its group\'s heading, the ungrouped first, each with its ID and its state', () => {
+  sheet(GA);
+  const region = atVendor();
+  const rows = region.querySelectorAll('li[data-state]');
+  expect(rows).toHaveLength(ENTRIES.length);
+  // AFTER THE NUMBERED STEPS.
+  const steps = region.querySelector('ol')!;
+  expect(steps.compareDocumentPosition(rows[0]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const labs = within(region).getByRole('group', { name: 'Tally Labs' });
+  const retail = within(region).getByRole('group', { name: 'Tally Retail' });
+  expect(within(labs).getByRole('heading', { name: 'Tally Labs' })).toBeTruthy();
+  expect(within(labs).getAllByRole('listitem').map((li) => li.getAttribute('data-state'))).toEqual(['added', 'applying', 'unchecked']);
+  expect(within(retail).getAllByRole('listitem').map((li) => li.getAttribute('data-state'))).toEqual(['missing', 'wrong_role']);
+  expect([...region.querySelectorAll('h1, h2, h3, h4, h5, h6')].map((h) => h.textContent)).toEqual(['Tally Labs', 'Tally Retail']);
+  expect(region.querySelector('li[data-state]')!.getAttribute('data-state')).toBe('unknown');
+  // EACH STATE'S TAG, and none for one Crewlet could not read.
+  const tag = (id: string) => entry(id).querySelector('.crewlet-tag');
+  expect(tag('301')?.textContent).toBe('Added');
+  expect(tag('301')?.className).toContain('crewlet-tag--success');
+  expect(tag('402')?.textContent).toBe('Not added yet');
+  expect(tag('402')?.className).toContain('crewlet-tag--warning');
+  expect(tag('302')?.textContent).toBe('Google Analytics is applying it');
+  expect(tag('302')?.className).toContain('crewlet-tag--info');
+  expect(tag('403')?.textContent).toBe('Wrong role');
+  expect(tag('403')?.className).toContain('crewlet-tag--warning');
+  expect(tag('304')?.textContent).toBe('Role not checked');
+  expect(tag('304')?.className).toContain('crewlet-tag--info');
+  expect(tag('900')).toBeNull();
+  expect(within(entry('403')).getByText('It holds Viewer.')).toBeTruthy();
+});
+
+test('links every entry not yet added to its page in a new tab, named for it and described by its ID and group', () => {
+  sheet({ ...GA, entryAction: 'Open property' });
+  expect(within(entry('301')).queryByRole('link')).toBeNull();
+  for (const e of ENTRIES.filter((e) => e.state !== 'added')) {
+    const link = within(entry(e.id)).getByRole('link', { name: `Open property: ${e.name}` });
+    expect(link.getAttribute('href')).toBe(e.href);
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.textContent).toBe('Open property');
+  }
+  const said = (link: HTMLElement) =>
+    (link.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map((id) => document.getElementById(id)?.textContent)
+      .join(' ');
+  expect(said(within(entry('402')).getByRole('link'))).toBe('402 Tally Retail');
+  expect(said(within(entry('900')).getByRole('link'))).toBe('900');
+});
+
+test('an entry\'s link says Open by default, and an entry with no page has none', () => {
+  sheet({ ...GA, entries: [{ id: '402', name: 'Tally web', state: 'missing', href: 'https://example.com/p/402' }, { id: '403', name: 'Ledger app', state: 'missing' }] });
+  expect(within(entry('402')).getByRole('link', { name: 'Open: Tally web' }).textContent).toBe('Open');
+  expect(within(entry('403')).queryByRole('link')).toBeNull();
+  expect(within(entry('403')).queryByRole('button')).toBeNull();
+});
+
+const WIDER: AgentIdentitySheetProps['wider'] = {
+  title: 'Or add it once to the account',
+  body: 'Added to an account, the identity reaches every property in it, today and later.',
+  links: [
+    { label: 'Tally Labs access', href: 'https://example.com/a/1' },
+    { label: 'Tally Retail access', href: 'https://example.com/a/2' },
+  ],
+};
+
+test('draws the wider way under the entries, its words and a new-tab link per page', () => {
+  sheet({ ...GA, wider: WIDER });
+  const region = atVendor();
+  const title = within(region).getByText('Or add it once to the account');
+  const callout = title.closest<HTMLElement>('.crewlet-callout')!;
+  expect(callout.className).toContain('crewlet-callout--quiet');
+  expect(within(callout).getByText(/reaches every property in it/)).toBeTruthy();
+  const rows = region.querySelectorAll('li[data-state]');
+  expect(rows[rows.length - 1]!.compareDocumentPosition(callout) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const links = within(callout).getAllByRole('link');
+  expect(links.map((l) => [l.textContent, l.getAttribute('href'), l.getAttribute('target')])).toEqual([
+    ['Tally Labs access', 'https://example.com/a/1', '_blank'],
+    ['Tally Retail access', 'https://example.com/a/2', '_blank'],
+  ]);
+});
+
+test('while the vendor cannot take the identity, the step leads with why and every link is held with that reason', async () => {
+  sheet({
+    ...GA,
+    wider: WIDER,
+    notReady: (
+      <>
+        Ready to add in about a minute. <strong>Google</strong> takes that long to find a new identity.
+      </>
+    ),
+  });
+  const region = atVendor();
+  const lead = region.firstElementChild!;
+  expect(lead.className).toContain('crewlet-callout--info');
+  expect(lead.textContent).toContain('Ready to add in about a minute.');
+  // NO LINK IS LEFT in the checklist or the wider way; the steps keep theirs.
+  expect(region.querySelectorAll('li[data-state] a, .crewlet-callout--quiet a')).toHaveLength(0);
+  const reason = 'Ready to add in about a minute. Google takes that long to find a new identity.';
+  const held = [
+    ...ENTRIES.filter((e) => e.state !== 'added').map((e) => within(entry(e.id)).getByRole('button', { name: `Open: ${e.name}` })),
+    within(region).getByRole('button', { name: 'Tally Labs access' }),
+    within(region).getByRole('button', { name: 'Tally Retail access' }),
+  ];
+  expect(held).toHaveLength(7);
+  for (const button of held) {
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    const said = (button.getAttribute('aria-describedby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent);
+    expect(said).toContain(reason);
+  }
+  await axeClean();
+});
+
+test('an entry\'s tag word and tone, in the vendor\'s name where it does the work', () => {
+  expect(agentIdentityEntryChip('applying', 'Google Analytics')).toEqual({ label: 'Google Analytics is applying it', tone: 'info' });
+  expect(agentIdentityEntryChip('missing', 'Google Analytics')).toEqual({ label: 'Not added yet', tone: 'warning' });
+  expect(agentIdentityEntryChip('unknown', 'Google Analytics')).toBeNull();
+});
+
+test('the vendor step with entries and the wider way carries no axe violation', async () => {
+  sheet({ ...GA, wider: WIDER });
+  await axeClean();
 });
 
 test('carries no axe violation on each step', async () => {

@@ -7,14 +7,19 @@ import { cx } from '../utils/cx.js';
 import type { Tone } from '../utils/tone.js';
 
 /**
- * Where an agent's identity at a vendor stands, the same eight states on every
+ * Where an agent's identity at a vendor stands, the same ten states on every
  * vendor: an App Store Connect team key, a Meta system user, a Google
  * identity, an Expo robot, a token, an app of its own.
  *
  * - `company`: the agent calls as the company's identity.
  * - `none`: the agent has no identity of its own yet.
+ * - `preparing`: its own is made, but the vendor cannot take it yet, such as
+ *   a new Google identity Google Analytics does not find for about a minute.
+ *   Nothing for a person to do but wait.
  * - `checking`: Crewlet is reading the one a person handed in or had made.
  * - `ready`: its own, checked.
+ * - `unchecked`: its own works, but the vendor shows its role to nobody
+ *   Crewlet signs in as, so the role is not verified. Nothing to set up.
  * - `wrong_role` and `wrong_team`: the check read a role or a team the agent
  *   cannot use, and Crewlet kept nothing.
  * - `refused`: the vendor refuses the one it held (revoked, cut off, removed).
@@ -23,8 +28,10 @@ import type { Tone } from '../utils/tone.js';
 export type AgentIdentityState =
   | 'company'
   | 'none'
+  | 'preparing'
   | 'checking'
   | 'ready'
+  | 'unchecked'
   | 'wrong_role'
   | 'wrong_team'
   | 'refused'
@@ -34,8 +41,10 @@ export type AgentIdentityState =
 export const AGENT_IDENTITY_STATES: readonly AgentIdentityState[] = [
   'company',
   'none',
+  'preparing',
   'checking',
   'ready',
+  'unchecked',
   'wrong_role',
   'wrong_team',
   'refused',
@@ -52,8 +61,10 @@ export interface AgentIdentityChip {
 export const AGENT_IDENTITY_CHIPS: Readonly<Record<AgentIdentityState, AgentIdentityChip>> = {
   company: { label: "Company's", tone: 'neutral' },
   none: { label: 'Not set up', tone: 'warning' },
+  preparing: { label: 'Getting ready', tone: 'info' },
   checking: { label: 'Checking', tone: 'info' },
   ready: { label: 'Ready', tone: 'success' },
+  unchecked: { label: 'Role not checked', tone: 'info' },
   wrong_role: { label: 'Wrong role', tone: 'warning' },
   wrong_team: { label: 'Wrong team', tone: 'danger' },
   refused: { label: 'Refused', tone: 'danger' },
@@ -74,7 +85,8 @@ export const AGENT_IDENTITY_NEEDS_YOU: AgentIdentityChip = { label: 'Needs you',
 /**
  * Whether the state asks a person to set the agent's identity up, or up
  * again. On a vendor that offers each agent its own identity, the company's
- * is one more identity to replace.
+ * is one more identity to replace. An identity getting ready or working with
+ * its role unread asks for none.
  */
 export function agentIdentityNeedsSetUp(state: AgentIdentityState): boolean {
   return (
@@ -87,12 +99,14 @@ export function agentIdentityNeedsSetUp(state: AgentIdentityState): boolean {
  *
  * Where the vendor offers each agent an identity of its own (`perAgent`), the
  * row needs a person until the agent's own is checked: the company's identity
- * is never In sync there. Where the vendor offers none, the company's identity
- * is the finished state and asks nothing. The row's other states (off,
- * syncing, refused by the engine) are the page's and win over this one.
+ * is never In sync there. An identity getting ready waits on the vendor, and
+ * one whose role the vendor will not show works, so neither needs a person.
+ * Where the vendor offers none, the company's identity is the finished state
+ * and asks nothing. The row's other states (off, syncing, refused by the
+ * engine) are the page's and win over this one.
  */
 export function agentIdentityNeedsYou(state: AgentIdentityState, perAgent: boolean): boolean {
-  return perAgent && state !== 'ready';
+  return perAgent && state !== 'ready' && state !== 'preparing' && state !== 'unchecked';
 }
 
 /** What needs a person, said inside the box under the summary. */
@@ -118,9 +132,12 @@ export interface AgentIdentityProps extends Omit<HTMLAttributes<HTMLElement>, 't
   perAgent?: boolean | undefined;
   /** One quiet line: who the vendor sees when the agent calls, and what it holds. */
   summary: ReactNode;
-  /** What needs a person, in a callout inside the box. */
+  /**
+   * What needs a person, in a callout inside the box. While the identity is
+   * getting ready or its role is not checked, it is drawn as information.
+   */
   problem?: AgentIdentityProblem | undefined;
-  /** Opens the set-up sheet. Drawn as Set up identity (primary) or, once ready, Replace identity. */
+  /** Opens the set-up sheet. Drawn as Set up identity (primary) or, once its own works, Replace identity. */
   onSetUp?: (() => void) | undefined;
   /**
    * Puts the agent back on the company's identity. Offered only while the
@@ -160,9 +177,12 @@ export function AgentIdentity({
   const titleId = useId();
   const chip = AGENT_IDENTITY_CHIPS[state];
   const setUp = perAgent && agentIdentityNeedsSetUp(state);
-  const replace = perAgent && state === 'ready';
+  // AN IDENTITY THAT WORKS CAN BE REPLACED, whether or not the vendor shows its role.
+  const replace = perAgent && (state === 'ready' || state === 'unchecked');
   const primary = onSetUp && (setUp || replace) ? (setUp ? AGENT_IDENTITY_WORDS.setUp : AGENT_IDENTITY_WORDS.replace) : null;
   const company = perAgent && onUseCompany && state === 'refused';
+  // A STATE THAT ASKS NOTHING OF A PERSON says its note as information, never as a warning.
+  const calm = state === 'preparing' || state === 'unchecked';
   return (
     <section
       {...rest}
@@ -210,7 +230,11 @@ export function AgentIdentity({
         {summary}
       </Text>
       {problem ? (
-        <Callout variant={chip.tone === 'danger' ? 'danger' : 'warning'} title={problem.title} action={problem.action}>
+        <Callout
+          variant={chip.tone === 'danger' ? 'danger' : calm ? 'info' : 'warning'}
+          title={problem.title}
+          action={problem.action}
+        >
           {problem.body}
         </Callout>
       ) : null}

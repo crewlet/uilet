@@ -6,6 +6,8 @@ import { Input } from '../Input/index.js';
 import { Text } from '../Text/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
+import { groupInOrder } from '../utils/groupInOrder.js';
+import { headingTag, useHeadingLevel } from '../utils/headingLevel.js';
 
 /** One thing an agent may be given: an app, an ad account, a property, a site. */
 export interface ScopeListOption {
@@ -17,6 +19,11 @@ export interface ScopeListOption {
   detail?: string | undefined;
   /** Its ID, quiet at the row's end in monospace: an Apple ID, an account number. */
   id?: string | undefined;
+  /**
+   * What holds it, such as the Analytics account a property sits in: drawn as
+   * a heading over its group's rows, searched with them, and read with each box.
+   */
+  group?: string | undefined;
   /** It cannot be chosen now; the reason is read with it. */
   disabled?: boolean | undefined;
   disabledReason?: string | undefined;
@@ -52,7 +59,7 @@ export interface ScopeListProps {
   /** The values chosen. */
   value: readonly string[];
   onChange: (value: string[]) => void;
-  /** From this many options on, a search field filters them by name, detail and ID. 8 by default. */
+  /** From this many options on, a search field filters them by name, detail, ID and group. 8 by default. */
   searchFrom?: number | undefined;
   /** The count and the Choose all or Clear control over the rows. On by default. */
   bulk?: boolean | undefined;
@@ -66,9 +73,13 @@ export interface ScopeListProps {
  * row in the selected fill. A count and one control to choose every row shown
  * or clear them stand over the rows, and a long list is searched.
  *
+ * Options that name a `group` are drawn in sections, one per group in the
+ * order it first appears, each under its name; options with none come first,
+ * under no heading. A group the search empties is not drawn.
+ *
  * A FIELDSET of checkboxes, named by `label`: each box is named by its row's
- * name and described by its detail and ID, which are what tell two apps with
- * one name apart.
+ * name and described by its detail, its ID and its group, which are what tell
+ * two apps with one name apart. Each section is a group named by its heading.
  */
 export function ScopeList({
   label,
@@ -90,7 +101,9 @@ export function ScopeList({
   // nothing on the screen to clear it.
   const find = searchable ? term.trim().toLowerCase() : '';
   const shown = find
-    ? options.filter((o) => `${o.label} ${o.detail ?? ''} ${o.id ?? ''} ${o.value}`.toLowerCase().includes(find))
+    ? options.filter((o) =>
+        `${o.label} ${o.detail ?? ''} ${o.id ?? ''} ${o.value} ${o.group ?? ''}`.toLowerCase().includes(find),
+      )
     : options;
   const open = shown.filter((o) => !o.disabled);
   // EVERY ROW SHOWN, never one a search has hidden: Choose all after a search
@@ -105,6 +118,43 @@ export function ScopeList({
     }
   };
   const count = options.filter((o) => chosen.has(o.value)).length;
+  const Heading = headingTag(useHeadingLevel());
+  const row = (o: ScopeListOption, i: number, groupId: string | undefined) => {
+    const on = chosen.has(o.value);
+    const idId = o.id && o.id !== o.label ? `${base}-id-${i}` : undefined;
+    return (
+      <li key={o.value} className="crewlet-scope-list__row" data-chosen={on || undefined}>
+        <Checkbox
+          className="crewlet-scope-list__check"
+          label={o.label}
+          description={
+            o.detail || (o.disabled && o.disabledReason) ? (
+              <>
+                {o.detail ? <span className="crewlet-scope-list__detail">{o.detail}</span> : null}
+                {o.disabled && o.disabledReason ? <span>{o.disabledReason}</span> : null}
+              </>
+            ) : undefined
+          }
+          checked={on}
+          disabled={o.disabled}
+          aria-describedby={cx(idId, groupId) || undefined}
+          onCheckedChange={(next) => onChange(next ? [...value, o.value] : value.filter((v) => v !== o.value))}
+        />
+        {idId ? (
+          <Text id={idId} variant="caption" tone="tertiary" mono className="crewlet-scope-list__id">
+            {o.id}
+          </Text>
+        ) : null}
+      </li>
+    );
+  };
+  // A ROW'S INDEX IS ITS PLACE AMONG THE ROWS SHOWN, so its ID's element id is unique across sections.
+  const at = new Map(shown.map((o, i) => [o.value, i]));
+  // EACH GROUP KEEPS ITS PLACE WHILE A SEARCH RUNS: ordered over every option, then emptied of the rows it hides.
+  const visible = new Set(shown);
+  const runs = groupInOrder(options)
+    .map((run) => ({ ...run, items: run.items.filter((o) => visible.has(o)) }))
+    .filter((run) => run.items.length > 0);
   return (
     <fieldset className={cx('crewlet-scope-list', className)}>
       <VisuallyHidden as="legend">{label}</VisuallyHidden>
@@ -131,39 +181,25 @@ export function ScopeList({
         />
       ) : null}
       {shown.length > 0 ? (
-        <ul className="crewlet-scope-list__rows">
-          {shown.map((o, i) => {
-            const on = chosen.has(o.value);
-            const idId = o.id && o.id !== o.label ? `${base}-id-${i}` : undefined;
+        runs.map((run, r) => {
+          if (run.name === undefined) {
             return (
-              <li key={o.value} className="crewlet-scope-list__row" data-chosen={on || undefined}>
-                <Checkbox
-                  className="crewlet-scope-list__check"
-                  label={o.label}
-                  description={
-                    o.detail || (o.disabled && o.disabledReason) ? (
-                      <>
-                        {o.detail ? <span className="crewlet-scope-list__detail">{o.detail}</span> : null}
-                        {o.disabled && o.disabledReason ? <span>{o.disabledReason}</span> : null}
-                      </>
-                    ) : undefined
-                  }
-                  checked={on}
-                  disabled={o.disabled}
-                  aria-describedby={idId}
-                  onCheckedChange={(next) =>
-                    onChange(next ? [...value, o.value] : value.filter((v) => v !== o.value))
-                  }
-                />
-                {idId ? (
-                  <Text id={idId} variant="caption" tone="tertiary" mono className="crewlet-scope-list__id">
-                    {o.id}
-                  </Text>
-                ) : null}
-              </li>
+              <ul key="" className="crewlet-scope-list__rows">
+                {run.items.map((o) => row(o, at.get(o.value)!, undefined))}
+              </ul>
             );
-          })}
-        </ul>
+          }
+          // BY POSITION, NOT BY NAME: a group's name may hold spaces, and an id is one token.
+          const groupId = `${base}-group-${r}`;
+          return (
+            <div key={run.name} role="group" aria-labelledby={groupId} className="crewlet-scope-list__group">
+              <Text as={Heading} id={groupId} variant="label" className="crewlet-scope-list__group-name">
+                {run.name}
+              </Text>
+              <ul className="crewlet-scope-list__rows">{run.items.map((o) => row(o, at.get(o.value)!, groupId))}</ul>
+            </div>
+          );
+        })
       ) : (
         <Text as="p" variant="caption" tone="secondary" className="crewlet-scope-list__empty">
           {find ? labels.noMatch(term.trim()) : labels.none}
