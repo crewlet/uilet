@@ -1,5 +1,5 @@
-import { Fragment, type ReactNode } from 'react';
-import { ChevronRightGlyph } from '@crewlethq/icons/glyphs';
+import { Fragment, isValidElement, type ReactNode } from 'react';
+import { ChevronRightGlyph, ExternalLinkGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { Link } from '../Link/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -12,6 +12,10 @@ export interface VendorUIProps {
   path: string | readonly string[];
   /** Read between the levels of a path, where the chevron is drawn. */
   separatorLabel?: string | undefined;
+  /** The vendor page the name opens, in a new tab with no opener and no referrer. */
+  href?: string | undefined;
+  /** Read after the name when `href` is set. */
+  newTabLabel?: string | undefined;
   className?: string | undefined;
 }
 
@@ -19,12 +23,19 @@ export interface VendorUIProps {
  * A name on a vendor's screen, set inside a sentence of instructions: semibold
  * in a framed chip that stands off the surface under it, so it reads apart from
  * the words around it by shape as well as ink. A menu path draws a chevron
- * between its levels.
+ * between its levels. With `href` the chip is the link: the external mark is
+ * its last item, and the frame, not an underline, says it can be pressed.
  */
-export function VendorUI({ path, separatorLabel = 'then', className }: VendorUIProps) {
+export function VendorUI({
+  path,
+  separatorLabel = 'then',
+  href,
+  newTabLabel = '(opens in a new tab)',
+  className,
+}: VendorUIProps) {
   const levels = typeof path === 'string' ? [path] : path;
-  return (
-    <span className={cx('crewlet-vendor-ui', className)}>
+  const name = (
+    <>
       {levels.map((level, i) => (
         <Fragment key={i}>
           {i > 0 ? (
@@ -37,7 +48,32 @@ export function VendorUI({ path, separatorLabel = 'then', className }: VendorUIP
           <span className="crewlet-vendor-ui__level">{level}</span>
         </Fragment>
       ))}
-    </span>
+    </>
+  );
+  if (!href) return <span className={cx('crewlet-vendor-ui', className)}>{name}</span>;
+  return (
+    <Link
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      size="inherit"
+      className={cx('crewlet-vendor-ui', 'crewlet-vendor-ui--link', className)}
+    >
+      {name}
+      {/*
+        A no-break space: the gap before the mark, never a line break, and the
+        word space before the hidden sentence (whitespace inside a part of a name is trimmed).
+      */}
+      {'\u00a0'}
+      <span className="crewlet-vendor-ui__tail">
+        {/* The word joiner holds the mark to the space: a browser may break before an inline svg. */}
+        <span aria-hidden="true">
+          {'\u2060'}
+          <ExternalLinkGlyph size="sm" className="crewlet-vendor-ui__external" />
+        </span>
+        <VisuallyHidden>{newTabLabel}</VisuallyHidden>
+      </span>
+    </Link>
   );
 }
 
@@ -52,10 +88,20 @@ export interface StepLinkProps {
 
 /**
  * The words of a step that name a vendor's page, linked to it: underlined in
- * the link ink with the external mark, at the size of the sentence. A
- * `VendorUI` inside takes the link's ink and underline.
+ * the link ink with the external mark, at the size of the sentence. A lone
+ * `VendorUI` child is drawn as a linked chip instead (`VendorUI`'s `href`).
  */
 export function StepLink({ href, children, newTabLabel, className }: StepLinkProps) {
+  if (isValidElement<VendorUIProps>(children) && children.type === VendorUI) {
+    return (
+      <VendorUI
+        {...children.props}
+        href={href}
+        newTabLabel={newTabLabel ?? children.props.newTabLabel}
+        className={cx(children.props.className, className)}
+      />
+    );
+  }
   return (
     <Link
       href={href}
@@ -91,22 +137,17 @@ export interface VendorTextProps {
 }
 
 /**
- * A vendor instruction from its parts: each vendor UI name a `VendorUI`, each
- * linked run a `StepLink` on the words that name the page.
+ * A vendor instruction from its parts: each vendor UI name a `VendorUI`, a
+ * linked one a linked chip, and each other linked run a `StepLink` on the words
+ * that name the page.
  */
 export function VendorText({ parts, renderWords, resolveUrl }: VendorTextProps) {
   return (
     <>
       {parts.map((part, i) => {
-        const body =
-          part.ui && part.ui.length > 0 ? (
-            <VendorUI path={part.ui} />
-          ) : renderWords ? (
-            renderWords(part.text ?? '')
-          ) : (
-            (part.text ?? '')
-          );
-        const href = part.url ? (resolveUrl ? resolveUrl(part.url) : part.url) : undefined;
+        const href = part.url ? (resolveUrl ? resolveUrl(part.url) : part.url) || undefined : undefined;
+        if (part.ui && part.ui.length > 0) return <VendorUI key={i} path={part.ui} href={href} />;
+        const body = renderWords ? renderWords(part.text ?? '') : (part.text ?? '');
         return href ? (
           <StepLink key={i} href={href}>
             {body}

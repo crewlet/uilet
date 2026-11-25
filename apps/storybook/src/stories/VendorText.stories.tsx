@@ -49,7 +49,10 @@ export const Steps: Story = {
   ),
 };
 
-/** The two primitives on their own: a name, a menu path, a step link, and a linked path. */
+/**
+ * The two primitives on their own: a name, a menu path, a step link, and a
+ * linked path, whose chip is the link with its new-tab mark inside the frame.
+ */
 export const Primitives: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 'var(--spacing-3)' }}>
@@ -63,11 +66,12 @@ export const Primitives: Story = {
         Create it on your <StepLink href="https://id.atlassian.com/manage-profile/security/api-tokens">API tokens page</StepLink>.
       </Text>
       <Text as="p">
-        Open{' '}
-        <StepLink href={KEYS}>
-          <VendorUI path={['Users and Access', 'Integrations', 'Team Keys']} />
-        </StepLink>
-        .
+        Open <VendorUI path={['Users and Access', 'Integrations', 'Team Keys']} href={KEYS} />.
+      </Text>
+      <Text as="p">
+        A Web application client from{' '}
+        <VendorUI path={['Google Cloud', 'Credentials']} href="https://console.cloud.google.com/apis/credentials" />, in
+        a project you control.
       </Text>
     </div>
   ),

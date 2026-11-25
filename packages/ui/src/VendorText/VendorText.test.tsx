@@ -10,7 +10,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
 import { contrast, flatten, OPAQUE_SURFACES, parseHex } from '@crewlethq/tokens/test/palette';
-import { channels, installThemed, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installThemed, themeColours, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { StepLink, VendorText, VendorUI, vendorTextString } from './index.js';
 
 afterEach(cleanup);
@@ -37,7 +37,7 @@ test('a vendor name is set apart by weight and frame, not by ink alone', () => {
   const rule = /\.crewlet-vendor-ui \{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(rule).toContain('font-weight: var(--font-weight-semibold)');
   expect(rule).toMatch(/border: 1px solid var\(--color-border-strong\)/);
-  // Inline, so a link's underline is drawn under the name inside it.
+  // Inline, so a long path wraps inside its frame.
   expect(rule).toContain('display: inline;');
 });
 
@@ -98,9 +98,71 @@ test('parts draw words as written, each UI name as one, and a link on the words 
   expect(names).toHaveLength(2);
   const links = screen.getAllByRole('link');
   expect(links).toHaveLength(2);
-  expect(links[0]?.querySelector('.crewlet-vendor-ui')).toBeTruthy();
+  expect(links[0]?.classList.contains('crewlet-vendor-ui')).toBe(true);
   expect(links[1]?.textContent).toContain('keys page');
   expect(container.textContent).toContain('press Generate API Key on the');
+});
+
+test('a linked vendor UI name is the link: its new-tab mark is the last item in its frame, and it says so', () => {
+  render(
+    <p>
+      <VendorText parts={[{ text: 'From ' }, { ui: ['Google Cloud', 'Credentials'], url: 'https://example.com/c' }]} />
+    </p>,
+  );
+  // The space before the new-tab sentence is a no-break space, which a screen reader reads as any other.
+  const link = screen.getByRole('link', { name: 'Google Cloud then Credentials\u00a0(opens in a new tab)' });
+  expect(link.getAttribute('href')).toBe('https://example.com/c');
+  expect(link.getAttribute('target')).toBe('_blank');
+  expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+  expect(link.classList).toContain('crewlet-vendor-ui');
+  expect(link.querySelectorAll('.crewlet-vendor-ui')).toHaveLength(0);
+  const tail = link.lastElementChild;
+  expect(tail?.classList.contains('crewlet-vendor-ui__tail')).toBe(true);
+  const mark = tail?.querySelector('.crewlet-vendor-ui__external');
+  expect(mark?.parentElement?.getAttribute('aria-hidden')).toBe('true');
+  // After the mark, only the hidden sentence.
+  expect(mark?.nextElementSibling).toBeNull();
+  expect(mark?.parentElement?.nextElementSibling?.classList.contains('crewlet-visually-hidden')).toBe(true);
+  expect(mark?.parentElement?.nextElementSibling?.nextElementSibling).toBeNull();
+});
+
+test('a step link around a lone vendor UI name draws the same linked chip', () => {
+  render(
+    <StepLink href="https://example.com/keys" newTabLabel="(new tab)">
+      <VendorUI path={['Integrations', 'Team Keys']} />
+    </StepLink>,
+  );
+  const link = screen.getByRole('link', { name: 'Integrations then Team Keys\u00a0(new tab)' });
+  expect(link.classList).toContain('crewlet-vendor-ui--link');
+  expect(link.querySelector('.crewlet-vendor-ui__external')).toBeTruthy();
+});
+
+test('a linked chip is never underlined, answers a pointer with a fill and a press with a ring, and its words stay clear', () => {
+  const failures: string[] = [];
+  for (const theme of ['dark', 'light'] as const) {
+    const uninstall = installThemed(theme, 'Link/Link.css', 'VendorText/VendorText.css');
+    render(<VendorUI path="Credentials" href="https://example.com/c" />);
+    const link = screen.getByRole('link');
+    const palette = themeColours(theme);
+    const fills: string[] = [];
+    for (const state of [[], ['hover'], ['hover', 'active']] as const) {
+      const release = userAction(link, ...state);
+      const style = getComputedStyle(link);
+      const at = `${theme} ${state.join('+') || 'rest'}`;
+      if (style.textDecorationLine !== 'none') failures.push(`${at}: ${style.textDecorationLine}`);
+      fills.push(`${style.backgroundColor} ${style.borderTopColor}`);
+      for (const surface of ['color-surface-background', 'color-surface-subtle'].map((name) => `--${name}`)) {
+        const fill = flatten(style.backgroundColor, parseHex(palette.get(surface) ?? '')!);
+        const words = contrast(channels(style.color), fill);
+        if (words < 4.5) failures.push(`${at} on ${surface}: words ${words.toFixed(2)}:1`);
+      }
+      release();
+    }
+    if (new Set(fills).size !== 3) failures.push(`${theme}: fills ${fills.join(' / ')}`);
+    cleanup();
+    uninstall();
+  }
+  expect(failures).toEqual([]);
 });
 
 test('words go through renderWords, and a link whose address does not resolve is drawn without one', () => {
