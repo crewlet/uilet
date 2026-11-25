@@ -10,7 +10,7 @@
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-xs);
   padding: 0 var(--spacing-1);
-  /* Inline, so a link's underline reaches the name; sliced where it wraps, as InlineCode is. */
+  /* Inline, so a long path wraps inside its frame; sliced where it wraps, as InlineCode is. */
   display: inline;
   box-decoration-break: slice;
   overflow-wrap: anywhere;
@@ -23,8 +23,55 @@
   color: var(--color-text-tertiary);
 }
 
-/* Linked, the name takes the link's ink and underline and keeps its frame. */
-.crewlet-step-link .crewlet-vendor-ui,
-.crewlet-step-link .crewlet-vendor-ui__separator {
+/*
+ * Linked, the chip is the anchor: the link's ink, its new-tab mark inside the
+ * frame, and no underline in any state. A pointer fills it; a press rings it.
+ */
+.crewlet-link.crewlet-vendor-ui--link {
+  color: var(--color-brand-accent-ink);
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* Every state an anchor is in, so it outranks Link's in-sentence and hover underlines. */
+.crewlet-link.crewlet-vendor-ui--link:is(:link, :visited, :hover, :focus-visible, :active) {
+  text-decoration: none;
+}
+
+.crewlet-link.crewlet-vendor-ui--link:hover {
+  background: var(--color-brand-accent-soft);
+}
+
+.crewlet-link.crewlet-vendor-ui--link:active {
+  background: var(--color-brand-accent-soft);
+  border-color: var(--color-brand-accent);
+}
+
+.crewlet-vendor-ui--link .crewlet-vendor-ui__separator {
   color: inherit;
+}
+
+/* The mark and the new-tab sentence: one unbreakable group, not copied with the name. */
+.crewlet-vendor-ui__tail {
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Inline, said here: the document baseline sets every `svg` to block. */
+.crewlet-vendor-ui__external {
+  display: inline;
+  vertical-align: -0.125em;
+}
+
+/* Forced colours drops the fill and repaints the frame, so the hover there is
+   the underline, as Link's quiet hover. */
+@media (forced-colors: active) {
+  .crewlet-link.crewlet-vendor-ui--link:is(:hover) {
+    text-decoration: underline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-link.crewlet-vendor-ui--link {
+    transition: none;
+  }
 }
