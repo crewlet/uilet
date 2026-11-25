@@ -61,15 +61,18 @@ test('offers Set up identity as the primary action wherever the agent has none t
   }
 });
 
-test('offers Replace identity, not primary, once the agent\'s own is ready', () => {
-  box('ready');
-  const button = screen.getByRole('button', { name: 'Replace identity: Growth Marketer' });
-  expect(button.className).not.toContain('crewlet-btn--primary');
-  expect(screen.queryByRole('button', { name: /Set up identity/ })).toBeNull();
+test('offers Replace identity, not primary, once the agent\'s own works, its role read or not', () => {
+  for (const state of ['ready', 'unchecked'] as const) {
+    box(state);
+    const button = screen.getByRole('button', { name: 'Replace identity: Growth Marketer' });
+    expect(button.className).not.toContain('crewlet-btn--primary');
+    expect(screen.queryByRole('button', { name: /Set up identity/ })).toBeNull();
+    cleanup();
+  }
 });
 
-test('offers nothing while a check runs or an old identity waits to be revoked', () => {
-  for (const state of ['checking', 'replacing'] as const) {
+test('offers nothing while the vendor gets a new identity ready, a check runs or an old one waits to be revoked', () => {
+  for (const state of ['preparing', 'checking', 'replacing'] as const) {
     box(state);
     expect(screen.queryAllByRole('button')).toEqual([]);
     cleanup();
@@ -107,6 +110,20 @@ test('says a problem inside the box, in the danger tone for a danger chip', () =
   );
 });
 
+test('an identity getting ready and one with its role unread are information, not set-up', () => {
+  expect(AGENT_IDENTITY_CHIPS.preparing).toEqual({ label: 'Getting ready', tone: 'info' });
+  expect(AGENT_IDENTITY_CHIPS.unchecked).toEqual({ label: 'Role not checked', tone: 'info' });
+  for (const state of ['preparing', 'unchecked'] as const) {
+    expect(agentIdentityNeedsSetUp(state)).toBe(false);
+    const { region } = box(state, { problem: { title: 'Google shows its role to administrators only', body: 'It works.' } });
+    expect(within(region).getByText('It works.').closest('.crewlet-callout')?.className).toContain('crewlet-callout--info');
+    expect(screen.queryByRole('button', { name: /Set up identity/ })).toBeNull();
+    cleanup();
+  }
+  // In the order an identity moves through them: made, getting ready, checked, then read or not.
+  expect(AGENT_IDENTITY_STATES.slice(1, 6)).toEqual(['none', 'preparing', 'checking', 'ready', 'unchecked']);
+});
+
 test('a reason disables the actions and says why', () => {
   box('none', { disabledReason: 'Only an administrator can change access.' });
   const button = screen.getByRole('button', { name: /Set up identity/ });
@@ -117,9 +134,10 @@ test('a reason disables the actions and says why', () => {
   );
 });
 
-test('Needs you until the agent\'s own is ready where the vendor offers one; never on a company-only vendor', () => {
+test('Needs you until the agent\'s own works where the vendor offers one, never while it gets ready; never on a company-only vendor', () => {
+  const calm: AgentIdentityState[] = ['ready', 'preparing', 'unchecked'];
   for (const state of AGENT_IDENTITY_STATES) {
-    expect(agentIdentityNeedsYou(state, true)).toBe(state !== 'ready');
+    expect(agentIdentityNeedsYou(state, true)).toBe(!calm.includes(state));
     expect(agentIdentityNeedsYou(state, false)).toBe(false);
   }
 });

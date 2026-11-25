@@ -2,13 +2,20 @@
  * An agent's identity heads its box with the one action at the box's top
  * right, at a desk's width and a phone's, and a long name in its line wraps
  * inside the box. The set-up sheet's steps and the value to copy keep inside
- * the sheet on a phone.
+ * the sheet on a phone, and its checklist's tag and link stand at a row's end
+ * at a desk and wrap under the name on a phone.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
-import { AgentIdentity, AgentIdentitySheet, DescriptionList, type AgentIdentityState } from '@crewlethq/ui';
+import {
+  AgentIdentity,
+  AgentIdentitySheet,
+  DescriptionList,
+  type AgentIdentityEntry,
+  type AgentIdentityState,
+} from '@crewlethq/ui';
 
 let root: Root | null = null;
 let host: HTMLElement | null = null;
@@ -158,5 +165,96 @@ test('on a phone, the sheet\'s numbered steps and the value to copy keep inside 
     const b = box(el);
     expect(b.right).toBeLessThanOrEqual(s.right + 0.5);
   }
+  expect(step.scrollWidth).toBeLessThanOrEqual(step.clientWidth);
+});
+
+const ENTRIES: AgentIdentityEntry[] = [
+  { id: '301234567', name: 'Tally web', group: 'Tally Labs', state: 'added' },
+  { id: '302234567', name: 'Tally app', group: 'Tally Labs', state: 'applying', href: 'https://example.com/p/302234567' },
+  {
+    id: '403234567',
+    name: 'Tally widgets for the Lock Screen and the Home Screen',
+    group: 'Tally Retail',
+    state: 'wrong_role',
+    href: 'https://example.com/p/403234567',
+    note: 'It holds Viewer; Growth Marketer needs Marketer.',
+  },
+  { id: '402234567', name: 'Tally web', group: 'Tally Retail', state: 'missing', href: 'https://example.com/p/402234567' },
+];
+
+/** The sheet with a checklist and the wider way, held or not, come to rest. */
+async function mountSheet(notReady?: string) {
+  host = document.createElement('div');
+  document.body.append(host);
+  root = createRoot(host);
+  flushSync(() =>
+    root!.render(
+      <AgentIdentitySheet
+        open
+        onClose={() => {}}
+        agent="Growth Marketer"
+        vendor="Google Analytics"
+        why="Google Analytics then records the agent's changes under its own Google identity."
+        steps={[{ text: 'On each property below, press Open, then Add users.' }]}
+        entries={ENTRIES}
+        wider={{
+          title: 'Or add it once to the account',
+          body: 'Added to an account, the identity reaches every property in it.',
+          links: [
+            { label: 'Tally Labs access', href: 'https://example.com/a/1' },
+            { label: 'Tally Retail access', href: 'https://example.com/a/2' },
+          ],
+        }}
+        notReady={notReady}
+        handIn={{ kind: 'nothing', text: 'Nothing to bring back.' }}
+        reads={[{ id: 'properties', label: "Read each of the agent's properties" }]}
+        onCheck={() => new Promise(() => {})}
+      />,
+    ),
+  );
+  await settle();
+  await Promise.all(document.getAnimations().map((a) => a.finished));
+  return document.querySelector<HTMLElement>('.crewlet-agent-identity-sheet__step')!;
+}
+
+for (const notReady of [undefined, 'Ready to add in about a minute.']) {
+  test(`on a phone${notReady ? ', held,' : ''} each entry's tag and link wrap under its name and nothing runs past the sheet`, async () => {
+    await page.viewport(390, 844);
+    const step = await mountSheet(notReady);
+    const s = box(step);
+    const rows = [...step.querySelectorAll<HTMLElement>('.crewlet-agent-identity-sheet__entry')];
+    expect(rows).toHaveLength(ENTRIES.length);
+    for (const row of rows) {
+      const r = box(row);
+      for (const el of row.querySelectorAll('*')) {
+        const b = box(el);
+        // A held link's reason is read, not drawn.
+        if (b.width === 0 || el.closest('.crewlet-visually-hidden')) continue;
+        expect(b.right).toBeLessThanOrEqual(r.right + 0.5);
+        expect(b.left).toBeGreaterThanOrEqual(r.left - 0.5);
+      }
+      expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
+    }
+    // EVERY ROW'S TAG AND LINK go under its name, so the rows read alike and no name is squeezed.
+    for (const row of rows) {
+      const end = box(row.querySelector('.crewlet-agent-identity-sheet__entry-end')!);
+      const words = box(row.querySelector('.crewlet-agent-identity-sheet__entry-words')!);
+      expect(end.top).toBeGreaterThanOrEqual(words.bottom - 0.5);
+      expect(Math.abs(end.left - words.left)).toBeLessThan(1);
+    }
+    expect(step.scrollWidth).toBeLessThanOrEqual(step.clientWidth);
+    expect(s.right).toBeLessThanOrEqual(390.5);
+  });
+}
+
+test('at a desk, a short entry keeps its tag and link at the row\'s end, on its name\'s line', async () => {
+  await page.viewport(1440, 900);
+  const step = await mountSheet();
+  const row = [...step.querySelectorAll<HTMLElement>('.crewlet-agent-identity-sheet__entry')][3]!;
+  const r = box(row);
+  const end = box(row.querySelector('.crewlet-agent-identity-sheet__entry-end')!);
+  const name = box(row.querySelector('.crewlet-agent-identity-sheet__entry-name')!);
+  expect(r.right - end.right).toBeLessThan(1);
+  expect(end.top).toBeLessThan(name.bottom);
   expect(step.scrollWidth).toBeLessThanOrEqual(step.clientWidth);
 });

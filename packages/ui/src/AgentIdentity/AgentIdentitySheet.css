@@ -26,3 +26,85 @@
 .crewlet-agent-identity-sheet__verdict:empty {
   margin-block-start: calc(-1 * var(--spacing-3));
 }
+
+/*
+ * The checklist under the steps: a row per entry, its name and ID first and
+ * its tag and link at the end, rows ruled apart. Where a row is too narrow
+ * for both, the tag and link wrap under the name rather than squeeze it, and
+ * on a phone every row puts them there, so the rows read alike.
+ */
+.crewlet-agent-identity-sheet__entries {
+  container: crewlet-agent-identity-entries / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-inline-size: 0;
+}
+
+.crewlet-agent-identity-sheet__entry-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-inline-size: 0;
+}
+
+.crewlet-agent-identity-sheet__entry-group-name {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.crewlet-agent-identity-sheet__entry-rows {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-agent-identity-sheet__entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2) var(--spacing-3);
+  min-inline-size: 0;
+  padding-block: var(--spacing-2);
+}
+
+.crewlet-agent-identity-sheet__entry + .crewlet-agent-identity-sheet__entry {
+  border-block-start: 1px solid var(--color-border-default);
+}
+
+.crewlet-agent-identity-sheet__entry-words {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.crewlet-agent-identity-sheet__entry-name,
+.crewlet-agent-identity-sheet__entry-id {
+  overflow-wrap: anywhere;
+}
+
+.crewlet-agent-identity-sheet__entry-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-inline-size: 0;
+}
+
+@container crewlet-agent-identity-entries (width < 26rem) {
+  .crewlet-agent-identity-sheet__entry-words {
+    flex-basis: 100%;
+  }
+}
+
+.crewlet-agent-identity-sheet__wider-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-block-start: var(--spacing-2);
+}

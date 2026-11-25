@@ -1,4 +1,14 @@
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import {
+  Children,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from 'react';
+import { ExternalLinkGlyph } from '@crewlethq/icons/glyphs';
 import { Button, ButtonLink } from '../Button/index.js';
 import { Callout } from '../Callout/index.js';
 import { Copyable } from '../Copyable/index.js';
@@ -8,8 +18,12 @@ import { FormField, Input } from '../Input/index.js';
 import { List, ListItem } from '../List/index.js';
 import { Modal, type ModalProps } from '../Modal/index.js';
 import { StepList, Stepper, type StepListStep, type StepState } from '../Stepper/index.js';
+import { Tag } from '../Tag/index.js';
 import { Text } from '../Text/index.js';
-import { AGENT_IDENTITY_WORDS } from './AgentIdentity.js';
+import { cx } from '../utils/cx.js';
+import { groupInOrder } from '../utils/groupInOrder.js';
+import { headingTag, useHeadingLevel } from '../utils/headingLevel.js';
+import { AGENT_IDENTITY_CHIPS, AGENT_IDENTITY_WORDS, type AgentIdentityChip } from './AgentIdentity.js';
 
 /** A value the person copies at the vendor, and the vendor's rule it was made to. */
 export interface AgentIdentityCopy {
@@ -96,6 +110,55 @@ export interface AgentIdentityMake {
   reads?: readonly AgentIdentityRead[] | undefined;
 }
 
+/**
+ * Where the identity stands on one thing at the vendor, such as one Analytics
+ * property: `missing` (not added yet), `added`, `applying` (added, and the
+ * vendor is still applying it), `wrong_role`, `unchecked` (added, its role not
+ * shown to Crewlet), or `unknown`.
+ */
+export type AgentIdentityEntryState = 'missing' | 'added' | 'applying' | 'wrong_role' | 'unchecked' | 'unknown';
+
+/** One thing at the vendor the identity is added to, a row of the checklist under the steps. */
+export interface AgentIdentityEntry {
+  /** Its ID at the vendor, quiet in monospace under its name. */
+  id: string;
+  name: string;
+  /** What holds it, such as the Analytics account: a heading over its group's rows. */
+  group?: string | undefined;
+  /** Its page at the vendor, opened in a new tab from every row that is not `added`. */
+  href?: string | undefined;
+  state: AgentIdentityEntryState;
+  /** One quiet line under it: what was read, or what to do there. */
+  note?: ReactNode;
+}
+
+/** A way round adding the identity entry by entry, such as adding it once to the account that holds them. */
+export interface AgentIdentityWider {
+  title: ReactNode;
+  /** What it does, and what it reaches beyond the entries. */
+  body: ReactNode;
+  /** The vendor's pages for it, each opened in a new tab. */
+  links: readonly { label: string; href: string }[];
+}
+
+/** An entry's tag, its word and tone; `null` for `unknown`, which draws none. */
+export function agentIdentityEntryChip(state: AgentIdentityEntryState, vendor: string): AgentIdentityChip | null {
+  switch (state) {
+    case 'missing':
+      return { label: 'Not added yet', tone: 'warning' };
+    case 'added':
+      return { label: 'Added', tone: 'success' };
+    case 'applying':
+      return { label: `${vendor} is applying it`, tone: 'info' };
+    case 'wrong_role':
+      return AGENT_IDENTITY_CHIPS.wrong_role;
+    case 'unchecked':
+      return AGENT_IDENTITY_CHIPS.unchecked;
+    case 'unknown':
+      return null;
+  }
+}
+
 /** The sheet's three steps. */
 export type AgentIdentitySheetStep = 'vendor' | 'back' | 'check';
 
@@ -121,6 +184,22 @@ export interface AgentIdentitySheetProps {
   note?: ReactNode;
   /** A limit or a caution that applies now, over the steps. */
   caution?: ReactNode;
+  /**
+   * What the identity is added to at the vendor, a checklist after the steps:
+   * each one's name, ID and state, grouped under what holds it, and a link to
+   * its page on every one not yet added.
+   */
+  entries?: readonly AgentIdentityEntry[] | undefined;
+  /** The words on each entry's link. "Open" by default. */
+  entryAction?: string | undefined;
+  /** An explicit alternative under the entries, such as adding it once to the account that holds them. */
+  wider?: AgentIdentityWider | undefined;
+  /**
+   * The vendor cannot take the identity yet ("Ready to add in about a
+   * minute."): said first in the step, and while it is set every entry's link
+   * and the alternative's links are held, with its words as their reason.
+   */
+  notReady?: ReactNode;
   /** Crewlet can make it: one button, with the steps by hand folded under it. */
   make?: AgentIdentityMake | undefined;
   /** What comes back from the vendor: a file, a token, or nothing. */
@@ -185,6 +264,10 @@ function Walk({
   link,
   note,
   caution,
+  entries,
+  entryAction = 'Open',
+  wider,
+  notReady: notYet,
   make,
   handIn,
   reads,
@@ -346,9 +429,11 @@ function Walk({
   });
 
   const vendorSteps = <VendorSteps steps={steps} link={link} />;
+  const held = shownNode(notYet) ? plainText(notYet) || 'Not ready yet.' : undefined;
   const content: Record<AgentIdentitySheetStep, ReactNode> = {
     vendor: (
       <>
+        {shownNode(notYet) ? <Callout variant="info">{notYet}</Callout> : null}
         {caution}
         {make ? (
           <Callout
@@ -370,6 +455,23 @@ function Walk({
         ) : (
           vendorSteps
         )}
+        {entries && entries.length > 0 ? (
+          <Entries entries={entries} vendor={vendor} action={entryAction} held={held} />
+        ) : null}
+        {wider ? (
+          <Callout variant="neutral" appearance="quiet" title={wider.title}>
+            <div>{wider.body}</div>
+            {wider.links.length > 0 ? (
+              <div className="crewlet-agent-identity-sheet__wider-links">
+                {wider.links.map((l) => (
+                  <VendorLink key={l.href} href={l.href} held={held}>
+                    {l.label}
+                  </VendorLink>
+                ))}
+              </div>
+            ) : null}
+          </Callout>
+        ) : null}
         {note ? (
           <Text as="p" variant="caption" tone="secondary" className="crewlet-agent-identity-sheet__note">
             {note}
@@ -586,5 +688,148 @@ function VendorSteps({
         </span>
       ) : null}
     </>
+  );
+}
+
+/** Whether a node draws anything: not null, undefined, a boolean or empty words. */
+function shownNode(node: ReactNode): boolean {
+  return node !== null && node !== undefined && typeof node !== 'boolean' && node !== '';
+}
+
+/** The words a node carries, from its strings and its elements' children, spaces collapsed. */
+function plainText(node: ReactNode): string {
+  const words = (n: ReactNode): string =>
+    Children.toArray(n)
+      .map((child) =>
+        typeof child === 'string' || typeof child === 'number'
+          ? String(child)
+          : isValidElement<{ children?: ReactNode }>(child)
+            ? words(child.props.children)
+            : '',
+      )
+      .join('');
+  return words(node).replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * A link to a vendor's page, in a new tab. While `held`, the same button
+ * drawn held with that reason, since a link cannot be disabled.
+ */
+function VendorLink({
+  href,
+  held,
+  children,
+  ...aria
+}: {
+  href: string;
+  held: string | undefined;
+  children: ReactNode;
+  'aria-label'?: string | undefined;
+  'aria-describedby'?: string | undefined;
+}) {
+  return held === undefined ? (
+    <ButtonLink size="small" variant="secondary" href={href} external {...aria}>
+      {children}
+    </ButtonLink>
+  ) : (
+    <Button
+      size="small"
+      variant="secondary"
+      disabledReason={held}
+      tooltip
+      trailingIcon={<ExternalLinkGlyph size="sm" />}
+      {...aria}
+    >
+      {children}
+    </Button>
+  );
+}
+
+/**
+ * The checklist of entries: a row each, its name and ID first, its tag and
+ * its link at the end, wrapping under the name on a phone. Entries that name a
+ * group sit under its heading, as `ScopeList` draws them, in a labelled group.
+ */
+function Entries({
+  entries,
+  vendor,
+  action,
+  held,
+}: {
+  entries: readonly AgentIdentityEntry[];
+  vendor: string;
+  action: string;
+  held: string | undefined;
+}) {
+  const base = useId();
+  const Heading = headingTag(useHeadingLevel());
+  // AN ENTRY'S INDEX IS ITS PLACE IN THE LIST GIVEN, so its ID's element id is unique across groups.
+  const at = new Map(entries.map((e, i) => [e, i]));
+  return (
+    <div className="crewlet-agent-identity-sheet__entries">
+      {groupInOrder(entries).map((run, r) => {
+        // BY POSITION, NOT BY NAME: a group's name may hold spaces, and an id is one token.
+        const groupId = run.name === undefined ? undefined : `${base}-group-${r}`;
+        const rows = (
+          <ul className="crewlet-agent-identity-sheet__entry-rows">
+            {run.items.map((entry) => {
+              const idId = `${base}-id-${at.get(entry)!}`;
+              const chip = agentIdentityEntryChip(entry.state, vendor);
+              return (
+                <li key={entry.id} className="crewlet-agent-identity-sheet__entry" data-state={entry.state}>
+                  <span className="crewlet-agent-identity-sheet__entry-words">
+                    <Text className="crewlet-agent-identity-sheet__entry-name">{entry.name}</Text>
+                    <Text id={idId} variant="caption" tone="tertiary" mono className="crewlet-agent-identity-sheet__entry-id">
+                      {entry.id}
+                    </Text>
+                    {shownNode(entry.note) ? (
+                      <Text variant="caption" tone="secondary">
+                        {entry.note}
+                      </Text>
+                    ) : null}
+                  </span>
+                  {chip || (entry.state !== 'added' && entry.href) ? (
+                    <span className="crewlet-agent-identity-sheet__entry-end">
+                      {chip ? (
+                        <Tag size="sm" variant={chip.tone}>
+                          {chip.label}
+                        </Tag>
+                      ) : null}
+                      {entry.state !== 'added' && entry.href ? (
+                        <VendorLink
+                          href={entry.href}
+                          held={held}
+                          aria-label={`${action}: ${entry.name}`}
+                          aria-describedby={cx(idId, groupId)}
+                        >
+                          {action}
+                        </VendorLink>
+                      ) : null}
+                    </span>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        );
+        return groupId === undefined ? (
+          <div key="" className="crewlet-agent-identity-sheet__entry-group">
+            {rows}
+          </div>
+        ) : (
+          <div
+            key={run.name}
+            role="group"
+            aria-labelledby={groupId}
+            className="crewlet-agent-identity-sheet__entry-group"
+          >
+            <Text as={Heading} id={groupId} variant="label" className="crewlet-agent-identity-sheet__entry-group-name">
+              {run.name}
+            </Text>
+            {rows}
+          </div>
+        );
+      })}
+    </div>
   );
 }

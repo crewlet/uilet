@@ -5,6 +5,7 @@ import {
   Button,
   Callout,
   DescriptionList,
+  type AgentIdentityEntry,
   type AgentIdentitySheetProps,
   type AgentIdentityVerdict,
   VendorText,
@@ -312,4 +313,86 @@ export const PageNoStepNames: Story = {
       link={{ label: 'Open Team Keys', href: 'https://appstoreconnect.apple.com/access/integrations/api' }}
     />
   ),
+};
+
+/** Analytics properties in two accounts, one name in both, in each state an entry takes. */
+const PROPERTIES: AgentIdentityEntry[] = [
+  { id: '301234567', name: 'Tally web', group: 'Tally Labs', state: 'added', href: 'https://analytics.google.com/analytics/web/#/p301234567/admin/suiteusermanagement/property' },
+  { id: '302234567', name: 'Tally app', group: 'Tally Labs', state: 'applying', href: 'https://analytics.google.com/analytics/web/#/p302234567/admin/suiteusermanagement/property' },
+  {
+    id: '304234567',
+    name: 'Ledger web',
+    group: 'Tally Labs',
+    state: 'unchecked',
+    href: 'https://analytics.google.com/analytics/web/#/p304234567/admin/suiteusermanagement/property',
+    note: 'Reads its reports. Google shows its role only to an administrator.',
+  },
+  { id: '402234567', name: 'Tally web', group: 'Tally Retail', state: 'missing', href: 'https://analytics.google.com/analytics/web/#/p402234567/admin/suiteusermanagement/property' },
+  {
+    id: '403234567',
+    name: 'Tally widgets for the Lock Screen and the Home Screen',
+    group: 'Tally Retail',
+    state: 'wrong_role',
+    href: 'https://analytics.google.com/analytics/web/#/p403234567/admin/suiteusermanagement/property',
+    note: 'It holds Viewer; Growth Marketer needs Marketer.',
+  },
+  { id: '900234567', name: 'Sandbox', state: 'unknown', href: 'https://analytics.google.com/analytics/web/#/p900234567/admin/suiteusermanagement/property' },
+];
+
+const ANALYTICS: AgentIdentitySheetProps = {
+  ...APPLE,
+  vendor: 'Google Analytics',
+  why: "Google Analytics then records the agent's changes under its own Google identity.",
+  steps: [
+    { text: <VendorText parts={[{ text: 'On each property below, press ' }, { ui: ['Open'] }, { text: ', then ' }, { ui: ['+'] }, { text: ' and ' }, { ui: ['Add users'] }, { text: '.' }]} /> },
+    {
+      text: 'Email address:',
+      copy: { label: "Google identity's email", value: 'crewlet-growth-3fa91c@example-identity.iam.gserviceaccount.com' },
+    },
+    { text: <VendorText parts={[{ text: 'Turn off ' }, { ui: ['Notify new users by email'] }, { text: ': the identity reads no mail.' }]} /> },
+    { text: <VendorText parts={[{ ui: ['Role'] }, { text: ': ' }, { ui: ['Marketer'] }, { text: '. Then press ' }, { ui: ['Add'] }, { text: '.' }]} /> },
+  ],
+  note: 'Only an administrator of a property can add users to it.',
+  entries: PROPERTIES,
+  entryAction: 'Open',
+  wider: {
+    title: 'Or add it once to the account',
+    body: 'Added to an account, the identity reaches every property in it, the ones made later too. Choose this only if the agent may reach all of them.',
+    links: [
+      { label: 'Tally Labs access', href: 'https://analytics.google.com/analytics/web/#/a100/admin/suiteusermanagement/account' },
+      { label: 'Tally Retail access', href: 'https://analytics.google.com/analytics/web/#/a200/admin/suiteusermanagement/account' },
+    ],
+  },
+  handIn: { kind: 'nothing', text: 'Nothing to bring back: Crewlet checks each property.' },
+  reads: [
+    { id: 'mint', label: 'Sign in as the identity' },
+    { id: 'properties', label: "Read each of the agent's properties" },
+  ],
+};
+
+const NOT_READY = 'Ready to add in about a minute. Google takes that long before Google Analytics can find a new identity.';
+
+/** Google Analytics, in light: a row per property under its account, its state, and Open on each one not added yet; the account-wide way under them. */
+export const GoogleAnalyticsEntriesLight: Story = { render: () => <Opened {...ANALYTICS} />, globals: { theme: 'light' } };
+
+/** The same checklist, in dark. */
+export const GoogleAnalyticsEntriesDark: Story = { render: () => <Opened {...ANALYTICS} />, globals: { theme: 'dark' } };
+
+/** A new identity Google cannot find yet, in light: the step leads with why, and every Open is held with that reason. */
+export const GoogleAnalyticsNotReadyLight: Story = {
+  render: () => <Opened {...ANALYTICS} notReady={NOT_READY} />,
+  globals: { theme: 'light' },
+};
+
+/** The identity not ready yet, in dark. */
+export const GoogleAnalyticsNotReadyDark: Story = {
+  render: () => <Opened {...ANALYTICS} notReady={NOT_READY} />,
+  globals: { theme: 'dark' },
+};
+
+/** On a phone: each row's tag and Open wrap under its name, and nothing runs past the sheet. */
+export const GoogleAnalyticsEntriesPhone: Story = {
+  render: () => <Opened {...ANALYTICS} />,
+  parameters: { viewport: { options: { phone: { name: 'Phone', styles: { width: '390px', height: '844px' }, type: 'mobile' } } } },
+  globals: { viewport: { value: 'phone' } },
 };

@@ -20,6 +20,18 @@ const AD_ACCOUNTS: ScopeListOption[] = [
   'Holiday campaign archive',
 ].map((label, i) => ({ value: `act_10023${i}`, label, id: `act_10023${i}` }));
 
+/** Analytics properties in two accounts, one property name in both, and one no account holds. */
+const PROPERTIES: ScopeListOption[] = [
+  { value: '301234567', label: 'Tally web', id: '301234567', group: 'Tally Labs' },
+  { value: '302234567', label: 'Tally app', id: '302234567', group: 'Tally Labs' },
+  { value: '304234567', label: 'Ledger web', id: '304234567', group: 'Tally Labs' },
+  { value: '402234567', label: 'Tally web', id: '402234567', group: 'Tally Retail' },
+  { value: '403234567', label: 'Ledger app', id: '403234567', group: 'Tally Retail' },
+  { value: '405234567', label: 'Tally widgets for the Lock Screen and the Home Screen', id: '405234567', group: 'Tally Retail' },
+  { value: '406234567', label: 'Tally store', id: '406234567', group: 'Tally Retail' },
+  { value: '900234567', label: 'Sandbox', id: '900234567' },
+];
+
 function Chooser({ options, initial, label }: { options: ScopeListOption[]; initial: string[]; label: string }) {
   const [value, setValue] = useState<string[]>(initial);
   return (
@@ -88,4 +100,25 @@ export const InADialog: Story = {
     };
     return <Dialog />;
   },
+};
+
+/** Properties drawn by the Analytics account that holds them, a heading over each; the search matches an account's name too. In light. */
+export const GroupedLight: Story = {
+  render: () => <Chooser label="Growth Marketer's properties" options={PROPERTIES} initial={['301234567']} />,
+  globals: { theme: 'light' },
+};
+
+/** The same properties by account, in dark. */
+export const GroupedDark: Story = {
+  render: () => <Chooser label="Growth Marketer's properties" options={PROPERTIES} initial={['301234567']} />,
+  globals: { theme: 'dark' },
+};
+
+/** By account on a phone: a long name wraps beside its ID, and each heading keeps the rows' inset. */
+export const GroupedNarrow: Story = {
+  render: () => (
+    <div style={{ width: 320 }}>
+      <ScopeList label="Growth Marketer's properties" options={PROPERTIES} value={['402234567']} onChange={() => {}} />
+    </div>
+  ),
 };
