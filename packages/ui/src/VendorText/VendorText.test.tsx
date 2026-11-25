@@ -120,6 +120,8 @@ test('a linked vendor UI name is the link: its new-tab mark is the last item in 
   expect(tail?.classList.contains('crewlet-vendor-ui__tail')).toBe(true);
   const mark = tail?.querySelector('.crewlet-vendor-ui__external');
   expect(mark?.parentElement?.getAttribute('aria-hidden')).toBe('true');
+  // The mark sits a step below the sentence's text, so it does not outweigh the name.
+  expect(mark?.getAttribute('width')).toBe('12px');
   // After the mark, only the hidden sentence.
   expect(mark?.nextElementSibling).toBeNull();
   expect(mark?.parentElement?.nextElementSibling?.classList.contains('crewlet-visually-hidden')).toBe(true);

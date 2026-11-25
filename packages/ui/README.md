@@ -252,6 +252,12 @@ Stories: Patterns / Confirmation dialogs (remove a model, remove an MCP server,
 disconnect an integration, move a seat's model, review and save, long names,
 many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 
+## Changes in 0.190.2
+
+### A linked vendor UI name's new-tab mark is a step smaller
+
+**`VendorUI` with `href` draws its external mark at `xs` (12 px)**, a step below the sentence's text, so the mark no longer outweighs the name it follows. Nothing else about the chip changes.
+
 ## Changes in 0.190.0
 
 ### Properties by account, an identity that is getting ready or has its role unread, and a checklist per property

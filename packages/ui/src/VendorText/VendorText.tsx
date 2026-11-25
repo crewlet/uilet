@@ -69,7 +69,7 @@ export function VendorUI({
         {/* The word joiner holds the mark to the space: a browser may break before an inline svg. */}
         <span aria-hidden="true">
           {'\u2060'}
-          <ExternalLinkGlyph size="sm" className="crewlet-vendor-ui__external" />
+          <ExternalLinkGlyph size="xs" className="crewlet-vendor-ui__external" />
         </span>
         <VisuallyHidden>{newTabLabel}</VisuallyHidden>
       </span>
