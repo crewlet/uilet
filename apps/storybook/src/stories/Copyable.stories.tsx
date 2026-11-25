@@ -103,6 +103,16 @@ export const BlockLongAddressNarrow: Story = {
   decorators: [(Story) => <div style={{ maxWidth: 320 }}>{Story()}</div>],
 };
 
+/** An email or a host name at a phone's width breaks after an `@` or a `.`, never inside a name. */
+export const BlockEmailNarrow: Story = {
+  args: {
+    variant: 'block',
+    monospace: true,
+    value: 'crewlet-gr-example-1@example-crewlet.iam.gserviceaccount.com',
+  },
+  decorators: [(Story) => <div style={{ maxWidth: 390 }}>{Story()}</div>],
+};
+
 export const TruncatedChip: Story = {
   args: {
     value: 'a-very-long-identifier-that-should-be-truncated-aggressively',

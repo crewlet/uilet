@@ -1,6 +1,7 @@
 /**
  * An identifier breaks where it means to, in a real browser: a path at a `/`,
- * a copy panel's token fills its lines, and a chip's ground hugs a full stop.
+ * an email at an `@` or a `.`, a copy panel's token fills its lines, and a
+ * chip's ground hugs a full stop.
  */
 import { afterEach, expect, test } from 'vitest';
 import { page } from 'vitest/browser';
@@ -102,6 +103,21 @@ test('a token in a copy panel fills its first line rather than breaking after a 
   const glyphWidth = firstLine[1]!.right - firstLine[0]!.right;
   expect(all.length).toBe(TOKEN.length);
   expect(box.right - firstLine[firstLine.length - 1]!.right, 'room left at the end of the first line').toBeLessThan(glyphWidth * 1.5);
+});
+
+const EMAIL = 'crewlet-gr-example-1@example-crewlet.iam.gserviceaccount.com';
+
+test('an email in a copy panel ends every broken line at an @, a dot or a hyphen, never inside a name', async () => {
+  await page.viewport(1280, 800);
+  const midName: string[] = [];
+  for (let width = 260; width <= 520; width += 6) {
+    const at = await mount(width, <Copyable value={EMAIL} variant="block" monospace ariaLabel="Copy email" />);
+    const ends = lineEnds(at.querySelector('.crewlet-copyable__value')!);
+    if (ends.some((c) => c !== '@' && c !== '.' && c !== '-')) midName.push(`${width}px: ${ends.join(' ')}`);
+    flushSync(() => root?.unmount());
+    host?.remove();
+  }
+  expect(midName, 'widths where a line inside the email ended inside a name').toEqual([]);
 });
 
 test("a chip's ground hugs a full stop handed to it, and keeps its inset where none is", async () => {

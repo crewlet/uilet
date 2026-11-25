@@ -80,6 +80,9 @@ function withFallback(run: boolean | (() => boolean)) {
   });
 }
 
+/** The run of text each `<wbr>` in `el` follows: where the value may break. */
+const breaksAfter = (el: Element) => [...el.querySelectorAll('wbr')].map((wbr) => wbr.previousSibling?.textContent ?? '');
+
 async function press(name: RegExp | string) {
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name }));
@@ -388,7 +391,7 @@ describe('Copyable', () => {
     expect(rule).not.toMatch(/overflow-x:\s*auto/);
   });
 
-  test('a block breaks an address after each slash, and an opaque token at any character', () => {
+  test('a block breaks an address after each slash and dot, and an opaque token at any character', () => {
     const url = 'https://app.example.com/integrations/oauth/callback';
     const token = 'cwl_pat_01a1dc5f-3ec7-7cf4-a60d-30e3034af0a7';
     const { container } = render(
@@ -399,13 +402,49 @@ describe('Copyable', () => {
       </>,
     );
     const [address, opaque, command] = [...container.querySelectorAll('.crewlet-copyable')];
-    expect(address!.querySelectorAll('wbr')).toHaveLength(5);
+    expect(breaksAfter(address!)).toEqual(['https:/', '/', 'app.', 'example.', 'com/', 'integrations/', 'oauth/']);
     expect(address!.querySelector('.crewlet-copyable__value')!.textContent).toBe(url);
     expect(address!.classList.contains('crewlet-copyable--opaque')).toBe(false);
     expect(opaque!.classList.contains('crewlet-copyable--opaque')).toBe(true);
     expect(command!.classList.contains('crewlet-copyable--opaque')).toBe(false);
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Copyable.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     expect(css).toMatch(/\.crewlet-copyable--opaque \.crewlet-copyable__value \{\s*word-break:\s*break-all;\s*\}/);
+  });
+
+  test('an email or a host name breaks only after an @ or a dot, never mid-name, and copies as it is', async () => {
+    const clipboard = withClipboard();
+    const email = 'crewlet-gr-example-1@example-crewlet.iam.gserviceaccount.com';
+    const { container } = render(
+      <>
+        <Copyable value={email} variant="block" monospace ariaLabel="Copy the email" />
+        <Copyable value="api.eu.example.com" variant="compact" />
+        <Copyable value="cwl_pat_01a1dc5f-3ec7-7cf4" variant="block" monospace />
+      </>,
+    );
+    const [address, host, token] = [...container.querySelectorAll('.crewlet-copyable')];
+    expect(breaksAfter(address!)).toEqual(['crewlet-gr-example-1@', 'example-crewlet.', 'iam.', 'gserviceaccount.']);
+    expect(breaksAfter(host!)).toEqual(['api.', 'eu.', 'example.']);
+    // Not opaque, so no line breaks inside a name unless one name is wider than the line.
+    expect(address!.classList.contains('crewlet-copyable--opaque')).toBe(false);
+    expect(host!.classList.contains('crewlet-copyable--opaque')).toBe(false);
+    // A token with no separator still breaks at any character.
+    expect(token!.querySelectorAll('wbr')).toHaveLength(0);
+    expect(token!.classList.contains('crewlet-copyable--opaque')).toBe(true);
+    expect(address!.querySelector('.crewlet-copyable__value')!.textContent).toBe(email);
+    await press('Copy the email');
+    expect(clipboard.written).toEqual([email]);
+  });
+
+  test('a dot or an @ that opens a name is not a break', () => {
+    const { container } = render(
+      <>
+        <Copyable value="~/.config/crewlet" variant="block" monospace />
+        <Copyable value="@crewlethq/ui" variant="block" monospace />
+      </>,
+    );
+    const [dotfile, scope] = [...container.querySelectorAll('.crewlet-copyable')];
+    expect(breaksAfter(dotfile!)).toEqual(['~/', '.config/']);
+    expect(breaksAfter(scope!)).toEqual(['@crewlethq/']);
   });
 
   test('an absent value draws nothing at all', () => {
@@ -518,7 +557,7 @@ test('a compact value is framed, sized to itself, drawn whole as copied, its con
     expect(button.opacity).toBe('1');
     expect(button.width).toBe('24px');
     expect(compact!.classList.contains('crewlet-copyable--opaque')).toBe(true);
-    expect(path!.querySelectorAll('wbr')).toHaveLength(1);
+    expect(breaksAfter(path!)).toEqual(['crewlet-growth@', 'example-identity.', 'iam.', 'example.', 'com/']);
   } finally {
     cleanup();
     uninstall();

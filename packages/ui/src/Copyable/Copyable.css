@@ -154,8 +154,9 @@
 }
 
 /*
- * A path breaks after each `/` (the component offers the breaks); an opaque
- * value, one run with no space and no `/`, breaks at any character.
+ * A path or an address breaks after each `/`, `@` and `.` (the component
+ * offers the breaks); an opaque value, one run with no space and none of
+ * those, breaks at any character.
  */
 .crewlet-copyable--opaque .crewlet-copyable__value {
   word-break: break-all;
