@@ -82,10 +82,11 @@ export const Copyable = ({
   const resolvedLength = truncateLength ?? (variant === 'chip' ? 14 : 24);
   const shouldTruncate = truncate || (variant === 'chip' && text.length > resolvedLength);
   const rendered = display ?? (shouldTruncate ? truncateValue(text, resolvedLength, variant) : text);
-  // A whole value drawn (block, compact) wraps, and an opaque one (a token,
-  // an id: one run with no space and no `/`) breaks at any character.
+  // A whole value drawn (block, compact) wraps: a path or an address after its
+  // `/`, `@` and `.`, and an opaque one (a token, an id: one run with none of
+  // those and no space) at any character.
   const wraps = variant === 'block' || variant === 'compact';
-  const opaque = wraps && display === undefined && !/[\s/]/.test(text);
+  const opaque = wraps && display === undefined && !/[\s/@.]/.test(text);
   // A compact value is drawn whole, so it needs its words on a title only where they were replaced.
   const valueTitle = variant === 'compact' && rendered === text ? undefined : text;
 
@@ -105,7 +106,7 @@ export const Copyable = ({
       {/* The whole value in the tooltip, because the drawn one may be cut. */}
       <span className="crewlet-copyable__value" title={valueTitle}>
         {/* A PATH OR AN ADDRESS BREAKS AT ITS SEPARATORS where it wraps (`pathBreaks`). */}
-        {variant === 'chip' || shouldTruncate ? rendered : pathBreaks(rendered)}
+        {variant === 'chip' || shouldTruncate ? rendered : pathBreaks(rendered, { addresses: true })}
       </span>
       <IconButton
         className="crewlet-copyable__button"
