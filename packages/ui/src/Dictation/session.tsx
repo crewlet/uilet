@@ -26,7 +26,7 @@ import {
 import type { DictationOwner } from './slot.js';
 import type { DictationCapture } from './types.js';
 
-export { focusActive, keyDown, menuItems, releaseOwner as release, resumeOwner, start, view } from './machine.js';
+export { cancelStart, checkStart, focusActive, keyDown, menuItems, releaseOwner as release, resumeOwner, start, view } from './machine.js';
 export { MicOffGlyph } from '@crewlethq/icons/glyphs';
 
 const BARS = 16;
@@ -91,7 +91,7 @@ export function Wave({ owner }: { owner: DictationOwner }) {
   );
 }
 
-/** Cancel and Accept in the send slot's place. */
+/** Cancel and Accept in the send slot's place, from the first listen on. */
 export function Swap({ owner }: { owner: DictationOwner }) {
   const s = activeSession();
   if (!s || s.owner !== owner) return null;
@@ -105,16 +105,14 @@ export function Swap({ owner }: { owner: DictationOwner }) {
         className="crewlet-dictation__cancel"
         onClick={() => cancel(s)}
       />
-      {phase === 'pending' || phase === 'preparing' ? null : (
-        <IconButton
-          label={labels.accept}
-          icon={phase === 'accepting' ? <Spinner /> : <CheckGlyph />}
-          variant="primary"
-          aria-busy={phase === 'accepting' || undefined}
-          className="crewlet-dictation__accept"
-          onClick={() => void accept(s)}
-        />
-      )}
+      <IconButton
+        label={labels.accept}
+        icon={phase === 'accepting' ? <Spinner /> : <CheckGlyph />}
+        variant="primary"
+        aria-busy={phase === 'accepting' || undefined}
+        className="crewlet-dictation__accept"
+        onClick={() => void accept(s)}
+      />
     </>
   );
 }

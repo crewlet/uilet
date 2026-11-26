@@ -76,6 +76,8 @@ const reason = (el: Element) =>
     .map((id) => document.getElementById(id)?.textContent)
     .join(' ');
 const provisional = () => document.querySelector('.crewlet-dictation__provisional')?.textContent ?? null;
+/** The composer's buttons, in order. */
+const controls = () => [...document.querySelectorAll('.crewlet-composer button')].map((b) => b.getAttribute('aria-label') ?? b.textContent);
 
 async function startIn(name = 'Dictate') {
   fireEvent.click(button(name));
@@ -487,7 +489,7 @@ describe('a session', () => {
 });
 
 describe('permission and devices', () => {
-  test('while the browser asks, the mic waits with a ring and Cancel withdraws', async () => {
+  test('while the browser asks, the mic waits pressed in the idle row, and pressing it again withdraws', async () => {
     const { m, source } = setup({}, { permission: 'prompt', open: 'wait' });
     render(
       <>
@@ -500,8 +502,9 @@ describe('permission and devices', () => {
     expect(said()).toBe(DICTATION_LABELS.pending);
     expect(button('Dictate').getAttribute('aria-pressed')).toBe('true');
     expect(button('Dictate').classList.contains('is-pending')).toBe(true);
-    expect(screen.queryByRole('button', { name: 'Accept dictation' })).toBeNull();
-    fireEvent.click(button('Cancel dictation'));
+    expect(controls()).toEqual(['Dictate', 'Choose a microphone', 'Submit']);
+    fireEvent.click(button('Dictate'));
+    expect(said()).toBe(DICTATION_LABELS.cancelled);
     act(() => m.settle());
     await tick();
     expect(m.openCount).toBe(0);
@@ -745,7 +748,7 @@ describe('routes in order', () => {
 });
 
 describe('preparing', () => {
-  test('a route loading its model shows the mic waiting and a calm line, with Cancel and no words', async () => {
+  test('a route loading its model shows the mic waiting and a calm line in the idle row, then the live controls at once', async () => {
     const onChange = vi.fn();
     const onSubmit = vi.fn();
     const { m, source } = setup({ prepare: 1000 });
@@ -762,36 +765,244 @@ describe('preparing', () => {
     expect(said()).toBe(DICTATION_LABELS.preparing(undefined));
     expect(button('Dictate').classList.contains('is-pending')).toBe(true);
     expect(button('Dictate').getAttribute('aria-pressed')).toBe('true');
-    expect(button('Cancel dictation')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Accept dictation' })).toBeNull();
+    // The row is the idle one: no Cancel, no Accept, no layer; the send keys and the draft stay the box's.
+    expect(controls()).toEqual(['Dictate', 'Choose a microphone', 'Submit']);
     expect(document.querySelector('.crewlet-dictation__layer')).toBeNull();
-    expect(button('Submit')).toBeTruthy();
-    // Enter is dictation's while it starts: no send keys are offered, and the draft holds still.
-    expect(document.querySelector('.crewlet-composer__hint')).toBeNull();
-    expect(field().readOnly).toBe(true);
+    expect(document.querySelector('.crewlet-composer__hint')).not.toBeNull();
+    expect(field().readOnly).toBe(false);
     await tick(450);
     expect(note()).toBe('Preparing dictation… 40%');
-    // Enter while preparing neither sends nor accepts.
-    fireEvent.keyDown(field(), { key: 'Enter' });
     expect(onChange).not.toHaveBeenCalled();
-    expect(onSubmit).not.toHaveBeenCalled();
     await tick(600 + PACE * 3);
     expect(note()).toBeNull();
     expect(said()).toBe(DICTATION_LABELS.dictating);
-    expect(button('Accept dictation')).toBeTruthy();
+    expect(controls()).toEqual(['Choose a microphone', 'Cancel dictation', 'Accept dictation']);
+    expect(document.querySelector('.crewlet-composer__hint')).toBeNull();
+    expect(field().readOnly).toBe(true);
     expect(provisional()).toMatch(/^Let’s move/);
     expect(m.openCount).toBe(1);
   });
 
-  test('Cancel while preparing withdraws the route and releases the microphone', async () => {
+  test('Escape while preparing withdraws the route and releases the microphone', async () => {
     const { t, m, source } = setup({ prepare: 1000 });
     render(<Box source={source} />);
     await startIn();
     await tick(300);
-    fireEvent.click(button('Cancel dictation'));
+    fireEvent.keyDown(button('Dictate'), { key: 'Escape' });
     await tick(2000);
     expect(t.calls).toEqual(['start:default', 'cancel']);
     expect(m.openCount).toBe(0);
     expect(note()).toBeNull();
+  });
+});
+
+/** A box whose send clears the draft, as a composer's owner does. */
+function SendingBox({ source, initial = 'Ship it', disabled = false }: { source: DictationSource; initial?: string; disabled?: boolean }) {
+  const [value, setValue] = useState(initial);
+  return (
+    <Composer
+      label="Reply"
+      value={value}
+      onChange={setValue}
+      onSubmit={() => setValue('')}
+      dictation={source}
+      disabledReason={disabled ? 'Sending' : undefined}
+      actions={
+        <button type="button" onClick={() => setValue('')}>
+          Submit
+        </button>
+      }
+    />
+  );
+}
+
+describe('starting', () => {
+  // The microphone opens in half a second and the route answers a second later.
+  const slow = () => setup({ connect: 1000 }, { delay: 500 });
+
+  test.each([
+    ['a footer', false, ['Dictate', 'Choose a microphone', 'Submit'], ['Choose a microphone', 'Cancel dictation', 'Accept dictation']],
+    ['an inline row', true, ['Dictate', 'Choose a microphone', 'Send'], ['Choose a microphone', 'Cancel dictation', 'Accept dictation']],
+  ])('in %s, the row keeps its controls until it listens, then swaps them in one step', async (_, inline, idle, live) => {
+    const { source } = slow();
+    render(<Box source={source} inline={inline} />);
+    expect(controls()).toEqual(idle);
+    await startIn();
+    for (const wait of [0, 400, 400, 400]) {
+      await tick(wait);
+      expect(controls()).toEqual(idle);
+      expect(button('Dictate').getAttribute('aria-pressed')).toBe('true');
+      expect(document.querySelector('.crewlet-dictation__wave')).toBeNull();
+      expect(document.querySelector('.crewlet-dictation__layer')).toBeNull();
+      expect(document.querySelector('.crewlet-composer')!.classList.contains('is-dictating')).toBe(false);
+    }
+    await tick(400);
+    expect(controls()).toEqual(live);
+    expect(document.querySelector('.crewlet-dictation__wave')).not.toBeNull();
+    expect(document.querySelector('.crewlet-dictation__layer')).not.toBeNull();
+    expect(document.querySelector('.crewlet-composer')!.classList.contains('is-dictating')).toBe(true);
+  });
+
+  test('pressing the pressed mic cancels: no session, no open microphone, focus kept on the mic', async () => {
+    const { t, m, source } = slow();
+    render(
+      <>
+        <Announcer />
+        <Box source={source} initial="Keep" />
+      </>,
+    );
+    await startIn();
+    await tick(800);
+    expect(t.calls).toEqual(['start:default']);
+    expect(m.openCount).toBe(1);
+    fireEvent.click(button('Dictate'));
+    expect(said()).toBe(DICTATION_LABELS.cancelled);
+    expect(button('Dictate').getAttribute('aria-pressed')).toBe('false');
+    expect(document.activeElement).toBe(button('Dictate'));
+    await tick(2000);
+    expect(t.calls).toEqual(['start:default', 'cancel']);
+    expect(m.openCount).toBe(0);
+    expect(field().value).toBe('Keep');
+    expect(document.querySelector('.crewlet-dictation__layer')).toBeNull();
+  });
+
+  test('pressing the mic again before the microphone opens leaves it closed once it does', async () => {
+    const { t, m, source } = slow();
+    render(<Box source={source} />);
+    await startIn();
+    await tick(200);
+    fireEvent.click(button('Dictate'));
+    await tick(2000);
+    expect(m.openCount).toBe(0);
+    expect(t.calls).toEqual([]);
+  });
+
+  test('Escape on the mic, in the field or the shortcut cancels while starting', async () => {
+    const { m, source } = slow();
+    render(<Box source={source} />);
+    await startIn();
+    fireEvent.keyDown(button('Dictate'), { key: 'Escape' });
+    expect(button('Dictate').getAttribute('aria-pressed')).toBe('false');
+
+    fireEvent.keyDown(field(), { key: ' ', code: 'Space', ctrlKey: true, shiftKey: true });
+    await tick();
+    expect(button('Dictate').getAttribute('aria-pressed')).toBe('true');
+    fireEvent.keyDown(field(), { key: 'Escape' });
+    expect(button('Dictate').getAttribute('aria-pressed')).toBe('false');
+
+    fireEvent.keyDown(field(), { key: ' ', code: 'Space', ctrlKey: true, shiftKey: true });
+    await tick();
+    fireEvent.keyDown(field(), { key: ' ', code: 'Space', ctrlKey: true, shiftKey: true });
+    expect(button('Dictate').getAttribute('aria-pressed')).toBe('false');
+    await tick(2000);
+    expect(m.openCount).toBe(0);
+  });
+
+  test('sending while starting withdraws it: no session and no open microphone', async () => {
+    const { t, m, source } = slow();
+    render(<SendingBox source={source} />);
+    await startIn();
+    await tick(700);
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+    expect(button('Dictate').getAttribute('aria-pressed')).toBe('false');
+    await tick(2000);
+    expect(t.calls).toEqual(['start:default', 'cancel']);
+    expect(m.openCount).toBe(0);
+    expect(document.querySelector('.crewlet-dictation__layer')).toBeNull();
+
+    // Enter in the field sends as it does at rest, and withdraws the start the same way.
+    fireEvent.change(field(), { target: { value: 'Again' } });
+    await startIn();
+    fireEvent.keyDown(field(), { key: 'Enter' });
+    expect(field().value).toBe('');
+    expect(button('Dictate').getAttribute('aria-pressed')).toBe('false');
+    await tick(2000);
+    expect(m.openCount).toBe(0);
+  });
+
+  test('a box held while starting withdraws it', async () => {
+    const { m, source } = slow();
+    const { rerender } = render(<SendingBox source={source} />);
+    await startIn();
+    rerender(<SendingBox source={source} disabled />);
+    await tick(2000);
+    expect(m.openCount).toBe(0);
+    expect(document.querySelector('.crewlet-dictation__layer')).toBeNull();
+  });
+
+  test('unmounting while starting leaves no session and no open microphone', async () => {
+    const { t, m, source } = slow();
+    const { unmount } = render(<Box source={source} />);
+    await startIn();
+    await tick(700);
+    unmount();
+    await tick(2000);
+    expect(t.calls).toEqual(['start:default', 'cancel']);
+    expect(m.openCount).toBe(0);
+    // Nothing is left holding the tab's one session.
+    render(<Box source={setup().source} />);
+    await startIn();
+    expect(button('Accept dictation')).toBeTruthy();
+  });
+
+  test('a focused field keeps its focus and selection through the start, then hides its caret under the words', async () => {
+    const { source } = slow();
+    render(<Box source={source} initial="Send the draft today." />);
+    field().focus();
+    field().setSelectionRange(5, 14);
+    // The press does not take focus from the field.
+    expect(fireEvent.mouseDown(button('Dictate'))).toBe(false);
+    await startIn();
+    await tick(1000);
+    expect(document.activeElement).toBe(field());
+    expect([field().selectionStart, field().selectionEnd]).toEqual([5, 14]);
+    await tick(600);
+    expect(document.activeElement).toBe(field());
+    expect([field().selectionStart, field().selectionEnd]).toEqual([5, 5]);
+  });
+
+  test('from the mic, focus moves to the field once it listens, and never from somewhere the reader went', async () => {
+    const { source } = slow();
+    render(
+      <>
+        <Box source={source} />
+        <input aria-label="Elsewhere" />
+      </>,
+    );
+    button('Dictate').focus();
+    await startIn();
+    await tick(1000);
+    expect(document.activeElement).toBe(button('Dictate'));
+    await tick(600);
+    expect(document.activeElement).toBe(field());
+
+    act(() => resetDictation());
+    await tick();
+    button('Dictate').focus();
+    await startIn();
+    screen.getByRole('textbox', { name: 'Elsewhere' }).focus();
+    await tick(1600);
+    expect(button('Accept dictation')).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Elsewhere' }));
+  });
+
+  test('resuming keeps the words and the live controls while it reopens, and Accept takes the words so far', async () => {
+    const onChange = vi.fn();
+    const { source } = setup({ script: ['first words'], loop: false, connect: 1000 }, { delay: 500 });
+    render(<Box source={source} onChange={onChange} />);
+    await startIn();
+    await tick(1500 + PACE * 3);
+    fireEvent.keyDown(field(), { key: ' ', code: 'Space', ctrlKey: true, shiftKey: true });
+    await tick(30);
+    expect(button(DICTATION_LABELS.resume)).toBeTruthy();
+    fireEvent.click(button(DICTATION_LABELS.resume));
+    await tick(300);
+    expect(controls()).toEqual(['Choose a microphone', 'Cancel dictation', 'Accept dictation']);
+    expect(document.querySelector('.crewlet-dictation__layer')!.textContent).toBe('first words');
+    fireEvent.click(button('Accept dictation'));
+    await tick(30);
+    expect(onChange).toHaveBeenLastCalledWith('first words');
+    await tick(2000);
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });

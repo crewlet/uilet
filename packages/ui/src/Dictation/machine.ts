@@ -72,6 +72,8 @@ export interface Session {
   opening: boolean;
   /** The route said it is preparing, so it will say when it is ready. */
   prepared: boolean;
+  /** It has listened once: until then the composer keeps its idle row, and a reopen keeps the words' controls. */
+  listened: boolean;
   progress: number | undefined;
   /** Why the routes tried so far declined: `busy` outranks `unavailable`. */
   declined: 'busy' | 'unavailable' | null;
@@ -188,6 +190,8 @@ function labelsOf(source: DictationSource): DictationLabels {
 
 export interface DictationView {
   phase: DictationPhase | null;
+  /** Pressed and not yet listening: the row keeps its shape, and the mic, its shortcut or Escape cancels. */
+  starting: boolean;
   held: string | undefined;
   /** Draw the mic-off glyph: the browser blocked the microphone. */
   off: boolean;
@@ -211,6 +215,7 @@ export function view(owner: DictationOwner): DictationView {
   else if (!mine && m.devices?.length === 0) held = labels.noDevice;
   return {
     phase: mine?.phase ?? null,
+    starting: mine !== null && starting(mine),
     held,
     off: !mine && m.permission === 'denied',
     elsewhere: session !== null && !mine,
@@ -218,6 +223,10 @@ export function view(owner: DictationOwner): DictationView {
     describe: labels.dictating,
     resume: mine?.phase === 'stopped' && resumable(mine.reason) ? labels.resume : undefined,
   };
+}
+
+function starting(s: Session): boolean {
+  return !s.listened && (s.phase === 'pending' || s.phase === 'preparing');
 }
 
 function line(s: Session): string | undefined {
@@ -262,6 +271,7 @@ export function start(owner: DictationOwner): void {
     index: 0,
     opening: false,
     prepared: false,
+    listened: false,
     progress: undefined,
     declined: null,
     ended: false,
@@ -271,9 +281,6 @@ export function start(owner: DictationOwner): void {
     over: false,
   };
   session = s;
-  // The field keeps focus for Enter and Escape; its own caret and selection hide under the layer.
-  field?.focus();
-  field?.setSelectionRange(s.from, s.from);
   o.source.onActiveChange?.(true);
   notify();
   if (m.permission !== 'granted') announce(s.labels.pending);
@@ -383,11 +390,25 @@ function ready(s: Session, t: DictationTransport, resuming: boolean): void {
   if (s.transport !== t || !s.opening || session !== s || s.over) return;
   s.opening = false;
   s.phase = 'listening';
+  s.listened = true;
+  take(s);
   s.heard = Date.now();
   s.mic.picks = Boolean(t.picksDevice);
   notify();
   if (!resuming) announce(s.labels.dictating);
   gate(s);
+}
+
+/**
+ * The field takes focus for Enter and Escape as the words come, its caret and
+ * selection hidden under the layer; never from somewhere the reader went meanwhile.
+ */
+function take(s: Session): void {
+  const field = s.owner.get().field.current;
+  const at = document.activeElement;
+  if (!field || (at && at !== document.body && !field.closest('.crewlet-composer')?.contains(at))) return;
+  field.focus();
+  field.setSelectionRange(s.from, s.from);
 }
 
 /** A note that needs no answer, said once and gone after a while. */
@@ -539,10 +560,17 @@ export function splice(value: string, from: number, to: number, text: string): {
 
 /** Accept: the last words arrive (at most `FLUSH_MS`), then go into the draft with one `onChange`. */
 export async function accept(s: Session): Promise<void> {
-  if (s.phase === 'pending' || s.phase === 'preparing' || s.phase === 'accepting' || session !== s) return;
+  if (!s.listened || s.phase === 'accepting' || session !== s) return;
   if (s.phase === 'listening') {
     release(s);
     s.flushing = settle(s);
+  } else if (s.phase === 'pending' || s.phase === 'preparing') {
+    // Reopening after a pause: the reopen is dropped; the words so far, and any still on their way, go in.
+    release(s);
+    if (!s.flushing) {
+      if (!s.ended) s.transport?.cancel();
+      s.ended = true;
+    }
   }
   s.phase = 'accepting';
   notify();
@@ -588,9 +616,24 @@ function end(s: Session): void {
 
 function restore(s: Session): void {
   const field = s.owner.get().field.current;
-  if (!field) return;
+  // Before the first listen the field was never taken, so focus stays where the reader put it.
+  if (!field || !s.listened) return;
   field.focus();
   field.setSelectionRange(Math.min(s.from, field.value.length), Math.min(s.to, field.value.length));
+}
+
+/** Cancels `owner`'s session while it starts: a second press of the mic. */
+export function cancelStart(owner: DictationOwner): void {
+  if (session?.owner === owner && starting(session)) cancel(session);
+}
+
+/**
+ * Withdraws `owner`'s start once its draft changed (a send cleared it, a
+ * keystroke) or its box was held: what it was pressed for is gone.
+ */
+export function checkStart(owner: DictationOwner, held: boolean): void {
+  const s = session;
+  if (s?.owner === owner && starting(s) && (held || owner.get().value !== s.value)) cancel(s);
 }
 
 /** The composer is going away: its finished words stay in the draft, and the microphone is released. */
@@ -602,14 +645,21 @@ export function releaseOwner(owner: DictationOwner): void {
   commit(s, s.finals, false);
 }
 
-/** Enter accepts, Escape cancels and the shortcut pauses or resumes, each marked handled. */
-export function keyDown(owner: DictationOwner, event: KeyboardEvent<HTMLTextAreaElement>): boolean {
+/**
+ * Enter accepts, Escape cancels and the shortcut pauses or resumes, each marked
+ * handled. While starting only Escape and the shortcut are taken, and both cancel.
+ */
+export function keyDown(owner: DictationOwner, event: KeyboardEvent<HTMLElement>): boolean {
   const s = session;
   if (!s || s.owner !== owner || event.nativeEvent.isComposing) return false;
   const chord = s.source.shortcut === false ? undefined : (s.source.shortcut ?? DICTATION_SHORTCUT);
-  if (event.key === 'Enter') void accept(s);
+  const pressed = chord !== undefined && chordMatches(chord, event, isApplePlatform());
+  if (starting(s)) {
+    if (event.key !== 'Escape' && !pressed) return false;
+    cancel(s);
+  } else if (event.key === 'Enter') void accept(s);
   else if (event.key === 'Escape') cancel(s);
-  else if (chord && chordMatches(chord, event, isApplePlatform())) {
+  else if (pressed) {
     if (s.phase === 'listening') stop(s, 'paused');
     else void resume(s);
   } else return false;

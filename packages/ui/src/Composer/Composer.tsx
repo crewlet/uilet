@@ -140,7 +140,6 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     heldReason: disabled ? (disabledReason ?? '') : undefined,
   });
   const live = dictate?.live ?? false;
-  const active = dictate?.active ?? false;
   const hasActions = present(actions) || present(tools) || (dictate !== null && !inline);
   // A disabled composer names no send keys: there is no send for them to make.
   const send = useSendOnEnter({
@@ -149,8 +148,8 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     canSend: canSubmit ?? value.trim() !== '',
     labels: sendLabels,
   });
-  // While dictation starts or runs, Enter is its own: the send keys are neither drawn nor described.
-  const hint = sendHint && send.describedBy !== undefined && !active;
+  // While dictation runs, Enter is its own: the send keys are neither drawn nor described.
+  const hint = sendHint && send.describedBy !== undefined && !live;
 
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     // Dictation answers first, so its Enter and Escape never send or close a caller's editor.
@@ -197,7 +196,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
           // pointed at with aria-autocomplete, never a combobox role.
           aria-multiline={singleLine ? false : role === undefined || role === 'textbox' ? true : undefined}
           aria-describedby={
-            cx(describedBy, !active && send.describedBy, disabledReason === undefined ? undefined : reasonId, live && dictatingId) || undefined
+            cx(describedBy, !live && send.describedBy, disabledReason === undefined ? undefined : reasonId, live && dictatingId) || undefined
           }
           value={value}
           onChange={(event) => change(event.target.value)}
@@ -209,7 +208,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
           placeholder={live ? '' : (disabledReason ?? placeholder)}
           autoResize
           {...rest}
-          readOnly={active || rest.readOnly}
+          readOnly={live || rest.readOnly}
         />
         {dictate?.layer}
         {inline && (dictate !== null || present(trailing)) ? (

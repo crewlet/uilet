@@ -9,8 +9,8 @@ import { DICTATION_SCENARIOS, DictationStage, type DictationLayout } from '../fi
 const meta: Meta<typeof DictationStage> = {
   title: 'UI/Composer/Dictation',
   component: DictationStage,
-  argTypes: { layout: { control: 'inline-radio', options: ['chat', 'inline'] } },
-  args: { layout: 'chat' },
+  argTypes: { layout: { control: 'inline-radio', options: ['chat', 'inline'] }, autoplay: { control: 'boolean' } },
+  args: { layout: 'chat', autoplay: true },
 };
 
 export default meta;
@@ -20,11 +20,11 @@ function story(id: string, layout: DictationLayout = 'chat'): Story {
   const scenario = DICTATION_SCENARIOS.find((s) => s.id === id)!;
   return {
     name: scenario.title,
-    args: { layout },
+    args: { layout, autoplay: true },
     parameters: { docs: { description: { story: scenario.note } } },
     render: (args) => (
       <div style={{ maxWidth: 640, paddingTop: 220 }}>
-        <DictationStage key={`${id}-${args.layout}`} scenario={scenario} layout={args.layout} />
+        <DictationStage key={`${id}-${args.layout}`} scenario={scenario} layout={args.layout} autoplay={args.autoplay !== false} />
       </div>
     ),
   };
@@ -58,6 +58,8 @@ export const Two: Story = story('two');
 export const HoldsText: Story = story('holds-text');
 export const Proposal: Story = story('proposal');
 export const Preparing: Story = story('preparing');
+export const Starting: Story = story('starting');
+export const StartingCold: Story = story('starting-cold');
 export const Fallback: Story = story('fallback');
 export const ServiceBusy: Story = story('service-busy');
 export const NoRoute: Story = story('no-route');
@@ -69,3 +71,6 @@ export const DictatingInline: Story = { ...story('dictating', 'inline'), name: '
 
 /** Preparing beside an inline field: the mic waits and the line runs under the row. */
 export const PreparingInline: Story = { ...story('preparing', 'inline'), name: 'Preparing dictation, inline' };
+
+/** Starting beside an inline field: Send holds its place until the level comes. */
+export const StartingInline: Story = { ...story('starting', 'inline'), name: 'Starting, inline' };
