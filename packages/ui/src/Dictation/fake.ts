@@ -35,6 +35,8 @@ export interface FakeTransportOptions {
   loop?: boolean | undefined;
   /** Milliseconds spent preparing (a model loading) before the first word, with progress. */
   prepare?: number | undefined;
+  /** Milliseconds before the route's first answer (`preparing` or `ready`), as a socket opening takes. */
+  connect?: number | undefined;
   /** What `available()` answers; true by default. */
   available?: boolean | undefined;
   /** The browser, not the chosen device, picks the microphone on this route. */
@@ -61,6 +63,7 @@ export function fakeTransport(options: FakeTransportOptions = {}): FakeTransport
   const calls: string[] = [];
   let events: DictationTransportEvents | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let settle: (() => void) | null = null;
   let sentence = 0;
   let word = 0;
   let spoken = 0;
@@ -97,29 +100,35 @@ export function fakeTransport(options: FakeTransportOptions = {}): FakeTransport
       clearTimeout(timer);
       events = next;
       word = 0;
-      const { prepare, fail } = options;
+      const { prepare, connect, fail } = options;
       // A route declines as it starts, before its first word.
       if (fail && !fail.after && (fail.code === 'busy' || fail.code === 'unavailable')) {
         events = null;
         next.error(fail.code);
         return;
       }
-      if (!prepare) {
+      if (!prepare && !connect) {
         timer = setTimeout(tick, pace);
         return;
       }
-      // Preparing in five steps, then ready, then the words.
-      const step = (done: number) => {
-        if (events !== next) return;
-        if (done < 5) {
-          next.preparing?.(done / 5);
-          timer = setTimeout(() => step(done + 1), prepare / 5);
-        } else {
-          next.ready?.();
-          timer = setTimeout(tick, pace);
-        }
-      };
-      step(0);
+      // Settles at the first answer, or at a cancel, as a relay's does.
+      return new Promise<void>((resolve) => {
+        settle = resolve;
+        // Preparing in five steps, then ready, then the words.
+        const step = (done: number) => {
+          if (events !== next) return;
+          if (prepare && done < 5) {
+            next.preparing?.(done / 5);
+            timer = setTimeout(() => step(done + 1), prepare / 5);
+          } else {
+            next.ready?.();
+            timer = setTimeout(tick, pace);
+          }
+          resolve();
+        };
+        if (connect) timer = setTimeout(() => step(0), connect);
+        else step(0);
+      });
     },
     switchStream(_stream, deviceId) {
       calls.push(`switch:${deviceId ?? 'default'}`);
@@ -145,6 +154,7 @@ export function fakeTransport(options: FakeTransportOptions = {}): FakeTransport
       calls.push('cancel');
       clearTimeout(timer);
       events = null;
+      settle?.();
     },
   };
 }
@@ -160,6 +170,8 @@ export interface FakeMicrophoneOptions {
   permission?: DictationPermission | undefined;
   /** What opening a device does; `wait` asks, and settles only when `settle()` is called. */
   open?: 'ok' | 'denied' | 'missing' | 'busy' | 'wait' | undefined;
+  /** Milliseconds a device takes to open, as the browser's capture start does. */
+  delay?: number | undefined;
   /** Why capture cannot work in this page. */
   block?: DictationBlock | undefined;
   /** A level that moves like speech, or silence. */
@@ -224,6 +236,7 @@ export function fakeMicrophone(options: FakeMicrophoneOptions = {}): FakeMicroph
       return () => deviceListeners.delete(listener);
     },
     async open(deviceId) {
+      if (options.delay) await new Promise((resolve) => setTimeout(resolve, options.delay));
       switch (options.open) {
         case 'denied':
           permission = 'denied';
