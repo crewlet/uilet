@@ -11,7 +11,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import { Announcer } from '../Announcer/index.js';
 import { Composer } from '../Composer/index.js';
 import { joinWords, resetDictation, splice } from './machine.js';
-import { chordMatches } from './slot.js';
+import { ENTRY_LABELS, chordMatches } from './slot.js';
 import {
   DICTATION_LABELS,
   fakeMicrophone,
@@ -107,6 +107,10 @@ describe('the words', () => {
     expect(splice('Wait.', 4, 4, 'for me')).toEqual({ value: 'Wait for me.', caret: 11 });
   });
 
+  test('the entry says the same words as the full labels', () => {
+    expect(DICTATION_LABELS).toMatchObject(ENTRY_LABELS);
+  });
+
   test('segments join with one space', () => {
     expect(joinWords(['First.', ' Second. ', '', 'third'])).toBe('First. Second. third');
   });
@@ -169,7 +173,7 @@ describe('a session', () => {
     expect(described).toContain(DICTATION_LABELS.dictating);
     expect(provisional()).toBe(DICTATION_LABELS.listening);
     await tick(PACE * 3);
-    expect(provisional()).toBe('let’s move the');
+    expect(provisional()).toBe('Let’s move the');
     // The words are a layer over the field: its value is untouched.
     expect(field().value).toBe('');
     expect(onChange).not.toHaveBeenCalled();
@@ -225,6 +229,17 @@ describe('a session', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenLastCalledWith('Send the new deck today.');
     expect(field().selectionStart).toBe('Send the new deck'.length);
+  });
+
+  test('a field never focused takes the words at the end of its draft', async () => {
+    const onChange = vi.fn();
+    const { source } = setup({ script: ['and the deck.'], loop: false });
+    render(<Box source={source} initial="Notes:" onChange={onChange} />);
+    await startIn();
+    await tick(PACE * 4);
+    fireEvent.click(button('Accept dictation'));
+    await tick(30);
+    expect(onChange).toHaveBeenLastCalledWith('Notes: and the deck.');
   });
 
   test('Cancel leaves the value and restores the caret and selection exactly', async () => {
@@ -326,6 +341,9 @@ describe('a session', () => {
     expect(said()).toBe(DICTATION_LABELS.stopped.silence);
     expect(m.openCount).toBe(0);
     expect(button('Accept dictation')).toBeTruthy();
+    // The mic comes back in its own place, before its chevron, to resume.
+    const order = [...document.querySelectorAll('.crewlet-composer__footer button')].map((b) => b.getAttribute('aria-label'));
+    expect(order).toEqual([DICTATION_LABELS.resume, 'Choose a microphone', 'Cancel dictation', 'Accept dictation']);
     fireEvent.click(button(DICTATION_LABELS.resume));
     await tick(30);
     expect(m.openCount).toBe(1);
@@ -351,12 +369,21 @@ describe('a session', () => {
     await tick(PACE * 5);
     expect(note()).toBe(words);
     expect(said()).toBe(words);
-    expect(provisional()).toBe('let’s move the');
+    expect(provisional()).toBe('Let’s move the');
     expect(m.openCount).toBe(0);
     fireEvent.click(button('Accept dictation'));
     await tick();
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange).toHaveBeenLastCalledWith('let’s move the');
+    expect(onChange).toHaveBeenLastCalledWith('Let’s move the');
+  });
+
+  test('a session refused before any word draws no listening line', async () => {
+    const { source } = setup({ fail: { code: 'refused', after: 0 } });
+    render(<Box source={source} />);
+    await startIn();
+    await tick(PACE * 2);
+    expect(note()).toBe(DICTATION_LABELS.stopped.refused);
+    expect(provisional()).toBe('');
   });
 
   test('a microphone unplugged mid-dictation stops capture and keeps the words', async () => {
@@ -381,7 +408,7 @@ describe('a session', () => {
     await tick(1400);
     expect(onChange).not.toHaveBeenCalled();
     await tick(200);
-    expect(onChange).toHaveBeenLastCalledWith('let’s move the');
+    expect(onChange).toHaveBeenLastCalledWith('Let’s move the');
   });
 
   test('Accept with nothing heard inserts nothing', async () => {
@@ -477,6 +504,12 @@ describe('permission and devices', () => {
     expect(said()).toBe(DICTATION_LABELS.denied);
     expect(button('Dictate').getAttribute('aria-disabled')).toBe('true');
     expect(reason(button('Dictate'))).toBe(DICTATION_LABELS.denied);
+    // The menu says how to allow it, and offers to try again.
+    fireEvent.click(button('Choose a microphone'));
+    await tick();
+    expect(screen.getByText(DICTATION_LABELS.deniedHelp)).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: DICTATION_LABELS.retry })).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     act(() => m.setPermission('granted'));
     await tick();
     expect(button('Dictate').getAttribute('aria-disabled')).toBeNull();
@@ -505,6 +538,9 @@ describe('permission and devices', () => {
     expect(said()).toBe(DICTATION_LABELS.busy);
     expect(note()).toBe(DICTATION_LABELS.busy);
     expect(button('Dictate').getAttribute('aria-disabled')).toBeNull();
+    // The note needs no answer, so it goes on its own.
+    await tick(8000);
+    expect(note()).toBeNull();
   });
 
   test.each([
@@ -516,6 +552,8 @@ describe('permission and devices', () => {
     render(<Box source={source} />);
     expect(button('Dictate').getAttribute('aria-disabled')).toBe('true');
     expect(reason(button('Dictate'))).toBe(words);
+    // With nothing to offer, the chevron is held with the same reason rather than opening an empty menu.
+    expect(reason(button('Choose a microphone'))).toBe(words);
   });
 
   test('a company without speech set up holds the mic, and offers setup to who can fix it', async () => {

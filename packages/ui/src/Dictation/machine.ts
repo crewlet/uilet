@@ -27,6 +27,8 @@ export const FLUSH_MS = 1500;
 /** The level under which the room counts as silent. */
 export const SILENT_LEVEL = 0.08;
 const GATE_MS = 250;
+/** How long a note that needs no answer (a busy microphone) stays. */
+const NOTE_MS = 8000;
 const STORE_KEY = 'crewlet:dictation:device';
 
 export type DictationPhase = 'pending' | 'listening' | 'stopped' | 'accepting';
@@ -179,6 +181,8 @@ export interface DictationView {
   elsewhere: boolean;
   note: string | undefined;
   describe: string;
+  /** The mic's name while it resumes a paused session, else undefined. */
+  resume: string | undefined;
 }
 
 /** What a composer's controls draw now. */
@@ -198,6 +202,7 @@ export function view(owner: DictationOwner): DictationView {
     elsewhere: session !== null && !mine,
     note: mine ? line(mine) : notes.get(owner),
     describe: labels.dictating,
+    resume: mine?.phase === 'stopped' && resumable(mine.reason) ? labels.resume : undefined,
   };
 }
 
@@ -229,8 +234,9 @@ export function start(owner: DictationOwner): void {
     labels: labelsOf(o.source),
     mic: m,
     value: o.value,
-    from: field?.selectionStart ?? o.value.length,
-    to: field?.selectionEnd ?? o.value.length,
+    // A field never focused reports its caret at the start; the words then go at the end.
+    from: field && owner.touched ? field.selectionStart : o.value.length,
+    to: field && owner.touched ? field.selectionEnd : o.value.length,
     finals: [],
     partial: '',
     phase: 'pending',
@@ -277,6 +283,9 @@ async function open(s: Session, resuming: boolean): Promise<void> {
     } else {
       notes.set(s.owner, s.labels.busy);
       announce(s.labels.busy);
+      setTimeout(() => {
+        if (notes.get(s.owner) === s.labels.busy && notes.delete(s.owner)) notify();
+      }, NOTE_MS);
     }
     notify();
     return;
@@ -395,6 +404,11 @@ export async function resume(s: Session): Promise<void> {
   await s.flushing;
   if (session !== s || s.over) return;
   void open(s, true);
+}
+
+/** Resumes `owner`'s paused session. */
+export function resumeOwner(owner: DictationOwner): void {
+  if (session?.owner === owner) void resume(session);
 }
 
 /** The words joined into one run, a space between segments. */
@@ -569,7 +583,9 @@ export function menuItems(owner: DictationOwner): MenuEntry[] {
   const m = micState(source);
   const items: MenuEntry[] = [];
   const blocked = source.unavailableReason !== undefined || micOf(source).check() !== undefined;
-  if (!blocked && m.permission !== 'denied' && m.devices?.length !== 0) {
+  if (!blocked && m.permission === 'denied') items.push({ key: 'retry', label: labels.retry, onSelect: () => void allow(m) });
+  else if (!blocked && m.devices?.length === 0) items.push({ key: 'recheck', label: labels.recheck, onSelect: () => void listDevices(m) });
+  else if (!blocked) {
     const named = m.devices?.filter((d) => d.label) ?? [];
     if (m.permission !== 'granted' || named.length === 0) {
       items.push(

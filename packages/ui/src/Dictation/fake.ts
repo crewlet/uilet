@@ -31,6 +31,8 @@ export interface FakeTransportOptions {
   quietAfter?: number | undefined;
   /** Milliseconds `flush` takes to send the last words. */
   flushDelay?: number | undefined;
+  /** Starts the script again after its last sentence (true by default). */
+  loop?: boolean | undefined;
 }
 
 export interface FakeTransport extends DictationTransport {
@@ -38,10 +40,10 @@ export interface FakeTransport extends DictationTransport {
   readonly calls: string[];
 }
 
+/** A sentence's words as a provider hears them before it punctuates. */
 function unpunctuated(sentence: string): string[] {
   return sentence
     .replace(/[.,!?;:]/g, '')
-    .toLowerCase()
     .split(/\s+/)
     .filter(Boolean);
 }
@@ -67,13 +69,14 @@ export function fakeTransport(options: FakeTransportOptions = {}): FakeTransport
       return;
     }
     if (quietAfter !== undefined && spoken >= quietAfter) return;
+    if (sentence >= script.length) return;
     const words = unpunctuated(script[sentence]!);
     word += 1;
     spoken += 1;
     if (word < words.length) events.partial(words.slice(0, word).join(' '));
     else {
       events.final(script[sentence]!);
-      sentence = (sentence + 1) % script.length;
+      sentence = options.loop === false ? sentence + 1 : (sentence + 1) % script.length;
       word = 0;
     }
     timer = setTimeout(tick, pace);
@@ -100,8 +103,7 @@ export function fakeTransport(options: FakeTransportOptions = {}): FakeTransport
         setTimeout(() => {
           // The words heard so far come back punctuated, as a provider's last segment does.
           if (out && word > 0) {
-            const heard = unpunctuated(script[sentence]!).slice(0, word).join(' ');
-            out.final(`${heard.charAt(0).toUpperCase()}${heard.slice(1)}.`);
+            out.final(`${unpunctuated(script[sentence]!).slice(0, word).join(' ')}.`);
             sentence = (sentence + 1) % script.length;
             word = 0;
           }

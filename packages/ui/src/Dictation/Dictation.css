@@ -68,6 +68,11 @@
   transform: scaleY(0.15);
 }
 
+/* Beside an inline field the level keeps only its newest bars, so the row barely grows. */
+.crewlet-composer--inline .crewlet-dictation__bar:nth-child(-n + 10) {
+  display: none;
+}
+
 .crewlet-dictation__note {
   padding: 0 var(--spacing-3) var(--spacing-1);
   font-size: var(--font-size-xs);

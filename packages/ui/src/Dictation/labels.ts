@@ -1,8 +1,12 @@
-import { ENTRY_LABELS } from './slot.js';
 import type { DictationLabels } from './types.js';
 
+// A plain literal, so a bundle that never dictates drops it; the first five match slot.tsx's ENTRY_LABELS (tested).
 export const DICTATION_LABELS: DictationLabels = {
-  ...ENTRY_LABELS,
+  dictate: 'Dictate',
+  chooseMicrophone: 'Choose a microphone',
+  unsupported: 'Dictation needs a newer browser',
+  insecure: 'Dictation needs this site on https',
+  policy: 'This page does not allow the microphone',
   resume: 'Resume dictating',
   cancel: 'Cancel dictation',
   accept: 'Accept dictation',
@@ -29,6 +33,8 @@ export const DICTATION_LABELS: DictationLabels = {
   defaultDevice: 'Default microphone',
   allowToChoose: 'Allow microphone access to choose',
   deniedHelp: 'Allow the microphone in the site settings next to the address bar, then press the mic again.',
+  retry: 'Try again',
+  recheck: 'Look for microphones again',
   gone: 'Your chosen microphone is not connected, so the default is used.',
   switched: (device) => `Now using ${device}`,
   level: 'Input level',

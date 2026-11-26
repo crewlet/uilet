@@ -17,8 +17,6 @@ import {
   meterable,
   menuNotes,
   micState,
-  resumable,
-  resume,
   splice,
   joinWords,
   subscribeWords,
@@ -28,7 +26,7 @@ import {
 import type { DictationOwner } from './slot.js';
 import type { DictationCapture } from './types.js';
 
-export { focusActive, keyDown, menuItems, releaseOwner as release, start, view } from './machine.js';
+export { focusActive, keyDown, menuItems, releaseOwner as release, resumeOwner, start, view } from './machine.js';
 export { MicOffGlyph } from '@crewlethq/icons/glyphs';
 
 const BARS = 16;
@@ -93,16 +91,13 @@ export function Wave({ owner }: { owner: DictationOwner }) {
   );
 }
 
-/** Cancel and Accept in the send slot's place, and Resume after a pause or a silence. */
+/** Cancel and Accept in the send slot's place. */
 export function Swap({ owner }: { owner: DictationOwner }) {
   const s = activeSession();
   if (!s || s.owner !== owner) return null;
   const { labels, phase } = s;
   return (
     <>
-      {phase === 'stopped' && resumable(s.reason) ? (
-        <IconButton label={labels.resume} icon={<MicGlyph />} className="crewlet-dictation__mic" onClick={() => void resume(s)} />
-      ) : null}
       <IconButton
         label={labels.cancel}
         icon={<XGlyph />}
@@ -174,7 +169,7 @@ export function Layer({ owner }: { owner: DictationOwner }) {
     <div ref={layer} className="crewlet-dictation__layer" aria-hidden="true">
       {before}
       <span ref={said} className="crewlet-dictation__provisional">
-        {empty ? mine?.labels.listening : provisional}
+        {empty && (mine?.phase === 'listening' || mine?.phase === 'pending') ? mine.labels.listening : provisional}
       </span>
       {after}
       {/* A trailing line break draws a line only with something after it. */}
@@ -219,11 +214,15 @@ function Meter({ m }: { m: MicState }) {
   );
 }
 
+/** Whether the menu has a head to draw. */
+export function hasHeader(owner: DictationOwner): boolean {
+  return meterable(owner) || menuNotes(owner).length > 0;
+}
+
 /** Above the devices: the live level, or why there is none. */
 export function MenuHeader({ owner }: { owner: DictationOwner }) {
   const notes = menuNotes(owner);
   const meter = meterable(owner);
-  if (!meter && notes.length === 0) return null;
   return (
     <div className="crewlet-dictation__head">
       {meter ? <Meter m={micState(owner.get().source)} /> : null}

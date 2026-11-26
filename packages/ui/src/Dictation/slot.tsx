@@ -111,6 +111,8 @@ export interface DictationOwner {
   };
   /** Where the caret goes once the accepted value is drawn. */
   caret: { value: string; at: number } | null;
+  /** The field has had focus, so its caret is where the writer left it. */
+  touched: boolean;
 }
 
 export interface DictationSlotOptions {
@@ -147,11 +149,19 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
   const props = useRef({ ...options, source: source! });
   props.current = { ...options, source: source! };
   const ownerRef = useRef<DictationOwner | null>(null);
-  ownerRef.current ??= { get: () => props.current, caret: null };
+  ownerRef.current ??= { get: () => props.current, caret: null, touched: false };
   const owner = ownerRef.current;
   const press = useRef<{ timer: ReturnType<typeof setTimeout> | undefined; long: boolean }>({ timer: undefined, long: false });
 
   useEffect(() => () => chunk?.release(owner), [owner]);
+  useEffect(() => {
+    const field = options.field.current;
+    const touch = () => {
+      owner.touched = true;
+    };
+    field?.addEventListener('focus', touch);
+    return () => field?.removeEventListener('focus', touch);
+  }, [owner, options.field]);
   // The accepted words' caret, once the caller has drawn the new value.
   useLayoutEffect(() => {
     const field = options.field.current;
@@ -179,10 +189,12 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
     else void load().then(() => setOpen(true), () => undefined);
   };
   const live = phase !== null && phase !== 'pending';
+  // Nothing to offer in the menu: the chevron is held with the same reason.
+  const bare = options.heldReason ?? ((block || source.unavailableReason) && !source.setup ? held : undefined);
 
-  const mic = live ? null : (
+  const mic = live && !view?.resume ? null : (
     <IconButton
-      label={labels.dictate}
+      label={view?.resume ?? labels.dictate}
       icon={chunk && view?.off ? <chunk.MicOffGlyph /> : <MicGlyph />}
       pressed={phase === 'pending'}
       disabledReason={held}
@@ -207,6 +219,7 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
       }}
       onClick={() => {
         if (press.current.long) press.current.long = false;
+        else if (view?.resume) chunk?.resumeOwner(owner);
         else if (phase === null) start();
       }}
     />
@@ -218,7 +231,7 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
       <Menu
         label={labels.chooseMicrophone}
         items={chunk ? chunk.menuItems(owner) : []}
-        header={chunk && open ? <chunk.MenuHeader owner={owner} /> : null}
+        header={chunk && open && chunk.hasHeader(owner) ? <chunk.MenuHeader owner={owner} /> : null}
         open={open}
         onOpenChange={openMenu}
         align="end"
@@ -231,7 +244,7 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
               icon={<ChevronDownGlyph />}
               size="sm"
               className="crewlet-dictation__more"
-              disabledReason={options.heldReason}
+              disabledReason={bare}
               aria-haspopup={trigger['aria-haspopup']}
               aria-expanded={trigger['aria-expanded']}
               aria-controls={trigger['aria-controls']}

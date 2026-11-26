@@ -114,6 +114,8 @@ export interface DictationLabels {
   defaultDevice: string;
   allowToChoose: string;
   deniedHelp: string;
+  retry: string;
+  recheck: string;
   gone: string;
   switched: (device: string) => string;
   level: string;

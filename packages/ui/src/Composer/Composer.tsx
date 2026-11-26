@@ -133,7 +133,8 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     canSend: canSubmit ?? value.trim() !== '',
     labels: sendLabels,
   });
-  const hint = sendHint && send.describedBy !== undefined;
+  // While dictating, Enter accepts: the send keys are neither drawn nor described.
+  const hint = sendHint && send.describedBy !== undefined && !live;
 
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     // Dictation answers first, so its Enter and Escape never send or close a caller's editor.
@@ -170,7 +171,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
           // pointed at with aria-autocomplete, never a combobox role.
           aria-multiline={role === undefined || role === 'textbox' ? true : undefined}
           aria-describedby={
-            cx(describedBy, send.describedBy, disabledReason === undefined ? undefined : reasonId, live && dictatingId) || undefined
+            cx(describedBy, !live && send.describedBy, disabledReason === undefined ? undefined : reasonId, live && dictatingId) || undefined
           }
           value={value}
           onChange={(event) => onChange(event.target.value)}
