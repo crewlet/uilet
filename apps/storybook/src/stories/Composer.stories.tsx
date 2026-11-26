@@ -1,6 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useRef, useState } from 'react';
-import { Button, Composer, IconButton, Menu, SendButton, Tag, Toolbar, formatMarkdown } from '@crewlethq/ui';
+import {
+  Button,
+  Composer,
+  IconButton,
+  Menu,
+  SendButton,
+  Tag,
+  Toolbar,
+  fakeMicrophone,
+  fakeTransport,
+  formatMarkdown,
+} from '@crewlethq/ui';
 import {
   AtSignGlyph,
   BoldGlyph,
@@ -269,5 +280,31 @@ export const ChatAppearanceFocused: Story = {
   render: () => <RoomComposer chat />,
   play: async ({ canvasElement }) => {
     canvasElement.querySelector<HTMLTextAreaElement>('.crewlet-composer__field')?.focus();
+  },
+};
+
+/** One line in a form, as an input: Enter submits the form, line breaks become spaces, and the mic stands at the end. */
+export const SingleLine: Story = {
+  render: function Render() {
+    const [question, setQuestion] = useState('Which region launches first?');
+    const [sent, setSent] = useState<string | null>(null);
+    return (
+      <form
+        style={{ maxWidth: 480, display: 'grid', gap: 8 }}
+        onSubmit={(event) => {
+          event.preventDefault();
+          setSent(question);
+        }}
+      >
+        <Composer
+          singleLine
+          label="What is being decided"
+          value={question}
+          onChange={setQuestion}
+          dictation={{ transport: fakeTransport(), microphone: fakeMicrophone() }}
+        />
+        <span>{sent === null ? 'Press Enter to submit.' : `Submitted: ${sent}`}</span>
+      </form>
+    );
   },
 };

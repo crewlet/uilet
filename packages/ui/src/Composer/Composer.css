@@ -89,6 +89,12 @@
   padding-block: var(--crewlet-composer-field-block);
 }
 
+/* ONE LINE, as an input: the row's height and no more; a long line scrolls sideways. */
+.crewlet-composer--single-line .crewlet-composer__field.crewlet-textarea {
+  max-height: var(--crewlet-composer-row);
+  overflow-x: hidden;
+}
+
 /*
  * A PLACEHOLDER NEVER GROWS THE FIELD. It is one line of example or one word
  * of reason ("Offline"); wrapped to a second line it made the composer jump

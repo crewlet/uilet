@@ -258,6 +258,8 @@ many rows), `ConsequenceList`, `ChangeGroups` and `AssignmentList`.
 
 **`Composer` takes `dictation`** (a `DictationSource`): a mic and a microphone menu before the send control, spoken words at the caret as provisional text, and Accept or Enter writing them into the draft with one `onChange`; Escape cancels. Only the mic is in the entry; the session loads on its first hover, focus or press (`preloadDictation`). The application supplies the `DictationTransport`; `fakeTransport` and `fakeMicrophone` serve stories and tests.
 
+**`Composer` takes `singleLine`** for a one-line field, as an `<input>`: one row that never wraps, Enter calls `onSubmit` or, without one, submits the form round it (`requestSubmit`), Shift+Enter and an input method's Enter write nothing, a line break pasted or dictated becomes a space, no send keys are described, and the mic stands at the field's end.
+
 **`dictation.transport` may be an ordered list**: the first available route is used, and the next is tried when one answers `busy` or `unavailable` before its first word. A route that loads first says `preparing` (with progress) before `ready`, and the composer shows "Preparing dictation…" with the mic waiting. **`webSpeechLocalTransport`** is the browser's on-device recognition as a fallback route; it never uses the browser's cloud service, and answers `unavailable` where on-device recognition or its language pack is missing.
 
 ## Changes in 0.190.2

@@ -34,6 +34,7 @@ interface BoxProps {
   inline?: boolean;
   maxLength?: number;
   disabledReason?: string;
+  singleLine?: boolean;
 }
 
 function Box({ source, initial = '', label = 'Reply', onChange, inline = false, ...rest }: BoxProps) {
@@ -123,6 +124,21 @@ describe('the words', () => {
     expect(chordMatches(chord, press({ ctrlKey: true, shiftKey: true }), true)).toBe(false);
     expect(chordMatches(chord, press({ ctrlKey: true }), false)).toBe(false);
     expect(chordMatches(chord, press({ ctrlKey: true, shiftKey: true, altKey: true }), false)).toBe(false);
+  });
+});
+
+describe('one line', () => {
+  test('the mic stands at the field\'s end, and dictated line breaks are written as spaces', async () => {
+    const onChange = vi.fn();
+    const { source } = setup({ script: ['Ship it\nthis week.'], loop: false });
+    render(<Box source={source} singleLine onChange={onChange} />);
+    expect(document.querySelector('.crewlet-composer__trailing button')?.getAttribute('aria-label')).toBe('Dictate');
+    await startIn();
+    await tick(PACE * 5);
+    fireEvent.keyDown(field(), { key: 'Enter' });
+    await tick(30);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(field().value).toBe('Ship it this week.');
   });
 });
 
