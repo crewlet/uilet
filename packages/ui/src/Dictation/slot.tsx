@@ -126,10 +126,12 @@ export interface DictationSlotOptions {
 
 /** The pieces a composer lays out. */
 export interface DictationSlot {
-  /** A session is running here: the send slot swaps and the layer draws the words. */
+  /**
+   * A session has listened here: the send slot swaps, the layer draws the
+   * words, Enter is dictation's and the field is read only. Until then the
+   * row is the idle one with the mic pressed.
+   */
   live: boolean;
-  /** A session is starting or running here: Enter is dictation's and the field is read only. */
-  active: boolean;
   /** The mic and chevron, before the send slot; while live, the level, chevron, Cancel and Accept. */
   controls: ReactNode;
   /** The provisional words over the field, while live. */
@@ -156,6 +158,10 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
   const press = useRef<{ timer: ReturnType<typeof setTimeout> | undefined; long: boolean }>({ timer: undefined, long: false });
 
   useEffect(() => () => chunk?.release(owner), [owner]);
+  // A start whose draft changed (a send) or whose box was held is withdrawn.
+  useEffect(() => {
+    if (source) chunk?.checkStart(owner, options.heldReason !== undefined);
+  });
   useEffect(() => {
     const field = options.field.current;
     const touch = () => {
@@ -190,9 +196,9 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
     if (!next) setOpen(false);
     else void load().then(() => setOpen(true), () => undefined);
   };
-  // Waiting on the browser's prompt or on a route preparing: the mic waits, Send stays.
-  const waiting = phase === 'pending' || phase === 'preparing';
-  const live = phase !== null && !waiting;
+  // Pressed and not yet listening: the row keeps its shape, the mic waits pressed and Send stays.
+  const starting = view?.starting ?? false;
+  const live = phase !== null && !starting;
   // Nothing to offer in the menu: the chevron is held with the same reason.
   const bare = options.heldReason ?? ((block || source.unavailableReason) && !source.setup ? held : undefined);
 
@@ -200,12 +206,16 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
     <IconButton
       label={view?.resume ?? labels.dictate}
       icon={chunk && view?.off ? <chunk.MicOffGlyph /> : <MicGlyph />}
-      pressed={waiting}
+      pressed={starting}
       disabledReason={held}
       tooltip={chord ? `${labels.dictate} (${chord.map((k) => keyGlyph(k, apple).glyph).join(apple ? '' : '+')})` : true}
-      className={cx('crewlet-dictation__mic', waiting && 'is-pending')}
+      className={cx('crewlet-dictation__mic', starting && 'is-pending')}
       onPointerEnter={() => void preloadDictation()}
       onFocus={() => void preloadDictation()}
+      // A press leaves a focused field focused: its edge, caret and keys stay until the words come.
+      onMouseDown={(event) => {
+        if (document.activeElement === options.field.current) event.preventDefault();
+      }}
       onPointerDown={() => {
         press.current.long = false;
         press.current.timer = setTimeout(() => {
@@ -219,12 +229,17 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
         if (event.key === 'ArrowDown') {
           event.preventDefault();
           openMenu(true);
-        }
+        } else if (starting) chunk?.keyDown(owner, event);
       }}
-      onClick={() => {
+      onClick={(event) => {
         if (press.current.long) press.current.long = false;
         else if (view?.resume) chunk?.resumeOwner(owner);
-        else if (phase === null) start();
+        else if (starting) chunk?.cancelStart(owner);
+        else if (phase === null) {
+          // Safari leaves a pressed button unfocused; the mic keeps focus so a second press or Escape reaches it.
+          if (document.activeElement !== options.field.current) event.currentTarget.focus();
+          start();
+        }
       }}
     />
   );
@@ -260,13 +275,12 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
           </span>
         )}
       />
-      {phase !== null && chunk ? <chunk.Swap owner={owner} /> : null}
+      {live && chunk ? <chunk.Swap owner={owner} /> : null}
     </>
   );
 
   return {
     live,
-    active: phase !== null,
     controls,
     layer: live && chunk ? <chunk.Layer owner={owner} /> : null,
     note: view?.note ? <div className="crewlet-dictation__note">{view.note}</div> : null,
