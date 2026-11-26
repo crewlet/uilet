@@ -145,6 +145,16 @@ test('the counter appears only near the limit', () => {
   expect(container.querySelector('.crewlet-composer__counter')!.textContent).toBe('80 / 100');
 });
 
+test('a phone hides the send hint whatever order the sheets arrive in', () => {
+  const { container } = render(
+    <Composer label="Brief" value="" onChange={() => {}} onSubmit={() => {}} actions={<button type="button">Send</button>} />,
+  );
+  // The kit's one sheet puts SendKeys.css after Composer.css, and the hint is a SendKeysHint.
+  const uninstall = installAtWidth(390, 'light', 'Composer/Composer.css', 'SendKeys/SendKeys.css');
+  expect(getComputedStyle(container.querySelector('.crewlet-composer__hint')!).display).toBe('none');
+  uninstall();
+});
+
 test('the footer is drawn only with something in it, and a phone drops one holding only the hint', () => {
   const footer = (container: HTMLElement) => container.querySelector<HTMLElement>('.crewlet-composer__footer');
   // Nothing to show: no strip at all.

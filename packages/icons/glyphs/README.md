@@ -28,6 +28,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **The unmarked tile in an integrations catalogue** (`VendorMark`'s `aws`), drawn on a plate because AWS allows a third party no logo (the package [README](../README.md#vendor-marks) has why): `cloud`. `chart-line`, `search-check`, `mouse-pointer-click`, `megaphone`, `banknote`, `circle-dollar-sign` and `store` drew the store, ads and analytics tiles until those drew their owners' own logos, and stay in the set for what each product does.
 - **A company's map of what it runs on** (`GraphCanvas` in `@crewlethq/ui`, and the Atlas screens in the engine dashboard): `map` for the map itself and its sidebar row, `git-branch` for a repository, `workflow` for a pipeline, `hard-drive` for a bucket or an object store, `container` for a container platform and `waypoints` for an endpoint. Every other kind of entry on the map takes a glyph already here (`server`, `database`, `globe`, `cloud`, `layers`, `activity`, `plug`, `brain`).
 - **The assistant drawer** in the engine dashboard: `square-pen` for New conversation in its head (the conversations themselves keep `rotate-ccw-clock`, already here, because Lucide retired `history` as an alias of it), `square` drawn filled for the Stop a running request turns the send button into, and `circle-stop` for a request or one of its steps that the person stopped.
+- **Dictation in the composer** (`Composer`'s `dictation` in `@crewlethq/ui`): `mic` for the dictate button and the microphone menu's level meter, and `mic-off` for a microphone the browser has blocked.
 - **The code host's screens** in the engine dashboard (Gitlet: the repository's main page and files, commits, branches, pushes, changes, a change and its files, checks, the merge queue and the pickers): `git-commit-vertical`, `git-merge`, `git-pull-request`, `git-pull-request-closed`, `git-pull-request-draft`, `git-compare`, `tag`, `file`, `file-diff`, `circle-x`, `circle-dot`, `scale` for a licence, `unfold-vertical` for hidden diff lines, `rows-2` and `columns-2` for the unified and split diff, `train-front` for the queue, and `square-plus`, `square-dot`, `square-minus` and `square-arrow-right` for a file's status in a tree (added, modified or type changed, deleted, renamed). Lucide retired `git-commit` as an alias of `git-commit-vertical`.
 
 ## Provenance
@@ -187,6 +188,8 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `message-circle-question-mark` | `MessageCircleQuestionMarkGlyph` | `package/icons/message-circle-question-mark.svg` |
 | `message-square` | `MessageSquareGlyph` | `package/icons/message-square.svg` |
 | `messages-square` | `MessagesSquareGlyph` | `package/icons/messages-square.svg` |
+| `mic` | `MicGlyph` | `package/icons/mic.svg` |
+| `mic-off` | `MicOffGlyph` | `package/icons/mic-off.svg` |
 | `minimize` | `MinimizeGlyph` | `package/icons/minimize.svg` |
 | `minus` | `MinusGlyph` | `package/icons/minus.svg` |
 | `monitor` | `MonitorGlyph` | `package/icons/monitor.svg` |
