@@ -126,8 +126,10 @@ export interface DictationSlotOptions {
 
 /** The pieces a composer lays out. */
 export interface DictationSlot {
-  /** A session is running here: the send slot swaps and the field is read only. */
+  /** A session is running here: the send slot swaps and the layer draws the words. */
   live: boolean;
+  /** A session is starting or running here: Enter is dictation's and the field is read only. */
+  active: boolean;
   /** The mic and chevron, before the send slot; while live, the level, chevron, Cancel and Accept. */
   controls: ReactNode;
   /** The provisional words over the field, while live. */
@@ -188,7 +190,9 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
     if (!next) setOpen(false);
     else void load().then(() => setOpen(true), () => undefined);
   };
-  const live = phase !== null && phase !== 'pending';
+  // Waiting on the browser's prompt or on a route preparing: the mic waits, Send stays.
+  const waiting = phase === 'pending' || phase === 'preparing';
+  const live = phase !== null && !waiting;
   // Nothing to offer in the menu: the chevron is held with the same reason.
   const bare = options.heldReason ?? ((block || source.unavailableReason) && !source.setup ? held : undefined);
 
@@ -196,10 +200,10 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
     <IconButton
       label={view?.resume ?? labels.dictate}
       icon={chunk && view?.off ? <chunk.MicOffGlyph /> : <MicGlyph />}
-      pressed={phase === 'pending'}
+      pressed={waiting}
       disabledReason={held}
       tooltip={chord ? `${labels.dictate} (${chord.map((k) => keyGlyph(k, apple).glyph).join(apple ? '' : '+')})` : true}
-      className={cx('crewlet-dictation__mic', phase === 'pending' && 'is-pending')}
+      className={cx('crewlet-dictation__mic', waiting && 'is-pending')}
       onPointerEnter={() => void preloadDictation()}
       onFocus={() => void preloadDictation()}
       onPointerDown={() => {
@@ -262,6 +266,7 @@ export function useDictationSlot(source: DictationSource | undefined, options: D
 
   return {
     live,
+    active: phase !== null,
     controls,
     layer: live && chunk ? <chunk.Layer owner={owner} /> : null,
     note: view?.note ? <div className="crewlet-dictation__note">{view.note}</div> : null,

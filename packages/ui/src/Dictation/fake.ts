@@ -33,6 +33,12 @@ export interface FakeTransportOptions {
   flushDelay?: number | undefined;
   /** Starts the script again after its last sentence (true by default). */
   loop?: boolean | undefined;
+  /** Milliseconds spent preparing (a model loading) before the first word, with progress. */
+  prepare?: number | undefined;
+  /** What `available()` answers; true by default. */
+  available?: boolean | undefined;
+  /** The browser, not the chosen device, picks the microphone on this route. */
+  picksDevice?: boolean | undefined;
 }
 
 export interface FakeTransport extends DictationTransport {
@@ -84,12 +90,36 @@ export function fakeTransport(options: FakeTransportOptions = {}): FakeTransport
 
   return {
     calls,
+    picksDevice: options.picksDevice,
+    available: () => options.available ?? true,
     start(deviceId, next) {
       calls.push(`start:${deviceId ?? 'default'}`);
       clearTimeout(timer);
       events = next;
       word = 0;
-      timer = setTimeout(tick, pace);
+      const { prepare, fail } = options;
+      // A route declines as it starts, before its first word.
+      if (fail && !fail.after && (fail.code === 'busy' || fail.code === 'unavailable')) {
+        events = null;
+        next.error(fail.code);
+        return;
+      }
+      if (!prepare) {
+        timer = setTimeout(tick, pace);
+        return;
+      }
+      // Preparing in five steps, then ready, then the words.
+      const step = (done: number) => {
+        if (events !== next) return;
+        if (done < 5) {
+          next.preparing?.(done / 5);
+          timer = setTimeout(() => step(done + 1), prepare / 5);
+        } else {
+          next.ready?.();
+          timer = setTimeout(tick, pace);
+        }
+      };
+      step(0);
     },
     switchStream(_stream, deviceId) {
       calls.push(`switch:${deviceId ?? 'default'}`);

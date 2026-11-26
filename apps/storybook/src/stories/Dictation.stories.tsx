@@ -57,8 +57,15 @@ export const Closed: Story = story('closed');
 export const Two: Story = story('two');
 export const HoldsText: Story = story('holds-text');
 export const Proposal: Story = story('proposal');
+export const Preparing: Story = story('preparing');
+export const Fallback: Story = story('fallback');
+export const ServiceBusy: Story = story('service-busy');
+export const NoRoute: Story = story('no-route');
 export const Accepting: Story = story('accepting');
 export const Accepted: Story = story('accepted');
 
 /** The Ask layout: the mic, Cancel and Accept share the field's row with Send. */
 export const DictatingInline: Story = { ...story('dictating', 'inline'), name: 'Dictating, inline' };
+
+/** Preparing beside an inline field: the mic waits and the line runs under the row. */
+export const PreparingInline: Story = { ...story('preparing', 'inline'), name: 'Preparing dictation, inline' };

@@ -105,7 +105,7 @@ export function Swap({ owner }: { owner: DictationOwner }) {
         className="crewlet-dictation__cancel"
         onClick={() => cancel(s)}
       />
-      {phase === 'pending' ? null : (
+      {phase === 'pending' || phase === 'preparing' ? null : (
         <IconButton
           label={labels.accept}
           icon={phase === 'accepting' ? <Spinner /> : <CheckGlyph />}

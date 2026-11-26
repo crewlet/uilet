@@ -20,6 +20,8 @@ import type {
   DictationPermission,
   DictationSource,
   DictationStopReason,
+  DictationTransport,
+  DictationTransportEvents,
 } from './types.js';
 
 /** How long Accept waits for the last words before inserting what it has. */
@@ -31,7 +33,7 @@ const GATE_MS = 250;
 const NOTE_MS = 8000;
 const STORE_KEY = 'crewlet:dictation:device';
 
-export type DictationPhase = 'pending' | 'listening' | 'stopped' | 'accepting';
+export type DictationPhase = 'pending' | 'preparing' | 'listening' | 'stopped' | 'accepting';
 
 /** What one microphone is known to allow, per tab. */
 export interface MicState {
@@ -43,6 +45,8 @@ export interface MicState {
   chosen: string | undefined;
   /** The remembered device is not connected, so the default is used. */
   gone: boolean;
+  /** The last route used lets the browser pick the microphone. */
+  picks: boolean;
 }
 
 export interface Session {
@@ -61,6 +65,16 @@ export interface Session {
   reason: DictationStopReason | null;
   quiet: boolean;
   capture: DictationCapture | null;
+  /** The route in use, and its place in the source's list. */
+  transport: DictationTransport | null;
+  index: number;
+  /** Before the route's first word or `ready`: a `busy` or `unavailable` moves to the next route. */
+  opening: boolean;
+  /** The route said it is preparing, so it will say when it is ready. */
+  prepared: boolean;
+  progress: number | undefined;
+  /** Why the routes tried so far declined: `busy` outranks `unavailable`. */
+  declined: 'busy' | 'unavailable' | null;
   /** The transport has nothing more to send. */
   ended: boolean;
   flushing: Promise<void> | null;
@@ -128,7 +142,7 @@ export function micState(source: DictationSource): MicState {
   const mic = micOf(source);
   let state = states.get(mic);
   if (!state) {
-    state = { mic, permission: 'unknown', devices: null, chosen: recall(), gone: false };
+    state = { mic, permission: 'unknown', devices: null, chosen: recall(), gone: false, picks: false };
     states.set(mic, state);
     void probe(state);
   }
@@ -207,6 +221,7 @@ export function view(owner: DictationOwner): DictationView {
 }
 
 function line(s: Session): string | undefined {
+  if (s.phase === 'preparing') return s.labels.preparing(s.progress);
   if (s.phase === 'stopped' && s.reason) return s.labels.stopped[s.reason];
   if (s.phase === 'listening' && s.quiet) return s.labels.quiet;
   return undefined;
@@ -243,6 +258,12 @@ export function start(owner: DictationOwner): void {
     reason: null,
     quiet: false,
     capture: null,
+    transport: null,
+    index: 0,
+    opening: false,
+    prepared: false,
+    progress: undefined,
+    declined: null,
     ended: false,
     flushing: null,
     heard: Date.now(),
@@ -281,11 +302,7 @@ async function open(s: Session, resuming: boolean): Promise<void> {
       s.mic.devices = [];
       announce(s.labels.noDevice);
     } else {
-      notes.set(s.owner, s.labels.busy);
-      announce(s.labels.busy);
-      setTimeout(() => {
-        if (notes.get(s.owner) === s.labels.busy && notes.delete(s.owner)) notify();
-      }, NOTE_MS);
+      note(s.owner, s.labels.busy);
     }
     notify();
     return;
@@ -299,27 +316,92 @@ async function open(s: Session, resuming: boolean): Promise<void> {
   capture.onEnded(() => {
     if (s.capture === capture) stop(s, 'unplugged');
   });
-  s.phase = 'listening';
   s.reason = null;
   s.ended = false;
   s.flushing = null;
-  s.heard = Date.now();
-  notify();
-  if (!resuming) announce(s.labels.dictating);
+  s.declined = null;
   if (!s.mic.devices?.some((d) => d.label)) void listDevices(s.mic);
-  gate(s);
-  try {
-    await s.source.transport.start(s.mic.chosen, events(s), capture.stream);
-  } catch {
-    if (session === s && !s.over && s.phase === 'listening') {
-      s.ended = true;
-      stop(s, 'dropped');
-    }
-  }
+  await begin(s, 0, resuming);
 }
 
-function events(s: Session) {
-  const mine = () => session === s && !s.over;
+/** A source's routes, in order. */
+export function transportsOf(source: DictationSource): readonly DictationTransport[] {
+  const { transport } = source;
+  return Array.isArray(transport) ? transport : [transport as DictationTransport];
+}
+
+/** Starts the first available route from `from` on; with none left, says why and ends. */
+async function begin(s: Session, from: number, resuming: boolean): Promise<void> {
+  const routes = transportsOf(s.source);
+  for (let i = from; i < routes.length; i++) {
+    const t = routes[i]!;
+    // A check that throws counts as unavailable.
+    const usable = t.available ? await Promise.resolve().then(() => t.available!()).catch(() => false) : true;
+    if (session !== s || s.over) return;
+    if (!usable) {
+      s.declined ??= 'unavailable';
+      continue;
+    }
+    Object.assign(s, { transport: t, index: i, opening: true, prepared: false, progress: undefined });
+    try {
+      await t.start(s.mic.chosen, events(s, t, resuming), s.capture?.stream ?? null);
+    } catch {
+      if (s.transport === t && s.opening) decline(s, 'unavailable', resuming);
+      else if (s.transport === t && s.phase === 'listening') {
+        s.ended = true;
+        stop(s, 'dropped');
+      }
+      return;
+    }
+    if (s.transport === t && s.opening && !s.prepared) ready(s, t, resuming);
+    return;
+  }
+  if (session !== s || s.over) return;
+  const why = s.declined === 'busy' ? s.labels.serviceBusy : s.labels.unavailable;
+  if (resuming || s.finals.length > 0) {
+    // Words already said stay for Accept or Cancel.
+    s.phase = 'listening';
+    s.ended = true;
+    stop(s, 'dropped');
+    return;
+  }
+  end(s);
+  restore(s);
+  note(s.owner, why);
+}
+
+/** The route declined before its first word: the next one is tried. */
+function decline(s: Session, why: 'busy' | 'unavailable', resuming: boolean): void {
+  s.transport?.cancel();
+  s.transport = null;
+  s.declined = why === 'busy' || s.declined === 'busy' ? 'busy' : 'unavailable';
+  void begin(s, s.index + 1, resuming);
+}
+
+/** The route is listening: words may come. */
+function ready(s: Session, t: DictationTransport, resuming: boolean): void {
+  if (s.transport !== t || !s.opening || session !== s || s.over) return;
+  s.opening = false;
+  s.phase = 'listening';
+  s.heard = Date.now();
+  s.mic.picks = Boolean(t.picksDevice);
+  notify();
+  if (!resuming) announce(s.labels.dictating);
+  gate(s);
+}
+
+/** A note that needs no answer, said once and gone after a while. */
+function note(owner: DictationOwner, text: string): void {
+  notes.set(owner, text);
+  announce(text);
+  notify();
+  setTimeout(() => {
+    if (notes.get(owner) === text && notes.delete(owner)) notify();
+  }, NOTE_MS);
+}
+
+function events(s: Session, t: DictationTransport, resuming: boolean): DictationTransportEvents {
+  const mine = () => session === s && !s.over && s.transport === t;
   const heard = () => {
     s.heard = Date.now();
     if (s.quiet) {
@@ -328,14 +410,28 @@ function events(s: Session) {
     }
   };
   return {
+    preparing(progress?: number) {
+      if (!mine() || !s.opening) return;
+      const first = s.phase !== 'preparing';
+      s.prepared = true;
+      s.phase = 'preparing';
+      s.progress = progress;
+      notify();
+      if (first) announce(s.labels.preparing(undefined));
+    },
+    ready() {
+      if (mine()) ready(s, t, resuming);
+    },
     partial(text: string) {
       if (!mine()) return;
+      if (s.opening) ready(s, t, resuming);
       s.partial = text;
       heard();
       wordsChanged();
     },
     final(text: string) {
       if (!mine()) return;
+      if (s.opening) ready(s, t, resuming);
       const trimmed = text.trim();
       if (trimmed) s.finals.push(trimmed);
       s.partial = '';
@@ -343,9 +439,17 @@ function events(s: Session) {
       wordsChanged();
     },
     error(code: DictationErrorCode) {
-      if (!mine() || s.phase !== 'listening') return;
+      if (!mine()) return;
+      const declined = code === 'busy' || code === 'unavailable';
+      if (s.opening && declined) return decline(s, code, resuming);
+      if (s.opening) {
+        s.opening = false;
+        s.phase = 'listening';
+      }
+      if (s.phase !== 'listening') return;
       s.ended = true;
-      stop(s, code);
+      // Mid-session, a route that goes away is a dropped one.
+      stop(s, declined ? 'dropped' : code);
     },
   };
 }
@@ -376,8 +480,8 @@ function release(s: Session): void {
 
 /** Waits for the transport's last words, or `FLUSH_MS`, whichever is first. */
 function settle(s: Session): Promise<void> {
-  if (s.ended) return Promise.resolve();
-  const flushed = s.source.transport.flush().catch(() => undefined);
+  if (s.ended || !s.transport) return Promise.resolve();
+  const flushed = s.transport.flush().catch(() => undefined);
   const timeout = new Promise<void>((resolve) => setTimeout(resolve, FLUSH_MS));
   return Promise.race([flushed, timeout]).then(() => {
     s.ended = true;
@@ -435,7 +539,7 @@ export function splice(value: string, from: number, to: number, text: string): {
 
 /** Accept: the last words arrive (at most `FLUSH_MS`), then go into the draft with one `onChange`. */
 export async function accept(s: Session): Promise<void> {
-  if (s.phase === 'pending' || s.phase === 'accepting' || session !== s) return;
+  if (s.phase === 'pending' || s.phase === 'preparing' || s.phase === 'accepting' || session !== s) return;
   if (s.phase === 'listening') {
     release(s);
     s.flushing = settle(s);
@@ -468,7 +572,7 @@ function commit(s: Session, parts: readonly string[], speak: boolean): void {
 /** Cancel: the draft and the caret are as they were. */
 export function cancel(s: Session): void {
   if (session !== s) return;
-  if (!s.ended) s.source.transport.cancel();
+  if (!s.ended) s.transport?.cancel();
   end(s);
   restore(s);
   announce(s.labels.cancelled);
@@ -494,7 +598,7 @@ export function releaseOwner(owner: DictationOwner): void {
   notes.delete(owner);
   const s = session;
   if (!s || s.owner !== owner) return;
-  if (!s.ended) s.source.transport.cancel();
+  if (!s.ended) s.transport?.cancel();
   commit(s, s.finals, false);
 }
 
@@ -530,7 +634,7 @@ async function switchTo(s: Session, id: string | undefined): Promise<void> {
   next.onEnded(() => {
     if (s.capture === next) stop(s, 'unplugged');
   });
-  s.source.transport.switchStream?.(next.stream, id);
+  s.transport?.switchStream?.(next.stream, id);
   old?.stop();
   const label = s.mic.devices?.find((d) => d.deviceId === (id ?? 'default'))?.label;
   if (label) announce(s.labels.switched(label));
@@ -567,13 +671,14 @@ export function menuNotes(owner: DictationOwner): string[] {
   const m = micState(source);
   if (m.permission === 'denied') return [labels.denied, labels.deniedHelp];
   if (m.devices?.length === 0) return [labels.noDevice];
-  return m.gone ? [labels.gone] : [];
+  return [...(m.gone ? [labels.gone] : []), ...(m.picks ? [labels.browserPicks] : [])];
 }
 
 /** Whether the menu can draw a live level: the device is allowed and nothing holds it. */
 export function meterable(owner: DictationOwner): boolean {
   const source = owner.get().source;
-  return micState(source).permission === 'granted' && menuNotes(owner).filter((n) => n !== labelsOf(source).gone).length === 0;
+  const labels = labelsOf(source);
+  return micState(source).permission === 'granted' && menuNotes(owner).every((n) => n === labels.gone || n === labels.browserPicks);
 }
 
 /** The microphone menu's rows: the devices, the chosen one ticked, then a setup action. */

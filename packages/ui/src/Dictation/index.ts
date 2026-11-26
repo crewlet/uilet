@@ -4,6 +4,8 @@ export { DICTATION_SHORTCUT, preloadDictation } from './slot.js';
 export { DICTATION_LABELS, dictationLabels } from './labels.js';
 export { FAKE_DEVICES, FAKE_SCRIPT, fakeMicrophone, fakeTransport } from './fake.js';
 export type { FakeMicrophone, FakeMicrophoneOptions, FakeTransport, FakeTransportOptions } from './fake.js';
+export { webSpeechLocalTransport } from './webSpeechLocal.js';
+export type { WebSpeechLocalOptions } from './webSpeechLocal.js';
 export type {
   DictationBlock,
   DictationCapture,

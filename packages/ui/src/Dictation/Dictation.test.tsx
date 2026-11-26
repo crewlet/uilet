@@ -661,3 +661,121 @@ describe('one session per tab', () => {
     expect(second!.getAttribute('aria-disabled')).toBeNull();
   });
 });
+
+describe('routes in order', () => {
+  test('a route busy at start hands over to the next, before any word', async () => {
+    const first = fakeTransport({ pace: PACE, fail: { code: 'busy', after: 0 } });
+    const second = fakeTransport({ pace: PACE });
+    const source: DictationSource = { transport: [first, second], microphone: fakeMicrophone() };
+    render(<Box source={source} />);
+    await startIn();
+    await tick(PACE * 4);
+    expect(first.calls).toEqual(['start:default', 'cancel']);
+    expect(second.calls).toEqual(['start:default']);
+    expect(provisional()).toMatch(/^Let’s move the/);
+  });
+
+  test('a route unavailable in this browser is skipped without being started', async () => {
+    const first = fakeTransport({ pace: PACE, available: false });
+    const second = fakeTransport({ pace: PACE });
+    render(<Box source={{ transport: [first, second], microphone: fakeMicrophone() }} />);
+    await startIn();
+    await tick(PACE * 2);
+    expect(first.calls).toEqual([]);
+    expect(second.calls).toEqual(['start:default']);
+  });
+
+  test.each([
+    ['busy', DICTATION_LABELS.serviceBusy],
+    ['unavailable', DICTATION_LABELS.unavailable],
+  ] as const)('when every route declines (%s), the mic says why and comes back', async (code, words) => {
+    const { m } = setup();
+    const routes = [fakeTransport({ pace: PACE, fail: { code, after: 0 } }), fakeTransport({ pace: PACE, available: false })];
+    render(
+      <>
+        <Announcer />
+        <Box source={{ transport: routes, microphone: m }} />
+      </>,
+    );
+    await startIn();
+    await tick(PACE * 2);
+    expect(note()).toBe(words);
+    expect(said()).toBe(words);
+    expect(m.openCount).toBe(0);
+    expect(button('Dictate').getAttribute('aria-disabled')).toBeNull();
+    expect(button('Dictate').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  test('a route that goes away mid-session stops with the words kept, and never hands over', async () => {
+    const first = fakeTransport({ pace: PACE, fail: { code: 'busy', after: 3 } });
+    const second = fakeTransport({ pace: PACE });
+    render(<Box source={{ transport: [first, second], microphone: fakeMicrophone() }} />);
+    await startIn();
+    await tick(PACE * 5);
+    expect(note()).toBe(DICTATION_LABELS.stopped.dropped);
+    expect(provisional()).toBe('Let’s move the');
+    expect(second.calls).toEqual([]);
+  });
+
+  test('a route where the browser picks the microphone says so in the menu', async () => {
+    const { source } = setup({ picksDevice: true });
+    render(<Box source={source} />);
+    await startIn();
+    fireEvent.click(button('Cancel dictation'));
+    fireEvent.click(button('Choose a microphone'));
+    await tick();
+    expect(screen.getByText(DICTATION_LABELS.browserPicks)).toBeTruthy();
+  });
+});
+
+describe('preparing', () => {
+  test('a route loading its model shows the mic waiting and a calm line, with Cancel and no words', async () => {
+    const onChange = vi.fn();
+    const onSubmit = vi.fn();
+    const { m, source } = setup({ prepare: 1000 });
+    render(
+      <>
+        <Announcer />
+        <Box source={source} onChange={onChange} onSubmit={onSubmit} initial="Draft" />
+      </>,
+    );
+    // Before the press the send keys are offered.
+    expect(document.querySelector('.crewlet-composer__hint')).not.toBeNull();
+    await startIn();
+    expect(note()).toBe(DICTATION_LABELS.preparing(0));
+    expect(said()).toBe(DICTATION_LABELS.preparing(undefined));
+    expect(button('Dictate').classList.contains('is-pending')).toBe(true);
+    expect(button('Dictate').getAttribute('aria-pressed')).toBe('true');
+    expect(button('Cancel dictation')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Accept dictation' })).toBeNull();
+    expect(document.querySelector('.crewlet-dictation__layer')).toBeNull();
+    expect(button('Submit')).toBeTruthy();
+    // Enter is dictation's while it starts: no send keys are offered, and the draft holds still.
+    expect(document.querySelector('.crewlet-composer__hint')).toBeNull();
+    expect(field().readOnly).toBe(true);
+    await tick(450);
+    expect(note()).toBe('Preparing dictation… 40%');
+    // Enter while preparing neither sends nor accepts.
+    fireEvent.keyDown(field(), { key: 'Enter' });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
+    await tick(600 + PACE * 3);
+    expect(note()).toBeNull();
+    expect(said()).toBe(DICTATION_LABELS.dictating);
+    expect(button('Accept dictation')).toBeTruthy();
+    expect(provisional()).toMatch(/^Let’s move/);
+    expect(m.openCount).toBe(1);
+  });
+
+  test('Cancel while preparing withdraws the route and releases the microphone', async () => {
+    const { t, m, source } = setup({ prepare: 1000 });
+    render(<Box source={source} />);
+    await startIn();
+    await tick(300);
+    fireEvent.click(button('Cancel dictation'));
+    await tick(2000);
+    expect(t.calls).toEqual(['start:default', 'cancel']);
+    expect(m.openCount).toBe(0);
+    expect(note()).toBeNull();
+  });
+});

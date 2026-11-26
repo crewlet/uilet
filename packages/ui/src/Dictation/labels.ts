@@ -21,6 +21,10 @@ export const DICTATION_LABELS: DictationLabels = {
   busy: 'The microphone is in use by another app',
   elsewhere: (composer) => `Dictating in ${composer}`,
   quiet: 'Still listening',
+  preparing: (progress) => (progress === undefined ? 'Preparing dictation…' : `Preparing dictation… ${Math.round(progress * 100)}%`),
+  serviceBusy: 'Dictation is busy right now. Try again in a moment.',
+  unavailable: 'Dictation is not available in this browser',
+  browserPicks: 'The browser picks the microphone for dictation.',
   stopped: {
     paused: 'Paused. Accept, cancel, or resume.',
     unplugged: 'Microphone disconnected',

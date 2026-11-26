@@ -14,10 +14,14 @@ export type DictationErrorCode =
   /** The session reached its maximum length. */
   | 'length'
   /** No speech for too long. */
-  | 'silence';
+  | 'silence'
+  /** The service is full right now; answered before `start` settles, the next transport is tried. */
+  | 'busy'
+  /** This route cannot work here; answered before `start` settles, the next transport is tried. */
+  | 'unavailable';
 
 /** Why capture stopped while the words wait for Accept or Cancel. */
-export type DictationStopReason = DictationErrorCode | 'unplugged' | 'paused';
+export type DictationStopReason = Exclude<DictationErrorCode, 'busy' | 'unavailable'> | 'unplugged' | 'paused';
 
 /** What a transport tells the composer while a session runs. */
 export interface DictationTransportEvents {
@@ -27,6 +31,10 @@ export interface DictationTransportEvents {
   final(text: string): void;
   /** Ends the session from the transport's side. */
   error(code: DictationErrorCode): void;
+  /** Getting ready before the first word (a model loading), with progress from 0 to 1 when known. */
+  preparing?(progress?: number): void;
+  /** Ready to listen. A transport that never says `preparing` is ready once `start` settles. */
+  ready?(): void;
 }
 
 /**
@@ -34,6 +42,10 @@ export interface DictationTransportEvents {
  * application, `fakeTransport` in stories and tests.
  */
 export interface DictationTransport {
+  /** Whether this route can work in this browser at all; false skips it in a list. */
+  available?(): boolean | Promise<boolean>;
+  /** The browser, not the chosen device, decides which microphone this route hears. */
+  readonly picksDevice?: boolean | undefined;
   /**
    * Opens a session on `deviceId` (undefined is the default device). `stream`
    * is the open microphone's audio, or null from a microphone that has none.
@@ -110,6 +122,10 @@ export interface DictationLabels {
   busy: string;
   elsewhere: (composer: string) => string;
   quiet: string;
+  preparing: (progress: number | undefined) => string;
+  serviceBusy: string;
+  unavailable: string;
+  browserPicks: string;
   stopped: Record<DictationStopReason, string>;
   defaultDevice: string;
   allowToChoose: string;
@@ -123,7 +139,11 @@ export interface DictationLabels {
 
 /** Turns a `Composer`'s dictation on. */
 export interface DictationSource {
-  transport: DictationTransport;
+  /**
+   * One transport, or several in order: the first available is used, and the
+   * next is tried when one answers `busy` or `unavailable` before its first word.
+   */
+  transport: DictationTransport | readonly DictationTransport[];
   /** The browser's microphone when left out. */
   microphone?: DictationMicrophone | undefined;
   /**

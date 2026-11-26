@@ -10,6 +10,7 @@ import {
   SendButton,
   fakeMicrophone,
   fakeTransport,
+  webSpeechLocalTransport,
   type DictationSource,
   type FakeMicrophone,
   type FakeMicrophoneOptions,
@@ -32,6 +33,8 @@ export interface DictationScenario {
   /** What the reader sees, in a line. */
   note: string;
   transport?: FakeTransportOptions;
+  /** Several routes in order, in place of `transport`. */
+  routes?: FakeTransportOptions[];
   mic?: FakeMicrophoneOptions;
   source?: Partial<DictationSource>;
   /** The draft already in the box, and the caret or selection in it. */
@@ -177,6 +180,38 @@ export const DICTATION_SCENARIOS: readonly DictationScenario[] = [
     settle: 250,
   },
   {
+    id: 'preparing',
+    title: 'Preparing dictation',
+    note: 'The engine loads its speech model on first use: the mic waits, the line shows progress, Cancel is there.',
+    transport: { prepare: 7000 },
+    steps: [{ at: 300, press: 'Dictate' }],
+    settle: 3000,
+  },
+  {
+    id: 'fallback',
+    title: 'Engine busy, the browser takes over',
+    note: 'The first route answered busy before a word; the on-device browser route took over, and the menu says the browser picks the microphone.',
+    routes: [{ fail: { code: 'busy' } }, { picksDevice: true }],
+    steps: [
+      { at: 300, press: 'Dictate' },
+      { at: 1600, press: 'Choose a microphone' },
+    ],
+  },
+  {
+    id: 'service-busy',
+    title: 'Every route busy',
+    note: 'No route could take the session: said once, and the mic comes back.',
+    routes: [{ fail: { code: 'busy' } }, { available: false }],
+    steps: [{ at: 300, press: 'Dictate' }],
+  },
+  {
+    id: 'no-route',
+    title: 'No route in this browser',
+    note: 'No route works here: said once, and the mic comes back.',
+    routes: [{ available: false }],
+    steps: [{ at: 300, press: 'Dictate' }],
+  },
+  {
     id: 'accepted',
     title: 'Accepted',
     note: 'Normal draft text, the caret after it; mic, chevron and Send are back.',
@@ -195,6 +230,8 @@ export interface DictationStageProps {
   layout: DictationLayout;
   /** The real microphone with the scripted words, so the level follows a voice. */
   live?: boolean;
+  /** The browser's own on-device recognition instead of the scripted words. */
+  device?: boolean;
   /** Runs the scenario's presses; off for a box to try by hand. */
   autoplay?: boolean;
   /** Called once the last step has run and the state has settled. */
@@ -211,7 +248,7 @@ function find(root: ParentNode, name: string): HTMLElement | null {
 }
 
 /** One composer (two with `twin`) in a scenario's state. */
-export function DictationStage({ scenario, layout, live = false, autoplay = true, onSettled }: DictationStageProps) {
+export function DictationStage({ scenario, layout, live = false, device = false, autoplay = true, onSettled }: DictationStageProps) {
   const [value, setValue] = useState(scenario.initial ?? '');
   const [twin, setTwin] = useState('');
   const [open, setOpen] = useState(true);
@@ -225,8 +262,8 @@ export function DictationStage({ scenario, layout, live = false, autoplay = true
     const fake = fakeMicrophone(scenario.mic);
     mic.current = fake;
     return {
-      transport: fakeTransport(scenario.transport),
-      microphone: live ? undefined : fake,
+      transport: device ? webSpeechLocalTransport() : scenario.routes ? scenario.routes.map(fakeTransport) : fakeTransport(scenario.transport),
+      microphone: live || device ? undefined : fake,
       onActiveChange: (now) => {
         active.current = now;
         if (!now && queued.current) {
@@ -237,7 +274,7 @@ export function DictationStage({ scenario, layout, live = false, autoplay = true
       },
       ...scenario.source,
     };
-  }, [scenario, live]);
+  }, [scenario, live, device]);
 
   useEffect(() => {
     const field = root.current?.querySelector('textarea');
