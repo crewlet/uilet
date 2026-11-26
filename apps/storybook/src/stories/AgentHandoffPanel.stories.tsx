@@ -10,7 +10,10 @@ import {
   Callout,
   ChoiceList,
   Prose,
+  fakeMicrophone,
+  fakeTransport,
   type ArtifactBarTool,
+  type DictationSource,
 } from '@crewlethq/ui';
 
 /**
@@ -62,7 +65,15 @@ const STARTERS = [
   },
 ];
 
-function Page({ held = false, refused = false }: { held?: boolean; refused?: boolean }) {
+function Page({
+  held = false,
+  refused = false,
+  dictation,
+}: {
+  held?: boolean;
+  refused?: boolean;
+  dictation?: DictationSource;
+}) {
   const [open, setOpen] = useState(true);
   const [brief, setBrief] = useState('');
   const [seat, setSeat] = useState<string | null>('sre');
@@ -107,6 +118,7 @@ function Page({ held = false, refused = false }: { held?: boolean; refused?: boo
                 briefLabel="What should the doc cover?"
                 briefPlaceholder="Who reads it, what it covers and what to draw on."
                 briefHelper="Name the readers, the outline you have in mind and the pages to draw on."
+                briefDictation={dictation}
                 starters={STARTERS}
                 onStarter={(key) => setBrief(STARTERS.find((s) => s.key === key)?.brief ?? '')}
                 agent={
@@ -181,3 +193,8 @@ export const Held: Story = { render: () => <Page held /> };
 
 /** The engine refused the task: said above the commit, where the reader looks after the press. */
 export const Refused: Story = { render: () => <Page refused /> };
+
+/** The brief takes dictation: the mic sits in its footer, here on a scripted microphone and transport. */
+export const Dictation: Story = {
+  render: () => <Page dictation={{ transport: fakeTransport(), microphone: fakeMicrophone() }} />,
+};

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { CommentThread, type CommentThreadComment } from '@crewlethq/ui';
+import { CommentThread, fakeMicrophone, fakeTransport, type CommentThreadComment } from '@crewlethq/ui';
 
 const meta: Meta<typeof CommentThread> = {
   title: 'UI/CommentThread',
@@ -119,4 +119,15 @@ export const ReadOnlyWithReason: Story = {
 /** Nobody has commented yet. */
 export const Empty: Story = {
   args: { comments: [], onSubmit: () => {} },
+};
+
+/** The new remark's field and the in-place edit take dictation, here on a scripted microphone and transport. */
+export const Dictation: Story = {
+  args: {
+    comments: THREAD,
+    subject: 'Onboarding',
+    now: NOW,
+    onSubmit: () => {},
+    dictation: { transport: fakeTransport(), microphone: fakeMicrophone() },
+  },
 };
