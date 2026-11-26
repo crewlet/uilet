@@ -5,11 +5,12 @@
  * Command+Enter from anywhere in the panel.
  */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Avatar } from '../Avatar/index.js';
+import { fakeMicrophone, fakeTransport } from '../Dictation/index.js';
 import { AgentHandoffPanel, type AgentHandoffPanelProps } from './index.js';
 
 afterEach(cleanup);
@@ -188,4 +189,12 @@ test('has no accessibility violations', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test('briefDictation puts the mic in the brief, and none without it', () => {
+  const { rerender } = render(<Harness />);
+  expect(screen.queryByRole('button', { name: 'Dictate' })).toBeNull();
+  rerender(<Harness briefDictation={{ transport: fakeTransport(), microphone: fakeMicrophone() }} />);
+  const brief = screen.getByRole('textbox', { name: 'What should the doc cover?' }).closest('.crewlet-composer')!;
+  expect(within(brief as HTMLElement).getByRole('button', { name: 'Dictate' })).toBeTruthy();
 });

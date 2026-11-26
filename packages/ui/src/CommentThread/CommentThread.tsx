@@ -3,6 +3,7 @@ import { MessageSquareGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { Composer } from '../Composer/index.js';
 import { Count } from '../Count/index.js';
+import type { DictationSource } from '../Dictation/types.js';
 import { Document } from '../Document/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { PrincipalAvatar, type Principal } from '../Principal/index.js';
@@ -152,6 +153,8 @@ export interface CommentThreadProps {
   notice?: ReactNode;
   /** Whether the thread draws its own heading. On by default; off where the host already titles the section. */
   heading?: boolean | undefined;
+  /** Dictation in the new remark's field and the in-place edit, as `Composer` takes it. */
+  dictation?: DictationSource | undefined;
   /** Overrides the shared clock, for a story or a suite. */
   now?: number | undefined;
   labels?: Partial<CommentThreadLabels> | undefined;
@@ -174,6 +177,7 @@ export function CommentThread({
   hint,
   notice,
   heading = true,
+  dictation,
   now,
   labels: overrides,
   className,
@@ -353,6 +357,7 @@ export function CommentThread({
                     onChange={setEditDraft}
                     onSubmit={() => void saveEdit(comment)}
                     label={labels.editField}
+                    dictation={dictation}
                     actions={
                       <>
                         <Button size="small" variant="ghost" disabled={acting} onClick={() => setEditing(null)}>
@@ -421,6 +426,7 @@ export function CommentThread({
             onSubmit={() => void send()}
             label={labels.field(subject, replyTo ? nameOf(replyTo) : undefined)}
             placeholder={labels.placeholder}
+            dictation={dictation}
             actions={
               <Button
                 size="small"

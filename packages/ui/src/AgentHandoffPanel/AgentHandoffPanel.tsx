@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, type ReactNode, type Ref } from 'react';
 import { ArtifactPanel } from '../ArtifactPanel/index.js';
 import { Button } from '../Button/index.js';
 import { Composer } from '../Composer/index.js';
+import type { DictationSource } from '../Dictation/types.js';
 import { Disclosure } from '../Disclosure/index.js';
 import { Section } from '../Section/index.js';
 import { Timeline } from '../Timeline/index.js';
@@ -78,6 +79,8 @@ export interface AgentHandoffPanelProps {
   briefHelper?: ReactNode;
   briefMaxLength?: number | undefined;
   briefRef?: Ref<HTMLTextAreaElement> | undefined;
+  /** Dictation in the brief, as `Composer` takes it. */
+  briefDictation?: DictationSource | undefined;
 
   /** Briefs to start from, drawn while the brief is empty. */
   starters?: readonly AgentHandoffStarter[] | undefined;
@@ -131,6 +134,7 @@ export function AgentHandoffPanel({
   briefHelper,
   briefMaxLength,
   briefRef,
+  briefDictation,
   starters = [],
   onStarter,
   children,
@@ -230,6 +234,7 @@ export function AgentHandoffPanel({
             placeholder={briefPlaceholder}
             maxLength={briefMaxLength}
             rows={4}
+            dictation={briefDictation}
           />
           {briefHelper ? (
             <p id={helperId} className="crewlet-agent-handoff__helper">

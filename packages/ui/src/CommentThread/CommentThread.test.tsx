@@ -7,6 +7,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
+import { fakeMicrophone, fakeTransport } from '../Dictation/index.js';
 import { CommentThread, type CommentThreadComment } from './index.js';
 
 afterEach(cleanup);
@@ -222,4 +223,15 @@ test("a thread with remarks of the reader's own, one being edited and one asked 
     resultTypes: ['violations'],
   });
   expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(', ')}`)).toEqual([]);
+});
+
+test('dictation reaches both the new remark and the in-place edit', () => {
+  const dictation = { transport: fakeTransport(), microphone: fakeMicrophone() };
+  const own: CommentThreadComment = { ...comments[0]!, editable: true, source: 'Should the rollout wait?' };
+  render(<CommentThread comments={[own]} now={NOW} onSubmit={() => {}} onEdit={() => {}} dictation={dictation} />);
+  const compose = screen.getByRole('textbox', { name: 'Write a comment' }).closest('.crewlet-composer')!;
+  expect(within(compose as HTMLElement).getByRole('button', { name: 'Dictate' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Edit your comment' }));
+  const edit = screen.getByRole('textbox', { name: 'Edit your comment' }).closest('.crewlet-composer')!;
+  expect(within(edit as HTMLElement).getByRole('button', { name: 'Dictate' })).toBeTruthy();
 });
