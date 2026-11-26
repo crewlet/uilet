@@ -531,3 +531,57 @@ test("a chat box's tools are 28px squares at the small corner with 18px glyphs, 
     uninstall();
   }
 });
+
+function OneLine({ onSubmit, onSent }: { onSubmit?: () => void; onSent?: () => void }) {
+  const [value, setValue] = useState('Which region first');
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSent?.();
+      }}
+    >
+      <Composer singleLine label="What is being decided" value={value} onChange={setValue} onSubmit={onSubmit} />
+    </form>
+  );
+}
+
+test('a one-line composer is one row that is not multiline, describes no send keys and draws no footer', () => {
+  const { container } = render(<OneLine />);
+  const field = screen.getByRole('textbox', { name: 'What is being decided' }) as HTMLTextAreaElement;
+  expect(field.rows).toBe(1);
+  expect(field.getAttribute('aria-multiline')).toBe('false');
+  expect(field.getAttribute('wrap')).toBe('off');
+  expect(field.hasAttribute('aria-describedby')).toBe(false);
+  expect(container.querySelector('.crewlet-composer--single-line')).not.toBeNull();
+  expect(container.querySelector('.crewlet-composer__footer')).toBeNull();
+  expect(container.querySelector('.crewlet-composer__trailing')).toBeNull();
+});
+
+test('on one line Enter submits the form round it, and Shift+Enter or a composition writes nothing', () => {
+  const onSent = vi.fn();
+  render(<OneLine onSent={onSent} />);
+  const field = screen.getByRole('textbox') as HTMLTextAreaElement;
+  expect(fireEvent.keyDown(field, { key: 'Enter', shiftKey: true })).toBe(false);
+  expect(onSent).not.toHaveBeenCalled();
+  expect(fireEvent.keyDown(field, { key: 'Enter', isComposing: true })).toBe(true);
+  expect(onSent).not.toHaveBeenCalled();
+  expect(fireEvent.keyDown(field, { key: 'Enter' })).toBe(false);
+  expect(onSent).toHaveBeenCalledTimes(1);
+});
+
+test('on one line Enter calls onSubmit where there is one, in place of the form', () => {
+  const onSubmit = vi.fn();
+  const onSent = vi.fn();
+  render(<OneLine onSubmit={onSubmit} onSent={onSent} />);
+  fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+  expect(onSubmit).toHaveBeenCalledTimes(1);
+  expect(onSent).not.toHaveBeenCalled();
+});
+
+test('on one line a pasted line break becomes a space', () => {
+  render(<OneLine />);
+  const field = screen.getByRole('textbox') as HTMLTextAreaElement;
+  fireEvent.change(field, { target: { value: 'Ship it\nthis week \r\n or next' } });
+  expect(field.value).toBe('Ship it this week or next');
+});

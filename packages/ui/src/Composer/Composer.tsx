@@ -2,6 +2,7 @@ import { forwardRef, useId, useRef, type KeyboardEvent, type ReactNode, type Tex
 import { useDictationSlot } from '../Dictation/slot.js';
 import type { DictationSource } from '../Dictation/types.js';
 import { Textarea } from '../Input/index.js';
+import { isComposing } from '../Layer/index.js';
 import { SendKeysHint, useSendOnEnter, type SendKeysLabels } from '../SendKeys/index.js';
 import { useComposedRef } from '../utils/composedRef.js';
 import { cx } from '../utils/cx.js';
@@ -73,7 +74,18 @@ export interface ComposerProps
    * (or Enter) writes them into the draft with one `onChange`; Escape cancels.
    */
   dictation?: DictationSource | undefined;
+  /**
+   * One line, as an `<input>`: Enter calls `onSubmit`, or without one submits
+   * the form round the field; Shift+Enter writes nothing, a line break pasted
+   * or dictated becomes a space, and the mic stands at the field's end.
+   */
+  singleLine?: boolean | undefined;
   className?: string | undefined;
+}
+
+/** Line breaks as spaces, for a one-line composer. */
+function oneLine(text: string): string {
+  return text.replace(/[ \t]*\r?\n[ \t]*/g, ' ');
 }
 
 /**
@@ -99,6 +111,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     attachmentsLabel = 'Attached to this message',
     disabledReason,
     dictation,
+    singleLine = false,
     disabled: disabledProp,
     placeholder,
     maxLength,
@@ -114,7 +127,8 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
   const reasonId = useId();
   const dictatingId = useId();
   const disabled = Boolean(disabledProp) || disabledReason !== undefined;
-  const inline = present(trailing);
+  const inline = present(trailing) || singleLine;
+  const change = singleLine ? (next: string) => onChange(oneLine(next)) : onChange;
   const near = maxLength !== undefined && value.length >= maxLength * COMPOSER_COUNTER_AT;
   const field = useRef<HTMLTextAreaElement | null>(null);
   const fieldRef = useComposedRef(ref, field);
@@ -122,7 +136,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     label,
     field,
     value,
-    onChange,
+    onChange: change,
     heldReason: disabled ? (disabledReason ?? '') : undefined,
   });
   const live = dictate?.live ?? false;
@@ -130,7 +144,8 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
   const hasActions = present(actions) || present(tools) || (dictate !== null && !inline);
   // A disabled composer names no send keys: there is no send for them to make.
   const send = useSendOnEnter({
-    onSend: disabled ? undefined : onSubmit,
+    // One line has no line to write: its Enter is answered below, and no keys are described.
+    onSend: disabled || singleLine ? undefined : onSubmit,
     canSend: canSubmit ?? value.trim() !== '',
     labels: sendLabels,
   });
@@ -141,7 +156,16 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     // Dictation answers first, so its Enter and Escape never send or close a caller's editor.
     if (dictate?.keyDown(event)) return;
     onKeyDown?.(event);
-    send.onKeyDown(event);
+    if (singleLine) enterOnOneLine(event);
+    else send.onKeyDown(event);
+  };
+
+  const enterOnOneLine = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter' || event.defaultPrevented || isComposing(event)) return;
+    event.preventDefault();
+    if (event.shiftKey || event.altKey || disabled) return;
+    if (!onSubmit) event.currentTarget.form?.requestSubmit();
+    else if (canSubmit ?? value.trim() !== '') onSubmit();
   };
 
   return (
@@ -150,6 +174,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         'crewlet-composer',
         appearance === 'chat' && 'crewlet-composer--chat',
         inline && 'crewlet-composer--inline',
+        singleLine && 'crewlet-composer--single-line',
         value === '' && 'is-empty',
         disabled && 'is-disabled',
         live && 'is-dictating',
@@ -170,15 +195,16 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
           role={role}
           // Said outright for the textbox a textarea is; a mention list is
           // pointed at with aria-autocomplete, never a combobox role.
-          aria-multiline={role === undefined || role === 'textbox' ? true : undefined}
+          aria-multiline={singleLine ? false : role === undefined || role === 'textbox' ? true : undefined}
           aria-describedby={
             cx(describedBy, !active && send.describedBy, disabledReason === undefined ? undefined : reasonId, live && dictatingId) || undefined
           }
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => change(event.target.value)}
           onKeyDown={keyDown}
           maxLength={maxLength}
-          rows={rows ?? (inline ? 1 : 3)}
+          rows={singleLine ? 1 : (rows ?? (inline ? 1 : 3))}
+          wrap={singleLine ? 'off' : undefined}
           disabled={disabled}
           placeholder={live ? '' : (disabledReason ?? placeholder)}
           autoResize
@@ -186,7 +212,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
           readOnly={active || rest.readOnly}
         />
         {dictate?.layer}
-        {inline ? (
+        {inline && (dictate !== null || present(trailing)) ? (
           <div className="crewlet-composer__trailing">
             {dictate?.controls}
             {live ? null : trailing}
