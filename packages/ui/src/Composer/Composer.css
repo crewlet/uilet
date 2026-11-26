@@ -226,9 +226,10 @@
   flex: 1;
 }
 
-/* On a phone the hint goes, and a footer that held only the hint goes with it. */
+/* On a phone the hint goes, and a footer that held only the hint goes with it.
+   On two classes, so SendKeys' own display cannot win on sheet order. */
 @media (width < 640px) {
-  .crewlet-composer__hint,
+  .crewlet-composer .crewlet-composer__hint,
   .crewlet-composer__footer[data-hint-only] {
     display: none;
   }
